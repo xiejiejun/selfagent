@@ -24,6 +24,10 @@ drop policy if exists "sa_state_update" on public.selfagent_state;
 create policy "sa_state_update" on public.selfagent_state
   for update to anon using (true) with check (true);
 
+drop policy if exists "sa_state_delete" on public.selfagent_state;
+create policy "sa_state_delete" on public.selfagent_state
+  for delete to anon using (true);
+
 -- 2) 可选：把日志展开成可查询的明细表（后续接数据分析 / 报表时用）
 create table if not exists public.sa_logs (
   id         text        primary key,
