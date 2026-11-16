@@ -760,6 +760,8 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
 .backup-msg{margin-top:8px;font-size:13px;color:var(--tx2)}
 .cloud-grid{display:grid;gap:8px;margin-top:12px}
 .cloud-grid input{width:100%}
+  <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+  <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
 </style>
 </head>
 <body>
@@ -2863,15 +2865,30 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     renderMyLib();
     try{ const sb=$('trSelBox'); if(sb) sb.scrollIntoView({behavior:'smooth',block:'center'}); }catch(err){}
   }
-  function trLoadGif(el,file){
-    const ph=$('exGifPh');
-    let tried=false;
-    el.addEventListener('load',()=>{ el.style.opacity='1'; if(ph) ph.remove(); });
-    el.addEventListener('error',()=>{
-      if(!tried){ tried=true; el.src=GIF_BASE2+file; }
-      else { if(ph) ph.remove(); const m=el.parentElement; if(m){ el.remove(); m.insertAdjacentHTML('beforeend','<div class="gif-fail">动画加载失败，请检查网络后重试</div>'); } }
+  const GIF_PRI=['https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/','https://gcore.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/'];
+  const GIF_ALT=['https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/','https://testingcf.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/'];
+  const GIF_OK={};
+  function trRaceGif(bases,file){
+    return new Promise((res,rej)=>{
+      let left=bases.length, done=false;
+      bases.forEach(base=>{
+        const im=new Image(); im.referrerPolicy='no-referrer';
+        im.onload=()=>{ if(!done){ done=true; res(base+file); } };
+        im.onerror=()=>{ if(!done && --left===0){ done=true; rej(new Error('all-failed')); } };
+        im.src=base+file;
+      });
     });
-    el.src=GIF_BASE+file;
+  }
+  function trLoadGif(el,file){
+    const ph0=$('exGifPh');
+    if(GIF_OK[file]){ if(ph0) ph0.remove(); el.src=GIF_OK[file]; el.style.opacity='1'; return; }
+    const ph=$('exGifPh');
+    if(ph) ph.textContent='动画加载中…';
+    let done=false, timer=null;
+    const ok=url=>{ if(done) return; done=true; clearTimeout(timer); GIF_OK[file]=url; el.src=url; el.style.opacity='1'; if(ph) ph.remove(); };
+    const bad=()=>{ if(done) return; done=true; clearTimeout(timer); if(ph) ph.remove(); const m=el.parentElement; if(m){ el.remove(); m.insertAdjacentHTML('beforeend','<div class="gif-fail">动画加载失败，请检查网络后重试</div>'); } };
+    timer=setTimeout(bad,15000);
+    trRaceGif(GIF_PRI,file).then(ok).catch(()=>trRaceGif(GIF_ALT,file).then(ok).catch(bad));
   }
 
   function trEditName(id){
