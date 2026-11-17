@@ -285,7 +285,7 @@ select[multiple]{height:auto;min-height:64px}
 .ex-gif{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:12px;background:#fff;display:block;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;transition:opacity .25s ease;z-index:1}
 .ex-media{margin:8px auto 14px;position:relative;width:180px;height:180px}
 .gif-ph{position:absolute;inset:0;border-radius:12px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--tx3);background:rgba(255,255,255,.03);z-index:0}
-.gif-fail{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 12px;font-size:12px;color:var(--tx3);border:1px dashed var(--line);border-radius:12px}
+.gif-fail{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;text-align:center;padding:0 12px;font-size:12px;color:var(--tx3);border:1px dashed var(--line);border-radius:12px}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#1a1c20;color:#eee;padding:10px 18px;border-radius:20px;font-size:13px;z-index:99;border:1px solid rgba(61,220,191,.45);box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .setting-sec h2{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--accent);margin:0 0 6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 
@@ -542,7 +542,7 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--acce
 .ex-gif{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:12px;background:#fff;display:block;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;transition:opacity .25s ease;z-index:1}
 .ex-media{margin:8px auto 14px;position:relative;width:180px;height:180px}
 .gif-ph{position:absolute;inset:0;border-radius:12px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--tx3);background:rgba(255,255,255,.03);z-index:0}
-.gif-fail{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 12px;font-size:12px;color:var(--tx3);border:1px dashed var(--line);border-radius:12px}
+.gif-fail{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;text-align:center;padding:0 12px;font-size:12px;color:var(--tx3);border:1px dashed var(--line);border-radius:12px}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#1a1c20;color:#eee;padding:10px 18px;border-radius:20px;font-size:13px;z-index:99;border:1px solid rgba(61,220,191,.45);box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .setting-sec h2{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--accent);margin:0 0 6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 
@@ -1583,6 +1583,8 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .toast.confirm span{flex:1 1 100%;line-height:1.5;font-size:13px;color:var(--tx)}
 .toast.confirm button{background:none;border:0;font-size:13px;cursor:pointer;color:var(--tx3);padding:4px 8px;white-space:nowrap}
 .toast.confirm button.c-del{color:var(--risk)}
+.gif-fail .gif-retry{border:1px solid var(--line);background:none;color:var(--tx2);border-radius:9px;padding:7px 14px;font-size:12px;cursor:pointer}
+.gif-fail .gif-retry:active{transform:scale(.96)}
 /* 移动端去毛玻璃：iOS 上 fixed 栏的 backdrop-filter 会把整页内容错误采样，出现整页模糊 */
 @media (max-width:768px){
   .m-tabbar{background:#0A0C0F;backdrop-filter:none;-webkit-backdrop-filter:none}
@@ -4960,30 +4962,38 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     openExSheet(e);
     renderMyLib();
   }
-  const GIF_PRI=['https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/','https://gcore.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/'];
-  const GIF_ALT=['https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/','https://testingcf.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/'];
+  const GIF_PRI=['https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/','https://fastly.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/'];
+  const GIF_ALT=['https://gcore.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/','https://testingcf.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/','https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/'];
   const GIF_OK={};
-  function trRaceGif(bases,file){
-    return new Promise((res,rej)=>{
-      let left=bases.length, done=false;
-      bases.forEach(base=>{
-        const im=new Image(); im.referrerPolicy='no-referrer';
-        im.onload=()=>{ if(!done){ done=true; res(base+file); } };
-        im.onerror=()=>{ if(!done && --left===0){ done=true; rej(new Error('all-failed')); } };
-        im.src=base+file;
-      });
-    });
-  }
-  function trLoadGif(el,file,placeholder){
-    const ph0=placeholder || $('exGifPh');
-    if(GIF_OK[file]){ if(ph0) ph0.remove(); el.src=GIF_OK[file]; el.style.opacity='1'; return; }
+  function trLoadGif(el,file,placeholder,force){
     const ph=placeholder || $('exGifPh');
-    if(ph) ph.textContent='动画加载中…';
-    let done=false, timer=null;
-    const ok=url=>{ if(done) return; done=true; clearTimeout(timer); GIF_OK[file]=url; el.src=url; el.style.opacity='1'; if(ph) ph.remove(); };
-    const bad=()=>{ if(done) return; done=true; clearTimeout(timer); if(ph) ph.remove(); const m=el.parentElement; if(m){ el.remove(); m.insertAdjacentHTML('beforeend','<div class="gif-fail">动画没加载出来，照下方动作要领练即可</div>'); } };
-    timer=setTimeout(bad,4000);
-    trRaceGif(GIF_PRI,file).then(ok).catch(()=>trRaceGif(GIF_ALT,file).then(ok).catch(bad));
+    if(!force && GIF_OK[file]){ if(ph) ph.remove(); el.src=GIF_OK[file]; el.style.opacity='1'; return; }
+    const bases=GIF_PRI.concat(GIF_ALT);
+    if(ph){ ph.textContent='动画加载中…'; ph.style.display=''; }
+    el.style.display=''; el.style.opacity='0';
+    let i=0, done=false, timer=null;
+    const fail=()=>{
+      if(done) return; done=true; clearTimeout(timer);
+      if(ph) ph.remove();
+      const m=el.parentElement; if(!m) return;
+      el.style.display='none';
+      let box=m.querySelector('.gif-fail');
+      if(!box){ m.insertAdjacentHTML('beforeend','<div class="gif-fail"><span>动图加载失败，多为网络问题</span><button type="button" class="gif-retry">重试</button></div>'); box=m.querySelector('.gif-fail'); }
+      const rb=box.querySelector('.gif-retry');
+      if(rb) rb.onclick=()=>{ box.remove(); trLoadGif(el,file,placeholder,true); };
+    };
+    const next=()=>{
+      if(done) return;
+      if(i>=bases.length){ fail(); return; }
+      const url=bases[i++]+file;
+      clearTimeout(timer);
+      timer=setTimeout(()=>{ el.onload=null; el.onerror=null; next(); }, 8000);
+      el.onload=()=>{ if(done) return; done=true; clearTimeout(timer); el.onload=null; el.onerror=null; GIF_OK[file]=url; el.style.opacity='1'; if(ph) ph.remove(); };
+      el.onerror=()=>{ el.onload=null; el.onerror=null; next(); };
+      el.referrerPolicy='no-referrer';
+      el.src=url;
+    };
+    next();
   }
 
   function trEditName(id){
