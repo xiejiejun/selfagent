@@ -1233,9 +1233,10 @@ padding:16px 18px 22px;animation:fadeIn .2s ease both}
 .fm-tick.done{background:var(--accent);border-color:var(--accent);color:#04231d;font-weight:700;animation:tickPop .28s cubic-bezier(.22,.9,.25,1)}
 .fm-val{font-size:22px;font-variant-numeric:tabular-nums;flex:1}
 .fm-edit{display:flex;gap:4px}
-.fm-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}
+.fm-foot{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;width:100%;max-width:560px;margin-left:auto;margin-right:auto}
 .fm-foot .btn[disabled]{opacity:.35;pointer-events:none}
-.fm-hint{margin-top:10px;font-size:11px;color:var(--tx3);text-align:center}
+.fm-foot .btn,.fm-more .btn{width:100%;height:44px;padding:0 10px;font-size:13px;justify-content:center;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rest.pill{z-index:6500}
 .trStat .stale{color:#e7c56a}
 #trStat .stale b{color:#e7c56a}
@@ -1260,8 +1261,7 @@ transition:transform .18s ease,box-shadow .18s ease}
 .fm-progress{position:absolute;left:0;top:0;height:2px;width:100%;background:rgba(255,255,255,.06);border-radius:0 0 2px 0}
 .fm-progress i{display:block;height:100%;background:var(--accent);transition:width .35s ease;border-radius:0 2px 2px 0}
 .fm-x.armed{width:auto;padding:0 10px;font-size:12px;color:#f06a5a;border-color:rgba(240,106,90,.5)}
-.fm-more{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
-.mini-arrow{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--tx3);cursor:pointer;font-size:12px}
+.fm-more{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;width:100%;max-width:560px;margin-left:auto;margin-right:auto}
 .fm-add{position:fixed;inset:0;z-index:6800;background:rgba(4,6,8,.72);backdrop-filter:blur(4px);display:none;align-items:flex-end}
 .fm-add.on{display:flex}
 .fm-add-inner{width:100%;max-height:72vh;overflow:auto;background:var(--panel);border-top-left-radius:16px;border-top-right-radius:16px;padding:14px 16px 22px}
@@ -1337,8 +1337,7 @@ font-size:11px;cursor:pointer;flex:0 0 auto;font-variant-numeric:tabular-nums;wh
   .fm-val{font-size:18px}
   .fm-val i{font-size:10px}
   .fm-foot,.fm-more{gap:6px}
-  .fm-foot .btn,.fm-more .btn{font-size:12px;padding:9px 10px;flex:1 1 auto;min-width:0}
-  .fm-more .mini-arrow{width:36px;height:36px}
+  .fm-foot .btn,.fm-more .btn{font-size:12px;height:42px;padding:0 6px}
   .fm-chip{font-size:12px}
   .fm-top{font-size:12px}
 }
@@ -4322,17 +4321,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="fm-setadd"><button class="tr-plus" data-fmaddset="1" type="button">＋1 组（沿用上一组）</button></div>
       <div class="fm-foot">
         <button class="btn ghost sm" data-fmprev type="button" ${__focusIdx<=0?'disabled':''}>← 上一个</button>
-        <button class="btn ghost sm" data-fmskip type="button">跳过本动作</button>
         <button class="btn ghost sm" data-fmnext type="button" ${__focusIdx>=__focusUids.length-1?'disabled':''}>下一个 →</button>
       </div>
       <div class="fm-more">
-        <button class="btn ghost sm" data-fmauto type="button">自动下一组 ${train.autoNext?'开':'关'}</button>
+        <button class="btn ghost sm" data-fmauto type="button">自动下一组·${train.autoNext?'开':'关'}</button>
         <button class="btn ghost sm" data-fmadd type="button">＋ 临时动作</button>
-        <button class="mini-arrow" data-fmup type="button" aria-label="上移">↑</button>
-        <button class="mini-arrow" data-fmdn type="button" aria-label="下移">↓</button>
         <button class="btn ghost sm" data-fmfin type="button">结束训练</button>
-      </div>
-      <div class="fm-hint">点组行启动本轮计时（变黄、屏幕四周亮起），再点一次停表（变绿）并进入休息</div>`;
+      </div>`;
     el.classList.toggle('timing', !!(window.__grpStart && Object.keys(window.__grpStart).length));
 
     const x=el.querySelector('[data-fmexit]');
@@ -4406,19 +4401,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const pv=el.querySelector('[data-fmprev]'), nx=el.querySelector('[data-fmnext]');
     if(pv) pv.onclick=()=>{ __focusIdx=Math.max(0,__focusIdx-1); renderFocus(); };
     if(nx) nx.onclick=()=>{ __focusIdx=Math.min(__focusUids.length-1,__focusIdx+1); renderFocus(); };
-    const sk=el.querySelector('[data-fmskip]');
-    if(sk) sk.onclick=()=>{
-      __focusUids=__focusUids.filter(u=>u!==r.uid);
-      if(!__focusUids.length){ closeFocus(); showTrainSummary(); return; }
-      __focusIdx=Math.min(__focusIdx,__focusUids.length-1); renderFocus();
-      trToast('已跳过 '+r.name+'（记录不变）');
-    };
-    const up=el.querySelector('[data-fmup]'), dn=el.querySelector('[data-fmdn]');
-    if(up) up.onclick=()=>{ if(__focusIdx>0){ const a=__focusUids; [a[__focusIdx-1],a[__focusIdx]]=[a[__focusIdx],a[__focusIdx-1]]; __focusIdx--; renderFocus(); } };
-    if(dn) dn.onclick=()=>{ if(__focusIdx<__focusUids.length-1){ const a=__focusUids; [a[__focusIdx],a[__focusIdx+1]]=[a[__focusIdx+1],a[__focusIdx]]; __focusIdx++; renderFocus(); } };
     const fin=el.querySelector('[data-fmfin]'); if(fin) fin.onclick=()=>{ closeFocus(); showTrainSummary(); };
     const au=el.querySelector('[data-fmauto]');
-    if(au) au.onclick=()=>{ train.autoNext=!train.autoNext; saveTrain(); au.textContent='自动下一组 '+(train.autoNext?'开':'关'); trToast(train.autoNext?'休息结束自动进入下一组':'已关闭自动推进'); };
+    if(au) au.onclick=()=>{ train.autoNext=!train.autoNext; saveTrain(); au.textContent='自动下一组·'+(train.autoNext?'开':'关'); trToast(train.autoNext?'休息结束自动进入下一组':'已关闭自动推进'); };
     const add=el.querySelector('[data-fmadd]'); if(add) add.onclick=()=>openFmAdd();
     el.querySelector('.fm-strip').scrollLeft = Math.max(0, (__focusIdx-1)*86);
     wakeOn();
