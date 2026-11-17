@@ -1583,6 +1583,22 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .toast.confirm span{flex:1 1 100%;line-height:1.5;font-size:13px;color:var(--tx)}
 .toast.confirm button{background:none;border:0;font-size:13px;cursor:pointer;color:var(--tx3);padding:4px 8px;white-space:nowrap}
 .toast.confirm button.c-del{color:var(--risk)}
+/* 移动端去毛玻璃：iOS 上 fixed 栏的 backdrop-filter 会把整页内容错误采样，出现整页模糊 */
+@media (max-width:768px){
+  .m-tabbar{background:#0A0C0F;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .topbar{background:#07090E;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .day-head{background:#080B0E;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .fab-sheet,.ex-sheet,.fm-add,.milestone,.sum-card,.ob-mask,.rest,.rest.full,.sheet,.m-seg{
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+}
+@supports (-webkit-touch-callout:none){
+  .fab-sheet,.ex-sheet,.fm-add,.milestone,.sum-card,.ob-mask,.rest,.rest.full,.sheet,.m-seg{
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .fab-sheet,.ex-sheet{background:rgba(6,8,10,.88)}
+  .fm-add{background:rgba(4,6,8,.92)}
+  .milestone,.sum-card,.ob-mask{background:rgba(4,7,10,.92)}
+  .rest,.rest.full{background:rgba(4,7,9,.97)}
+}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
