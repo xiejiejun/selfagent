@@ -760,9 +760,182 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
 .backup-msg{margin-top:8px;font-size:13px;color:var(--tx2)}
 .cloud-grid{display:grid;gap:8px;margin-top:12px}
 .cloud-grid input{width:100%}
+
+/* ===== 移动端记录页：分段导航 + 精简层级 + 交互动画 ===== */
+.m-seg,.m-guide{display:none}
+#recLogWrap[hidden],#recTrainWrap[hidden],.m-guide[hidden]{display:none!important}
+@keyframes segIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes popIn{0%{transform:scale(.94)}55%{transform:scale(1.04)}100%{transform:scale(1)}}
+@keyframes toastUp{from{opacity:0;transform:translate(-50%,14px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes popBtn{0%{transform:scale(1)}40%{transform:scale(.96)}100%{transform:scale(1)}}
+.btn,.m-seg-btn,.stepper button{transition:transform .16s ease,box-shadow .24s ease,border-color .2s ease,color .2s ease,background .2s ease}
+.btn:active,.m-seg-btn:active,.stepper button:active{transform:scale(.975)}
+.btn.done{animation:popBtn .5s ease}
+.toast{animation:toastUp .34s cubic-bezier(.2,.9,.25,1) both}
+@media(max-width:640px){
+  .m-seg{display:flex;position:relative;padding:4px;margin:2px 0 10px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.02);overflow:hidden}
+  .m-seg-ink{position:absolute;top:4px;left:4px;width:calc(50% - 4px);height:calc(100% - 8px);border-radius:999px;background:linear-gradient(135deg,rgba(61,220,191,.24),rgba(61,220,191,.06));border:1px solid rgba(61,220,191,.45);transition:transform .42s cubic-bezier(.22,.9,.25,1);pointer-events:none}
+  .m-seg-ink.right{transform:translateX(100%)}
+  .m-seg-btn{flex:1;position:relative;z-index:1;background:none;border:none;color:var(--tx3);font:inherit;font-size:13px;padding:9px 0;border-radius:999px;cursor:pointer}
+  .m-seg-btn.on{color:var(--accent);font-weight:600}
+  .m-guide{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--tx3);margin:-2px 0 12px;letter-spacing:.2px}
+  .m-guide i{font-style:normal;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--accent);border:1px solid rgba(61,220,191,.4);background:rgba(61,220,191,.07)}
+  .m-guide s{text-decoration:none;color:#3a3d44}
+  .panel-in{animation:segIn .38s cubic-bezier(.22,.9,.25,1) both}
+  #reportBody h1{font-size:19px;margin:2px 0 6px}
+  #reportBody .kicker{display:none}
+  #reportBody>.hint{display:none}
+  .ex-list{max-height:42vh}
+  .today-box,.quick-box{padding:13px;margin-bottom:12px;border-radius:12px;animation:segIn .45s cubic-bezier(.22,.9,.25,1) both}
+  .zone-sep{margin:18px 0 10px}
+  .train-side .today-box:nth-child(2){animation-delay:.04s}
+  .train-side .today-box:nth-child(3){animation-delay:.08s}
+  .train-side .today-box:nth-child(4){animation-delay:.12s}
+  .tr-sum b{font-variant-numeric:tabular-nums}
+  .sel-ex{animation:popIn .4s ease both}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+@media(max-width:640px){
+  #reportBody>h1{display:none}
+  .train-side{display:flex;flex-direction:column}
+  .train-side .today-box:nth-child(3){order:1}
+  .train-side .quick-box{order:2}
+  .train-side .today-box:nth-child(1){order:3}
+  .train-side .today-box:nth-child(4){order:4}
+  #trChart{max-height:150px;overflow:hidden}
+  .my-empty{font-size:11.5px;line-height:1.5}
+  .my-hot{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .my-hot .lib-chip{padding:6px 11px;font-size:12.5px;animation:segIn .4s ease both}
+  .lib-chip:active{transform:scale(.96)}
+}
+
+@media(max-width:640px){
+  .quick-box:not(.ready) .f-row,
+  .quick-box:not(.ready) .tr-actions,
+  .quick-box:not(.ready) #trDetail{display:none}
+  .quick-box:not(.ready) .sel-ex{margin-bottom:0}
+  .quick-box{transition:padding .3s ease}
+  .quick-box.ready{animation:segIn .35s ease both}
+}
+
+.m-more-btn,.m-extra{display:none}
+@media(min-width:641px){.m-extra{display:contents}}
+@media(max-width:640px){
+  .quick{flex-wrap:wrap}
+  .m-more-btn{display:inline-flex}
+  .m-extra{width:100%;display:none;gap:8px}
+  .m-extra.open{display:flex;animation:segIn .3s ease both}
+}
+
+/* ===== 一句话快记 / 标签 chips / 情绪刻度 ===== */
+.fast-box{background:linear-gradient(180deg,rgba(61,220,191,.06),rgba(61,220,191,0));border:1px solid rgba(61,220,191,.28);border-radius:12px;padding:12px;margin-bottom:14px}
+.fast-box textarea{width:100%;min-height:64px;resize:vertical;background:transparent;border:none;color:var(--tx);font:15px/1.6 inherit;padding:0;outline:none}
+.fast-box textarea::placeholder{color:var(--tx3)}
+.fast-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.fast-hint{font-size:11.5px;color:var(--tx3)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{background:rgba(255,255,255,.03);border:1px solid var(--line);color:var(--tx2);font:inherit;font-size:12.5px;padding:5px 11px;border-radius:999px;cursor:pointer;transition:border-color .18s,color .18s,background .18s,transform .16s}
+.chip:hover{border-color:rgba(61,220,191,.5);color:var(--tx)}
+.chip:active{transform:scale(.96)}
+.chip.on{border-color:var(--accent);color:var(--accent);background:rgba(61,220,191,.1)}
+.chip-none{font-size:11.5px;color:var(--tx3)}
+.mood-scale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--tx3);margin-top:2px;padding:0 2px}
+.mood-scale s{text-decoration:none;opacity:.7}
+.quick-line{display:flex;gap:8px}
+.quick-line input{flex:1;min-width:0}
+.toast.nudge{bottom:78px;display:flex;align-items:center;gap:10px}
+.toast.nudge button{background:none;border:1px solid rgba(61,220,191,.5);color:var(--accent);border-radius:999px;font:inherit;font-size:12px;padding:4px 10px;cursor:pointer}
+
+.quick-line .btn{flex:0 0 auto;white-space:nowrap}
+.log-detail summary{list-style:none;cursor:pointer;font-size:12.5px;color:var(--tx3);padding:6px 0 2px;display:flex;align-items:center;gap:6px}
+.log-detail summary::-webkit-details-marker{display:none}
+.log-detail summary::before{content:'+';display:inline-flex;width:15px;height:15px;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:50%;font-size:11px;color:var(--accent)}
+.log-detail[open] summary::before{content:'−'}
+.log-detail summary:hover{color:var(--tx2)}
+@media(max-width:640px){.log-detail[open] summary{padding-bottom:8px}}
+
+/* ===== 画像首屏摘要卡 ===== */
+.brief{display:grid;gap:10px;margin:4px 0 16px}
+.brief .brief-card{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 10px;background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.brief-k{font-size:12px;color:var(--tx3);grid-column:1}
+.brief-v{grid-column:2;grid-row:1/3;font-size:22px;color:var(--tx);font-weight:600;letter-spacing:-.4px}
+.brief-v em{font-style:normal;font-size:12px;color:var(--tx3);font-weight:400;margin-left:2px}
+.brief-s{grid-column:1;font-size:11.5px;color:var(--tx2)}
+.brief-signal{font-size:12.5px;color:var(--tx2);border-left:2px solid rgba(61,220,191,.6);padding:6px 0 6px 10px;background:rgba(61,220,191,.04);border-radius:0 6px 6px 0}
+.report-fold summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--tx2);border:1px solid var(--line);border-radius:999px;padding:7px 14px;margin:4px 0 14px;transition:border-color .2s,color .2s}
+.report-fold summary::-webkit-details-marker{display:none}
+.report-fold summary:hover{border-color:rgba(61,220,191,.5);color:var(--tx)}
+.report-fold[open] summary{color:var(--accent);border-color:rgba(61,220,191,.5)}
+@media(min-width:900px){.brief{grid-template-columns:repeat(3,1fr)}.brief-signal{grid-column:1/-1}}
+
+/* ===== 移动端底部 tab 栏 ===== */
+.m-tabbar{display:none}
+@media(max-width:640px){
+  .m-tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:80;background:rgba(10,12,15,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:5px 0 calc(5px + env(safe-area-inset-bottom))}
+  .m-tabbar button{flex:1;background:none;border:none;color:var(--tx3);font:inherit;font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 4px;cursor:pointer;transition:color .18s}
+  .m-tabbar button.on{color:var(--accent)}
+  .m-tabbar .ti{width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;display:block;position:relative;opacity:.75}
+  .m-tabbar button.on .ti{opacity:1;background:rgba(61,220,191,.18)}
+  nav.steps{display:none!important}
+  body{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+}
+
+/* ===== 日志改日期 ===== */
+.log-time{cursor:pointer;border-bottom:1px dashed rgba(255,255,255,.22);padding-bottom:1px}
+.log-time:hover{color:var(--tx)}
+.log-time i{font-style:normal;font-size:10px;opacity:.55;margin-left:3px;letter-spacing:0}
+.log-date{background:rgba(255,255,255,.04);border:1px solid var(--accent);color:var(--tx);font:inherit;font-size:12px;border-radius:6px;padding:2px 6px;color-scheme:dark;width:auto;max-width:132px}
+
+/* ===== 首页仪表板 ===== */
+.page-home .home-wrap{max-width:1080px;margin:0 auto}
+.home-today{display:grid;gap:10px;grid-template-columns:repeat(2,1fr);margin:16px 0 18px}
+@media(min-width:900px){.home-today{grid-template-columns:repeat(4,1fr)}}
+.hc{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:12px;padding:14px 15px}
+.hc-k{display:block;font-size:11.5px;color:var(--tx3)}
+.hc-v{display:block;font-size:26px;font-weight:600;color:var(--tx);letter-spacing:-.6px;margin-top:5px}
+.hc-v em{font-style:normal;font-size:11.5px;color:var(--tx3);font-weight:400;margin-left:4px;letter-spacing:0}
+.home-hm{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-bottom:16px}
+.hm-head{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--tx3);margin-bottom:11px}
+.hm-legend{display:flex;align-items:center;gap:4px}
+.hm-legend i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.06);display:block}
+.hm{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,11px);gap:3px;overflow-x:auto;padding-bottom:2px}
+.hm i{width:11px;height:11px;border-radius:3px;background:rgba(255,255,255,.05);display:block;transition:transform .15s}
+.hm i:hover{transform:scale(1.18)}
+.hm i[data-l="1"],.hm-legend i[data-l="1"]{background:rgba(61,220,191,.24)}
+.hm i[data-l="2"],.hm-legend i[data-l="2"]{background:rgba(61,220,191,.42)}
+.hm i[data-l="3"],.hm-legend i[data-l="3"]{background:rgba(61,220,191,.62)}
+.hm i[data-l="4"],.hm-legend i[data-l="4"]{background:rgba(61,220,191,.86)}
+.home-signals{display:grid;gap:8px;margin-bottom:18px}
+.sig{font-size:12.5px;color:var(--tx2);background:rgba(255,255,255,.02);border:1px solid var(--line);border-left:2px solid rgba(61,220,191,.55);border-radius:10px;padding:10px 12px}
+.sig.warn{border-left-color:var(--risk);color:var(--tx)}
+.home-actions{display:flex;gap:10px}
+
+/* ===== 训练 +1 组 ===== */
+.tr-plus{background:rgba(61,220,191,.1);border:1px solid rgba(61,220,191,.45);color:var(--accent);font:inherit;font-size:11.5px;border-radius:999px;padding:3px 9px;cursor:pointer;margin-right:6px;white-space:nowrap}
+.tr-plus:active{transform:scale(.95)}
+
+/* ===== 全局悬浮快记 ===== */
+.fab{position:fixed;right:22px;bottom:calc(74px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:var(--accent);color:#08221c;font-size:28px;line-height:1;box-shadow:0 6px 22px rgba(61,220,191,.35);z-index:120;transition:transform .18s ease}
+.fab:active{transform:scale(.92)}
+.fab-overlay{position:fixed;inset:0;background:rgba(6,8,10,.62);backdrop-filter:blur(4px);z-index:130;display:none;align-items:flex-start;justify-content:center;padding:14vh 16px 0}
+.fab-overlay.open{display:flex}
+.fab-panel{width:100%;max-width:520px;background:#15181d;border:1px solid rgba(61,220,191,.35);border-radius:16px;padding:18px 18px 14px;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+.fab-panel textarea{width:100%;min-height:72px;resize:none;background:transparent;border:none;color:var(--tx);font:15px/1.6 inherit;padding:0;outline:none}
+.fab-panel textarea::placeholder{color:var(--tx3)}
+.fab-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+.fab-hint{font-size:11.5px;color:var(--tx3);line-height:1.5}
+.fab-close{background:none;border:none;color:var(--tx3);font:inherit;font-size:13px;cursor:pointer;padding:4px}
+.fab-close:hover{color:var(--tx)}
+.fast-quick{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.fast-quick .fq{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;color:var(--tx2);font:inherit;font-size:12.5px;padding:6px 12px;cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fast-quick .fq:hover{border-color:rgba(61,220,191,.5);color:var(--tx)}
+.fast-quick .fq-k{opacity:.55;margin-right:5px;font-size:11px}
+</style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
-</style>
 </head>
 <body>
 
@@ -772,18 +945,46 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
     <span>SelfAgent<span class="brand-sub">自我认知</span></span>
   </div>
   <nav class="steps">
-    <div class="step on" id="navRecord" data-page="record"><span class="n">01</span><span class="lbl">记录</span></div>
-    <div class="step" id="navAgent" data-page="agent"><span class="n">02</span><span class="lbl">分析</span></div>
-    <div class="step" id="navLog" data-page="log"><span class="n">03</span><span class="lbl">日志</span></div>
-    <div class="step" id="navSet" data-page="setting"><span class="n">04</span><span class="lbl">设置</span></div>
+    <div class="step on" id="navHome" data-page="home"><span class="n">01</span><span class="lbl">首页</span></div>
+    <div class="step" id="navRecord" data-page="record"><span class="n">02</span><span class="lbl">记录</span></div>
+    <div class="step" id="navAgent" data-page="agent"><span class="n">03</span><span class="lbl">分析</span></div>
+    <div class="step" id="navLog" data-page="log"><span class="n">04</span><span class="lbl">日志</span></div>
+    <div class="step" id="navSet" data-page="setting"><span class="n">05</span><span class="lbl">设置</span></div>
   </nav>
 </header>
 
 <main class="stage">
 
+  <!-- ==================== 页面 00：首页仪表板 ==================== -->
+  <section class="page page-home" id="pageHome">
+    <div class="home-wrap">
+      <div class="eyebrow">TODAY · 今日总览</div>
+      <div class="page-title" id="homeTitle">今天</div>
+      <div class="page-desc" id="homeSub">—</div>
+      <div class="home-today" id="homeToday"></div>
+      <div class="home-hm">
+        <div class="hm-head"><span>近 12 周打卡</span>
+          <span class="hm-legend">少<i data-l="0"></i><i data-l="1"></i><i data-l="2"></i><i data-l="3"></i><i data-l="4"></i>多</span>
+        </div>
+        <div class="hm" id="homeHm"></div>
+      </div>
+      <div class="home-signals" id="homeSignals"></div>
+      <div class="home-actions">
+        <button class="btn sm" id="homeGoRec">去记一笔</button>
+        <button class="btn ghost sm" id="homeGoAgent">看画像</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ==================== 页面 01：记录（含训练） ==================== -->
   <section class="page page-record" id="pageRecord">
-    <div class="rec-grid">
+    <div class="m-seg" id="recSeg" role="tablist" aria-label="记录方式">
+      <span class="m-seg-ink" id="recSegInk"></span>
+      <button class="m-seg-btn on" data-panel="train" role="tab">训练打卡</button>
+      <button class="m-seg-btn" data-panel="log" role="tab">写日志</button>
+    </div>
+    <div class="m-guide" id="recGuide"><i>1</i> 选动作 <s></s> <i>2</i> 填组次 <s></s> <i>3</i> 保存</div>
+    <div class="rec-grid" id="recLogWrap">
       <div class="rec-main">
         <div class="eyebrow">INPUT · 记录今天</div>
         <div class="page-title">记录你的今天</div>
@@ -791,19 +992,34 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
 
         <div class="quick">
           <button class="btn ghost sm" id="btnTrain">记今日训练</button>
-          <button class="btn ghost sm" id="btnDemo">载入示例日志</button>
-          <button class="btn ghost sm" id="btnClear">清空全部</button>
+          <button class="btn ghost sm m-more-btn" id="btnMore">更多</button>
+          <div class="m-extra" id="quickExtra">
+            <button class="btn ghost sm" id="btnDemo">载入示例日志</button>
+            <button class="btn ghost sm" id="btnClear">清空全部</button>
+          </div>
+        </div>
+
+        <div class="fast-quick" id="fastQuick"></div>
+        <div class="fast-box" id="fastBox">
+          <textarea id="fastInput" rows="2" placeholder="一句话记下：跑了5公里 / 加班到十点，很焦虑 / 昨晚睡了6小时"></textarea>
+          <div class="fast-bar">
+            <span class="fast-hint">自动认类型和标签 · 也可直接写「卧推 60 5x5」记训练</span>
+            <button class="btn sm" id="fastSave" type="button">存下</button>
+          </div>
         </div>
 
         <form class="form" id="logForm">
+          <details class="log-detail" id="logDetail" open>
+            <summary>补充细节：类型 · 标签 · 精力 · 情绪</summary>
           <div class="f-row">
             <div class="f-field">
               <label class="f-label">类型</label>
               <select id="logType"></select>
             </div>
             <div class="f-field">
-              <label class="f-label">标签（下拉选择，可多次选）</label>
-              <select id="logTags"></select>
+              <label class="f-label">标签（点一下选中，再点取消）</label>
+              <select id="logTags" hidden></select>
+              <div class="chips" id="tagPick"></div>
               <div class="tag-list" id="tagChips"></div>
             </div>
           </div>
@@ -816,15 +1032,17 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
           </div>
           <div class="energy-row">
             <div style="flex:1">
-              <label class="f-label">情绪 · 狂怒 —— 放松</label>
-              <input type="range" id="logMood" min="1" max="10" value="5">
+              <label class="f-label">情绪</label>
+              <input type="range" id="logMood" min="1" max="5" value="3">
+              <div class="mood-scale"><s>很糟</s><s>低落</s><s>一般</s><s>不错</s><s>很好</s></div>
             </div>
-            <span class="log-score" id="moodShow">平静</span>
+            <span class="log-score" id="moodShow">一般</span>
           </div>
           <label class="f-label" style="margin-bottom:6px">内容</label>
           <textarea id="logContent" placeholder="例如：下午写了三小时代码，很专注；晚上加班到十点，有点焦虑，没去跑步。"></textarea>
           <button type="submit" class="btn" style="margin-top:12px">存入记录</button>
-          <div class="hint">类型与标签在「设置」里定义；精力 1–5，情绪在狂怒与放松之间过渡。</div>
+          </details>
+          <div class="hint">类型与标签在「设置」里定义；精力 1–5（低→高），情绪 1–5（很糟→很好）。</div>
         </form>
       </div>
 
@@ -837,8 +1055,10 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
       </aside>
     </div>
 
+    <div id="recTrainWrap">
     <div class="zone-sep"><span>记录训练</span></div>
     <div class="report-shell sub-zone"><div class="body-slot" id="slotRecord"><div class="md" id="reportBody"></div></div></div>
+    </div>
   </section>
 
   <!-- ==================== 页面 02：分析（画像 / 规划 / 推演） ==================== -->
@@ -1195,7 +1415,7 @@ function genTrend(logs, d){
 function genEmpty(){
   return `<div class="intro-empty">
     <div class="big">还没有可分析的记录</div>
-    <p>先在左侧录入几条日志，或点「载入示例日志」，然后点「生成完整报告」体验画像、规划与趋势推演。</p>
+    <p>先在「记录」页写几条日志（写一句话就能存），或点「载入示例日志」，再回到这里看画像、规划与趋势推演。</p>
   </div>`;
 }
 
@@ -1217,7 +1437,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     ]
   };
   const TYPE_COLORS = ['#6D8CFF','#5FD3A0','#3DDCBF','#C77DB3','#5AA9A6','#E08A5B','#8FBF6C','#7E7BB5'];
-  const MOOD_LABELS = ['','狂怒','恼火','烦躁','低落','平静','平稳','轻松','愉悦','放松','惬意'];
+  const MOOD_LABELS5 = ['','很糟','低落','一般','不错','很好'];
+  const moodNorm = m => { m=Math.max(0,Math.min(10,parseInt(m,10)||3)); return m>5 ? Math.min(5,Math.ceil(m/2)) : (m||3); };
 
   let logs = [];
   try{ logs = JSON.parse(localStorage.getItem(STORE_KEY)) || []; }catch(e){ logs=[]; }
@@ -1253,7 +1474,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   const colorFor = k => { const i=settings.types.findIndex(t=>t.key===k); return i>=0 ? TYPE_COLORS[i%TYPE_COLORS.length] : '#8695A5'; };
   const typeLabel = k => { const t=settings.types.find(x=>x.key===k); return t ? t.label : k; };
   const typeCls = k => (k==='work'?'work':k==='fit'?'fit':'life');
-  const moodText = m => MOOD_LABELS[Math.max(1,Math.min(10,m|0))] || '平静';
+  const moodText = m => MOOD_LABELS5[moodNorm(m)] || '一般';
   const fmtTime = iso => { const d=new Date(iso); const p=n=>String(n).padStart(2,'0'); return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
   const dayKey = iso => { const d=new Date(iso); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; };
 
@@ -1279,12 +1500,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <span class="log-type ${typeCls(l.type)}" style="color:${colorFor(l.type)};border-color:${colorFor(l.type)}">${ENGINE.esc(typeLabel(l.type))}</span>
           ${l.tags?`<span class="tag">${ENGINE.esc(l.tags)}</span>`:''}
           <span class="log-score">精力 ${'●'.repeat(l.score||3)}${'○'.repeat(5-(l.score||3))} · 情绪 ${moodText(l.mood)}</span>
-          <span class="log-time">${fmtTime(l.time)}</span>
+          <span class="log-time" data-lid="${l.id}" title="点击修改日期，可补记昨天">${fmtTime(l.time)}<i>改</i></span>
         </div>
         <div class="log-body">${ENGINE.esc(l.content)}</div>
       </div>`).join('');
     box.querySelectorAll('.log-del').forEach(btn=>{
-      btn.addEventListener('click',()=>{ logs=logs.filter(x=>x.id!==btn.dataset.id); save(); renderLogs(); if(!logs.length) renderReport(); });
+      btn.addEventListener('click',()=>{
+        if(!confirm('删除这条记录？删掉后不能恢复。')) return;
+        logs=logs.filter(x=>x.id!==btn.dataset.id); save(); renderLogs(); if(!logs.length) renderReport();
+      });
     });
   }
 
@@ -1301,18 +1525,155 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     renderTagChips();
   }
   function renderTagChips(){
+    const ty=$('logType') ? ($('logType').value||'life') : 'life';
+    const pick=$('tagPick');
+    if(pick){
+      const all=typeTags(ty);
+      pick.innerHTML = all.length
+        ? all.map(t=>`<button type="button" class="chip${tagChips.includes(t)?' on':''}" data-pick="${ENGINE.esc(t)}">${ENGINE.esc(t)}</button>`).join('')
+        : '<span class="chip-none">该类型下还没有标签，去「设置」加</span>';
+      pick.querySelectorAll('[data-pick]').forEach(b=>{
+        b.onclick=()=>{
+          const t=b.dataset.pick;
+          tagChips = tagChips.includes(t) ? tagChips.filter(x=>x!==t) : tagChips.concat([t]);
+          renderTagChips();
+        };
+      });
+    }
     const box=$('tagChips'); if(!box) return;
-    box.innerHTML = tagChips.length ? tagChips.map(t=>`<span class="tag">${ENGINE.esc(t)}<button data-chip="${ENGINE.esc(t)}">×</button></span>`).join('') : '';
+    box.innerHTML = tagChips.length ? tagChips.map(t=>`<span class="tag">${ENGINE.esc(t)}<button type="button" data-chip="${ENGINE.esc(t)}">×</button></span>`).join('') : '';
     box.querySelectorAll('[data-chip]').forEach(b=>{
       b.addEventListener('click',()=>{ tagChips=tagChips.filter(x=>x!==b.dataset.chip); renderTagChips(); });
     });
   }
+
+  /* ---------- 自动推断类型/标签 ---------- */
+  const INFER_KW = {
+    fit:['跑步','跑了','公里','深蹲','卧推','硬拉','引体','练了','练完','游泳','瑜伽','骑行','打球','撸铁','举铁','有氧','锻炼','健身','km'],
+    work:['加班','代码','开会','会议','需求','汇报','项目','文档','上线','bug','方案','评审','客户','甲方','debug'],
+    life:['睡了','没睡好','熬夜','熬到','失眠','起床','起不来','早餐','午餐','午饭','晚饭','刷手机','焦虑','累','烦躁','情绪','作息','喝水','散步']
+  };
+  const TAG_HINT = [
+    {tag:'跑步', re:/跑|公里|km/i}, {tag:'力量', re:/深蹲|卧推|硬拉|引体|撸铁|举铁/},
+    {tag:'瑜伽', re:/瑜伽/}, {tag:'游泳', re:/游泳/},
+    {tag:'加班', re:/加班/}, {tag:'代码', re:/代码|bug|debug|写代码/},
+    {tag:'会议', re:/开会|会议/}, {tag:'需求', re:/需求|方案|评审/},
+    {tag:'作息', re:/睡|起床|起不来|熬夜|熬到|失眠/}, {tag:'饮食', re:/早餐|午饭|晚饭|吃/},
+    {tag:'情绪', re:/焦虑|烦躁|压力|情绪/}
+  ];
+  function inferLog(text){
+    const t=(' '+text+' ').toLowerCase();
+    let best={key:(settings.types[0]||{}).key, sc:0, tags:[]};
+    settings.types.forEach(ty=>{
+      let sc=0; const hit=[];
+      (ty.tags||[]).forEach(tag=>{ if(tag && t.includes(String(tag).toLowerCase())){ sc+=2; hit.push(tag); } });
+      if(t.includes(String(ty.label||'').toLowerCase())) sc+=3;
+      (INFER_KW[ty.key]||[]).forEach(w=>{ if(t.includes(w)) sc+=3; });
+      if(sc>best.sc) best={key:ty.key, sc, tags:hit.slice(0,2)};
+    });
+    const hint=TAG_HINT.filter(h=>h.re.test(text) && (typeTags(best.key)||[]).includes(h.tag)).map(h=>h.tag);
+    if(hint.length) best.tags=hint.slice(0,2);
+    return best;
+  }
+  function currentLogMeta(){
+    const ty=$('logType'), sc=$('logScore'), md=$('logMood');
+    return {
+      type: (ty && ty.value) || (settings.types[0]||{}).key,
+      score: sc ? (parseInt(sc.value,10)||3) : 3,
+      mood: md ? moodNorm(md.value) : 3
+    };
+  }
+  function logNudge(n){
+    if(n<3) return;
+    const el=document.createElement('div'); el.className='toast nudge';
+    el.innerHTML='已积累 <b>'+n+'</b> 条记录 <button type="button" id="nudgeGo">看画像 →</button>';
+    document.body.appendChild(el);
+    const b=el.querySelector('#nudgeGo');
+    if(b) b.onclick=()=>{ try{el.remove();}catch(e){} if(typeof showPage==='function') showPage('agent'); };
+    setTimeout(()=>{ try{el.remove();}catch(e){} }, 5000);
+  }
+  function quickTrainParse(txt){
+    let s=(txt||'').trim(); if(!s) return null;
+    const sm=s.match(/(\d+)\s*[x×*]\s*(\d+)/i); if(!sm) return null;
+    const sets=Math.max(1,Math.min(20,+sm[1])), reps=Math.max(1,Math.min(100,+sm[2]));
+    s=s.replace(sm[0],' ');
+    let weight=0;
+    const wm=s.match(/(\d+(?:\.\d+)?)\s*(?:kg|公斤)?\s*$/i);
+    if(wm && wm[0].trim()){ weight=parseFloat(wm[1])||0; s=s.replace(wm[0],' '); }
+    const name=s.replace(/[，,。;；:：]+/g,' ').replace(/\s+/g,' ').trim();
+    if(!name) return null;
+    const cand=allExercises().filter(e=>e.n.includes(name)||((e.en||'').toLowerCase().includes(name.toLowerCase()))).sort((a,b)=>a.n.length-b.n.length)[0];
+    return { name:cand?cand.n:name, part:cand?cand.p:'其他', sets, reps, weight, exId:cand?cand.id:('cuq'+Date.now().toString(36)) };
+  }
+  function pushLog(content, auto){
+    content=(content||'').trim(); if(!content) return false;
+    const meta=currentLogMeta();
+    let type=meta.type, tags=tagChips.slice();
+    if(auto){
+      const tp=quickTrainParse(content);
+      if(tp){
+        const dd=new Date();
+        const key=dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')+'-'+String(dd.getDate()).padStart(2,'0');
+        train.records.push({date:key, exId:tp.exId, name:tp.name, part:tp.part, sets:tp.sets, reps:tp.reps, weight:tp.weight, dur:0});
+        saveTrain(); trRenderToday(); refreshHome();
+        trToast('已记为训练：'+tp.name+' '+tp.sets+'×'+tp.reps+(tp.weight>0?' @'+tp.weight+'kg':'(自重)'));
+        return true;
+      }
+      const inf=inferLog(content);
+      if(inf.sc>=2){ type=inf.key; if(!tags.length) tags=inf.tags.slice();
+        trToast('已识别：'+typeLabel(type)+(tags.length?' · '+tags.join(' '):'')+'（可在下方补充细节里改）'); }
+    }
+    logs.push({ id:Date.now()+Math.random().toString(36).slice(2,7), type, tags:tags.join(','), score:meta.score, mood:meta.mood, content, time:new Date().toISOString() });
+    save(); renderLogs(); if(typeof markStepIdx==='function') markStepIdx(1);
+    refreshHome();
+    logNudge(logs.length);
+    return true;
+  }
   $('logForm').addEventListener('submit', e=>{
     e.preventDefault();
-    const content=$('logContent').value.trim(); if(!content) return;
-    logs.push({ id:Date.now()+Math.random().toString(36).slice(2,7), type:$('logType').value, tags:tagChips.join(','), score:parseInt($('logScore').value,10), mood:parseInt($('logMood').value,10), content, time:new Date().toISOString() });
-    save(); $('logContent').value=''; tagChips=[]; refreshLogForm(); renderLogs(); markStepIdx(1);
+    const content=$('logContent').value.trim();
+    if(!pushLog(content, false)) return;
+    $('logContent').value=''; tagChips=[]; refreshLogForm();
+    const sb=document.querySelector('#logForm button[type=submit]');
+    if(sb){ sb.classList.add('done'); const oldTxt=sb.textContent; sb.textContent='✓ 已存入'; setTimeout(()=>{ sb.classList.remove('done'); sb.textContent=oldTxt; }, 1400); }
   });
+  const fastSave=()=>{ const v=$('fastInput').value.trim(); if(!v) return;
+    if(!pushLog(v, true)) return;
+    $('fastInput').value=''; tagChips=[]; renderTagChips(); renderFastQuick();
+    const sb=$('fastSave'); if(sb){ sb.classList.add('done'); const o=sb.textContent; sb.textContent='✓ 已存'; setTimeout(()=>{ sb.classList.remove('done'); sb.textContent=o; }, 1400); }
+  };
+  if($('fastSave')) $('fastSave').addEventListener('click', fastSave);
+  if($('fastInput')) $('fastInput').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); fastSave(); } });
+
+  /* 常用记录一键重放：取最近高频内容，点击预填到快记框 */
+  function renderFastQuick(){
+    const box=$('fastQuick'); if(!box) return;
+    const freq={};
+    logs.slice(-40).forEach(l=>{ const c=(l.content||'').trim(); if(c && c.length<=40) freq[c]=(freq[c]||0)+1; });
+    const tops=Object.keys(freq).filter(c=>freq[c]>=1).sort((a,b)=>freq[b]-freq[a]).slice(0,3);
+    box.innerHTML = tops.length ? tops.map(c=>`<button class="fq" data-fq="${ENGINE.esc(c)}" title="点击预填，回车即存"><span class="fq-k">常用</span>${ENGINE.esc(c)}</button>`).join('') : '';
+    box.querySelectorAll('[data-fq]').forEach(b=>b.addEventListener('click',()=>{
+      const t=$('fastInput'); if(!t) return;
+      t.value=b.dataset.fq; t.focus();
+    }));
+  }
+  renderFastQuick();
+
+  /* 全局悬浮快记：任何页面一键呼出，自动识别日志/训练 */
+  const fabOpen=()=>{ $('fabOverlay').classList.add('open'); setTimeout(()=>{ const t=$('fabText'); if(t) t.focus(); },30); };
+  const fabCloseFn=()=>{ $('fabOverlay').classList.remove('open'); };
+  const fabDoSave=()=>{
+    const t=$('fabText'); const v=(t.value||'').trim(); if(!v) return;
+    if(pushLog(v, true)){ t.value=''; fabCloseFn(); renderFastQuick(); }
+  };
+  function bindFab(){
+    if($('fabQuick')) $('fabQuick').addEventListener('click', fabOpen);
+    if($('fabSave')) $('fabSave').addEventListener('click', fabDoSave);
+    if($('fabClose')) $('fabClose').addEventListener('click', fabCloseFn);
+    if($('fabOverlay')) $('fabOverlay').addEventListener('click', e=>{ if(e.target===$('fabOverlay')) fabCloseFn(); });
+    if($('fabText')) $('fabText').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); fabDoSave(); } });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindFab); else bindFab();
   $('logScore').addEventListener('input',()=>$('scoreShow').textContent=$('logScore').value);
   $('logMood').addEventListener('input',()=>$('moodShow').textContent=moodText($('logMood').value));
 
@@ -1328,7 +1689,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     {type:'life',tags:'情绪',score:2,mood:2,content:'最近压力有点大，晚上总想刷手机放松，越刷越晚。'}
   ];
   $('btnDemo').addEventListener('click',()=>{ if(logs.length) return; const now=Date.now(); logs=DEMO.map((d,i)=>({...d,id:now+i,time:new Date(now-(i+1)*3600*1000*18).toISOString()})); save(); refreshLogForm(); renderLogs(); markStepIdx(1); });
-  $('btnClear').addEventListener('click',()=>{ logs=[]; tagChips=[]; save(); refreshLogForm(); renderLogs(); renderReport(); });
+  $('btnClear').addEventListener('click',()=>{
+    if(logs.length && !confirm('清空全部 '+logs.length+' 条记录？删掉后不能恢复，建议先在「设置」里导出备份。')) return;
+    logs=[]; tagChips=[]; save(); refreshLogForm(); renderLogs(); renderReport();
+  });
 
   /* ---------- ECharts 管理 ---------- */
   function disposeCharts(){ chartInsts.forEach(c=>{ try{c.dispose();}catch(e){} }); chartInsts=[]; }
@@ -2687,6 +3051,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function findEx(id){ return allExercises().find(e=>e.id===id); }
   const trState={q:'',part:'',eq:'',limit:60};
   const trToday=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  /* 即时保存：今日列表一旦变化，立即同步到训练记录（无需手动“完成并保存”） */
+  function syncTodayRecords(){
+    const d=trToday(); if(!(train.items||[]).length) return;
+    const ids=train.items.map(i=>i.exId);
+    train.records=(train.records||[]).filter(r=>!(r.date===d && ids.includes(r.exId)));
+    train.items.forEach(i=>train.records.push({date:d, exId:i.exId, name:i.name, part:i.part, sets:i.sets, reps:i.reps, weight:i.weight, dur:i.dur||0}));
+    saveTrain(); refreshHome();
+  }
   function trToast(t){ const el=document.createElement('div'); el.className='toast'; el.textContent=t; document.body.appendChild(el); setTimeout(()=>{ try{el.remove();}catch(e){} },2200); }
 
   function renderTrainPanel(){
@@ -2729,7 +3101,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <div id="plOut"></div>
           </div>
           <div class="quick-box">
-            <div class="h-title" style="font-size:17px;margin-bottom:12px">今日训练 · 快捷记录</div>
+            <div class="h-title" style="font-size:17px;margin-bottom:10px">今日训练 · 快捷记录</div>
+            <div class="quick-line">
+              <input id="trQuickText" type="text" placeholder="直接写：卧推 60 5x5 ／ 深蹲 3x10 ／ 引体 4x8">
+              <button class="btn ghost sm" id="trQuickAdd">记一条</button>
+            </div>
+            <div class="tr-actions" style="margin:10px 0 0"><button class="btn ghost sm" id="trRepeat">重复上次训练</button></div>
             <div class="sel-ex" id="trSelBox">未选择动作，请在左侧搜索并点击</div>
             <div id="trDetail"></div>
             <div class="f-row" style="margin-top:14px">
@@ -2737,13 +3114,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               <div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-step="-1">−</button><input id="trReps" type="number" value="10" min="1" max="100"><button data-step="1">+</button></div></div>
               <div class="f-field"><label class="f-label">重量 kg</label><input id="trWeight" type="number" value="0" min="0" step="0.5" placeholder="自重填 0"></div>
             </div>
-            <button class="btn sm" id="trAdd" style="margin-top:14px">加入今日训练</button>
+            <div class="tr-actions" style="margin-top:14px"><button class="btn sm" id="trAdd">加入今日训练</button><button class="btn ghost sm" id="trAgain">沿用上次</button></div>
           </div>
           <div class="today-box">
             <div class="h-title" style="font-size:15px;margin-bottom:8px">今日已记录</div>
             <div id="trToday"></div>
             <div class="tr-sum" id="trSum"></div>
-            <div class="tr-actions"><button class="btn sm" id="trFinish">完成并保存</button><button class="btn ghost sm" id="trLog">生成健身日志</button></div>
+            <div class="tr-actions"><button class="btn sm" id="trFinish" style="opacity:.75;pointer-events:none">✓ 自动保存已开启</button><button class="btn ghost sm" id="trLog">生成健身日志</button></div>
           </div>
           <div class="today-box">
             <div class="h-title" style="font-size:15px;margin-bottom:4px">近 7 日训练量（组）</div>
@@ -2756,6 +3133,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     renderMyLib();
     trRenderToday();
     bindTrain();
+    const qb0=document.querySelector('.train-side .quick-box');
+    if(qb0) qb0.classList.toggle('ready', !!trSel);
   }
 
   const TR_SYN=[
@@ -2844,6 +3223,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function trSelect(id){
     trSel=id;
     trRenderList();
+    const qbSel=document.querySelector('.train-side .quick-box');
+    if(qbSel) qbSel.classList.add('ready');
     const e=findEx(id); if(!e) return;
     $('trSelBox').innerHTML=`已选：<b>${ENGINE.esc(e.n)}</b> · ${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}`;
     $('trDetail').innerHTML=`
@@ -2886,8 +3267,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(ph) ph.textContent='动画加载中…';
     let done=false, timer=null;
     const ok=url=>{ if(done) return; done=true; clearTimeout(timer); GIF_OK[file]=url; el.src=url; el.style.opacity='1'; if(ph) ph.remove(); };
-    const bad=()=>{ if(done) return; done=true; clearTimeout(timer); if(ph) ph.remove(); const m=el.parentElement; if(m){ el.remove(); m.insertAdjacentHTML('beforeend','<div class="gif-fail">动画加载失败，请检查网络后重试</div>'); } };
-    timer=setTimeout(bad,15000);
+    const bad=()=>{ if(done) return; done=true; clearTimeout(timer); if(ph) ph.remove(); const m=el.parentElement; if(m){ el.remove(); m.insertAdjacentHTML('beforeend','<div class="gif-fail">动画没加载出来，照下方动作要领练即可</div>'); } };
+    timer=setTimeout(bad,4000);
     trRaceGif(GIF_PRI,file).then(ok).catch(()=>trRaceGif(GIF_ALT,file).then(ok).catch(bad));
   }
 
@@ -2935,7 +3316,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const box=$('myLib'); if(!box) return;
     const favs=(train.favs||[]).map(findEx).filter(Boolean);
     if(!favs.length){
-      box.innerHTML=`<div class="my-lib"><div class="my-head">我的动作库 <span class="my-count">0</span></div><div class="my-empty">还没有收藏动作。选中动作后点「☆ 收藏到我的动作库」，常用动作会按部位归类在这里。</div></div>`;
+      const HOT=['深蹲','卧推','硬拉','引体','划船','平板支撑'];
+      const hot=HOT.map(k=>allExercises().filter(e=>e.n.includes(k)).sort((a,b)=>a.n.length-b.n.length)[0]).filter(Boolean);
+      const hotHtml=hot.length?`<div class="my-hot">${hot.map(e=>`<span class="lib-chip" data-hot="${e.id}">${ENGINE.esc(e.n)}</span>`).join('')}</div>`:'';
+      box.innerHTML=`<div class="my-lib"><div class="my-head">我的动作库 <span class="my-count">0</span><span class="my-tip">先点热门动作试一下</span></div><div class="my-empty">还没有收藏动作，点下面任意一个直接开始记录；收藏后常用动作会按部位归类。</div>${hotHtml}</div>`;
+      box.querySelectorAll('[data-hot]').forEach(c=>c.onclick=()=>trSelect(c.dataset.hot));
       return;
     }
     const byPart={}; favs.forEach(e=>{ (byPart[e.p]=byPart[e.p]||[]).push(e); });
@@ -3056,11 +3441,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const box=$('trToday'); if(!box) return;
     const items=train.items;
     box.innerHTML = items.length ? items.map((i,idx)=>`
-      <div class="tr-row"><span class="tr-name">${ENGINE.esc(i.name)}</span><span class="tr-detail">${i.dur?(i.dur+' 分钟'):(i.sets+'×'+i.reps+(i.weight>0?' @'+i.weight+'kg':' 自重'))}</span><button data-rm="${idx}">删除</button></div>`).join('')
+      <div class="tr-row"><span class="tr-name">${ENGINE.esc(i.name)}</span><span class="tr-detail">${i.dur?(i.dur+' 分钟'):(i.sets+'×'+i.reps+(i.weight>0?' @'+i.weight+'kg':' 自重'))}</span><button class="tr-plus" data-add="${idx}" title="组间点一下，加一组">+1 组</button><button data-rm="${idx}">删除</button></div>`).join('')
       : '<div class="tr-row" style="color:var(--tx3);border:none">还没有添加动作，先从左侧选一个动作。</div>';
     const sets=items.reduce((a,b)=>a+b.sets,0), reps=items.reduce((a,b)=>a+b.sets*b.reps,0), vol=items.reduce((a,b)=>a+b.sets*b.reps*b.weight,0);
     if($('trSum')) $('trSum').innerHTML=`<span><b>${items.length}</b>动作</span><span><b>${sets}</b>总组数</span><span><b>${reps}</b>总次数</span><span><b>${Math.round(vol)}</b>容量kg</span>`;
-    box.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{ train.items.splice(+b.dataset.rm,1); saveTrain(); trRenderToday(); }));
+    box.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{
+      const rm=train.items[+b.dataset.rm]; const d=trToday();
+      train.items.splice(+b.dataset.rm,1);
+      if(rm) train.records=(train.records||[]).filter(r=>!(r.date===d && r.exId===rm.exId));
+      saveTrain(); trRenderToday(); refreshHome();
+    }));
+    box.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>{
+      const i=train.items[+b.dataset.add]; if(!i) return;
+      i.sets=(i.sets||1)+1; saveTrain(); syncTodayRecords(); trRenderToday(); refreshHome();
+      trToast(ENGINE.esc(i.name)+' 已记 '+i.sets+' 组');
+    }));
     // 近7日
     const days=[]; for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d); }
     const keys=days.map(d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
@@ -3123,25 +3518,67 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       trRenderPlan();
       if(trPlan.length) trToast('已生成 '+part+' 日计划');
     });
+    function parseQuickTrain(txt){
+      let s=(txt||'').trim(); if(!s) return null;
+      let sets=3, reps=10, weight=0;
+      const sm=s.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+      if(sm){ sets=Math.max(1,Math.min(20,+sm[1])); reps=Math.max(1,Math.min(100,+sm[2])); s=s.replace(sm[0],' '); }
+      const wm=s.match(/(\d+(?:\.\d+)?)\s*(?:kg|公斤)?\s*$/i);
+      let name=s.trim();
+      if(wm){ weight=parseFloat(wm[1])||0; name=s.replace(wm[0],'').trim(); }
+      name=name.replace(/[，,。;；:：]+/g,' ').trim();
+      if(!name) return null;
+      const cand=allExercises().filter(e=>e.n.includes(name) || e.en.toLowerCase().includes(name.toLowerCase())).sort((a,b)=>a.n.length-b.n.length)[0];
+      return { name:cand?cand.n:name, part:cand?cand.p:'其他', sets, reps, weight, exId:cand?cand.id:('cuq'+Date.now().toString(36)) };
+    }
+    if($('trQuickAdd')){
+      const addQuick=()=>{
+        const p=parseQuickTrain($('trQuickText')?$('trQuickText').value:'');
+        if(!p){ trToast('写成「名称 重量 组×次」，如：卧推 60 5x5'); return; }
+        train.items.push({exId:p.exId, name:p.name, part:p.part, sets:p.sets, reps:p.reps, weight:p.weight});
+        saveTrain(); syncTodayRecords(); trRenderToday(); refreshHome();
+        if($('trQuickText')) $('trQuickText').value='';
+        trToast('已记：'+p.name+' '+p.sets+'×'+p.reps+(p.weight>0?' @'+p.weight+'kg':''));
+      };
+      $('trQuickAdd').addEventListener('click', addQuick);
+      $('trQuickText').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addQuick(); } });
+    }
+    if($('trRepeat')){
+      $('trRepeat').addEventListener('click',()=>{
+        const dates=Array.from(new Set((train.records||[]).map(r=>r.date))).sort();
+        if(!dates.length){ trToast('还没有历史训练，先记一次'); return; }
+        const d=dates[dates.length-1];
+        const list=train.records.filter(r=>r.date===d);
+        list.forEach(r=>train.items.push({exId:r.exId, name:r.name, part:r.part, sets:r.sets, reps:r.reps, weight:r.weight}));
+        saveTrain(); syncTodayRecords(); trRenderToday(); refreshHome(); trToast('已导入 '+String(d).slice(5)+' 的 '+list.length+' 个动作，已在今日记录中生效');
+      });
+    }
     $('trAdd').addEventListener('click',()=>{
       if(!trSel){ trToast('请先在左侧选择一个动作'); return; }
       const e=findEx(trSel); if(!e) return;
       train.items.push({exId:trSel, name:e.n, part:e.p, sets:Math.max(1,parseInt($('trSets').value,10)||1), reps:Math.max(1,parseInt($('trReps').value,10)||1), weight:Math.max(0,parseFloat($('trWeight').value)||0)});
-      saveTrain(); trRenderToday(); trToast('已加入：'+e.n);
+      saveTrain(); syncTodayRecords(); trRenderToday(); refreshHome(); trToast('已加入：'+e.n);
     });
-    $('trFinish').addEventListener('click',()=>{
-      if(!train.items.length){ trToast('还没有可保存的组次'); return; }
-      const d=trToday();
-      train.items.forEach(i=>train.records.push({date:d, exId:i.exId, name:i.name, part:i.part, sets:i.sets, reps:i.reps, weight:i.weight, dur:i.dur||0}));
-      train.items=[]; saveTrain(); trRenderToday(); trToast('今日训练已保存');
+    $('trAgain').addEventListener('click',()=>{
+      if(!trSel){ trToast('请先选择一个动作'); return; }
+      const e=findEx(trSel); if(!e) return;
+      const last=(train.items||[]).slice().reverse().find(x=>x.exId===trSel);
+      const sets=last?last.sets:(parseInt($('trSets').value,10)||3);
+      const reps=last?last.reps:(parseInt($('trReps').value,10)||10);
+      const weight=last?last.weight:(parseFloat($('trWeight').value)||0);
+      train.items.push({exId:trSel, name:e.n, part:e.p, sets, reps, weight});
+      saveTrain(); syncTodayRecords(); trRenderToday(); refreshHome(); trToast('已加入：'+e.n+' '+sets+'×'+reps);
     });
+    /* 即时保存后不再需要手动完成操作；保留按钮作为状态提示 */
+    if($('trFinish')) $('trFinish').addEventListener('click',()=>trToast('训练内容已实时保存，无需手动操作'));
     $('trLog').addEventListener('click',()=>{
       const d=trToday();
       const list=train.items.length?train.items:train.records.filter(r=>r.date===d);
       if(!list.length){ trToast('还没有训练记录'); return; }
       const fitType=settings.types.find(t=>t.key==='fit') || settings.types.find(t=>/健身|运动/.test(t.label)) || settings.types[0];
       const txt='今日训练：'+list.map(i=>i.dur?(i.name+' '+i.dur+'分钟'):(i.name+' '+i.sets+'×'+i.reps+(i.weight>0?'@'+i.weight+'kg':'（自重）'))).join('、');
-      logs.push({id:'tr'+Date.now(), type:fitType.key, tags:'力量', score:3, mood:8, content:txt, time:new Date().toISOString()});
+      const fitTag=(typeTags(fitType.key)||[]).find(t=>/力量|训练|健身/.test(t)) || '';
+      logs.push({id:'tr'+Date.now(), type:fitType.key, tags:fitTag, score:3, mood:5, content:txt, time:new Date().toISOString()});
       save(); renderLogs(); markStepIdx(1); trToast('已生成一条健身日志');
     });
   }
@@ -3163,7 +3600,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <span class="log-type ${typeCls(l.type)}" style="color:${colorFor(l.type)};border-color:${colorFor(l.type)}">${ENGINE.esc(typeLabel(l.type))}</span>
           ${l.tags?`<span class="tag">${ENGINE.esc(l.tags)}</span>`:''}
           <span class="log-score">精力 ${'●'.repeat(l.score||3)}${'○'.repeat(5-(l.score||3))} · 情绪 ${moodText(l.mood)}</span>
-          <span class="log-time">${fmtTime(l.time)}</span>
+          <span class="log-time" data-lid="${l.id}" title="点击修改日期，可补记昨天">${fmtTime(l.time)}<i>改</i></span>
         </div>
         <div class="log-body">${ENGINE.esc(l.content)}</div>
         <div class="edit-actions">
@@ -3211,7 +3648,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         item.innerHTML=`
           <div class="edit-form">
             <div class="f-row"><div class="f-field"><label class="f-label">类型</label><select id="eType">${typeOpts}</select></div><div class="f-field"><label class="f-label">标签（下拉选择）</label><select id="eTags"></select><div class="tag-list" id="eChips"></div></div></div>
-            <div class="f-row"><div class="f-field"><label class="f-label">精力 1-5</label><input type="number" id="eScore" min="1" max="5" value="${l.score||3}"></div><div class="f-field"><label class="f-label">情绪 1-10</label><input type="number" id="eMood" min="1" max="10" value="${l.mood||5}"></div></div>
+            <div class="f-row"><div class="f-field"><label class="f-label">精力 1-5</label><input type="number" id="eScore" min="1" max="5" value="${l.score||3}"></div><div class="f-field"><label class="f-label">情绪（1–5 档）</label><div class="energy-row" style="display:flex;align-items:center;gap:10px"><input type="range" id="eMood" min="1" max="5" value="${moodNorm(l.mood)}" style="flex:1"><span class="log-score" id="eMoodShow">${moodText(l.mood)}</span></div></div></div>
             <textarea id="eContent" style="min-height:80px">${ENGINE.esc(l.content)}</textarea>
             <div class="edit-actions">
               <button class="btn sm" data-save="${l.id}">保存</button>
@@ -3221,13 +3658,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         const eTags=item.querySelector('#eTags');
         fillEditTags(l.type, editChips);
         eTags.onchange=()=>{ const v=eTags.value; if(v && !editChips.includes(v)){ editChips.push(v); renderEChips(editChips); } eTags.selectedIndex=-1; };
+        const eMoodEl=item.querySelector('#eMood');
+        if(eMoodEl) eMoodEl.addEventListener('input',()=>{ const s=item.querySelector('#eMoodShow'); if(s) s.textContent=moodText(eMoodEl.value); });
         const eTypeEl=item.querySelector('#eType');
         eTypeEl.onchange=()=>{ const tk=eTypeEl.value; editChips=String(l.tags||'').split(',').filter(t=>t && typeTags(tk).includes(t)); fillEditTags(tk, editChips); };
         item.querySelector('[data-save]').addEventListener('click',()=>{
           l.type=item.querySelector('#eType').value;
           l.tags=editChips.join(',');
           l.score=Math.max(1,Math.min(5,parseInt(item.querySelector('#eScore').value,10)||3));
-          l.mood=Math.max(1,Math.min(10,parseInt(item.querySelector('#eMood').value,10)||5));
+          l.mood=Math.max(1,Math.min(5,parseInt(item.querySelector('#eMood').value,10)||3));
           l.content=item.querySelector('#eContent').value.trim();
           save(); renderLogs(); renderLogsPanel();
         });
@@ -3542,6 +3981,112 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return `<div class="profile-summary"><h3>基础档案（分析上下文）</h3><ul>${items}</ul><div class="note">以下为你在「设置 · 人物档案」中填写的基础信息，Agent 将把它作为固定上下文用于本次及后续分析。</div></div>`;
   }
 
+  /* ---------- 首页仪表板 ---------- */
+  const dk=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  function renderHome(){
+    const t=new Date(), tk=dk(t);
+    const tl=logs.filter(l=>dk(new Date(l.time))===tk);
+    const tt=train.records.filter(r=>r.date===tk);
+    const sets=tt.reduce((a,b)=>a+(b.sets||0),0);
+    const avg=(a,k)=>a.length?(a.reduce((x,y)=>x+(k(y)||0),0)/a.length):null;
+    const sc=avg(tl,l=>l.score), md=avg(tl,l=>moodNorm(l.mood));
+    const f1=v=>v==null?'—':(Math.round(v*10)/10).toFixed(1);
+    const mw=md==null?'':(md<=1.5?'很糟':md<=2.5?'低落':md<=3.5?'一般':md<=4.5?'不错':'很好');
+    const daySet=new Set(logs.map(l=>dk(new Date(l.time))).concat(train.records.map(r=>r.date||'')));
+    let streak=0;
+    for(let i=0;i<500;i++){
+      const d=new Date(); d.setDate(d.getDate()-i);
+      if(daySet.has(dk(d))) streak++;
+      else if(i===0) continue;
+      else break;
+    }
+    const anyKeys=Array.from(daySet).filter(Boolean).sort();
+    const lastAny=anyKeys.length?anyKeys[anyKeys.length-1]:null;
+    const lastGap=lastAny?Math.round((new Date(tk)-new Date(lastAny))/864e5):null;
+    if($('homeSub')) $('homeSub').textContent = streak>1
+      ? `今天 ${t.getMonth()+1} 月 ${t.getDate()} 日 · 已连续 ${streak} 天有记录`
+      : (lastGap!=null ? `${t.getMonth()+1} 月 ${t.getDate()} 日 · 上次记录在 ${lastGap} 天前`
+      : `${t.getMonth()+1} 月 ${t.getDate()} 日 · 写下第一条，画像就开始长出来`);
+    if($('homeToday')) $('homeToday').innerHTML = `
+      <div class="hc"><span class="hc-k">今天记录</span><span class="hc-v">${tl.length}<em>条</em></span></div>
+      <div class="hc"><span class="hc-k">今天训练</span><span class="hc-v">${sets}<em>组</em></span></div>
+      <div class="hc"><span class="hc-k">精力 / 情绪</span><span class="hc-v">${f1(sc)}<em>${mw?('/ '+mw):'/ —'}</em></span></div>
+      <div class="hc"><span class="hc-k">${streak?'连续打卡':'上次记录'}</span><span class="hc-v">${streak?(streak+'<em>天</em>'):(lastGap!=null?(lastGap+'<em>天前</em>'):'<em>还没有</em>')}</span></div>`;
+    // 热力图
+    const cnt={};
+    logs.forEach(l=>{ const k=dk(new Date(l.time)); cnt[k]=(cnt[k]||0)+1; });
+    train.records.forEach(r=>{ if(r.date) cnt[r.date]=(cnt[r.date]||0)+(r.sets||1); });
+    let cells='';
+    for(let i=83;i>=0;i--){
+      const d=new Date(); d.setDate(d.getDate()-i); const k=dk(d), c=cnt[k]||0;
+      const lv=c===0?0:c<=2?1:c<=5?2:c<=9?3:4;
+      cells+=`<i data-l="${lv}" title="${k} · ${c} 项"></i>`;
+    }
+    if($('homeHm')) $('homeHm').innerHTML=cells;
+    // 信号
+    const sigs=[];
+    const tds=train.records.map(r=>r.date).filter(Boolean).sort();
+    const last=tds.length?tds[tds.length-1]:null;
+    if(last){
+      const gap=Math.round((new Date(tk)-new Date(last))/864e5);
+      if(gap===0) sigs.push(['good','今天已经练过了']);
+      else if(gap>=3) sigs.push(['warn',`已经 ${gap} 天没训练了`]);
+      else sigs.push(['good',`最近一次训练在 ${gap} 天前`]);
+    } else sigs.push(['warn','还没有训练记录']);
+    const weekC=logs.filter(l=>Date.now()-new Date(l.time)<=7*864e5).length;
+    const prevC=logs.filter(l=>{const a=Date.now()-new Date(l.time); return a>7*864e5&&a<=14*864e5;}).length;
+    if(prevC) sigs.push([weekC>=prevC?'good':'warn',`本周 ${weekC} 条记录，上周 ${prevC} 条`]);
+    else if(weekC) sigs.push(['good',`本周已记 ${weekC} 条`]);
+    if(!tl.length) sigs.push(['warn','今天还没有记录，写一句就能存']);
+    const corr=corrTrainingEnergy();
+    if(corr){
+      const d=corr.diff, txt=`训练日次日精力 ${d>=0?'+':''}${d.toFixed(1)}（训练后 ${corr.n} 天 vs 其他 ${corr.n2} 天）`;
+      sigs.push([d>=0.5?'good':(d<=-0.5?'warn':'good'), txt]);
+    }
+    if($('homeSignals')) $('homeSignals').innerHTML = sigs.map(x=>`<div class="sig ${x[0]==='warn'?'warn':''}">${ENGINE.esc(x[1])}</div>`).join('');
+  }
+  function corrTrainingEnergy(){
+    const byDay={};
+    logs.forEach(l=>{ const k=dk(new Date(l.time)); (byDay[k]=byDay[k]||[]).push(l.score||3); });
+    const tds=new Set(train.records.map(r=>r.date).filter(Boolean));
+    const A=[], B=[];
+    Object.keys(byDay).forEach(k=>{
+      const d=new Date(k); d.setDate(d.getDate()-1);
+      const m=byDay[k].reduce((a,b)=>a+b,0)/byDay[k].length;
+      (tds.has(dk(d))?A:B).push(m);
+    });
+    if(A.length<3||B.length<3) return null;
+    const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+    return {diff:avg(A)-avg(B), n:A.length, n2:B.length, a:avg(A), b:avg(B)};
+  }
+  function refreshHome(){ if(currentPage==='home') renderHome(); }
+
+  /* ---------- 首屏摘要卡 ---------- */
+  function briefHtml(){
+    const now=Date.now(), ms7=7*864e5;
+    const inWin=(l,a,b)=>{ const t=now-new Date(l.time).getTime(); return t>a && t<=b; };
+    const r=logs.filter(l=>inWin(l,-1,ms7)), p=logs.filter(l=>inWin(l,ms7,2*ms7));
+    const avg=(arr,k)=>arr.length? (arr.reduce((x,y)=>x+(y[k]||0),0)/arr.length) : null;
+    const scR=avg(r,'score'), scP=avg(p,'score'), mdR=avg(r,'mood'), mdP=avg(p,'mood');
+    const f1=v=>v==null?'—':(Math.round(v*10)/10).toFixed(1);
+    const d7=train.records.filter(x=>{ const t=now-new Date(x.date).getTime(); return t<=ms7; });
+    const sets7=d7.reduce((a,b)=>a+(b.sets||0),0);
+    const topPart=(function(){ const m={}; d7.forEach(x=>m[x.part]=(m[x.part]||0)+(x.sets||0)); return Object.keys(m).sort((a,b)=>m[b]-m[a])[0]||'—'; })();
+    const trend = (scR!=null&&scP!=null) ? (scR-scP>0.5?'精力在回升':scR-scP<-0.5?'精力在下滑':'精力基本持平') : '样本还少，再记几天更准';
+    const moodWord = mdR==null?'—':(mdR<=1.5?'很糟':mdR<=2.5?'低落':mdR<=3.5?'一般':mdR<=4.5?'不错':'很好');
+    const signal = (scR!=null&&scP!=null&&scR-scP<-0.5) ? '近 7 天精力明显低于前 7 天，先减一档安排。'
+      : (sets7===0 ? '近 7 天还没有训练记录，本周先补一次。'
+      : (r.length===0 ? '近 7 天没有新记录，画像会停在旧数据上。' : '节奏稳定，保持当前频率即可。'));
+    return `<div class="brief">
+      <div class="brief-card"><span class="brief-k">近 7 天记录</span><span class="brief-v">${r.length} <em>条</em></span><span class="brief-s">${p.length?('前 7 天 '+p.length+' 条'):'首次统计'}</span></div>
+      <div class="brief-card"><span class="brief-k">精力 / 情绪</span><span class="brief-v">${f1(scR)} <em>/ ${moodWord}</em></span><span class="brief-s">${trend}</span></div>
+      <div class="brief-card"><span class="brief-k">近 7 天训练</span><span class="brief-v">${sets7} <em>组</em></span><span class="brief-s">主要部位 ${ENGINE.esc(topPart)}</span></div>
+      <div class="brief-signal">值得注意：${signal}</div>
+      ${(function(){const c=corrTrainingEnergy();return c?`<div class="brief-signal">训练日次日精力 ${c.diff>=0?'+':''}${c.diff.toFixed(1)}（训练后 ${c.n} 天 vs 其他 ${c.n2} 天）</div>`:'';})()}
+    </div>`;
+  }
+  function warnIfStale(){}
+
   /* ---------- 报告渲染 ---------- */
   function renderReport(){
     disposeCharts();
@@ -3554,30 +4099,36 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(currentTab==='profile'){ renderSettingsPanel(); return; }
     if(!logs.length){ body.innerHTML=ENGINE.genEmpty(); return; }
     const d=ENGINE.analyze(logs);
+    const stamp=fmtTime(new Date().toISOString());
     const out={
-      persona:`<h1>个人画像报告 · Persona</h1><div class="kicker">BASED ON ${logs.length} RECORDS · RULE-ENGINE SIM</div>${profileSummaryHtml()}${ENGINE.genPersona(logs,d)}`,
+      persona:`${briefHtml()}${profileSummaryHtml()}<details class="report-fold"><summary>展开完整画像报告 · 共 9 节</summary><h1>个人画像报告 · Persona</h1><div class="kicker">基于 ${logs.length} 条记录 · ${stamp} 生成</div>${ENGINE.genPersona(logs,d)}</details>`,
       plan:`<h1>个性化适配规划 · Plan</h1><div class="kicker">ALIGNED WITH PERSONA</div>${ENGINE.genPlan(logs,d)}`,
       trend:`<h1>趋势推演报告 · Scenario</h1><div class="kicker">BEHAVIOR EXTRAPOLATION · NOT PROPHECY</div>${ENGINE.genTrend(logs,d)}`
     };
     body.innerHTML=out[currentTab];
-    btn.textContent = currentTab==='persona'?'重新生成画像':currentTab==='plan'?'重新生成规划':'重新推演';
+    if(btn) btn.textContent = '已自动同步 · '+logs.length+' 条记录';
+    document.querySelectorAll('details.report-fold').forEach(dt=>{
+      if(dt.__bound) return; dt.__bound=true;
+      dt.addEventListener('toggle',()=>{ if(dt.open) chartInsts.forEach(c=>{ try{c.resize();}catch(e){} }); });
+    });
   }
 
   /* ---------- 页面路由 ---------- */
-  const PAGE_EL={record:'pageRecord',agent:'pageAgent',log:'pageLog',setting:'pageSetting'};
-  const PAGE_NAV={record:'navRecord',agent:'navAgent',log:'navLog',setting:'navSet'};
+  const PAGE_EL={home:'pageHome',record:'pageRecord',agent:'pageAgent',log:'pageLog',setting:'pageSetting'};
+  const PAGE_NAV={home:'navHome',record:'navRecord',agent:'navAgent',log:'navLog',setting:'navSet'};
   const SLOT={record:'slotRecord',agent:'slotAgent',log:'slotLog',setting:'slotSet'};
   const TAB_PAGE={persona:'agent',plan:'agent',trend:'agent',logs:'log',stats:'log',train:'record',profile:'setting'};
   const PAGE_TAB={agent:['persona','plan','trend'],log:['logs','stats']};
   let currentPage='record';
 
   function showPage(p){
-    ['pageRecord','pageAgent','pageLog','pageSetting'].forEach(id=>{ const el=$(id); if(el) el.hidden=true; });
+    ['pageHome','pageRecord','pageAgent','pageLog','pageSetting'].forEach(id=>{ const el=$(id); if(el) el.hidden=true; });
     const el=$(PAGE_EL[p]); if(el) el.hidden=false;
     const slot=$(SLOT[p]), body=$('reportBody');
     if(slot&&body&&body.parentNode!==slot) slot.appendChild(body);
     currentPage=p;
-    ['navRecord','navAgent','navLog','navSet'].forEach(id=>{ const n=$(id); if(n) n.classList.toggle('on', id===PAGE_NAV[p]); });
+    ['navHome','navRecord','navAgent','navLog','navSet'].forEach(id=>{ const n=$(id); if(n) n.classList.toggle('on', id===PAGE_NAV[p]); });
+    document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on', b.dataset.page===p));
   }
   function syncTabs(){ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.tab===currentTab)); }
   function markStepIdx(n){
@@ -3586,6 +4137,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     ['navRecord','navAgent','navLog','navSet'].forEach(id=>{ const el=$(id); if(el) el.classList.toggle('on', id===PAGE_NAV[pg]); });
   }
   function openPage(p){
+    if(p==='home'){ showPage('home'); syncTabs(); renderHome(); window.scrollTo({top:0}); return; }
     if(p==='record') currentTab='train';
     else if(PAGE_TAB[p]) currentTab = PAGE_TAB[p].includes(currentTab) ? currentTab : PAGE_TAB[p][0];
     else currentTab='profile';
@@ -3595,15 +4147,47 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const pg=TAB_PAGE[tab]||'agent';
     currentTab=tab; showPage(pg); syncTabs(); renderReport(); window.scrollTo({top:0});
   }
-  ['navRecord','navAgent','navLog','navSet'].forEach(id=>{
+  ['navHome','navRecord','navAgent','navLog','navSet'].forEach(id=>{
     const el=$(id); if(!el) return;
     el.addEventListener('click',()=>openPage(el.dataset.page));
   });
+  function bindTabbar(){
+    document.querySelectorAll('#tabbar button').forEach(b=>{
+      if(b.__b) return; b.__b=1;
+      b.addEventListener('click',()=>openPage(b.dataset.page));
+    });
+  }
+  bindTabbar();
+  window.addEventListener('DOMContentLoaded',bindTabbar);
+  window.addEventListener('load',bindTabbar);
   document.addEventListener('click',e=>{
     const t=e.target.closest('.tab'); if(!t||!t.dataset.tab) return;
     goTab(t.dataset.tab);
   });
   $('btnGen').addEventListener('click',()=>renderReport());
+  ['homeGoRec','homeGoAgent'].forEach((id,i)=>{ const b=$(id); if(b) b.addEventListener('click',()=>openPage(i?'agent':'record')); });
+
+  /* 日志改日期（补记昨天） */
+  const P2=n=>String(n).padStart(2,'0');
+  document.addEventListener('click',e=>{
+    const el=e.target.closest && e.target.closest('.log-time[data-lid]'); if(!el) return;
+    const cur=logs.find(x=>x.id===el.dataset.lid); if(!cur) return;
+    const d=new Date(cur.time);
+    const inp=document.createElement('input');
+    inp.type='date'; inp.className='log-date'; inp.dataset.lid=cur.id;
+    inp.value=d.getFullYear()+'-'+P2(d.getMonth()+1)+'-'+P2(d.getDate());
+    el.replaceWith(inp); try{ inp.focus(); }catch(_){}
+  });
+  document.addEventListener('change',e=>{
+    const inp=e.target;
+    if(!inp || !inp.classList || !inp.classList.contains('log-date') || !inp.value) return;
+    const cur=logs.find(x=>x.id===inp.dataset.lid); if(!cur) return;
+    const v=inp.value.split('-').map(Number);
+    const d=new Date(cur.time); d.setFullYear(v[0],v[1]-1,v[2]);
+    cur.time=d.toISOString();
+    logs.sort((a,b)=>new Date(a.time)-new Date(b.time));
+    save(); renderLogs(); renderReport(); trToast('已改到 '+inp.value);
+  });
   $('btnTrain').addEventListener('click',()=>{
     if(currentPage!=='record') openPage('record');
     const slot=$('slotRecord'); if(slot) slot.scrollIntoView({behavior:'smooth',block:'start'});
@@ -3614,7 +4198,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   refreshLogForm();
   renderLogs();
   renderReport();
-  openPage('record');
+  openPage('home');
 })();
 </script>
 <script>
@@ -3707,8 +4291,69 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     setMsg(on()? ('已连接 '+base()) : '未配置：数据只存本机浏览器');
   };
 
+  (function recSeg(){
+    const seg=document.getElementById('recSeg');
+    const ink=document.getElementById('recSegInk');
+    const wrapLog=document.getElementById('recLogWrap');
+    const wrapTrain=document.getElementById('recTrainWrap');
+    const guide=document.getElementById('recGuide');
+    if(!seg) return;
+    const KEY='selfagent_recseg_v1';
+    const isMob=()=>window.matchMedia('(max-width:640px)').matches;
+    function paint(panel, animate){
+      const btn=[...seg.querySelectorAll('.m-seg-btn')].find(b=>b.dataset.panel===panel) || seg.querySelector('.m-seg-btn');
+      seg.querySelectorAll('.m-seg-btn').forEach(b=>b.classList.toggle('on', b===btn));
+      if(ink) ink.classList.toggle('right', btn.dataset.panel==='log');
+      const mob=isMob();
+      if(wrapTrain) wrapTrain.hidden = mob ? btn.dataset.panel!=='train' : false;
+      if(wrapLog) wrapLog.hidden = mob ? btn.dataset.panel!=='log' : false;
+      if(guide) guide.hidden = !(mob && btn.dataset.panel==='train');
+      if(mob && animate){
+        const el = btn.dataset.panel==='train' ? wrapTrain : wrapLog;
+        if(el){ el.classList.remove('panel-in'); void el.offsetWidth; el.classList.add('panel-in'); }
+      }
+    }
+    function current(){ try{ return localStorage.getItem(KEY) || 'train'; }catch(e){ return 'train'; } }
+    seg.addEventListener('click', ev=>{
+      const b=ev.target.closest('.m-seg-btn'); if(!b) return;
+      paint(b.dataset.panel, true);
+      try{ localStorage.setItem(KEY, b.dataset.panel); }catch(e){}
+    });
+    let lastMob=isMob();
+    window.addEventListener('resize', ()=>{
+      const m=isMob();
+      if(m!==lastMob){ lastMob=m; paint(current(), false); }
+    });
+    const dtl=document.getElementById('logDetail');
+    if(dtl && isMob()) dtl.removeAttribute('open');
+    paint(current(), false);
+  })();
+
+  document.addEventListener('click', function(ev){
+    const b=ev.target.closest && ev.target.closest('#btnMore'); if(!b) return;
+    const ex=document.getElementById('quickExtra'); if(ex) ex.classList.toggle('open');
+  });
+
   window.addEventListener('load', function(){ if(on()) pull(true); });
 })();
 </script>
+<button class="fab" id="fabQuick" title="快速记录">+</button>
+<div class="fab-overlay" id="fabOverlay">
+  <div class="fab-panel">
+    <textarea id="fabText" placeholder="记一笔：跑了5公里 / 加班到十点，很焦虑 / 卧推 60 5x5"></textarea>
+    <div class="fab-bar">
+      <span class="fab-hint">自动识别日志或训练（如：卧推 60 5x5）<br>Enter 直接保存 · Shift+Enter 换行</span>
+      <button class="btn sm" id="fabSave">存下</button>
+    </div>
+  </div>
+  <button class="fab-close" id="fabClose">关闭 ✕</button>
+</div>
+<nav class="m-tabbar" id="tabbar">
+  <button data-page="home" class="on"><span class="ti">·</span>首页</button>
+  <button data-page="record"><span class="ti">·</span>记录</button>
+  <button data-page="agent"><span class="ti">·</span>分析</button>
+  <button data-page="log"><span class="ti">·</span>日志</button>
+  <button data-page="setting"><span class="ti">·</span>设置</button>
+</nav>
 </body>
 </html>
