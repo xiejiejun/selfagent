@@ -1295,8 +1295,8 @@ border:1px solid var(--line);background:rgba(255,255,255,.02);cursor:pointer;col
 .bm-cell em{font-style:normal;font-size:10px;color:var(--tx3)}
 .bm-cell.ok{border-color:rgba(61,220,191,.35);background:rgba(61,220,191,.05)}
 .bm-cell.ok b{color:var(--accent)}
-.bm-cell.rest{border-color:rgba(231,197,106,.4);background:rgba(231,197,106,.06)}
-.bm-cell.rest b,.bm-cell.rest em{color:#e7c56a}
+.bm-cell.resting{border-color:rgba(231,197,106,.4);background:rgba(231,197,106,.06)}
+.bm-cell.resting b,.bm-cell.resting em{color:#e7c56a}
 .bm-cell.done{border-color:var(--line);background:rgba(255,255,255,.015);opacity:.62}
 .fm-hold-wrap{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .fm-hold-btn{width:100%;min-height:52px;padding:12px 14px;border-radius:12px;border:1px solid rgba(92,245,214,.4);
@@ -4155,7 +4155,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!w) return 0;
     return w + weightStep(findEx(r.exId));
   }
-  function restClear(){ document.querySelectorAll('.rest').forEach(x=>x.remove()); if(window.__restTimer){ clearInterval(window.__restTimer); window.__restTimer=null; } }
+  function restClear(){ document.querySelectorAll('.rest').forEach(x=>{ const box=x.querySelector('.rest-box,.pill-body'); if(box) x.remove(); }); if(window.__restTimer){ clearInterval(window.__restTimer); window.__restTimer=null; } }
   function restNext(r){
     const gs=ensureGroups(r);
     return gs.find(g=>!g.done)||null;
@@ -4582,7 +4582,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 器械 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
             <div class="bodymap" id="bodyMap">${['肩','胸','背','腰腹','臂','腿'].map(p=>{
               const rc=partRecovery(p);
-              const st=rc.h<24?'done':(rc.h<48?'rest':'ok');
+              const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
               const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
               return `<button class="bm-cell ${st}" data-bmpart="${p}" type="button" aria-label="${p} ${word}"><b>${p}</b><em>${word}</em></button>`;
             }).join('')}</div>
