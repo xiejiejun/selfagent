@@ -1748,6 +1748,54 @@ box-shadow:0 10px 22px -10px #000;transition:border-color .15s,background .15s}
 body:has(#focusMode) .mode-orb{opacity:0;pointer-events:none}
 @keyframes foBreath{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:.8;transform:scale(1.04)}}
 @media(prefers-reduced-motion:reduce){.mode-orb .orb-core::after{animation:none;opacity:.45}}
+
+/* ===== 设置页：分组列表 + 二级面板 ===== */
+.set-top h1{margin:0 0 6px}
+.set-shell{display:block}
+.set-list{display:flex;flex-direction:column;gap:8px}
+.set-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;
+color:var(--tx);font:inherit;cursor:pointer;transition:border-color .15s,background .15s}
+.set-row:hover,.set-row.cur{border-color:var(--line2)}
+.set-row .sr-ico{width:28px;height:28px;flex:0 0 28px;border-radius:9px;display:grid;place-items:center;
+background:var(--panel2);color:var(--accent)}
+.set-row .sr-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.set-row .sr-main b{font-size:14px;font-weight:600;letter-spacing:.01em;color:var(--tx)}
+.set-row .sr-main small{font-size:11.5px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.set-row .sr-arrow{color:var(--tx3);font-size:15px;flex:0 0 auto}
+.set-row .sr-badge{font-size:10.5px;line-height:1;padding:3px 7px;border-radius:999px;
+border:1px solid var(--line2);color:var(--tx3);flex:0 0 auto}
+.set-row .sr-badge.warn{color:var(--risk);border-color:var(--risk)}
+.set-panels{margin-top:16px;display:none}
+.set-panels.open{display:block}
+.set-panel{display:none}
+.set-panel:not([hidden]){display:block}
+.sp-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sp-back{border:1px solid var(--line);background:var(--panel);color:var(--tx2);font:inherit;font-size:12px;
+border-radius:999px;padding:6px 12px;cursor:pointer}
+.sp-top h2{margin:0;font-size:17px;color:var(--tx)}
+.toggle{width:44px;height:26px;border-radius:999px;border:1px solid var(--line2);background:var(--panel2);
+position:relative;cursor:pointer;flex:0 0 44px;padding:0}
+.toggle i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--tx3);
+transition:transform .18s ease,background .18s ease;display:block}
+.toggle[aria-checked="true"]{background:rgba(14,143,122,.16);border-color:var(--accent)}
+.toggle[aria-checked="true"] i{transform:translateX(18px);background:var(--accent)}
+.set-inline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+body:has(#pageSetting:not([hidden])) .mode-orb{opacity:0;pointer-events:none}
+.backup-row[hidden],.imp-area[hidden]{display:none !important}
+.sp-back{padding:7px 14px;font-size:12.5px;color:var(--tx)}
+@media(max-width:999px){
+ .set-shell{padding-bottom:24px}
+ .set-panels.open{padding-bottom:88px}
+ .set-list.hide{display:none}
+ .set-panels.open{margin-top:0}
+}
+@media(min-width:1000px){
+ .set-shell{display:grid;grid-template-columns:330px minmax(0,1fr);gap:22px;align-items:start}
+ .set-panels{display:block;margin-top:0;position:sticky;top:18px}
+ .set-list.hide{display:flex !important}
+ .sp-back{display:none}
+}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -1940,7 +1988,7 @@ body:has(#focusMode) .mode-orb{opacity:0;pointer-events:none}
     <div class="rp-top">
       <div>
         <div class="eyebrow">SETTING · 设置</div>
-        <div class="page-desc">类型与标签、人物档案、本地数据，都在这一页改。</div>
+        <div class="page-desc">档案、记录偏好、训练设置、数据同步，都在这一页改。</div>
       </div>
     </div>
     <div class="report-shell"><div class="body-slot" id="slotSet"></div></div>
@@ -6435,9 +6483,99 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="hint">填写的档案会作为 Agent 分析的固定上下文，与你的记录一起用于生成画像、规划与趋势推演。所有信息仅存本地。</div>
     </form>`;
   }
+  function setSummaries(){
+    const p=profile||{};
+    const ptxt=[(p.gender&&p.gender!=='保密')?p.gender:'',(p.age&&p.age!=='保密')?p.age:'',p.job?String(p.job):'']
+      .filter(Boolean).join(' · ') || (Object.keys(p).length? '已保存档案':'未填写');
+    const tagsN=(settings.types||[]).reduce((a,t)=>a+((t.tags||[]).length),0);
+    const restUser=(typeof train!=='undefined'&&train&&train.restUser)?(train.restUser+'s'):'按动作';
+    const auto=(typeof train!=='undefined'&&train&&train.autoNext)?'开':'关';
+    let cloud='本地存储';
+    try{ const c=JSON.parse(localStorage.getItem('selfagent_cloud_v1')||'null'); if(c&&c.url) cloud='云端已配置'; }catch(e){}
+    let logsN=0; try{ logsN=(logs||[]).length; }catch(e){}
+    const theme=(document.documentElement.getAttribute('data-theme')==='light')?'浅色':'深色';
+    return {
+      profile:ptxt,
+      record:(settings.types||[]).length+' 个类型 · '+tagsN+' 个标签',
+      train:'休息 '+restUser+' · 自动下一组 '+auto,
+      theme:theme,
+      data:cloud+' · '+logsN+' 条日志',
+      about:'v0.9 体验版'
+    };
+  }
+  function setRowIco(k){
+    const m={
+      profile:'<circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.6-3.6 4.2-5.4 7-5.4s5.4 1.8 7 5.4"/>',
+      record:'<path d="M4.5 5.5h8.2l6.8 6.8-7 7-8-8z"/><circle cx="8.3" cy="9.2" r="1.1"/>',
+      train:'<path d="M4 9.5v5M7.2 8v8M16.8 8v8M20 9.5v5M7.2 12h9.6"/>',
+      appearance:'<path d="M20 14.7A8.6 8.6 0 0 1 9.3 4 7.2 7.2 0 1 0 20 14.7z"/>',
+      data:'<ellipse cx="12" cy="6" rx="6.8" ry="2.8"/><path d="M5.2 6v12c0 1.6 3 2.8 6.8 2.8s6.8-1.2 6.8-2.8V6"/><path d="M5.2 12c0 1.6 3 2.8 6.8 2.8s6.8-1.2 6.8-2.8"/>',
+      about:'<circle cx="12" cy="12" r="8.4"/><path d="M12 11v6M12 7.7v.5"/>'
+    };
+    return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(m[k]||'')+'</svg>';
+  }
+  function openSetPanel(key){
+    const panels=$('setPanels'); const list=$('setList');
+    if(!panels) return;
+    let k=key||'';
+    if(k && !panels.querySelector('[data-p="'+k+'"]')) k='';
+    panels.querySelectorAll('.set-panel').forEach(p=>{ p.hidden = !(k && p.dataset.p===k); });
+    panels.classList.toggle('open', !!k);
+    if(list){
+      list.querySelectorAll('.set-row').forEach(r=>r.classList.toggle('cur', r.getAttribute('data-panel')===k));
+      list.classList.toggle('hide', !!k);
+    }
+    window.__setPanel=k;
+    const narrow=window.matchMedia('(max-width:999px)').matches;
+    const rpTop=document.querySelector('#pageSetting .rp-top');
+    if(rpTop) rpTop.style.display=(narrow&&k)?'none':'';
+    const setTop=document.querySelector('#reportBody .set-top');
+    if(setTop) setTop.style.display=(narrow&&k)?'none':'';
+    if(k) try{ window.scrollTo({top:0}); }catch(e){}
+    try{ history.replaceState(null,'', k? '#setting/'+k : '#setting'); }catch(e){}
+  }
+  function syncThemeRow(){
+    const light=document.documentElement.getAttribute('data-theme')==='light';
+    const sw=$('setThemeSwitch'); if(sw) sw.setAttribute('aria-checked', light?'true':'false');
+    const lb=$('themeSum'); if(lb) lb.textContent = light? '浅色':'深色';
+  }
+  (function watchTheme(){
+    if(window.__themeWatch) return;
+    window.__themeWatch=1;
+    try{
+      new MutationObserver(()=>{ try{ syncThemeRow(); }catch(e){} })
+        .observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    }catch(e){}
+  })();
+  function bindSetPanels(){
+    document.querySelectorAll('#setList .set-row[data-panel]').forEach(r=>{
+      r.onclick=()=>{ const k=r.getAttribute('data-panel'); if(k==='appearance') return; openSetPanel(k); };
+    });
+    document.querySelectorAll('[data-spback]').forEach(b=>{ b.onclick=()=>openSetPanel(''); });
+    const sw=$('setThemeSwitch');
+    if(sw) sw.onclick=(ev)=>{ ev.stopPropagation(); const tb=document.getElementById('themeBtn'); if(tb) tb.click(); syncThemeRow(); };
+    const rest=$('setRest');
+    if(rest) rest.onchange=()=>{
+      const v=parseInt(rest.value,10)||0;
+      if(typeof train!=='undefined'&&train){ train.restUser=(v>0?v:null); try{ saveTrain(); }catch(e){} }
+      renderSettingsPanel(); try{ trToast('默认休息：'+(v>0?v+' 秒':'按动作推荐')); }catch(e){}
+    };
+    const auto=$('setAutoNext');
+    if(auto) auto.onclick=()=>{
+      if(typeof train!=='undefined'&&train){ train.autoNext=!train.autoNext; try{ saveTrain(); }catch(e){} }
+      renderSettingsPanel();
+    };
+    syncThemeRow();
+    const hm=/#setting\/([a-z]+)/.exec(location.hash||'');
+    const keep=(hm&&hm[1])||window.__setPanel||'';
+    if(keep) openSetPanel(keep);
+    else if(window.matchMedia('(min-width:1000px)').matches) openSetPanel('profile');
+    else openSetPanel('');
+  }
   function renderSettingsPanel(){
     const body=$('reportBody');
     const saved = Object.keys(profile).length ? `<span class="profile-saved">已保存档案</span>` : '';
+    const sum = setSummaries();
     const typeCards = settings.types.map(t=>{
       const core = t.key==='work'||t.key==='fit'||t.key==='life';
       const tags=(t.tags||[]).map(x=>`<span class="tag">${ENGINE.esc(x)}<button data-deltype-tag="${ENGINE.esc(x)}" data-tk="${t.key}">×</button></span>`).join('');
@@ -6448,52 +6586,120 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <div class="add-row"><input type="text" data-add-type-tag="${t.key}" placeholder="给「${ENGINE.esc(t.label)}」添加标签"><button class="btn ghost sm" data-add-type-tag-btn="${t.key}">添加</button></div>
         </div>`;
     }).join('');
-    body.innerHTML=`
-      <h1>设置 · 档案与类型标签</h1>
-      <div class="kicker">CUSTOMIZE YOUR CATEGORIES, TAGS & PROFILE</div>
 
-      <div class="setting-sec">
-        <h2>类型与标签</h2>
-        <div class="hint" style="margin-bottom:12px">标签归属于类型之下：录入时先选类型，再从该类型下的标签下拉中选取。</div>
-        ${typeCards || '<span class="tag">暂无类型</span>'}
-        <div class="add-row" style="margin-top:14px"><input type="text" id="newTypeName" placeholder="新类型名称，如：学习"><button class="btn ghost sm" id="addType">添加类型</button></div>
+    body.innerHTML = `
+      <div class="set-top">
+        <h1 style="margin:0 0 6px">设置</h1>
+        <div class="kicker">PREFERENCES · PROFILE · DATA</div>
       </div>
 
-      <div class="setting-sec">
-        <h2>人物档案</h2>
-        ${renderProfileForm(saved)}
-      </div>
+      <div class="set-shell">
+        <div class="set-list" id="setList">
+          <button class="set-row" data-panel="profile" type="button">
+            <span class="sr-ico">${setRowIco('profile')}</span>
+            <span class="sr-main"><b>个人档案</b><small>${ENGINE.esc(sum.profile)}</small></span>
+            <span class="sr-arrow">›</span>
+          </button>
+          <button class="set-row" data-panel="record" type="button">
+            <span class="sr-ico">${setRowIco('record')}</span>
+            <span class="sr-main"><b>记录偏好</b><small>${ENGINE.esc(sum.record)}</small></span>
+            <span class="sr-arrow">›</span>
+          </button>
+          <button class="set-row" data-panel="train" type="button">
+            <span class="sr-ico">${setRowIco('train')}</span>
+            <span class="sr-main"><b>训练设置</b><small>${ENGINE.esc(sum.train)}</small></span>
+            <span class="sr-arrow">›</span>
+          </button>
+          <div class="set-row" data-panel="appearance">
+            <span class="sr-ico">${setRowIco('appearance')}</span>
+            <span class="sr-main"><b>外观</b><small id="themeSum">${ENGINE.esc(sum.theme)}</small></span>
+            <button class="toggle" id="setThemeSwitch" role="switch" type="button" aria-checked="${sum.theme==='浅色'?'true':'false'}" aria-label="切换深浅主题"><i></i></button>
+          </div>
+          <button class="set-row" data-panel="data" type="button">
+            <span class="sr-ico">${setRowIco('data')}</span>
+            <span class="sr-main"><b>数据与同步</b><small>${ENGINE.esc(sum.data)}</small></span>
+            <span class="sr-badge${sum.data.indexOf('云端')<0?' warn':''}">${sum.data.indexOf('云端')<0?'⚠ 未连接':'已连接'}</span>
+            <span class="sr-arrow">›</span>
+          </button>
+          <button class="set-row" data-panel="about" type="button">
+            <span class="sr-ico">${setRowIco('about')}</span>
+            <span class="sr-main"><b>关于</b><small>${ENGINE.esc(sum.about)}</small></span>
+            <span class="sr-arrow">›</span>
+          </button>
+        </div>
 
-      <div class="setting-sec">
-        <h2>数据备份</h2>
-        <div class="hint">数据只存在这台设备的浏览器里。换机、清理浏览数据前先导出；iPhone 建议按 Safari「分享 → 添加到主屏幕」长期使用，数据更不易被清理。</div>
-        <div class="backup-row">
-          <button class="btn ghost sm" id="expBtn">导出备份</button>
-          <button class="btn ghost sm" id="impBtn">导入备份</button>
-          <input type="file" id="impFile" accept="application/json,.json" hidden>
-        </div>
-        <textarea class="imp-area" id="impArea" placeholder="把备份 JSON 粘贴到这里" hidden></textarea>
-        <div class="backup-row" id="impDoRow" hidden><button class="btn sm" id="impDo">确认导入</button></div>
-        <div class="backup-msg" id="bakMsg"></div>
-      </div>
+        <div class="set-panels" id="setPanels">
+          <section class="set-panel" data-p="profile" hidden>
+            <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>个人档案</h2></div>
+            ${renderProfileForm(saved)}
+          </section>
 
-      <div class="setting-sec">
-        <h2>云端数据库</h2>
-        <div class="hint">可选。把日志、人物档案、训练记录存到云端 Postgres（Supabase 免费层），换设备或清缓存后可恢复，并可按接口查询。不填则仅存本机浏览器。</div>
-        <div class="cloud-grid">
-          <input type="text" id="cloudUrl" placeholder="项目 URL，如 https://abcd.supabase.co" autocomplete="off">
-          <input type="text" id="cloudKey" placeholder="anon public key" autocomplete="off">
-          <input type="text" id="cloudSecret" placeholder="访问口令（自定义一串字符，用于隔离你的数据）" autocomplete="off">
+          <section class="set-panel" data-p="record" hidden>
+            <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>记录偏好</h2></div>
+            <div class="hint" style="margin-bottom:12px">标签归属于类型之下：录入时先选类型，再从该类型下的标签下拉中选取。</div>
+            ${typeCards || '<span class="tag">暂无类型</span>'}
+            <div class="add-row" style="margin-top:14px"><input type="text" id="newTypeName" placeholder="新类型名称，如：学习"><button class="btn ghost sm" id="addType">添加类型</button></div>
+          </section>
+
+          <section class="set-panel" data-p="train" hidden>
+            <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>训练设置</h2></div>
+            <div class="setting-sec">
+              <div class="set-inline">
+                <div><b style="font-size:13.5px">默认休息时长</b><div class="hint" style="margin:4px 0 0">填 0 表示按动作自动推荐</div></div>
+                <div style="display:flex;align-items:center;gap:6px"><input type="number" id="setRest" min="0" max="300" step="5" value="${(typeof train!=='undefined'&&train&&train.restUser)?train.restUser:0}" style="width:76px"><span class="hint" style="margin:0">秒</span></div>
+              </div>
+            </div>
+            <div class="setting-sec">
+              <div class="set-inline">
+                <div><b style="font-size:13.5px">自动下一组</b><div class="hint" style="margin:4px 0 0">休息结束自动跳到下一组</div></div>
+                <button class="toggle" id="setAutoNext" role="switch" type="button" aria-checked="${(typeof train!=='undefined'&&train&&train.autoNext)?'true':'false'}" aria-label="自动下一组"><i></i></button>
+              </div>
+            </div>
+          </section>
+
+          <section class="set-panel" data-p="data" hidden>
+            <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>数据与同步</h2></div>
+            <div class="setting-sec">
+              <h2 style="font-size:14px">本地备份</h2>
+              <div class="hint">数据只存在这台设备的浏览器里。换机、清理浏览数据前先导出；iPhone 建议按 Safari「分享 → 添加到主屏幕」长期使用，数据更不易被清理。</div>
+              <div class="backup-row">
+                <button class="btn ghost sm" id="expBtn">导出备份</button>
+                <button class="btn ghost sm" id="impBtn">导入备份</button>
+                <input type="file" id="impFile" accept="application/json,.json" hidden>
+              </div>
+              <textarea class="imp-area" id="impArea" placeholder="把备份 JSON 粘贴到这里" hidden></textarea>
+              <div class="backup-row" id="impDoRow" hidden><button class="btn sm" id="impDo">确认导入</button></div>
+              <div class="backup-msg" id="bakMsg"></div>
+            </div>
+            <div class="setting-sec">
+              <h2 style="font-size:14px">云端数据库</h2>
+              <div class="hint">可选。把日志、人物档案、训练记录存到云端 Postgres（Supabase 免费层），换设备或清缓存后可恢复。不填则仅存本机浏览器。</div>
+              <div class="cloud-grid">
+                <input type="text" id="cloudUrl" placeholder="项目 URL，如 https://abcd.supabase.co" autocomplete="off">
+                <input type="text" id="cloudKey" placeholder="anon public key" autocomplete="off">
+                <input type="text" id="cloudSecret" placeholder="访问口令（自定义一串字符，用于隔离你的数据）" autocomplete="off">
+              </div>
+              <div class="backup-row">
+                <button class="btn ghost sm" id="cloudSave">保存并连接</button>
+                <button class="btn ghost sm" id="cloudPull">从云端拉取</button>
+                <button class="btn ghost sm" id="cloudPush">全量上传</button>
+              </div>
+              <div class="backup-msg" id="cloudMsg"></div>
+              <div class="hint" style="margin-top:10px">数据表：<code>selfagent_state</code>（k/v 快照）。建表 SQL 见仓库 <code>db/schema.sql</code>。anon key 会随页面公开，口令用于避免他人误读写。</div>
+            </div>
+          </section>
+
+          <section class="set-panel" data-p="about" hidden>
+            <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>关于</h2></div>
+            <div class="setting-sec">
+              <div class="hint">SelfAgent · 自我认知 v0.9 体验版。本地静态原型，所有数据存在本机浏览器（localStorage），不上传服务器；Agent 输出由内置规则引擎生成。</div>
+              <div class="hint" style="margin-top:10px">快捷键：空格＝随手记，T＝专注训练。悬浮球可拖拽吸附屏幕左右边缘，长按切换默认模式。</div>
+            </div>
+          </section>
         </div>
-        <div class="backup-row">
-          <button class="btn ghost sm" id="cloudSave">保存并连接</button>
-          <button class="btn ghost sm" id="cloudPull">从云端拉取</button>
-          <button class="btn ghost sm" id="cloudPush">全量上传</button>
-        </div>
-        <div class="backup-msg" id="cloudMsg"></div>
-        <div class="hint" style="margin-top:10px">数据表：<code>selfagent_state</code>（k/v 快照）。建表 SQL 见仓库 <code>db/schema.sql</code>。anon key 会随页面公开，口令用于避免他人误读写；敏感数据建议改用 Supabase Auth。</div>
       </div>`;
     bindSettingsActions();
+    bindSetPanels();
   }
   const BAK_KEYS = {logs:STORE_KEY, settings:SETTINGS_KEY, profile:PROFILE_KEY, training:TRAIN_KEY};
   function collectBackup(){
@@ -6544,6 +6750,22 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       bakMsg('导入完成，正在重新加载…'); setTimeout(()=>location.reload(), 400);
     }
   }
+  window.addEventListener('hashchange',()=>{
+    const hm=/#setting\/([a-z]+)/.exec(location.hash||'');
+    if(!hm) return;
+    try{ if(currentPage!=='setting') openPage('setting'); else openSetPanel(hm[1]); }catch(e){}
+  });
+  (function bootSettingHash(){
+    function start(){
+      const h=location.hash||'';
+      if(h.indexOf('#setting')!==0) return;
+      const k=(h.split('/')[1]||'');
+      if(k) window.__setPanel=k;
+      try{ openPage('setting'); }catch(e){}
+    }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start);
+    else start();
+  })();
   function bindSettingsActions(){
     bindBackup();
     if(window.__cloudFill) window.__cloudFill();
@@ -7199,6 +7421,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function openPage(p){
     try{ if(document.getElementById('focusMode')) closeFocus(); }catch(e){}
+    if(p!=='setting'){ try{ if((location.hash||'').indexOf('#setting')===0) history.replaceState(null,'',location.pathname+location.search); window.__setPanel=''; }catch(e){} }
     if(p==='home'){ showPage('home'); syncTabs(); renderHome(); window.scrollTo({top:0}); return; }
     if(p==='record') currentTab='train';
     else if(PAGE_TAB[p]) currentTab = PAGE_TAB[p].includes(currentTab) ? currentTab : PAGE_TAB[p][0];
