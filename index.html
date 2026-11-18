@@ -1817,6 +1817,15 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* ===== p132 长按换挡：按压反馈 + 松手不关菜单 ===== */
 .mode-orb.pressing .orb-core{transform:scale(.95)}
 .mode-orb.menu-on .orb-core{transform:scale(.94)}
+
+/* ===== p133 训练录入弹层：键盘避让，输入框始终可见 ===== */
+@media(max-width:999px){
+  .msheet-box{
+    margin-bottom:var(--kb,0px);
+    max-height:calc(100vh - var(--kb,0px) - 12px);
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+  }
+}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -4340,6 +4349,26 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     return same.length ? (same[same.length-1].weight||0) : 0;
   }
+  function kbAvoid(host, box){
+    if(!host || !box) return;
+    if(host.dataset.kbBound) return; host.dataset.kbBound='1';
+    const vv=window.visualViewport; if(!vv) return;
+    const apply=()=>{
+      if(!host.isConnected){ vv.removeEventListener('resize',apply); vv.removeEventListener('scroll',apply); return; }
+      const kb=Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      host.style.setProperty('--kb', kb+'px');
+      box.style.marginBottom = kb ? kb+'px' : '';
+    };
+    apply();
+    vv.addEventListener('resize', apply);
+    vv.addEventListener('scroll', apply);
+    host.addEventListener('focusin', ()=>{
+      setTimeout(()=>{ apply();
+        try{ const a=document.activeElement; if(a && box.contains(a)) a.scrollIntoView({block:'nearest'}); }catch(e){}
+      },260);
+      setTimeout(apply,640);
+    });
+  }
   function openSetSheet(key){
     const {r,g}=setOf(key); if(!r||!g) return;
     document.querySelectorAll('.msheet').forEach(x=>x.remove());
@@ -4352,7 +4381,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="ms-btns"><button class="btn ghost sm" data-msclose type="button">取消</button><button class="btn sm" data-msok type="button">确定</button></div>
     </div>`;
     document.body.appendChild(el);
+    kbAvoid(el, el.querySelector('.msheet-box'));
     const wIn=el.querySelector('#msW'); try{ wIn.focus(); wIn.select(); }catch(e){}
+    try{ wIn.scrollIntoView({block:'nearest'}); }catch(e){}
     el.querySelector('[data-msclose]').onclick=()=>el.remove();
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
     el.querySelector('[data-msok]').onclick=()=>{
