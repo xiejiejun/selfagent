@@ -2184,6 +2184,10 @@ html[data-theme="light"] .tour-hole{box-shadow:0 0 0 2000px rgba(18,26,38,.62);o
 html[data-theme="light"] .tour-next{background:#0E8F7A;border-color:#0E8F7A;color:#fff}
 html[data-theme="light"] .tour-prev,html[data-theme="light"] .tour-next{color:inherit}
 html[data-theme="light"] .tour-prev{background:#fff;border-color:var(--line);color:var(--tx2)}
+
+/* 组行滑动手势：横向交给 JS，纵向保留滚动 */
+.fm-row,.fm-row .fm-main{touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.fm-sets{overscroll-behavior:contain}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -5202,26 +5206,47 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     window.__grpStart=window.__grpStart||{};
     el.querySelectorAll('[data-fmrow]').forEach(row=>{
       const key=row.dataset.fmrow;
-      let x0=null, swiped=false;
-      row.addEventListener('pointerdown',ev=>{
-        if(ev.target.closest('[data-fmtick],[data-fmedit],[data-fmdel]')) { x0=null; return; }
-        x0=ev.clientX; swiped=false;
-      });
-      row.addEventListener('pointermove',ev=>{
+      let x0=null, y0=0, swiped=false;
+      const skipTarget=ev=>!!ev.target.closest('[data-fmtick],[data-fmedit],[data-fmdel]');
+      const begin=(x,y)=>{ x0=x; y0=y; swiped=false; };
+      const moveTo=(x,y)=>{
         if(x0==null) return;
-        const dx=ev.clientX-x0;
-        if(dx<-36 && !row.classList.contains('open')){ row.classList.add('open'); swiped=true; }
-        else if(dx>28 && row.classList.contains('open')){ row.classList.remove('open'); swiped=true; }
-      });
-      row.addEventListener('pointerup',ev=>{
+        const dx=x-x0, dy=y-y0;
+        if(Math.abs(dx) < Math.abs(dy)*1.2) return;
+        if(dx<-30 && !row.classList.contains('open')){ row.classList.add('open'); swiped=true; }
+        else if(dx>24 && row.classList.contains('open')){ row.classList.remove('open'); swiped=true; }
+      };
+      const endTap=(ev)=>{
         const had=x0; x0=null;
         if(had==null) return;
         if(swiped){ swiped=false; return; }
         if(row.classList.contains('open')){ row.classList.remove('open'); return; }
-        if(ev.target.closest('[data-fmtick],[data-fmedit],[data-fmdel]')) return;
+        if(skipTarget(ev)) return;
         fmTap(key);
-      });
-      row.addEventListener('pointercancel',()=>{ x0=null; });
+      };
+      const TOUCHED = ('ontouchstart' in window) && navigator.maxTouchPoints>0;
+      if(TOUCHED){
+        row.addEventListener('touchstart',ev=>{
+          if(ev.touches.length!==1 || skipTarget(ev)){ x0=null; return; }
+          begin(ev.touches[0].clientX, ev.touches[0].clientY);
+        },{passive:true});
+        row.addEventListener('touchmove',ev=>{
+          if(ev.touches.length!==1) return;
+          const dy=ev.touches[0].clientY-y0, dx=ev.touches[0].clientX-x0;
+          if(x0!=null && Math.abs(dx) >= Math.abs(dy)*1.2){ ev.preventDefault(); }
+          moveTo(ev.touches[0].clientX, ev.touches[0].clientY);
+        },{passive:false});
+        row.addEventListener('touchend',ev=>{ endTap(ev); },{passive:true});
+        row.addEventListener('touchcancel',()=>{ x0=null; });
+      } else {
+        row.addEventListener('pointerdown',ev=>{
+          if(skipTarget(ev)){ x0=null; return; }
+          begin(ev.clientX, ev.clientY);
+        });
+        row.addEventListener('pointermove',ev=>{ moveTo(ev.clientX, ev.clientY); });
+        row.addEventListener('pointerup',ev=>{ endTap(ev); });
+        row.addEventListener('pointercancel',()=>{ x0=null; });
+      }
     });
     if(!window.__clockT){
       window.__clockT=setInterval(()=>{
