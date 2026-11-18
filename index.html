@@ -1411,6 +1411,18 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .tc-row em{font-style:normal;color:var(--tx2)}
 .tc-row s{text-decoration:none;color:#7fe0a7;font-size:11px}
 .tc-row i{font-style:normal;color:var(--tx3);font-size:11px}
+.lg-ex{margin-top:10px}
+.lg-ex:first-child{margin-top:2px}
+.lg-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.lg-h b{color:var(--tx);font-size:13px;font-weight:600}
+.lg-sets{display:grid;gap:2px;margin-top:4px}
+.lg-set{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2);padding-left:2px}
+.lg-set .lg-no{width:16px;flex:0 0 16px;text-align:center;font-size:10.5px;color:var(--tx3);
+  border:1px solid var(--line);border-radius:50%;line-height:14px;height:14px}
+.lg-set .lg-no.warm{border-style:dashed;color:var(--tx3)}
+.lg-set em{font-style:normal;color:var(--tx2)}
+.lg-set s{text-decoration:none;color:#7fe0a7;font-size:10.5px}
+.lg-set i{font-style:normal;color:var(--tx3);font-size:10.5px}
 .tc-empty{color:var(--tx3);font-size:12px}
 
 /* p51 卡片色条可见性 */
@@ -6685,15 +6697,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function trainCard(l){
     const m=l.meta||{}; const items=m.items||[];
-    const detailOf=i=>(i.groups||[]).map(g=>`<div class="tg"><span>第 ${g.no} 组</span><b>${g.reps}${g.weight>0?(' × '+g.weight+'kg'):' × 自重'}</b>${g.done?'<s>✓</s>':''}${g.rpe?`<i>${['','轻松','刚好','力竭'][g.rpe]||''}</i>`:''}${g.sec?`<i>${g.sec}s</i>`:''}</div>`).join('');
-    const rows=items.map(i=>`
-      <div class="tc-row">
-        <b>${ENGINE.esc(i.name)}</b>
-        <em>${groupsDigest(lastGroupsOf({groups:i.groups, weight:i.weight, reps:i.reps}),{bare:true})}</em>
-        <s class="tc-done">${i.done?i.done:'0'}/${i.sets} 组${i.volume?(' · '+i.volume+'kg'):''}</s>
-        ${i.groups&&i.groups.some(g=>g.sec)?`<i class="tc-sec">${i.groups.filter(g=>g.sec).map(g=>g.sec+'s').join(' / ')}</i>`:''}
-      </div>`).join('');
-    const allDetail=items.map(i=>`<div class="tg-h">${ENGINE.esc(i.name)}</div>${(i.groups&&i.groups.length)?detailOf(i):'<div class="tg-none">无组明细</div>'}`).join('');
+    const rows=items.map(i=>{
+      const gs=(i.groups||[]);
+      const sets = gs.length
+        ? gs.map(g=>`<div class="lg-set"><span class="lg-no${g.warmup?' warm':''}">${g.warmup?'W':g.no}</span><em>${g.weight>0?(g.weight+'kg'):'自重'} × ${g.reps}</em>${g.done?'<s>✓</s>':''}${g.rpe?`<i>${['','轻松','刚好','力竭'][g.rpe]||''}</i>`:''}${g.sec?`<i>${g.sec}s</i>`:''}</div>`).join('')
+        : `<div class="lg-set"><span class="lg-no">1</span><em>${i.weight>0?(i.weight+'kg'):'自重'} × ${i.reps}</em></div>`;
+      const doneN=gs.filter(g=>g.done).length;
+      const vol=gs.reduce((a,g)=>a+((g.done&&!g.warmup)?(g.reps||0)*(g.weight||0):0),0);
+      const setsN=gs.length||i.sets||0;
+      return `<div class="lg-ex">
+        <div class="lg-h"><b>${ENGINE.esc(i.name)}</b>
+          <s class="tc-done">${doneN}/${setsN} 组${vol?(' · '+Math.round(vol)+'kg'):''}</s></div>
+        <div class="lg-sets">${sets}</div>
+      </div>`;
+    }).join('');
     return `
       <div class="log-item tcard">
         <div class="log-head">
@@ -6704,7 +6721,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         </div>
         ${m.checkin?`<div class="tc-feel"><span>情绪 ${m.checkin.mood}/5 ${FEEL_MOOD[(m.checkin.mood||1)-1]||''}</span><span>状态 ${m.checkin.energy}/5 ${FEEL_ENERGY[(m.checkin.energy||1)-1]||''}</span>${m.checkin.note?`<em>“${ENGINE.esc(m.checkin.note)}”</em>`:''}</div>`:''}
         <div class="tc-body">${rows||'<div class="tc-empty">暂无明细</div>'}</div>
-        ${items.length?`<details class="tc-more"><summary>展开每组明细</summary><div class="tg-wrap">${allDetail}</div></details>`:''}
         <div class="edit-actions">
           <button class="btn ghost sm" data-tedit="${l.id}">编辑</button>
           <button class="btn ghost sm danger" data-del="${l.id}">删除</button>
@@ -6801,6 +6817,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function openLogSheet(id){
     const l=logs.find(x=>String(x.id)===String(id)); if(!l) return;
     const sh=ensureLogSheet(); const body=$('lsBody');
+    const hd=sh.querySelector('.ls-head b'); if(hd) hd.textContent='编辑这条记录';
     lsTags=String(l.tags||'').split(',').filter(t=>t && typeTags(l.type).includes(t));
     const typeOpts=settings.types.map(t=>`<option value="${t.key}" ${l.type===t.key?'selected':''}>${ENGINE.esc(t.label)}</option>`).join('');
     const chipsHtml=()=>lsTags.map(t=>`<span class="tag">${ENGINE.esc(t)}<button type="button" data-chip="${ENGINE.esc(t)}">×</button></span>`).join('');
@@ -6839,63 +6856,35 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function openTrainSheet(id){
     const l=logs.find(x=>String(x.id)===String(id)); if(!l || l.kind!=='train') return;
     const sh=ensureLogSheet(); const body=$('lsBody');
-    const items=l.meta&&l.meta.items?l.meta.items:[];
-    const rowsHtml=items.map((it,ii)=>`
-      <div class="ts-block" data-i="${ii}">
-        <div class="ts-h">${ENGINE.esc(it.name)}<em>${it.sets} 组</em></div>
-        ${(it.groups||[]).map((g,gi)=>`
-          <div class="ts-row" data-i="${ii}" data-g="${gi}">
-            <span>第 ${g.no} 组</span>
-            <input type="number" inputmode="numeric" class="ts-n" value="${g.reps||0}" min="0">
-            <i>次</i>
-            <input type="number" inputmode="decimal" step="0.5" class="ts-w" value="${g.weight||0}" min="0">
-            <i>kg</i>
-            <button type="button" class="ts-done ${g.done?'on':''}" data-done="1">${g.done?'✓':'○'}</button>
-          </div>`).join('')}
-      </div>`).join('');
+    const hd=sh.querySelector('.ls-head b'); if(hd) hd.textContent='编辑练后感受';
+    const ck=(l.meta&&l.meta.checkin)||{};
+    const mood=ck.mood||3, energy=ck.energy||3;
     body.innerHTML=`
-      <div class="ts-wrap">${rowsHtml||'<div class="tc-empty">没有组数据</div>'}</div>
-      <label class="f-label" style="margin-top:10px">备注</label>
-      <textarea id="tsNote" style="min-height:64px">${ENGINE.esc(l.content||'')}</textarea>
+      <div class="f-row">
+        <div class="f-field"><label class="f-label">情绪 <b id="tvMood">${mood}/5</b></label>
+          <input type="range" id="tsMood" min="1" max="5" value="${mood}"></div>
+        <div class="f-field"><label class="f-label">状态 <b id="tvEnergy">${energy}/5</b></label>
+          <input type="range" id="tsEnergy" min="1" max="5" value="${energy}"></div>
+      </div>
+      <label class="f-label" style="margin-top:10px">练后感受</label>
+      <textarea id="tsNote" style="min-height:80px" placeholder="今天练得怎么样？">${ENGINE.esc(ck.note||'')}</textarea>
+      <p style="margin:8px 0 0;font-size:11.5px;color:var(--tx3);line-height:1.5">组数、重量、次数由专注模式自动同步，不能在这里改。</p>
       <div class="ls-actions">
         <button class="btn ghost sm" type="button" data-close="1">取消</button>
         <button class="btn sm" type="button" id="tsSave">保存</button>
       </div>`;
-    body.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{
-      const on=b.classList.toggle('on'); b.textContent=on?'✓':'○';
-    });
+    const mv=body.querySelector('#tsMood'), ev=body.querySelector('#tsEnergy');
+    mv.oninput=()=>{ body.querySelector('#tvMood').textContent=mv.value+'/5'; };
+    ev.oninput=()=>{ body.querySelector('#tvEnergy').textContent=ev.value+'/5'; };
     body.querySelector('#tsSave').onclick=()=>{
-      const wrap=body.querySelector('.ts-wrap');
-      let volume=0;
-      items.forEach((it,ii)=>{
-        const blk=wrap.querySelector(`.ts-block[data-i="${ii}"]`);
-        let done=0, iv=0;
-        (it.groups||[]).forEach((g,gi)=>{
-          const row=blk.querySelector(`.ts-row[data-g="${gi}"]`);
-          g.reps=Math.max(0,parseFloat(row.querySelector('.ts-n').value)||0);
-          g.weight=Math.max(0,parseFloat(row.querySelector('.ts-w').value)||0);
-          g.done=row.querySelector('[data-done]').classList.contains('on');
-          if(g.done){ done++; iv+=g.reps*g.weight; }
-        });
-        it.done=done; it.volume=Math.round(iv); volume+=iv;
-        const last=[...it.groups].reverse().find(g=>g.reps>0);
-        if(last){ it.reps=last.reps; it.weight=last.weight; }
-        it.sets=it.groups.length;
-      });
-      l.meta.volume=Math.round(volume);
-      l.content=String(body.querySelector('#tsNote').value||'').trim();
-      save();
-      let dirty=false;
-      items.forEach(it=>{
-        const rec=(train.records||[]).filter(r=>r.date===l.date && r.exId===it.exId)[0];
-        if(!rec) return;
-        const rg=ensureGroups(rec);
-        if(rg.length!==(it.groups||[]).length) return;
-        (it.groups||[]).forEach((g,gi)=>{ rg[gi].reps=g.reps; rg[gi].weight=g.weight; rg[gi].done=g.done; rg[gi].rpe=g.rpe; });
-        dirty=true;
-      });
-      if(dirty) saveTrain();
+      const mood2=parseInt(mv.value,10)||3, energy2=parseInt(ev.value,10)||3;
+      const note=String(body.querySelector('#tsNote').value||'').trim();
+      l.meta=l.meta||{};
+      l.meta.checkin={mood:mood2, energy:energy2, note:note, at:Date.now()};
+      if(l.date){ train.checkins=train.checkins||{}; train.checkins[l.date]={mood:mood2,energy:energy2,note:note,at:Date.now()}; }
+      save(); saveTrain();
       sh.hidden=true; renderLogsPanel();
+      trToast&&trToast('感受已保存');
     };
     sh.hidden=false;
   }
