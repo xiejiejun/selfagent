@@ -2084,6 +2084,13 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
 .tc-feel{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;font-size:11.5px;color:var(--tx3);padding:2px 0 8px}
 .tc-feel span{color:var(--accent)}
 .tc-feel em{font-style:normal;color:var(--tx2);flex:1 1 100%}
+
+/* ===== 按钮层级 ===== */
+.btn{width:auto}
+.btn-block{width:100%}
+.btn:disabled{opacity:.4;pointer-events:none}
+.btn.danger{background:transparent;border:1px solid rgba(224,107,107,.55);color:#e06b6b;box-shadow:none}
+.btn.danger:hover{background:rgba(224,107,107,.1);color:#e06b6b}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -2099,7 +2106,7 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
     <div class="step on" id="navHome" data-page="home"><span class="n">01</span><span class="lbl">首页</span></div>
     <div class="step" id="navRecord" data-page="record"><span class="n">02</span><span class="lbl">训练</span></div>
     <div class="step" id="navAgent" data-page="agent"><span class="n">03</span><span class="lbl">分析</span></div>
-    <div class="step" id="navLog" data-page="log"><span class="n">04</span><span class="lbl">日志</span></div>
+    <div class="step" id="navLog" data-page="log"><span class="n">04</span><span class="lbl">记录</span></div>
     <div class="step" id="navSet" data-page="setting"><span class="n">05</span><span class="lbl">设置</span></div>
   </nav>
   <button class="theme-btn" id="themeBtn" type="button" aria-label="切换白天 / 黑夜主题" title="切换白天 / 黑夜主题">
@@ -2137,9 +2144,9 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
       </div>
       <div class="home-signals" id="homeSignals"></div>
       <div class="home-actions">
-        <button class="btn sm" id="homeGoRec">去记一笔</button>
+        <button class="btn sm btn-block" id="homeGoRec">＋ 记录</button>
         <button class="btn ghost sm" id="homeReviewBtn" type="button">本周回顾</button>
-        <button class="btn ghost sm" id="homeGoAgent">看画像</button>
+        <button class="btn ghost sm" id="homeGoAgent">查看分析</button>
       </div>
     </div>
   </section>
@@ -2167,18 +2174,18 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
         <div class="page-title">Agent 分析</div>
         <div class="page-desc">画像、规划、推演共用同一份记录，切换只是换一个提问角度。</div>
       </div>
-      <button class="btn gen" id="btnGen">重新生成画像</button>
+      <button class="btn gen btn-block" id="btnGen">重新分析</button>
     </div>
     <div class="ask">
       <div class="ask-row">
-        <input id="askInput" type="text" autocomplete="off" placeholder="问自己的数据：这周练了几次？我哪天状态最差？加班和睡眠有关系吗？">
+        <input id="askInput" type="text" autocomplete="off" placeholder="问数据，如：本周练了几次">
         <button class="btn sm ask-go" id="askGo" type="button">问</button>
       </div>
       <div class="ask-chips" id="askChips">
-        <button type="button" data-q="这周练了几次？">这周练了几次</button>
+        <button type="button" data-q="这周练了几次？">本周训练频次</button>
         <button type="button" data-q="我哪天状态最差？">状态最差的一天</button>
-        <button type="button" data-q="加班和我的睡眠有关系吗？">加班 vs 睡眠</button>
-        <button type="button" data-q="最久没练的部位是哪个？">最久没练</button>
+        <button type="button" data-q="加班和我的睡眠有关系吗？">加班与睡眠</button>
+        <button type="button" data-q="最久没练的部位是哪个？">最久未练部位</button>
       </div>
       <div class="ask-card" id="askAns" hidden></div>
     </div>
@@ -2209,8 +2216,8 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
           <button class="btn ghost sm" id="btnTrain">去训练页</button>
           <button class="btn ghost sm m-more-btn" id="btnMore">更多</button>
           <div class="m-extra" id="quickExtra">
-            <button class="btn ghost sm" id="btnDemo">载入示例日志</button>
-            <button class="btn ghost sm danger" id="btnClear">清空全部</button>
+            <button class="btn ghost sm" id="btnDemo">载入示例数据</button>
+            <button class="btn ghost sm danger" id="btnClear">清空数据</button>
           </div>
         </div>
 
@@ -2219,7 +2226,7 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
           <div class="fast-bar">
             <span class="fast-hint">自动认类型和标签 · 训练记录会自动同步，不用手写</span>
             <span class="fast-right">
-              <button class="ybtn" id="fastYesterday" type="button">记到昨天</button>
+              <button class="ybtn" id="fastYesterday" type="button" aria-label="开启后记录记为昨天">昨天</button>
               <button class="btn sm" id="fastSave" type="button">存下</button>
             </span>
           </div>
@@ -2265,7 +2272,7 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
       </div>
     </div>
     <div class="tabs" id="tabsLog">
-      <button class="tab on" data-tab="logs">日志</button>
+      <button class="tab on" data-tab="logs">记录</button>
       <button class="tab" data-tab="stats">统计</button>
     </div>
     <div class="report-shell"><div class="body-slot" id="slotLog"></div></div>
@@ -2645,7 +2652,7 @@ function genTrend(logs, d){
 function genEmpty(){
   return `<div class="intro-empty">
     <div class="big">还没有可分析的记录</div>
-    <p>先在「记录」页写几条日志（写一句话就能存），或点「载入示例日志」，再回到这里看画像、规划与趋势推演。</p>
+    <p>先在「记录」页写几条日志（写一句话就能存），或点「载入示例数据」，再回到这里看画像、规划与趋势推演。</p>
   </div>`;
 }
 
@@ -2896,7 +2903,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function logNudge(n){
     if(n<3) return;
     const el=document.createElement('div'); el.className='toast nudge';
-    el.innerHTML='已积累 <b>'+n+'</b> 条记录 <button type="button" id="nudgeGo">看画像 →</button>';
+    el.innerHTML='已积累 <b>'+n+'</b> 条记录 <button type="button" id="nudgeGo">查看分析 →</button>';
     document.body.appendChild(el);
     const b=el.querySelector('#nudgeGo');
     if(b) b.onclick=()=>{ try{el.remove();}catch(e){} if(typeof showPage==='function') showPage('agent'); };
@@ -3024,7 +3031,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(sheet) sheet.addEventListener('click',e=>{ if(e.target===sheet) close(); });
     if($('fabYest')) $('fabYest').addEventListener('click',()=>{
       const on=$('fabYest').classList.toggle('on');
-      $('fabYest').textContent = on ? '记到昨天 ✓' : '记到昨天';
+      $('fabYest').textContent = on ? '昨天 ✓' : '昨天';
     });
     const save=()=>{
       const v=($('fabInput').value||'').trim(); if(!v) return;
@@ -3040,7 +3047,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       pushLog(v, true, yb?dk(new Date(Date.now()-864e5)):null, opts);
       $('fabInput').value='';
       fabTags=[]; fabDirty=false; if(det) det.open=false; paintFabTags();
-      $('fabYest').classList.remove('on'); $('fabYest').textContent='记到昨天';
+      $('fabYest').classList.remove('on'); $('fabYest').textContent='昨天';
       close();
       trToast('已存下，继续记下一笔');
     };
@@ -3085,7 +3092,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   (function bindOnboard(){ setTimeout(()=>{ try{ onboardOpen(); }catch(e){} }, 700); })();
   if($('fastYesterday')) $('fastYesterday').addEventListener('click',()=>{
     const on=$('fastYesterday').classList.toggle('on');
-    $('fastYesterday').textContent = on ? '记到昨天 ✓' : '记到昨天';
+    $('fastYesterday').textContent = on ? '昨天 ✓' : '昨天';
   });
   if($('fastInput')) $('fastInput').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); fastSave(); } });
   $('logScore').addEventListener('input',()=>$('scoreShow').textContent=$('logScore').value);
@@ -4643,7 +4650,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="ms-row"><label>起始 kg</label><input id="ldW" type="number" inputmode="decimal" step="0.5" value="${start}"></div>
       <div class="ms-row"><label>每组步幅</label><input id="ldS" type="number" inputmode="decimal" step="0.5" value="${step}"></div>
       <div class="ld-dir"><button class="ld-chip on" data-ld="up" type="button">递增</button><button class="ld-chip" data-ld="down" type="button">递减</button></div>
-      <div class="ms-btns"><button class="btn ghost sm" data-msclose type="button">取消</button><button class="btn sm" data-msok type="button">填充</button></div>
+      <div class="ms-btns"><button class="btn ghost sm" data-msclose type="button">取消</button><button class="btn sm" data-msok type="button">应用到剩余组</button></div>
     </div>`;
     document.body.appendChild(el);
     kbAvoid(el, el.querySelector('.msheet-box'));
@@ -5059,15 +5066,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <button class="fm-act del" data-fmdel="${k}" type="button">删除</button>
           </span>
         </div>`;}).join('')}</div>
-      <div class="fm-setadd"><button class="tr-plus" data-fmaddset="1" type="button">＋1 组（沿用上一组）</button></div>
+      <div class="fm-setadd"><button class="tr-plus" data-fmaddset="1" type="button" title="沿用上一组参数">＋1 组</button></div>
       <div class="fm-foot">
         <button class="btn ghost sm" data-fmprev type="button" ${__focusIdx<=0?'disabled':''}>← 上一个</button>
         <button class="btn ghost sm" data-fmnext type="button" ${__focusIdx>=__focusUids.length-1?'disabled':''}>下一个 →</button>
       </div>
       <div class="fm-more">
         <button class="btn ghost sm" data-fmauto type="button">自动下一组·${train.autoNext?'开':'关'}</button>
-        <button class="btn ghost sm" data-fmadd type="button">＋ 临时动作</button>
-        <button class="btn ghost sm" data-fmfin type="button">结束训练</button>
+        <button class="btn ghost sm" data-fmadd type="button">＋ 添加动作</button>
+        <button class="btn ghost sm" data-fmfin type="button">完成训练</button>
       </div>`;
     el.classList.toggle('timing', !!(window.__grpStart && Object.keys(window.__grpStart).length));
 
@@ -5173,7 +5180,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     let el=document.getElementById('fmAdd');
     if(!el){
       el=document.createElement('div'); el.id='fmAdd'; el.className='fm-add';
-      el.innerHTML='<div class="fm-add-inner"><div class="fm-add-bar"><span>临时加动作</span><button class="ex-sheet-x" data-fmaddx type="button">×</button></div><input id="fmAddQ" placeholder="搜索动作名，点结果直接加入"><div class="fm-add-list" id="fmAddList"></div></div>';
+      el.innerHTML='<div class="fm-add-inner"><div class="fm-add-bar"><span>添加动作</span><button class="ex-sheet-x" data-fmaddx type="button">×</button></div><input id="fmAddQ" placeholder="搜索动作"><div class="fm-add-list" id="fmAddList"></div></div>';
       document.body.appendChild(el);
       el.addEventListener('click',ev=>{ if(ev.target===el) el.classList.remove('on'); });
       el.querySelector('[data-fmaddx]').onclick=()=>el.classList.remove('on');
@@ -5200,7 +5207,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function openFocus(){
     const rs=focusList();
-    if(!rs.length){ trToast('先把动作加入今日训练'); return; }
+    if(!rs.length){ trToast('先把动作加入今日'); return; }
     __focusUids=rs.map(r=>r.uid);
     __focusIdx=0;
     try{
@@ -5297,8 +5304,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const hasHist=(train.records||[]).length>0;
     body.innerHTML=`
       <div class="tr-seg" id="trSeg">
-        <button class="tr-seg-btn on" data-trseg="today" type="button">今日训练<em class="tr-seg-badge" id="segToday"></em></button>
-        <button class="tr-seg-btn" data-trseg="plan" type="button">AI 计划<em class="tr-seg-badge" id="segPlan"></em></button>
+        <button class="tr-seg-btn on" data-trseg="today" type="button">训练<em class="tr-seg-badge" id="segToday"></em></button>
+        <button class="tr-seg-btn" data-trseg="plan" type="button">计划<em class="tr-seg-badge" id="segPlan"></em></button>
         <button class="tr-seg-btn" data-trseg="mine" type="button">我的</button>
         <button class="tr-seg-btn" data-trseg="lib" type="button">动作库</button>
       </div>
@@ -5312,8 +5319,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <button class="btn gen tr-tc-go" id="trStart" type="button" data-act="start">▶ 开始训练</button>
           </div>
           <div class="tr-tc-links">
-            <button class="tr-tc-link" id="libOpen" type="button">＋ 加动作</button>
-            <button class="tr-tc-link" id="trRepeat" type="button">重复上次</button>
+            <button class="tr-tc-link" id="libOpen" type="button">＋ 添加动作</button>
+            <button class="tr-tc-link" id="trRepeat" type="button">导入上次训练</button>
           </div>
           <div class="tr-next" id="trNext" hidden></div>
           <div class="tr-feel" id="trFeel" hidden></div>
@@ -5361,9 +5368,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <div class="f-row" style="margin-top:14px">
             <div class="f-field"><label class="f-label">组数</label><div class="stepper"><button data-step="-1" type="button">−</button><input id="trSets" type="number" inputmode="numeric" value="3" min="1" max="20" data-delta="1"><button data-step="1" type="button">+</button></div></div>
             <div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-step="-1" type="button">−</button><input id="trReps" type="number" inputmode="numeric" value="10" min="1" max="100" data-delta="1"><button data-step="1" type="button">+</button></div></div>
-            <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-w="-1" type="button">−</button><input id="trWeight" type="number" inputmode="decimal" value="0" min="0" step="0.5" data-delta="2.5" placeholder="自重填 0"><button data-w="1" type="button">+</button></div></div>
+            <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-w="-1" type="button">−</button><input id="trWeight" type="number" inputmode="decimal" value="0" min="0" step="0.5" data-delta="2.5" placeholder="0 = 自重"><button data-w="1" type="button">+</button></div></div>
           </div>
-          <div class="tr-actions" style="margin-top:14px"><button class="btn sm" id="trAdd" type="button">加入今日训练</button><button class="btn ghost sm" id="trAgain" type="button">沿用上次</button></div>
+          <div class="tr-actions" style="margin-top:14px"><button class="btn sm" id="trAdd" type="button">加入今日</button><button class="btn ghost sm" id="trAgain" type="button">沿用上次</button></div>
         </div>
       </div>`;
     renderLibInline(parts, eqs);
@@ -5425,7 +5432,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!box.dataset.init){
       box.dataset.init='1';
       box.innerHTML=`<div class="lib-searchrow">
-        <div class="search-wrap"><input type="text" id="mineSearch" placeholder="搜索我的动作" autocomplete="off"></div>
+        <div class="search-wrap"><input type="text" id="mineSearch" placeholder="搜索动作" autocomplete="off"></div>
         <button class="lib-funnel" id="mineFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="mineDot" hidden></em></button>
       </div>
       ${filterBodyHtml('flDropMine')}
@@ -5464,12 +5471,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const d=$('libBox'); if(!d) return;
     d.innerHTML=`
       <div class="lib-searchrow">
-        <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
+        <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
         <button class="lib-funnel" id="libFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="libFunnelDot" hidden></em></button>
       </div>
       ${filterBodyHtml('flDropLib')}
       <div class="ex-list lib-list" id="trList"></div>
-      <div class="lib-curow"><button class="lib-cu" id="cuOpen" type="button">＋ 自定义动作</button></div>`;
+      <div class="lib-curow"><button class="lib-cu" id="cuOpen" type="button">＋ 添加动作</button></div>`;
     if($('libFunnel')) $('libFunnel').onclick=()=>toggleDrop('lib');
     try{ bindDrop(dropEl('lib'), 'lib'); }catch(e){}
     if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
@@ -5765,7 +5772,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <div class="f-row">
           <div class="f-field"><label class="f-label">组数</label><div class="stepper"><button data-exadd="sets:-1" type="button">−</button><input id="exAddSets" type="number" inputmode="numeric" value="${sets}" min="1" max="20"><button data-exadd="sets:1" type="button">+</button></div></div>
           <div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-exadd="reps:-1" type="button">−</button><input id="exAddReps" type="number" inputmode="numeric" value="${reps}" min="1" max="100"><button data-exadd="reps:1" type="button">+</button></div></div>
-          <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-exadd="weight:-${st}" type="button">−</button><input id="exAddW" type="number" inputmode="decimal" value="${w}" min="0" step="0.5" placeholder="自重填 0"><button data-exadd="weight:${st}" type="button">+</button></div></div>
+          <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-exadd="weight:-${st}" type="button">−</button><input id="exAddW" type="number" inputmode="decimal" value="${w}" min="0" step="0.5" placeholder="0 = 自重"><button data-exadd="weight:${st}" type="button">+</button></div></div>
         </div>
         <div class="tr-actions"><button class="btn sm" data-exaddok type="button">加入今日</button><button class="btn ghost sm" data-exaddcancel type="button">取消</button></div>
       </div>`);
@@ -5804,7 +5811,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="f-row">
         <div class="f-field"><label class="f-label">组数</label><div class="stepper"><button data-psadd="sets:-1" type="button">−</button><input id="psSets" type="number" inputmode="numeric" value="${sets}" min="1" max="20"><button data-psadd="sets:1" type="button">+</button></div></div>
         <div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-psadd="reps:-1" type="button">−</button><input id="psReps" type="number" inputmode="numeric" value="${reps}" min="1" max="100"><button data-psadd="reps:1" type="button">+</button></div></div>
-        <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-psadd="weight:-${st}" type="button">−</button><input id="psW" type="number" inputmode="decimal" value="${w}" min="0" step="0.5" placeholder="自重填 0"><button data-psadd="weight:${st}" type="button">+</button></div></div>
+        <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-psadd="weight:-${st}" type="button">−</button><input id="psW" type="number" inputmode="decimal" value="${w}" min="0" step="0.5" placeholder="0 = 自重"><button data-psadd="weight:${st}" type="button">+</button></div></div>
       </div>
       <div class="ps-note">加入后「今日训练计划」会有对应组数，可在专注模式里逐组打勾。</div>
       <div class="tr-actions"><button class="btn sm" data-psok type="button">${edit?'保存修改':'加入今日计划'}</button><button class="btn ghost sm" data-psx type="button">取消</button></div>
@@ -5841,7 +5848,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       addRec({exId:id, name:e.n, part:e.p, sets:sets, reps:reps, weight:weight});
     }
     try{ updateOrb(); }catch(err){}
-    if(!silent) trToast('已加入今日训练计划：'+e.n+' '+sets+'×'+reps+(weight>0?' @'+weight+'kg':'（自重）'));
+    if(!silent) trToast('已加入今日：'+e.n+' '+sets+'×'+reps+(weight>0?' @'+weight+'kg':'（自重）'));
   }
   function bindDetail(root, e){
     if(!root) return;
@@ -5862,7 +5869,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const el=document.createElement('div'); el.className='lg-menu';
     el.style.zIndex='10060';
     const hasFav=(train.favs||[]).includes(id);
-    el.innerHTML='<button type="button" data-mact="name">编辑名称</button>'+(hasFav?'<button type="button" data-mact="unfav">取消收藏</button>':'');
+    el.innerHTML='<button type="button" data-mact="name">重命名</button>'+(hasFav?'<button type="button" data-mact="unfav">取消收藏</button>':'');
     document.body.appendChild(el);
     el.style.top=Math.round(Math.max(8,Math.min(r.bottom+6,window.innerHeight-110)))+'px';
     el.style.left=Math.max(12,Math.round(Math.min(r.right-120, window.innerWidth-132)))+'px';
@@ -5952,7 +5959,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const sh=document.getElementById('exSheet');
     const body=sh&&sh.querySelector('#exSheetBody');
     if(!body){ trToast('请从动作详情里编辑'); return; }
-    body.innerHTML=`<div class="ex-detail"><div class="ex-dt-head"><span class="ex-dt-name">编辑名称</span><span class="ex-dt-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}</span></div>
+    body.innerHTML=`<div class="ex-detail"><div class="ex-dt-head"><span class="ex-dt-name">重命名</span><span class="ex-dt-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}</span></div>
       <label class="f-label">动作名称（只改显示名，不改动作数据）</label>
       <input id="exNameInp" type="text" value="${ENGINE.esc(cur)}" placeholder="按你的习惯命名，如：平板卧推">
       <div class="tr-actions"><button class="btn sm" data-exnamesave type="button">保存</button><button class="btn ghost sm" data-exnamecancel type="button">取消</button>${orig&&orig!==cur?'<button class="btn ghost sm" data-exnamereset type="button">恢复原名</button>':''}</div>
@@ -6105,7 +6112,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         </div>
         <div class="f-field"><label class="f-label">动作要领（每行一步）</label><textarea id="cuSteps" placeholder="每行写一步"></textarea></div>
       </div>
-      <div class="cu-btns"><button class="btn ghost sm" type="button" data-cux>取消</button><button class="btn sm" type="button" id="cuSave">保存到动作库</button></div>
+      <div class="cu-btns"><button class="btn ghost sm" type="button" data-cux>取消</button><button class="btn sm" type="button" id="cuSave">保存</button></div>
     </div>`;
     document.body.appendChild(el);
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
@@ -6259,7 +6266,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         const rv=(()=>{ try{ return partRecovery(rec.part)||{}; }catch(e){ return {}; } })();
         box.innerHTML=`<div class="plan-empty">
           <div class="plan-empty-t">${(rv.h && rv.h<900)?('上次练'+rec.view+'是 '+rv.h+' 天前'):('最近没练过'+rec.view)} · 今天推荐练【${rec.view}】</div>
-          <button class="btn sm" id="plReco" type="button">一键生成${rec.view}日计划</button>
+          <button class="btn sm btn-block" id="plReco" type="button">一键生成${rec.view}日计划</button>
         </div>`;
         const rb=$('plReco');
         if(rb) rb.onclick=()=>{ window.planPart=rec.part; planGenerate(rec.part); };
@@ -6321,12 +6328,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <b>${ENGINE.esc(label)}日计划</b><span class="pl-sum">${trPlan.length} 动作 · ${amount}</span>
           <button class="plan-more" id="plMore" type="button" aria-label="更多">⋯</button>
           <div class="plan-menu" id="plMenu" hidden>
-            <button type="button" data-plm="reset">恢复建议值</button>
-            <button type="button" data-plm="again">换一组</button>
+            <button type="button" data-plm="reset">恢复默认</button>
+            <button type="button" data-plm="again">重新生成</button>
           </div>
         </div>
         <div class="pl-tools">
-          <button class="btn sm" id="plImport" type="button" ${pending?'':'disabled'}>${pending?('全部加入 · '+pending):'已全部加入'}</button>
+          <button class="btn sm btn-block" id="plImport" type="button" ${pending?'':'disabled'}>${pending?('全部加入 · '+pending):'已全部加入'}</button>
         </div>
         <div class="pl-table"><div class="pl-th"><span>动作</span><span>组 × 次</span><span>重量</span></div>
           ${pendRows.length?pendRows.join(''):'<div class="pl-empty">待加入的动作都处理完了</div>'}
@@ -6364,7 +6371,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const k=b.dataset.plm;
       if(k==='reset'){
         if(!trPlanOrig) return;
-        trPlan=trPlanOrig.map(i=>({...i})); plOpen=-1; trPlanSave(); trRenderPlan(); trToast('已恢复建议值');
+        trPlan=trPlanOrig.map(i=>({...i})); plOpen=-1; trPlanSave(); trRenderPlan(); trToast('已恢复默认');
       } else {
         planGenerate(trPlan[0]&&trPlan[0].part?trPlan[0].part:(window.planPart||'胸'));
       }
@@ -6485,9 +6492,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const ck=(train.checkins||{})[d];
     if(ck && !feelEditing){
       el.hidden=false;
-      el.innerHTML=`<div class="feel-hd"><b>今天练完了 · 练后感受</b><button class="mini-text" id="feelEdit" type="button">改一下</button></div>
+      el.innerHTML=`<div class="feel-hd"><b>今天练完了 · 练后感受</b><button class="mini-text" id="feelEdit" type="button">修改</button></div>
         <div class="feel-sum"><span>情绪 <b>${ck.mood}/5</b> ${FEEL_MOOD[ck.mood-1]||''}</span><span>状态 <b>${ck.energy}/5</b> ${FEEL_ENERGY[ck.energy-1]||''}</span></div>
-        ${ck.note?`<div class="feel-note">“${ENGINE.esc(ck.note)}”</div>`:`<div class="feel-note dim">没写感受，点「改一下」补一句</div>`}`;
+        ${ck.note?`<div class="feel-note">“${ENGINE.esc(ck.note)}”</div>`:`<div class="feel-note dim">没写感受，点「修改」补一句</div>`}`;
       if($('feelEdit')) $('feelEdit').onclick=()=>{ feelEditing=true; trRenderFeel(items); };
       return;
     }
@@ -6500,8 +6507,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="feel-row"><span class="feel-lbl">状态</span>
         <input type="range" min="1" max="5" step="1" value="${e}" id="feelEnergy" aria-label="状态">
         <span class="feel-val" id="feelEnergyTxt">${FEEL_ENERGY[e-1]}</span></div>
-      <input id="feelNote" type="text" autocomplete="off" placeholder="一句话感受（可不填）：今天推得挺稳 / 有点虚…" value="${ck&&ck.note?ENGINE.esc(ck.note):''}">
-      <button class="btn sm feel-save" id="feelSave" type="button">保存感受</button>`;
+      <input id="feelNote" type="text" autocomplete="off" placeholder="感受（可选）" value="${ck&&ck.note?ENGINE.esc(ck.note):''}">
+      <button class="btn sm feel-save btn-block" id="feelSave" type="button">保存</button>`;
     const mo=$('feelMood'), en=$('feelEnergy');
     const paint=(r,txt,arr)=>{ if(!r) return; if($(txt)) $(txt).textContent=arr[(+r.value)-1]; try{ fillRange(r); }catch(err){} };
     if(mo){ mo.oninput=()=>paint(mo,'feelMoodTxt',FEEL_MOOD); }
@@ -7131,7 +7138,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     body.innerHTML=`
       <div class="filter-bar">
         <select id="fType">${typeOpts}</select>
-        <input type="text" id="fTag" placeholder="筛选标签 / 关键词" value="${ENGINE.esc(logFilter.tag)}">
+        <input type="text" id="fTag" placeholder="搜索标签或内容" value="${ENGINE.esc(logFilter.tag)}">
         <select id="fRange"><option value="0">全部时间</option><option value="7">近7天</option><option value="30">近30天</option><option value="90">近90天</option></select>
         <span class="fcount">共 ${list.length} 条</span>
       </div>
@@ -7426,8 +7433,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="f-row"><div class="f-field">${fieldHtml(PROFILE_FIELDS[8])}</div></div>
       <div class="f-row"><div class="f-field">${fieldHtml(PROFILE_FIELDS[9])}</div></div>
       <div class="edit-actions">
-        <button type="submit" class="btn sm">保存档案</button>
-        <button type="button" class="btn ghost sm danger" id="pfClear">清空档案</button>
+        <button type="submit" class="btn sm">保存</button>
+        <button type="button" class="btn ghost sm danger" id="pfClear">清空</button>
         ${saved}
       </div>
       <div class="hint">填写的档案会作为 Agent 分析的固定上下文，与你的记录一起用于生成画像、规划与趋势推演。所有信息仅存本地。</div>
@@ -7436,7 +7443,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function setSummaries(){
     const p=profile||{};
     const ptxt=[(p.gender&&p.gender!=='保密')?p.gender:'',(p.age&&p.age!=='保密')?p.age:'',p.job?String(p.job):'']
-      .filter(Boolean).join(' · ') || (Object.keys(p).length? '已保存档案':'未填写');
+      .filter(Boolean).join(' · ') || (Object.keys(p).length? '已保存':'未填写');
     const tagsN=(settings.types||[]).reduce((a,t)=>a+((t.tags||[]).length),0);
     const restUser=(typeof train!=='undefined'&&train&&train.restUser)?(train.restUser+'s'):'按动作';
     const auto=(typeof train!=='undefined'&&train&&train.autoNext)?'开':'关';
@@ -7524,7 +7531,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function renderSettingsPanel(){
     const body=$('reportBody');
-    const saved = Object.keys(profile).length ? `<span class="profile-saved">已保存档案</span>` : '';
+    const saved = Object.keys(profile).length ? `<span class="profile-saved">已保存</span>` : '';
     const sum = setSummaries();
     const typeCards = settings.types.map(t=>{
       const core = t.key==='work'||t.key==='fit'||t.key==='life';
@@ -7618,7 +7625,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
                 <input type="file" id="impFile" accept="application/json,.json" hidden>
               </div>
               <textarea class="imp-area" id="impArea" placeholder="把备份 JSON 粘贴到这里" hidden></textarea>
-              <div class="backup-row" id="impDoRow" hidden><button class="btn sm" id="impDo">确认导入</button></div>
+              <div class="backup-row" id="impDoRow" hidden><button class="btn sm" id="impDo">导入</button></div>
               <div class="backup-msg" id="bakMsg"></div>
             </div>
             <div class="setting-sec">
@@ -7627,12 +7634,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               <div class="cloud-grid">
                 <input type="text" id="cloudUrl" placeholder="项目 URL，如 https://abcd.supabase.co" autocomplete="off">
                 <input type="text" id="cloudKey" placeholder="anon public key" autocomplete="off">
-                <input type="text" id="cloudSecret" placeholder="访问口令（自定义一串字符，用于隔离你的数据）" autocomplete="off">
+                <input type="text" id="cloudSecret" placeholder="设置访问口令" autocomplete="off">
               </div>
               <div class="backup-row">
-                <button class="btn ghost sm" id="cloudSave">保存并连接</button>
-                <button class="btn ghost sm" id="cloudPull">从云端拉取</button>
-                <button class="btn ghost sm" id="cloudPush">全量上传</button>
+                <button class="btn ghost sm" id="cloudSave">测试连接</button>
+                <button class="btn ghost sm" id="cloudPull">从云端恢复</button>
+                <button class="btn ghost sm" id="cloudPush">上传数据</button>
               </div>
               <div class="backup-msg" id="cloudMsg"></div>
               <div class="hint" style="margin-top:10px">数据表：<code>selfagent_state</code>（k/v 快照）。建表 SQL 见仓库 <code>db/schema.sql</code>。anon key 会随页面公开，口令用于避免他人误读写。</div>
@@ -7887,7 +7894,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="rv-diff">上周 ${r.prev.logs} 条 / ${r.prev.sets} 组 · 容量 ${r.cur.vol} kg</div>
       <p class="rv-say">${ENGINE.esc(r.rise)}</p>
       ${r.cur.kw.length?`<div class="rv-kw">${r.cur.kw.map(k=>`<span>${ENGINE.esc(k)}</span>`).join('')}</div>`:''}
-      <div class="rv-acts"><button class="btn sm" type="button" id="rvShare">生成分享图</button><button class="btn ghost sm" type="button" id="rvHide">收起</button></div>
+      <div class="rv-acts"><button class="btn sm" type="button" id="rvShare">分享</button><button class="btn ghost sm" type="button" id="rvHide">收起</button></div>
     </div>`;
     if($('rvHide')) $('rvHide').onclick=()=>{ box.innerHTML=''; try{ localStorage.setItem('selfagent_review_seen','1'); }catch(e){} };
     if($('rvShare')) $('rvShare').onclick=()=>reviewShare(r);
@@ -8118,10 +8125,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const last={};
       (train.records||[]).forEach(r=>{ if(PART_RE.test(r.part||'')){ const k=(r.part||'').match(PART_RE)[0]; if(!last[k]||r.date>last[k]) last[k]=r.date; } });
       const rows=parts.map(p=>({p, d:last[p]||''})).filter(r=>r.d).sort((x,y)=> x.d<y.d?-1:1);
-      if(!rows.length) return {title:'最久没练的部位', range:'全部记录', main:'还没有带部位的训练记录，先练一次我就能算了。', sub:'', refs:[]};
+      if(!rows.length) return {title:'最久未练部位', range:'全部记录', main:'还没有带部位的训练记录，先练一次我就能算了。', sub:'', refs:[]};
       const top=rows[0];
       const days=Math.round((Date.now()-new Date(top.d+'T00:00:00').getTime())/864e5);
-      return {title:'最久没练的部位', range:'全部记录',
+      return {title:'最久未练部位', range:'全部记录',
         main:`${top.p} 已经 ${days} 天没练（上次 ${top.d}）。`,
         sub: rows.map(r=>r.p+' · '+dayShort(r.d)+'（'+Math.round((Date.now()-new Date(r.d+'T00:00:00').getTime())/864e5)+' 天前）').join(' ／ '),
         refs:[]};
@@ -8268,7 +8275,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <div class="ob-k">STEP 1 / 3</div><h3>先选你要练的部位</h3>
           <p class="ob-sub">之后首页和计划都会围着这几个部位转。</p>
           <div class="ob-parts">${PARTS.map(p=>`<button type="button" class="ob-p${parts.includes(p)?' on':''}" data-p="${p}">${p}</button>`).join('')}</div>
-          <div class="ob-acts"><button class="btn sm" type="button" data-next="1" ${parts.length?'':'disabled'}>下一步</button><button class="btn ghost sm" type="button" data-skip="1">跳过引导</button></div>
+          <div class="ob-acts"><button class="btn sm" type="button" data-next="1" ${parts.length?'':'disabled'}>下一步</button><button class="btn ghost sm" type="button" data-skip="1">跳过</button></div>
         </div>`;
         wrap.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ const p=b.dataset.p;
           parts=parts.includes(p)?parts.filter(x=>x!==p):parts.concat([p]); paint(); });
@@ -8282,7 +8289,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <p class="ob-sub">收藏的动作会排在动作库最前面。</p>
           <div class="ob-list">${list.map(e=>`<button type="button" class="ob-ex${favs.includes(e.id)?' on':''}" data-ex="${e.id}">
             <span>${ENGINE.esc(e.n)}</span><i>${ENGINE.esc(e.p||'')} · ${ENGINE.esc(e.e||'自重')}</i></button>`).join('')}</div>
-          <div class="ob-acts"><button class="btn sm" type="button" data-next="1" ${favs.length?'':'disabled'}>下一步</button><button class="btn ghost sm" type="button" data-skip="1">跳过引导</button></div>
+          <div class="ob-acts"><button class="btn sm" type="button" data-next="1" ${favs.length?'':'disabled'}>下一步</button><button class="btn ghost sm" type="button" data-skip="1">跳过</button></div>
         </div>`;
         wrap.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{ const id=b.dataset.ex;
           favs=favs.includes(id)?favs.filter(x=>x!==id):favs.concat([id]); paint(); });
@@ -8294,7 +8301,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <div class="ob-k">STEP 3 / 3</div><h3>写下第一笔</h3>
           <p class="ob-sub">一句就够，比如「昨晚一点才睡，今天很困」。</p>
           <textarea id="obText" rows="3" placeholder="今天……"></textarea>
-          <div class="ob-acts"><button class="btn sm" type="button" id="obDone">完成，开始第 1 天</button><button class="btn ghost sm" type="button" data-skip="1">先跳过</button></div>
+          <div class="ob-acts"><button class="btn sm" type="button" id="obDone">开始使用</button><button class="btn ghost sm" type="button" data-skip="1">跳过</button></div>
         </div>`;
         const btn=wrap.querySelector('#obDone'); btn.onclick=()=>{
           const v=(wrap.querySelector('#obText').value||'').trim();
@@ -8596,11 +8603,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 })();
 </script>
 <nav class="m-tabbar" id="tabbar">
-  <button data-page="home" class="on"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.2 10.2V20h11.8V10.2"/></svg><span class="tl">首页</span></button>
-  <button data-page="record"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4M6 8v8M18 8v8M21 10v4M6 12h12"/></svg><span class="tl">训练</span></button>
+  <button data-page="home" class="on"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.2 10.2V20h11.8V10.2"/></svg><span class="tl">首页</span></button>
+  <button data-page="record"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4M6 8v8M18 8v8M21 10v4M6 12h12"/></svg><span class="tl">训练</span></button>
   <button class="tab-cta" data-page="agent" aria-label="分析 · 自我认知">
     <span class="cta-core" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 4.2l1.85 4.6 4.6 1.85-4.6 1.85L12 17.1l-1.85-4.6-4.6-1.85 4.6-1.85z"/>
         <path d="M18.6 4.4v2.6M17.3 5.7h2.6"/>
       </svg>
@@ -8608,8 +8615,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     <span class="cta-dot" id="ctaDot" hidden></span>
     <span class="cta-lbl">分析</span>
   </button>
-  <button data-page="log"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v16H7z"/><path d="M10 9h4M10 12.5h4M10 16h2"/></svg><span class="tl">日志</span></button>
-  <button data-page="setting"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5h9M17.5 7.5h2.5M4 12h3.5M11 12h9M4 16.5h10M18.5 16.5h1.5"/><circle cx="15" cy="7.5" r="2"/><circle cx="8.5" cy="12" r="2"/><circle cx="16" cy="16.5" r="2"/></svg><span class="tl">设置</span></button>
+  <button data-page="log"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v16H7z"/><path d="M10 9h4M10 12.5h4M10 16h2"/></svg><span class="tl">记录</span></button>
+  <button data-page="setting"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5h9M17.5 7.5h2.5M4 12h3.5M11 12h9M4 16.5h10M18.5 16.5h1.5"/><circle cx="15" cy="7.5" r="2"/><circle cx="8.5" cy="12" r="2"/><circle cx="16" cy="16.5" r="2"/></svg><span class="tl">设置</span></button>
 </nav>
 <div class="fab-sheet" id="fabSheet">
   <div class="fab-inner">
@@ -8626,7 +8633,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <div class="f-field"><label class="f-label">情绪</label><input type="range" id="fabMood" min="1" max="5" value="3"></div>
       </div>
     </details>
-    <div class="fab-bar"><button class="ybtn" id="fabYest" type="button">记到昨天</button><button class="btn sm" id="fabSave" type="button">存下</button></div>
+    <div class="fab-bar"><button class="ybtn" id="fabYest" type="button" aria-label="开启后记录记为昨天">昨天</button><button class="btn sm" id="fabSave" type="button">存下</button></div>
   </div>
 </div>
 <script>
