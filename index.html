@@ -1813,6 +1813,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 }
 .mode-orb{touch-action:manipulation}
 .orb-opt{cursor:pointer}
+
+/* ===== p132 长按换挡：按压反馈 + 松手不关菜单 ===== */
+.mode-orb.pressing .orb-core{transform:scale(.95)}
+.mode-orb.menu-on .orb-core{transform:scale(.94)}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -4552,25 +4556,29 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       })[0]||null;
       const hoverMark=(x,y)=>{ const hit=optAt(x,y);
         el.querySelectorAll('.orb-opt').forEach(o=>o.classList.toggle('hover',o===hit)); };
-      let tapTimer=null, dbl=false, wasMenu=false;
+      let wasMenu=false;
       const openOrbMenu=()=>{
-        el.classList.add('menu-on');
+        el.classList.add('menu-on'); el.classList.remove('pressing');
         try{ if(navigator.vibrate) navigator.vibrate(16); }catch(e){}
       };
-      const dropTap=()=>{ if(tapTimer){ clearTimeout(tapTimer); tapTimer=null; } };
       el.addEventListener('pointerdown',ev=>{
         if(ev.pointerType==='mouse' && ev.button!==0) return;
+        if(ev.target && ev.target.closest && ev.target.closest('.orb-opt')) return;
         clearT();
         wasMenu = el.classList.contains('menu-on');
-        if(tapTimer){ dropTap(); dbl=true; } else { dbl=false; }
         st.phase='pressing'; st.sx=ev.clientX; st.sy=ev.clientY; st.t0=Date.now();
+        el.classList.add('pressing');
         try{ el.setPointerCapture(ev.pointerId); }catch(e){}
+        st.timer=setTimeout(()=>{
+          st.timer=null;
+          if(st.phase==='pressing'){ st.phase='menu'; openOrbMenu(); }
+        }, 420);
       });
       el.addEventListener('pointermove',ev=>{
         if(st.phase==='idle') return;
         const dx=ev.clientX-st.sx, dy=ev.clientY-st.sy;
         if(st.phase==='pressing' && Math.hypot(dx,dy)>8){
-          clearT(); dropTap(); dbl=false;
+          clearT(); el.classList.remove('pressing');
           if(el.classList.contains('menu-on')) el.classList.remove('menu-on');
           st.phase='dragging'; el.classList.add('dragging');
         }
@@ -4584,8 +4592,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const finish=ev=>{
         clearT();
         const phase=st.phase;
+        el.classList.remove('pressing');
+        if(phase==='menu'){
+          const o=optAt(ev.clientX,ev.clientY);
+          if(o){ orbSetMode(o.getAttribute('data-opt')); el.classList.remove('menu-on'); }
+          el.querySelectorAll('.orb-opt').forEach(x=>x.classList.remove('hover'));
+          st.phase='idle'; return;
+        }
         if(phase==='dragging'){
-          dropTap(); dbl=false;
           const h=el.offsetHeight||56, vw=window.innerWidth, vh=window.innerHeight;
           __orbCfg.side = ev.clientX < vw/2 ? 'left' : 'right';
           __orbCfg.bottom = vh - (ev.clientY - h/2) - h;
@@ -4593,17 +4607,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           orbPlace(el); orbSaveCfg(); st.phase='idle';
           return;
         }
-        const dt=Date.now()-st.t0, dx=ev.clientX-st.sx, dy=ev.clientY-st.sy;
+        const dx=ev.clientX-st.sx, dy=ev.clientY-st.sy;
         st.phase='idle';
-        if(Math.hypot(dx,dy)>=8 || dt>=600) return;
+        if(Math.hypot(dx,dy)>=8) return;
         if(wasMenu){ wasMenu=false; el.classList.remove('menu-on'); return; }
-        if(dbl){ dbl=false; dropTap(); openOrbMenu(); return; }
-        dropTap();
-        tapTimer=setTimeout(()=>{ tapTimer=null; orbRunDefault(); }, 250);
+        orbRunDefault();
       };
       el.addEventListener('pointerup',finish);
       el.addEventListener('pointercancel',()=>{
-        clearT(); dropTap(); dbl=false; wasMenu=false; el.classList.remove('menu-on','dragging');
+        clearT(); wasMenu=false; el.classList.remove('menu-on','dragging','pressing');
         el.style.left=''; el.style.top=''; st.phase='idle'; orbPlace(el);
       });
       document.addEventListener('pointerdown',ev=>{
@@ -7717,7 +7729,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   apply(document.documentElement.getAttribute('data-theme')||'dark');
 })();
 </script>
-<div class="mode-orb" id="modeOrb" data-mode="record" role="button" aria-label="单击执行当前模式，双击切换模式">
+<div class="mode-orb" id="modeOrb" data-mode="record" role="button" aria-label="单击执行当前模式，长按切换模式">
 <div class="orb-core">
 <svg class="orb-ring" viewBox="0 0 62 62" aria-hidden="true">
 <defs><linearGradient id="foGrad" x1="0" y1="0" x2="1" y2="1">
