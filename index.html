@@ -2098,6 +2098,20 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
 .fast-hint{flex:1 1 auto;min-width:0}
 .fast-right{flex:0 0 auto}
 .fast-save{height:36px;padding:0 18px;white-space:nowrap;flex:0 0 auto;font-size:13px;border-radius:8px}
+
+/* ===== 头部与日志折叠 ===== */
+.page-title{font-size:20px}
+@media(max-width:900px){.page-title{font-size:18px}.wide-only{display:none}}
+.day-block{margin-bottom:6px}
+.day-tog{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;background:none;border:0;border-bottom:1px solid var(--line);font:inherit;font-size:12.5px;color:var(--tx2);cursor:pointer;text-align:left;padding:0 2px}
+.day-tog em{margin-left:auto;font-style:normal;color:var(--tx3);font-size:11px}
+.day-ar{font-style:normal;color:var(--tx3);font-size:11px;transition:transform .18s}
+.day-block.open .day-ar{transform:rotate(90deg)}
+.day-body{padding-top:8px;display:flex;flex-direction:column;gap:10px}
+.about-box{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:rgba(255,255,255,.02)}
+.about-box summary{cursor:pointer;font-size:12.5px;color:var(--tx2);padding:12px 0;list-style:none}
+.about-box summary::-webkit-details-marker{display:none}
+.about-box p{margin:0 0 12px;font-size:11.5px;line-height:1.8;color:var(--tx3)}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -2128,7 +2142,7 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
   <section class="page page-home" id="pageHome">
     <div class="home-wrap">
       <div id="homeReview"></div>
-      <div class="eyebrow">TODAY · 今日总览</div>
+      <div class="eyebrow">HOME</div>
       <div class="page-title" id="homeTitle">今天</div>
       <div class="page-desc" id="homeSub">—</div>
       <div class="home-today" id="homeToday"></div>
@@ -2162,9 +2176,9 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
   <section class="page page-record" id="pageRecord">
     <div class="rp-top">
       <div>
-        <div class="eyebrow">TRAIN · 训练</div>
-        <div class="page-title">今天练什么</div>
-        <div class="page-desc">今日训练、AI 计划、动作库三个板块切换；练完的组自动落进日志。</div>
+        <div class="eyebrow">TRAIN</div>
+        <div class="page-title">训练</div>
+        <div class="page-desc wide-only">排好今天的动作，逐组记录</div>
       </div>
     </div>
     <div id="recTrainWrap">
@@ -2177,9 +2191,9 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
   <section class="page page-report" id="pageAgent" hidden>
     <div class="rp-top">
       <div>
-        <div class="eyebrow">AGENT · 分析</div>
-        <div class="page-title">Agent 分析</div>
-        <div class="page-desc">画像、规划、推演共用同一份记录，切换只是换一个提问角度。</div>
+        <div class="eyebrow">INSIGHT</div>
+        <div class="page-title">分析</div>
+        <div class="page-desc wide-only">基于你的记录，看见自己的模式</div>
       </div>
       <button class="btn gen btn-block" id="btnGen">重新分析</button>
     </div>
@@ -2208,21 +2222,20 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
   <section class="page page-report" id="pageLog" hidden>
     <div class="rp-top">
       <div>
-        <div class="eyebrow">LOG · 记录与统计</div>
-        <div class="page-title">回看与统计</div>
-        <div class="page-desc">每条记录都能回看和编辑；统计把类型、标签与时间分布画出来。</div>
+        <div class="eyebrow">LOG</div>
+        <div class="page-title">记录</div>
+        <div class="page-desc wide-only">一句话记下今天，自动识别类型与标签</div>
       </div>
     </div>
     <div class="log-input" id="logInput">
       <div class="rec-main">
-        <div class="eyebrow">RECORD</div>
 
         <div class="quick">
           <button class="btn ghost sm" id="btnDemo">载入示例</button>
         </div>
 
         <div class="fast-box" id="fastBox">
-          <div class="fast-cap">随心写</div>
+          <div class="fast-cap">快速记录</div>
           <textarea id="fastInput" rows="3" placeholder="跑了 5 公里 / 加班到十点，有点焦虑 / 昨晚睡了 6 小时"></textarea>
           <div class="fast-bar">
             <span class="fast-hint">自动识别类型 · 训练自动同步</span>
@@ -2283,8 +2296,8 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
   <section class="page page-report" id="pageSetting" hidden>
     <div class="rp-top">
       <div>
-        <div class="eyebrow">SETTING · 设置</div>
-        <div class="page-desc">档案、记录偏好、训练设置、数据同步，都在这一页改。</div>
+        <div class="eyebrow">ME</div>
+        <div class="page-title">我的</div>
       </div>
     </div>
     <div class="report-shell"><div class="body-slot" id="slotSet"></div></div>
@@ -2292,9 +2305,7 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
 
 </main>
 
-<div class="footnote">
-  <b>关于本体验页</b>：① 这是本地静态原型，Agent 输出由内置规则引擎根据你输入的关键词实时合成，用于体验「录入 → 画像 → 规划 → 趋势推演」的完整流程，并非真实大模型；② 数据仅保存在你本地浏览器（localStorage），不会上传；③ 真实产品将接入大模型 API，输出更深刻、个性化的分析；④ 趋势推演仅为基于行为记录的可能性参考，不构成对未来结果的确定性预言。
-</div>
+<div class="footnote" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <script id="engine">
@@ -7130,7 +7141,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       map[d].push(l);
     });
     order.sort((a,b)=> a<b?1:-1);
-    return order.map(d=>`<div class="day-block"><div class="day-head"><span>${dayLabel(d)}</span><em>${map[d].length} 条</em></div>${map[d].map(logCard).join('')}</div>`).join('');
+    return order.map(d=>`<div class="day-block" data-daygrp="${d}">
+        <button class="day-tog" type="button" data-daytog="${d}" aria-expanded="false">
+          <span>${dayLabel(d)}</span><em>${map[d].length} 条</em><i class="day-ar">▸</i>
+        </button>
+        <div class="day-body" hidden>${map[d].map(logCard).join('')}</div>
+      </div>`).join('');
   }
   function renderLogsPanel(){
     const body=$('reportBody');
@@ -7166,6 +7182,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     };
     el.querySelector('[data-mact="del"]').onclick=()=>{
       el.remove();
+      if(!confirm('删除这条记录？删掉后不能恢复。')) return;
       logs=logs.filter(x=>String(x.id)!==String(id)); save(); renderLogs(); renderLogsPanel();
     };
     setTimeout(()=>{
@@ -7174,8 +7191,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     },0);
   }
   function bindLogActions(){
+    document.querySelectorAll('#reportBody [data-daytog]').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const g=b.closest('.day-block'); if(!g) return;
+        const body=g.querySelector('.day-body'); if(!body) return;
+        const open=g.classList.contains('open');
+        g.classList.toggle('open', !open);
+        body.hidden = open;
+        b.setAttribute('aria-expanded', open?'false':'true');
+      });
+    });
     document.querySelectorAll('#reportBody [data-del]').forEach(b=>{
-      b.addEventListener('click',()=>{ logs=logs.filter(x=>String(x.id)!==String(b.dataset.del)); save(); renderLogs(); renderLogsPanel(); });
+      b.addEventListener('click',()=>{
+        if(!confirm('删除这条记录？删掉后不能恢复。')) return;
+        logs=logs.filter(x=>String(x.id)!==String(b.dataset.del)); save(); renderLogs(); renderLogsPanel();
+      });
     });
     document.querySelectorAll('#reportBody [data-edit]').forEach(b=>{
       b.addEventListener('click',()=>openLogSheet(b.dataset.edit));
@@ -7650,7 +7680,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <section class="set-panel" data-p="about" hidden>
             <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>关于</h2></div>
             <div class="setting-sec">
-              <div class="hint">SelfAgent · 自我认知 v0.9 体验版。本地静态原型，所有数据存在本机浏览器（localStorage），不上传服务器；Agent 输出由内置规则引擎生成。</div>
+              <div class="hint">SelfAgent · 自我认知 v0.9 体验版。这是本地静态原型，Agent 输出由内置规则引擎根据你输入的关键词实时合成，用于体验「录入 → 画像 → 规划 → 趋势推演」的完整流程，并非真实大模型。</div>
+              <div class="hint">数据仅保存在你本地浏览器（localStorage），不会上传；真实产品将接入大模型 API，输出更深刻、个性化的分析。</div>
+              <div class="hint">趋势推演仅为基于行为记录的可能性参考，不构成对未来结果的确定性预言。</div>
               <div class="hint" style="margin-top:10px">快捷键：空格＝随手记，T＝专注训练。悬浮球可拖拽吸附屏幕左右边缘，长按切换默认模式。</div>
             </div>
           </section>
