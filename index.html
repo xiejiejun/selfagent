@@ -2186,6 +2186,17 @@ html[data-theme="light"] .tour-prev,html[data-theme="light"] .tour-next{color:in
 html[data-theme="light"] .tour-prev{background:#fff;border-color:var(--line);color:var(--tx2)}
 
 /* 组行滑动手势：横向交给 JS，纵向保留滚动 */
+.fm-hint{flex:0 0 auto;font-size:10.5px;letter-spacing:.04em;color:var(--tx3);
+  padding:2px 7px;border:1px solid var(--line);border-radius:999px;white-space:nowrap;
+  pointer-events:none;animation:fmHintPlay 1.05s ease-in-out 3 both}
+html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
+@keyframes fmHintPlay{
+  0%{opacity:0;transform:translateX(8px)}
+  20%{opacity:.92;transform:translateX(0)}
+  58%{opacity:.92;transform:translateX(-6px)}
+  100%{opacity:0;transform:translateX(-12px)}
+}
+@media (prefers-reduced-motion:reduce){ .fm-hint{animation:none;opacity:.6} }
 .fm-row,.fm-row .fm-main{touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .fm-sets{overscroll-behavior:contain}
 </style>
@@ -5166,11 +5177,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="fm-sub">${doneN}/${gs.length} 组已完成${doneN===gs.length?' · 本动作完成':' · 点圆圈完成一组'}</div>
       <div class="fm-sets">${gs.map(g=>{
         const k=r.uid+':'+g.no; const st=window.__grpStart&&window.__grpStart[k];
+        const firstUndone=gs.find(x=>!x.done);
         return `
         <div class="fm-row ${g.done?'done':''} ${st?'timing':''}" data-fmrow="${k}">
           <div class="fm-main">
             <button class="fm-tick ${g.done?'done':''}" data-fmtick="${k}" type="button" aria-label="${g.done?'取消完成':'完成第 '+g.no+' 组'}">${g.done?'✓':g.no}</button>
             <span class="fm-val">${g.weight>0?g.weight+' kg':'自重'} × ${g.reps}<i>${st?('· 计时 '+Math.max(1,Math.round((Date.now()-st)/1000))+'s'):(g.done&&g.sec?('· '+g.sec+'s'):'')}</i></span>
+            ${(!g.done && g===firstUndone)?'<span class="fm-hint" aria-hidden="true">‹‹ 左滑</span>':''}
           </div>
           <span class="fm-side">
             <button class="fm-act" data-fmedit="${k}" type="button">编辑</button>
@@ -5290,6 +5303,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(delset) delset.onclick=()=>{
       const q=ensureGroups(r);
       if(q.length<=1){ trToast('至少保留一组'); return; }
+      const tail=q[q.length-1];
+      if(tail && tail.done){ trToast('第 '+tail.no+' 组已完成，先取消完成再减'); return; }
+      if(tail && window.__grpStart && window.__grpStart[r.uid+':'+tail.no]){
+        trToast('第 '+tail.no+' 组正在计时，先完成或停止再减'); return;
+      }
       const last=q.pop();
       if(window.__grpStart){ delete window.__grpStart[r.uid+':'+last.no]; }
       r.sets=q.length; saveTrain(); trRenderToday(); renderFocus();
