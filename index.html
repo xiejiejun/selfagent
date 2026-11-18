@@ -5170,6 +5170,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       return `<button class="fm-chip ${on?'on':''} ${d===q.length?'done':''}" data-fmgo="${x.uid}" type="button" aria-label="${ENGINE.esc(x.name)} ${d}/${q.length} 组">
         <span>${ENGINE.esc(x.name)}</span><em>${d}/${q.length}</em></button>`;
     }).join('');
+    const hintOn=(window.__hintUid!==r.uid);
     el.innerHTML=`<div class="fm-progress"><i style="width:${pct}%"></i></div>
       <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span role="timer" aria-label="训练进度">${dAll}/${tAll} 组 · ${__focusIdx+1}/${__focusUids.length} 动作</span></div>
       <div class="fm-strip" role="tablist" aria-label="今日动作预览">${strip}</div>
@@ -5183,7 +5184,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <div class="fm-main">
             <button class="fm-tick ${g.done?'done':''}" data-fmtick="${k}" type="button" aria-label="${g.done?'取消完成':'完成第 '+g.no+' 组'}">${g.done?'✓':g.no}</button>
             <span class="fm-val">${g.weight>0?g.weight+' kg':'自重'} × ${g.reps}<i>${st?('· 计时 '+Math.max(1,Math.round((Date.now()-st)/1000))+'s'):(g.done&&g.sec?('· '+g.sec+'s'):'')}</i></span>
-            ${(!g.done && g===firstUndone)?'<span class="fm-hint" aria-hidden="true">‹‹ 左滑</span>':''}
+            ${(hintOn && !g.done && g===firstUndone)?'<span class="fm-hint" aria-hidden="true">‹‹ 左滑</span>':''}
           </div>
           <span class="fm-side">
             <button class="fm-act" data-fmedit="${k}" type="button">编辑</button>
@@ -5200,6 +5201,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <button class="fm-mini add" data-fmadd type="button">＋ 添加动作</button>
         <button class="fm-mini finish" data-fmfin type="button">完成训练</button>
       </div>`;
+    if(hintOn) window.__hintUid=r.uid;
     el.classList.toggle('timing', !!(window.__grpStart && Object.keys(window.__grpStart).length));
 
     const x=el.querySelector('[data-fmexit]');
@@ -5384,6 +5386,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const pr=JSON.parse(localStorage.getItem('_focus_prog')||'null');
       if(pr && pr.date===trDateVal()){ const i=rs.findIndex(r=>r.uid===pr.uid); if(i>=0) __focusIdx=i; }
     }catch(e){}
+    window.__hintUid=null;
     renderFocus();
   }
   function focusNextSet(r){
