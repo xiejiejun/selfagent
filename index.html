@@ -2157,6 +2157,33 @@ html[data-theme="light"] .fm-mini.finish{background:#0E8F7A;border-color:#0E8F7A
 .rest.alarm{background:rgba(4,7,9,.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:alarmPulse 1s ease 3 both}
 html[data-theme="light"] .rest.alarm{background:rgba(243,246,250,.96);color:var(--tx)}
 @keyframes alarmPulse{0%,100%{opacity:1}50%{opacity:.82}}
+
+/* ===== 新手引导教程 ===== */
+.home-hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.home-hd .eyebrow{margin:0}
+.tour-entry{background:none;border:1px solid var(--line);color:var(--tx3);font:inherit;font-size:11px;letter-spacing:.4px;padding:5px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.tour-entry:active{transform:scale(.97)}
+.tour-mask{position:fixed;inset:0;z-index:8000;pointer-events:none}
+.tour-hole{position:fixed;border-radius:12px;box-shadow:0 0 0 2000px rgba(4,7,10,.80);outline:2px solid rgba(61,220,191,.75);outline-offset:0;transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease}
+.tour-hole.off{left:50%!important;top:46%!important;width:0!important;height:0!important;outline:none;border-radius:50%}
+.tour-tip{position:fixed;width:min(340px,calc(100vw - 32px));background:#0d1218;border:1px solid rgba(61,220,191,.26);border-radius:14px;padding:14px 16px 13px;color:var(--tx);pointer-events:auto;box-shadow:0 14px 44px rgba(0,0,0,.55)}
+.tour-k{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--accent);margin-bottom:6px}
+.tour-tip h4{margin:0 0 6px;font-size:15px;font-weight:600}
+.tour-tip p{margin:0;font-size:12.5px;line-height:1.65;color:var(--tx2)}
+.tour-acts{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.tour-skip{background:none;border:0;color:var(--tx3);font:inherit;font-size:12px;cursor:pointer;padding:6px 2px}
+.tour-r{display:flex;gap:8px}
+.tour-prev,.tour-next{font:inherit;font-size:12.5px;height:34px;padding:0 16px;border-radius:9px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--tx2)}
+.tour-prev[disabled]{opacity:.35}
+.tour-next{background:#3DDCBF;border-color:#3DDCBF;color:#06231F;font-weight:600}
+.tour-dots{display:flex;gap:5px;margin-top:10px}
+.tour-dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.18)}
+.tour-dots i.on{background:var(--accent)}
+html[data-theme="light"] .tour-tip{background:#fff;border-color:rgba(14,143,122,.28);box-shadow:0 14px 40px rgba(16,32,52,.22)}
+html[data-theme="light"] .tour-hole{box-shadow:0 0 0 2000px rgba(18,26,38,.62);outline-color:rgba(14,143,122,.8)}
+html[data-theme="light"] .tour-next{background:#0E8F7A;border-color:#0E8F7A;color:#fff}
+html[data-theme="light"] .tour-prev,html[data-theme="light"] .tour-next{color:inherit}
+html[data-theme="light"] .tour-prev{background:#fff;border-color:var(--line);color:var(--tx2)}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -2187,7 +2214,10 @@ html[data-theme="light"] .rest.alarm{background:rgba(243,246,250,.96);color:var(
   <section class="page page-home" id="pageHome">
     <div class="home-wrap">
       <div id="homeReview"></div>
-      <div class="eyebrow">HOME</div>
+      <div class="home-hd">
+        <div class="eyebrow">HOME</div>
+        <button class="tour-entry" id="homeTour" type="button">新手引导</button>
+      </div>
       <div class="page-title" id="homeTitle">今天</div>
       <div class="page-desc" id="homeSub">—</div>
       <div class="home-today" id="homeToday"></div>
@@ -8576,6 +8606,80 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   try{ renderLogs(); }catch(e){ console.warn('init:renderLogs',e); }
   try{ renderReport(); }catch(e){ console.warn('init:renderReport',e); }
   try{ openPage('home'); }catch(e){ console.warn('init:openPage',e); }
+
+  /* ---------- 新手引导（分步教程） ---------- */
+  const TOUR_STEPS=[
+    {sel:'#trainOrb', page:'home', title:'今天：一眼看到进度', desc:'中间圆环是今日训练进度，点它直接开始练；下方是近 12 周打卡与身体信号，随时知道自己练得够不够。'},
+    {sel:'#tabbar', page:'home', title:'底部四个入口', desc:'训练排动作、记录写感受、分析看模式、我的管设置。任何时候切一下就能换场景。'},
+    {sel:'#trStart', page:'record', title:'开始训练：逐组打卡', desc:'进入专注模式，一组一组点圆圈完成；＋1 / −1 调组数，休息结束会提醒你进入下一组。'},
+    {sel:'#tabbar [data-page="agent"]', page:'agent', title:'分析：看清自己的模式', desc:'分析页会基于你写下的记录，给出恢复状态、训练平衡与下一步建议。'},
+    {sel:'#tabbar [data-page="log"]', page:'log', title:'记录：一句话就够', desc:'写一句“今天练了卧推 60 5×5”这样的内容，系统自动识别类型、动作与强度。'},
+    {sel:'#tabbar [data-page="setting"]', page:'setting', title:'我的：收藏与设置', desc:'收藏的动作、主题、提醒与数据同步都在这里，随时可改。'},
+    {sel:null, page:null, title:'可以开始了', desc:'建议先记录一条今天的感受，再排一组动作开练。随时点首页右上角「新手引导」重看。'}
+  ];
+  function tourStart(){
+    if(document.getElementById('tour')) return;
+    const wrap=document.createElement('div'); wrap.id='tour'; wrap.className='tour-mask';
+    wrap.innerHTML='<div class="tour-hole off" id="tourHole"></div><div class="tour-tip" id="tourTip" style="left:16px;top:60vh"></div>';
+    document.body.appendChild(wrap);
+    const hole=wrap.querySelector('#tourHole'), tip=wrap.querySelector('#tourTip');
+    let i=0, timer=null;
+    const place=()=>{
+      const st=TOUR_STEPS[i];
+      const el=st.sel?document.querySelector(st.sel):null;
+      const w=window.innerWidth, h=window.innerHeight;
+      if(!el){ hole.className='tour-hole off'; tip.style.left=Math.round((w-tip.offsetWidth)/2)+'px'; tip.style.top=(h/2-90)+'px'; return; }
+      const r=el.getBoundingClientRect();
+      if(r.width<2||r.height<2){ hole.className='tour-hole off'; }
+      else{
+        hole.className='tour-hole';
+        hole.style.left=(r.left-6)+'px'; hole.style.top=(r.top-6)+'px';
+        hole.style.width=(r.width+12)+'px'; hole.style.height=(r.height+12)+'px';
+      }
+      const tw=tip.offsetWidth||300, th=tip.offsetHeight||140;
+      const cx=Math.min(Math.max(12, r.left+r.width/2-tw/2), w-tw-12);
+      let top;
+      if(r.top+6 > h*0.52) top=Math.max(12, r.top-12-th);
+      else top=Math.min(h-th-12, r.bottom+12);
+      if(top<8||top+th>h-8) top=Math.max(12,h-th-16);
+      tip.style.left=Math.round(cx)+'px'; tip.style.top=Math.round(top)+'px';
+    };
+    const paint=()=>{
+      const st=TOUR_STEPS[i];
+      tip.innerHTML=`<div class="tour-k">STEP ${i+1} / ${TOUR_STEPS.length}</div>
+        <h4>${st.title}</h4><p>${st.desc}</p>
+        <div class="tour-acts"><button class="tour-skip" data-tskip type="button">跳过</button>
+          <div class="tour-r">
+            <button class="tour-prev" data-tprev type="button" ${i?'':'disabled'}>上一步</button>
+            <button class="tour-next" data-tnext type="button">${i===TOUR_STEPS.length-1?'完成':'下一步'}</button>
+          </div></div>
+        <div class="tour-dots">${TOUR_STEPS.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join('')}</div>`;
+      tip.querySelector('[data-tnext]').onclick=()=>{ if(i>=TOUR_STEPS.length-1){ close(); return; } i++; paint(); place(); };
+      tip.querySelector('[data-tprev]').onclick=()=>{ if(i>0){ i--; paint(); place(); } };
+      tip.querySelector('[data-tskip]').onclick=()=>close();
+      place();
+    };
+    const close=()=>{
+      try{ localStorage.setItem('selfagent_tour_v1', JSON.stringify({done:1,at:Date.now()})); }catch(e){}
+      if(timer){ clearTimeout(timer); timer=null; }
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+      wrap.remove();
+      try{ trToast('引导结束，随时从首页右上角再打开'); }catch(e){}
+    };
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    const step=()=>{
+      const st=TOUR_STEPS[i];
+      try{ if(st.page && st.page!==currentPage) openPage(st.page); }catch(e){}
+      const el=st.sel?document.querySelector(st.sel):null;
+      if(el && el.getBoundingClientRect().top<0) try{ el.scrollIntoView({block:'center'}); }catch(e){}
+      paint();
+    };
+    step();
+  }
+  const _tourBtn=document.getElementById('homeTour');
+  if(_tourBtn) _tourBtn.addEventListener('click',()=>{ try{ tourStart(); }catch(e){ console.warn('tour',e); } });
 })();
 </script>
 <script>
