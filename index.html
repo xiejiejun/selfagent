@@ -1956,7 +1956,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .tr-tc-link:hover{color:var(--accent);border-color:rgba(61,220,191,.5)}
 .tr-entries{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
 .tr-entries[hidden]{display:none}
-@media(min-width:520px){.tr-entries{grid-template-columns:repeat(3,1fr)}}
+
 .tr-entry{text-align:left;border:1px solid var(--line2);background:var(--panel2);border-radius:12px;padding:12px;cursor:pointer;min-height:66px}
 .tr-entry b{display:block;font-size:14px;color:var(--tx);font-weight:600}
 .tr-entry em{display:block;font-style:normal;font-size:11.5px;color:var(--tx3);margin-top:4px}
@@ -4973,7 +4973,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function orbRunDefault(){
     if(__orbCfg.mode==='focus'){
       if(document.getElementById('focusMode')) return;
-      if(!focusList().length){ trToast('今日计划池还是空的，先用「＋」加几个动作'); return; }
+      if(!focusList().length){
+        try{ openPage('record'); trSetSeg('plan'); }catch(e){}
+        setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="plan"]'); if(p) p.scrollIntoView({block:'start'}); },120);
+        trToast('今日还没有计划：先选部位生成一份，再点球开练');
+        return;
+      }
       openFocus();
       return;
     }
@@ -5474,8 +5479,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <div id="trToday"></div>
           <div class="tr-entries" id="trEmpty">
             <button class="tr-entry ${hasHist?'':'hot'}" data-entry="ai" type="button"><b>AI 帮我排</b><em>按部位生成今日计划</em></button>
-            <button class="tr-entry ${hasHist?'hot':''}" data-entry="mine" type="button"><b>从我的库挑</b><em>点餐式勾选动作</em></button>
-            <button class="tr-entry" data-entry="search" type="button"><b>搜个动作</b><em>1,324 个动作可搜</em></button>
           </div>
         </div>
         <div class="tr-strip" id="weekStrip">
@@ -5698,20 +5701,28 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const seg=$('trSeg');
     if(seg) seg.querySelectorAll('[data-trseg]').forEach(b=>b.onclick=()=>trSetSeg(b.dataset.trseg));
     if($('libTabs')) $('libTabs').querySelectorAll('[data-lt]').forEach(b=>b.onclick=()=>libShow(b.dataset.lt));
-    const lo2=$('libOpen'); if(lo2) lo2.onclick=()=>libOpenP('search');
+    const lo2=$('libOpen'); if(lo2) lo2.onclick=()=>{
+      try{ trSetSeg('lib'); }catch(e){}
+      setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="lib"]'); if(p) p.scrollIntoView({block:'start'}); },60);
+      setTimeout(()=>{ const inp=document.getElementById('trSearch'); if(inp) inp.focus(); },160);
+    };
     const st=$('trStart');
     if(st) st.onclick=()=>{
       const act=st.dataset.act||'start';
       if(act==='summary'){ try{ showTrainSummary(); }catch(e){} return; }
       const items=(train.records||[]).filter(r=>r.date===trDateVal());
-      if(!items.length){ trToast('今日还没有动作，先加几个'); libOpenP('mine'); return; }
+      if(!items.length){
+        trToast('今日还没有动作，先在计划里加几个');
+        try{ trSetSeg('plan'); }catch(e){}
+        setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="plan"]'); if(p) p.scrollIntoView({block:'start'}); },60);
+        return;
+      }
       try{ openFocus(); }catch(e){}
     };
     const tb=$('trEmpty');
     if(tb) tb.querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>{
-      const k=b.dataset.entry;
-      if(k==='ai'){ trSetSeg('plan'); try{ planGenerate(window.planPart||'胸'); }catch(e){} }
-      else libOpenP(k);
+      if(b.dataset.entry!=='ai') return;
+      trSetSeg('plan'); try{ planGenerate(window.planPart||'胸'); }catch(e){}
     });
     const wh=$('weekStripHead'), wb=$('weekBody');
     if(wh&&wb) wh.onclick=()=>{
