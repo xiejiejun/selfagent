@@ -2091,6 +2091,13 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
 .btn:disabled{opacity:.4;pointer-events:none}
 .btn.danger{background:transparent;border:1px solid rgba(224,107,107,.55);color:#e06b6b;box-shadow:none}
 .btn.danger:hover{background:rgba(224,107,107,.1);color:#e06b6b}
+
+/* ===== 记录页快捷框 ===== */
+.fast-cap{font-size:12px;font-weight:600;color:var(--tx2);letter-spacing:.5px;margin-bottom:6px}
+.fast-box textarea{min-height:84px}
+.fast-hint{flex:1 1 auto;min-width:0}
+.fast-right{flex:0 0 auto}
+.fast-save{height:36px;padding:0 18px;white-space:nowrap;flex:0 0 auto;font-size:13px;border-radius:8px}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -2201,33 +2208,27 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
   <section class="page page-report" id="pageLog" hidden>
     <div class="rp-top">
       <div>
-        <div class="eyebrow">LOG · 日志与统计</div>
+        <div class="eyebrow">LOG · 记录与统计</div>
         <div class="page-title">回看与统计</div>
         <div class="page-desc">每条记录都能回看和编辑；统计把类型、标签与时间分布画出来。</div>
       </div>
     </div>
     <div class="log-input" id="logInput">
       <div class="rec-main">
-        <div class="eyebrow">INPUT · 写一条</div>
-        <div class="page-title">写一条</div>
-        <div class="page-desc">随手写一句，自动认类型和标签；时间线按天分组。</div>
+        <div class="eyebrow">RECORD</div>
 
         <div class="quick">
-          <button class="btn ghost sm" id="btnTrain">去训练页</button>
-          <button class="btn ghost sm m-more-btn" id="btnMore">更多</button>
-          <div class="m-extra" id="quickExtra">
-            <button class="btn ghost sm" id="btnDemo">载入示例数据</button>
-            <button class="btn ghost sm danger" id="btnClear">清空数据</button>
-          </div>
+          <button class="btn ghost sm" id="btnDemo">载入示例</button>
         </div>
 
         <div class="fast-box" id="fastBox">
-          <textarea id="fastInput" rows="2" placeholder="一句话记下：跑了5公里 / 加班到十点，很焦虑 / 昨晚睡了6小时"></textarea>
+          <div class="fast-cap">随心写</div>
+          <textarea id="fastInput" rows="3" placeholder="跑了 5 公里 / 加班到十点，有点焦虑 / 昨晚睡了 6 小时"></textarea>
           <div class="fast-bar">
-            <span class="fast-hint">自动认类型和标签 · 训练记录会自动同步，不用手写</span>
+            <span class="fast-hint">自动识别类型 · 训练自动同步</span>
             <span class="fast-right">
               <button class="ybtn" id="fastYesterday" type="button" aria-label="开启后记录记为昨天">昨天</button>
-              <button class="btn sm" id="fastSave" type="button">存下</button>
+              <button class="btn sm fast-save" id="fastSave" type="button">保存</button>
             </span>
           </div>
           <div class="fast-chips" id="fastChips"></div>
@@ -2976,7 +2977,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!pushLog(v, true, dkey)) return;
     if(yb) trToast('已记到昨天 '+String(dkey||'').slice(5));
     $('fastInput').value=''; tagChips=[]; renderTagChips();
-    const sb=$('fastSave'); if(sb){ sb.classList.add('done'); const o=sb.textContent; sb.textContent='✓ 已存'; setTimeout(()=>{ sb.classList.remove('done'); sb.textContent=o; }, 1400); }
+    const sb=$('fastSave'); if(sb){ sb.classList.add('done'); const o=sb.textContent; sb.textContent='✓ 已保存'; setTimeout(()=>{ sb.classList.remove('done'); sb.textContent=o; }, 1400); }
   };
   if($('fastSave')) $('fastSave').addEventListener('click', fastSave);
   /* 全局随手记（等 DOM 就绪再绑，浮层元素在 body 末尾） */
@@ -3110,7 +3111,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     {type:'life',tags:'情绪',score:2,mood:2,content:'最近压力有点大，晚上总想刷手机放松，越刷越晚。'}
   ];
   $('btnDemo').addEventListener('click',()=>{ if(logs.length) return; const now=Date.now(); logs=DEMO.map((d,i)=>({...d,id:now+i,time:new Date(now-(i+1)*3600*1000*18).toISOString()})); save(); refreshLogForm(); renderLogs(); markStepIdx(1); });
-  $('btnClear').addEventListener('click',()=>{
+  const _bc=$('btnClear'); if(_bc) _bc.addEventListener('click',()=>{
     if(logs.length && !confirm('清空全部 '+logs.length+' 条记录？删掉后不能恢复，建议先在「设置」里导出备份。')) return;
     logs=[]; tagChips=[]; save(); refreshLogForm(); renderLogs(); renderReport();
   });
