@@ -4805,6 +4805,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       else { g.weight=w; g.reps=reps; r.weight=w; r.reps=reps; }
       g.warmup=warm; if(all){ r.warmup=warm; }
       saveTrain(); trRenderToday(); el.remove();
+      if(document.getElementById('focusMode')){ try{ renderFocus(); }catch(e){} }
       trToast('已设为 '+(w>0?w+'kg × ':'自重 × ')+reps);
     };
   }
