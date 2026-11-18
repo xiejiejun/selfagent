@@ -2125,6 +2125,13 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
 /* 悬浮球拖动增强 */
 .mode-orb{touch-action:none !important;-webkit-user-select:none;user-select:none;overscroll-behavior:contain}
 .mode-orb.dragging{transition:none;cursor:grabbing}
+
+/* 专注模式动作详情入口 */
+.fm-titlerow{display:flex;align-items:center;gap:10px;margin:12px 0 4px}
+.fm-titlerow .fm-name{margin:0;flex:1;min-width:0}
+.fm-help{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid rgba(128,200,190,.45);background:rgba(128,200,190,.06);color:var(--tx2);font-size:15px;font-weight:600;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.fm-help:active{transform:scale(.94)}
+#exSheet{z-index:6100}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -5089,7 +5096,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.innerHTML=`<div class="fm-progress"><i style="width:${pct}%"></i></div>
       <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span role="timer" aria-label="训练进度">${dAll}/${tAll} 组 · ${__focusIdx+1}/${__focusUids.length} 动作</span></div>
       <div class="fm-strip" role="tablist" aria-label="今日动作预览">${strip}</div>
-      <div class="fm-name">${ENGINE.esc(r.name)}</div>
+      <div class="fm-titlerow"><div class="fm-name">${ENGINE.esc(r.name)}</div><button class="fm-help" data-fmhelp type="button" aria-label="查看 ${ENGINE.esc(r.name)} 动作详情">?</button></div>
       <div class="fm-sub">${doneN}/${gs.length} 组已完成${doneN===gs.length?' · 本动作完成':' · 点圆圈完成一组'}</div>
       <div class="fm-sets">${gs.map(g=>{
         const k=r.uid+':'+g.no; const st=window.__grpStart&&window.__grpStart[k];
@@ -5128,6 +5135,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       __focusIdx=i; renderFocus();
     });
     el.querySelectorAll('[data-fmtick]').forEach(b=>b.onclick=()=>{ tickSet(b.dataset.fmtick); });
+    const hb=el.querySelector('[data-fmhelp]');
+    if(hb) hb.onclick=ev=>{
+      ev.stopPropagation(); ev.preventDefault();
+      let e2=null;
+      try{ e2=findEx(r.exId); }catch(err){}
+      if(!e2){ try{ e2=allExercises().find(x=>x.n===r.name)||null; }catch(err){} }
+      if(e2){ try{ openExSheet(e2); }catch(err){} } else { trToast('未找到该动作详情'); }
+    };
     window.__grpStart=window.__grpStart||{};
     el.querySelectorAll('[data-fmrow]').forEach(row=>{
       const key=row.dataset.fmrow;
