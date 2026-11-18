@@ -2121,6 +2121,10 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
 
 .fast-box .form{background:none;border:0;box-shadow:none;padding:0}
 .fast-box .form .f-row{gap:10px}
+
+/* 悬浮球拖动增强 */
+.mode-orb{touch-action:none !important;-webkit-user-select:none;user-select:none;overscroll-behavior:contain}
+.mode-orb.dragging{transition:none;cursor:grabbing}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -4921,7 +4925,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(!el || el.dataset.bound) return;
       el.dataset.bound='1';
       orbLoadCfg(); orbPlace(el); renderFocusOrb();
-      const st={phase:'idle',sx:0,sy:0,t0:0,timer:null};
+      const st={phase:'idle',sx:0,sy:0,offX:0,offY:0,t0:0,timer:null};
       const clearT=()=>{ if(st.timer){ clearTimeout(st.timer); st.timer=null; } };
       const optAt=(x,y)=>Array.prototype.slice.call(el.querySelectorAll('.orb-opt')).filter(o=>{
         const b=o.getBoundingClientRect(); return x>=b.left&&x<=b.right&&y>=b.top&&y<=b.bottom;
@@ -4933,35 +4937,29 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         el.classList.add('menu-on'); el.classList.remove('pressing');
         try{ if(navigator.vibrate) navigator.vibrate(16); }catch(e){}
       };
-      el.addEventListener('pointerdown',ev=>{
-        if(ev.pointerType==='mouse' && ev.button!==0) return;
-        if(ev.target && ev.target.closest && ev.target.closest('.orb-opt')) return;
-        clearT();
-        wasMenu = el.classList.contains('menu-on');
-        st.phase='pressing'; st.sx=ev.clientX; st.sy=ev.clientY; st.t0=Date.now();
-        el.classList.add('pressing');
-        try{ el.setPointerCapture(ev.pointerId); }catch(e){}
-        st.timer=setTimeout(()=>{
-          st.timer=null;
-          if(st.phase==='pressing'){ st.phase='menu'; openOrbMenu(); }
-        }, 420);
-      });
-      el.addEventListener('pointermove',ev=>{
+      let bound = false;
+      const onMove=ev=>{
         if(st.phase==='idle') return;
         const dx=ev.clientX-st.sx, dy=ev.clientY-st.sy;
-        if(st.phase==='pressing' && Math.hypot(dx,dy)>8){
+        if(st.phase==='pressing' && Math.hypot(dx,dy)>5){
           clearT(); el.classList.remove('pressing');
           if(el.classList.contains('menu-on')) el.classList.remove('menu-on');
           st.phase='dragging'; el.classList.add('dragging');
+          try{ if(navigator.vibrate) navigator.vibrate(8); }catch(e){}
         }
         if(st.phase==='dragging'){
+          if(ev.cancelable) ev.preventDefault();
           const r=el.getBoundingClientRect();
+          const w=r.width||56, h=r.height||56, pad=4;
+          let x=ev.clientX-st.offX-w/2, y=ev.clientY-st.offY-h/2;
+          x=Math.min(Math.max(pad,x), window.innerWidth-w-pad);
+          y=Math.min(Math.max(pad,y), window.innerHeight-h-pad);
           el.style.right='auto'; el.style.bottom='auto';
-          el.style.left=(ev.clientX-r.width/2)+'px';
-          el.style.top=(ev.clientY-r.height/2)+'px';
+          el.style.left=x+'px'; el.style.top=y+'px';
         } else if(st.phase==='menu'){ hoverMark(ev.clientX,ev.clientY); }
-      });
+      };
       const finish=ev=>{
+        if(st.phase==='idle') return;
         clearT();
         const phase=st.phase;
         el.classList.remove('pressing');
@@ -4976,19 +4974,42 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           __orbCfg.side = ev.clientX < vw/2 ? 'left' : 'right';
           __orbCfg.bottom = vh - (ev.clientY - h/2) - h;
           el.classList.remove('dragging'); el.style.left=''; el.style.top='';
-          orbPlace(el); orbSaveCfg(); st.phase='idle';
+          st.phase='idle';
+          orbPlace(el); orbSaveCfg();
           return;
         }
         const dx=ev.clientX-st.sx, dy=ev.clientY-st.sy;
         st.phase='idle';
-        if(Math.hypot(dx,dy)>=8) return;
+        if(Math.hypot(dx,dy)>=5) return;
         if(wasMenu){ wasMenu=false; el.classList.remove('menu-on'); return; }
         orbRunDefault();
       };
-      el.addEventListener('pointerup',finish);
-      el.addEventListener('pointercancel',()=>{
+      const cleanup=()=>{
         clearT(); wasMenu=false; el.classList.remove('menu-on','dragging','pressing');
         el.style.left=''; el.style.top=''; st.phase='idle'; orbPlace(el);
+      };
+      el.addEventListener('pointerdown',ev=>{
+        if(ev.pointerType==='mouse' && ev.button!==0) return;
+        if(ev.target && ev.target.closest && ev.target.closest('.orb-opt')) return;
+        if(ev.cancelable) ev.preventDefault();
+        clearT();
+        wasMenu = el.classList.contains('menu-on');
+        const r=el.getBoundingClientRect();
+        st.offX = ev.clientX-(r.left+r.width/2);
+        st.offY = ev.clientY-(r.top+r.height/2);
+        st.phase='pressing'; st.sx=ev.clientX; st.sy=ev.clientY; st.t0=Date.now();
+        el.classList.add('pressing');
+        try{ el.setPointerCapture(ev.pointerId); }catch(e){}
+        if(!bound){
+          bound = true;
+          document.addEventListener('pointermove', onMove, {passive:false});
+          document.addEventListener('pointerup', finish, true);
+          document.addEventListener('pointercancel', cleanup, true);
+        }
+        st.timer=setTimeout(()=>{
+          st.timer=null;
+          if(st.phase==='pressing'){ st.phase='menu'; openOrbMenu(); }
+        }, 420);
       });
       document.addEventListener('pointerdown',ev=>{
         if(el.classList.contains('menu-on') && !el.contains(ev.target)) el.classList.remove('menu-on');
