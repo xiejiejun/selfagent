@@ -225,6 +225,7 @@ select[multiple]{height:auto;min-height:64px}
 .ex-item:last-child{border-bottom:none}
 .ex-item:hover{background:rgba(255,255,255,.03)}
 .ex-item.on{background:rgba(61,220,191,.09);box-shadow:inset 3px 0 0 var(--accent)}
+.ex-item.on .ex-name{color:var(--accent);font-weight:650}
 .ex-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:nowrap}
 .ex-name{font-weight:600;font-size:14px;color:var(--tx);white-space:nowrap}
 .ex-meta{font-size:11px;color:var(--tx3);font-family:var(--mono);white-space:nowrap}
@@ -482,6 +483,7 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--acce
 .ex-item:last-child{border-bottom:none}
 .ex-item:hover{background:rgba(255,255,255,.03)}
 .ex-item.on{background:rgba(61,220,191,.09);box-shadow:inset 3px 0 0 var(--accent)}
+.ex-item.on .ex-name{color:var(--accent);font-weight:650}
 .ex-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:nowrap}
 .ex-name{font-weight:600;font-size:14px;color:var(--tx);white-space:nowrap}
 .ex-meta{font-size:11px;color:var(--tx3);font-family:var(--mono);white-space:nowrap}
@@ -5698,9 +5700,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       ${e.g?`<div class="ex-media"><div class="gif-ph">动画加载中…</div><img class="ex-gif" alt="${ENGINE.esc(e.n)} 动画"></div>`:''}
       <h4>动作要领</h4><ol>${(e.s||[]).map(x=>`<li>${ENGINE.esc(x)}</li>`).join('')}</ol>
       ${e.t?`<h4>目标肌群</h4><div class="tip">${ENGINE.esc(e.t)}</div>`:''}
-      <div class="tr-actions">
-        <button class="btn sm" data-sheet-add="${e.id}">＋ 加入今日</button>
-      </div>
     </div>`;
   }
   function showAddPlan(id, root){
@@ -5822,6 +5821,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(uf) uf.onclick=()=>{ el.remove(); trToggleFav(id); const e=findEx(id); if(e) openExSheet(e); };
     setTimeout(()=>{ const h=ev=>{ if(!el.contains(ev.target)){ el.remove(); document.removeEventListener('click',h); } }; document.addEventListener('click',h); },0);
   }
+  function ensureSelVisible(){
+    ['trList','mineBox'].forEach(bid=>{
+      const l=$(bid); if(!l) return;
+      const it=l.querySelector('.ex-item.on'); if(!it) return;
+      const r=it.getBoundingClientRect(), lr=l.getBoundingClientRect();
+      if(r.top < lr.top) l.scrollTop -= (lr.top - r.top) + 10;
+      else if(r.bottom > lr.bottom) l.scrollTop += (r.bottom - lr.bottom) + 10;
+    });
+  }
   function openExSheet(e){
     let sh=document.getElementById('exSheet');
     if(!sh){
@@ -5829,12 +5837,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       sh.id='exSheet'; sh.className='ex-sheet';
       sh.innerHTML='<div class="ex-sheet-inner"><div class="ex-sheet-bar"><span>动作详情</span><button class="ex-sheet-x" id="exSheetX" type="button">×</button></div><div id="exSheetBody"></div></div>';
       document.body.appendChild(sh);
-      sh.addEventListener('click',ev=>{ if(ev.target===sh) sh.classList.remove('on'); });
-      sh.querySelector('#exSheetX').onclick=()=>sh.classList.remove('on');
+      sh.addEventListener('click',ev=>{ if(ev.target===sh){ sh.classList.remove('on'); ensureSelVisible(); } });
+      sh.querySelector('#exSheetX').onclick=()=>{ sh.classList.remove('on'); ensureSelVisible(); };
     }
     sh.querySelector('#exSheetBody').innerHTML=detailBodyHtml(e);
     bindDetail(sh.querySelector('#exSheetBody'), e);
     sh.classList.add('on');
+    try{ ensureSelVisible(); }catch(e){}
   }
   function trSelect(id){
     trSel=id;
@@ -5842,6 +5851,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(lb){
       lb.querySelectorAll('[data-ex]').forEach(it=>it.classList.toggle('on', it.dataset.ex===id));
     } else { trRenderList(); }
+    const mb=$('mineBox');
+    if(mb) mb.querySelectorAll('[data-ex]').forEach(it=>it.classList.toggle('on', it.dataset.ex===id));
     const qbSel=document.querySelector('.train-side .quick-box');
     if(qbSel) qbSel.classList.add('ready');
     const e=findEx(id); if(!e) return;
