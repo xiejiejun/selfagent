@@ -5387,7 +5387,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function bindLibRows(box){
     box.querySelectorAll('[data-ex]').forEach(it=>{ it.onclick=()=>trSelect(it.dataset.ex); });
     box.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',ev=>{
-      ev.stopPropagation(); trQuickAdd(b.dataset.plan);
+      ev.stopPropagation(); openPlanSheet(b.dataset.plan);
     }));
     box.querySelectorAll('[data-favitem]').forEach(b=>b.addEventListener('click',ev=>{
       ev.stopPropagation();
@@ -5675,7 +5675,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     else { box.innerHTML = html || '<div class="ex-item" style="color:var(--tx3);cursor:default">没有匹配的动作，换个更短的关键词试试，或点下方「自定义动作」新增。</div>'; box.scrollTop=0; }
     box.querySelectorAll('[data-ex]').forEach(it=>{ it.onclick=()=>trSelect(it.dataset.ex); });
     box.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',ev=>{
-      ev.stopPropagation(); trQuickAdd(b.dataset.plan);
+      ev.stopPropagation(); openPlanSheet(b.dataset.plan);
     }));
     box.querySelectorAll('[data-favitem]').forEach(b=>b.addEventListener('click',ev=>{
       ev.stopPropagation();
@@ -5979,12 +5979,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function openFilterSheet(){
     document.querySelectorAll('.msheet').forEach(x=>x.remove());
     const PART=['全部','胸','背','腿','肩','臂','腹','有氧'];
-    const EQ=['杠铃','哑铃','绳索','器械','自重','壶铃','史密斯','弹力带'];
+    const EQ=['全部','杠铃','哑铃','绳索','器械','自重','壶铃','史密斯','弹力带'];
     let tmpPart=trState.part||'', tmpEq=(trState.eqs||[]).slice();
     const el=document.createElement('div'); el.className='msheet';
     el.innerHTML=`<div class="msheet-box"><div class="ms-head"><b>筛选</b><button class="ms-x" type="button" data-flx>×</button></div>
       <div class="fl-sec"><span class="fl-lb">部位</span><div class="chip-row" id="flPart">${PART.map(p=>`<button class="fchip${((p==='全部'&&!tmpPart)||tmpPart===p)?' on':''}" data-flpart="${p==='全部'?'':p}" type="button">${p}</button>`).join('')}</div></div>
-      <div class="fl-sec"><span class="fl-lb">器械</span><div class="chip-row" id="flEq">${EQ.map(q=>`<button class="fchip${tmpEq.indexOf(q)>=0?' on':''}" data-fleq="${q}" type="button">${q}</button>`).join('')}</div></div>
+      <div class="fl-sec"><span class="fl-lb">器械</span><div class="chip-row" id="flEq">${EQ.map(q=>`<button class="fchip${q==='全部'?(tmpEq.length?'':' on'):(tmpEq.indexOf(q)>=0?' on':'')}" data-fleq="${q}" type="button">${q}</button>`).join('')}</div></div>
       <div class="cu-btns"><button class="btn ghost sm" type="button" id="flReset">重置</button><button class="btn sm" type="button" id="flGo">显示 <span id="flN">0</span> 个动作</button></div>
     </div>`;
     document.body.appendChild(el);
@@ -5997,13 +5997,17 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     };
     const sync=()=>{
       el.querySelectorAll('[data-flpart]').forEach(b=>b.classList.toggle('on', (b.dataset.flpart||'')===tmpPart));
-      el.querySelectorAll('[data-fleq]').forEach(b=>b.classList.toggle('on', tmpEq.indexOf(b.dataset.fleq)>=0));
+      el.querySelectorAll('[data-fleq]').forEach(b=>{
+        const q=b.dataset.fleq;
+        b.classList.toggle('on', q==='全部' ? tmpEq.length===0 : tmpEq.indexOf(q)>=0);
+      });
       const n=el.querySelector('#flN'); if(n) n.textContent=String(count());
     };
     el.querySelectorAll('[data-flpart]').forEach(b=>b.onclick=()=>{ tmpPart=b.dataset.flpart||''; sync(); });
     el.querySelectorAll('[data-fleq]').forEach(b=>b.onclick=()=>{
-      const q=b.dataset.fleq; const i=tmpEq.indexOf(q);
-      if(i>=0) tmpEq.splice(i,1); else tmpEq.push(q);
+      const q=b.dataset.fleq;
+      if(q==='全部'){ tmpEq=[]; }
+      else { const i=tmpEq.indexOf(q); if(i>=0) tmpEq.splice(i,1); else tmpEq.push(q); }
       sync();
     });
     el.querySelector('#flReset').onclick=()=>{ tmpPart=''; tmpEq=[]; sync(); };
