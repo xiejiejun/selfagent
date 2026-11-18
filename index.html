@@ -1796,6 +1796,15 @@ body:has(#pageSetting:not([hidden])) .mode-orb{opacity:0;pointer-events:none}
  .set-list.hide{display:flex !important}
  .sp-back{display:none}
 }
+
+/* ===== p130 移动端输入聚焦缩放治理 ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@media(max-width:999px){
+  body{overflow-x:hidden}
+  input,textarea,select,.fast-box textarea,.fab-inner textarea,.imp-area,.ob-in{font-size:16px !important}
+  .fast-box textarea,.fab-inner textarea,.imp-area{line-height:1.5}
+  input[type=range],input[type=checkbox],input[type=radio],input[type=file]{font-size:initial !important}
+}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -7437,6 +7446,19 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   ['navHome','navRecord','navAgent','navLog','navSet'].forEach(id=>{
     const el=$(id); if(!el) return;
     el.addEventListener('click',()=>openPage(el.dataset.page));
+  try{
+    document.addEventListener('focusout',function(e){
+      var t=e.target;
+      if(!t || !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      setTimeout(function(){
+        try{
+          if(document.documentElement.scrollLeft!==0) document.documentElement.scrollLeft=0;
+          if(document.body && document.body.scrollLeft!==0) document.body.scrollLeft=0;
+          if(document.documentElement.scrollTop<0) document.documentElement.scrollTop=0;
+        }catch(err){}
+      },60);
+    },true);
+  }catch(e){}
   });
   function bindTabbar(){
     document.querySelectorAll('#tabbar button').forEach(b=>{
