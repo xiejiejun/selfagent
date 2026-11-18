@@ -2132,6 +2132,26 @@ html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,1
 .fm-help{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid rgba(128,200,190,.45);background:rgba(128,200,190,.06);color:var(--tx2);font-size:15px;font-weight:600;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .fm-help:active{transform:scale(.94)}
 #exSheet{z-index:6100}
+
+/* 专注模式底部按钮分级配色 */
+.fm-setadd{gap:10px;align-items:center}
+.fm-step{min-width:86px;height:40px;border-radius:10px;font:inherit;font-size:15px;font-weight:600;cursor:pointer;border:1px solid transparent;touch-action:manipulation;transition:transform .12s,background .15s}
+.fm-step:active{transform:scale(.97)}
+.fm-step.plus{color:var(--accent);background:rgba(61,220,191,.13);border-color:rgba(61,220,191,.5)}
+.fm-step.minus{color:#E58471;background:rgba(214,92,72,.10);border-color:rgba(214,92,72,.42)}
+html[data-theme="light"] .fm-step.plus{color:#0B7A68;background:rgba(14,143,122,.10);border-color:rgba(14,143,122,.42)}
+html[data-theme="light"] .fm-step.minus{color:#B5402A;background:rgba(200,72,52,.08);border-color:rgba(200,72,52,.38)}
+.fm-foot .fm-nav,.fm-more .fm-mini{width:100%;height:44px;border-radius:10px;font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:var(--tx2);touch-action:manipulation}
+.fm-nav.prev{opacity:.9}
+.fm-nav.next{border-color:rgba(61,220,191,.5);background:rgba(61,220,191,.12);color:var(--accent);font-weight:600}
+.fm-nav[disabled]{opacity:.3}
+.fm-mini.toggle.on{border-color:rgba(61,220,191,.5);background:rgba(61,220,191,.12);color:var(--accent)}
+.fm-mini.add{border-style:dashed;border-color:rgba(255,255,255,.22);color:var(--tx2)}
+.fm-mini.finish{background:#3DDCBF;border-color:#3DDCBF;color:#06231F;font-weight:600}
+html[data-theme="light"] .fm-foot .fm-nav,html[data-theme="light"] .fm-more .fm-mini{background:#fff;border-color:var(--line);color:var(--tx2)}
+html[data-theme="light"] .fm-nav.next{background:rgba(14,143,122,.08);border-color:rgba(14,143,122,.42);color:#0B7A68}
+html[data-theme="light"] .fm-mini.toggle.on{background:rgba(14,143,122,.08);border-color:rgba(14,143,122,.42);color:#0B7A68}
+html[data-theme="light"] .fm-mini.finish{background:#0E8F7A;border-color:#0E8F7A;color:#fff}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -5111,15 +5131,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <button class="fm-act del" data-fmdel="${k}" type="button">删除</button>
           </span>
         </div>`;}).join('')}</div>
-      <div class="fm-setadd"><button class="tr-plus" data-fmaddset="1" type="button" title="沿用上一组参数">＋1 组</button></div>
+      <div class="fm-setadd"><button class="fm-step minus" data-fmdelset="1" type="button" aria-label="减少一组">−1</button><button class="fm-step plus" data-fmaddset="1" type="button" aria-label="增加一组（沿用上一组参数）">+1</button></div>
       <div class="fm-foot">
-        <button class="btn ghost sm" data-fmprev type="button" ${__focusIdx<=0?'disabled':''}>← 上一个</button>
-        <button class="btn ghost sm" data-fmnext type="button" ${__focusIdx>=__focusUids.length-1?'disabled':''}>下一个 →</button>
+        <button class="fm-nav prev" data-fmprev type="button" ${__focusIdx<=0?'disabled':''}>← 上一个</button>
+        <button class="fm-nav next" data-fmnext type="button" ${__focusIdx>=__focusUids.length-1?'disabled':''}>下一个 →</button>
       </div>
       <div class="fm-more">
-        <button class="btn ghost sm" data-fmauto type="button">自动下一组·${train.autoNext?'开':'关'}</button>
-        <button class="btn ghost sm" data-fmadd type="button">＋ 添加动作</button>
-        <button class="btn ghost sm" data-fmfin type="button">完成训练</button>
+        <button class="fm-mini toggle ${train.autoNext?'on':''}" data-fmauto type="button">自动下一组 · ${train.autoNext?'开':'关'}</button>
+        <button class="fm-mini add" data-fmadd type="button">＋ 添加动作</button>
+        <button class="fm-mini finish" data-fmfin type="button">完成训练</button>
       </div>`;
     el.classList.toggle('timing', !!(window.__grpStart && Object.keys(window.__grpStart).length));
 
@@ -5199,12 +5219,24 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       r.sets=q.length; saveTrain(); trRenderToday(); renderFocus();
       trToast('已加第 '+q.length+' 组');
     };
+    const delset=el.querySelector('[data-fmdelset]');
+    if(delset) delset.onclick=()=>{
+      const q=ensureGroups(r);
+      if(q.length<=1){ trToast('至少保留一组'); return; }
+      const last=q.pop();
+      if(window.__grpStart){ delete window.__grpStart[r.uid+':'+last.no]; }
+      r.sets=q.length; saveTrain(); trRenderToday(); renderFocus();
+      trToast('已减为 '+q.length+' 组');
+    };
     const pv=el.querySelector('[data-fmprev]'), nx=el.querySelector('[data-fmnext]');
     if(pv) pv.onclick=()=>{ __focusIdx=Math.max(0,__focusIdx-1); renderFocus(); };
     if(nx) nx.onclick=()=>{ __focusIdx=Math.min(__focusUids.length-1,__focusIdx+1); renderFocus(); };
     const fin=el.querySelector('[data-fmfin]'); if(fin) fin.onclick=()=>{ closeFocus(); showTrainSummary(); };
     const au=el.querySelector('[data-fmauto]');
-    if(au) au.onclick=()=>{ train.autoNext=!train.autoNext; saveTrain(); au.textContent='自动下一组·'+(train.autoNext?'开':'关'); trToast(train.autoNext?'休息结束自动进入下一组':'已关闭自动推进'); };
+    if(au) au.onclick=()=>{ train.autoNext=!train.autoNext; saveTrain();
+      au.classList.toggle('on', train.autoNext);
+      au.textContent='自动下一组 · '+(train.autoNext?'开':'关');
+      trToast(train.autoNext?'休息结束自动进入下一组':'已关闭自动推进'); };
     const add=el.querySelector('[data-fmadd]'); if(add) add.onclick=()=>openFmAdd();
     el.querySelector('.fm-strip').scrollLeft = Math.max(0, (__focusIdx-1)*86);
     wakeOn();
