@@ -1423,6 +1423,31 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .lg-set em{font-style:normal;color:var(--tx2)}
 .lg-set s{text-decoration:none;color:#7fe0a7;font-size:10.5px}
 .lg-set i{font-style:normal;color:var(--tx3);font-size:10.5px}
+.lg-sum{font-size:12px;color:var(--tx2);margin:2px 0 2px;letter-spacing:.01em}
+.lg-sum b.lg-pr{color:#E3B341;font-weight:600}
+.lg-list{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.lg-ex{border-radius:9px}
+.lg-ex.fin .lg-h b{color:var(--tx2)}
+.lg-h{display:flex;align-items:center;gap:8px;min-height:42px;cursor:pointer}
+.lg-ex.open .lg-h{border-bottom:1px dashed var(--line);margin-bottom:3px}
+.lg-h b{font-size:13.5px;font-weight:600;color:var(--tx);max-width:40vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-h em{font-style:normal;color:var(--tx2);font-size:11.5px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-dots{display:flex;align-items:center;gap:3px;flex:0 0 auto}
+.lg-dot{width:6px;height:6px;border-radius:50%;border:1px solid var(--line2)}
+.lg-dot.on{background:#3DDCBF;border-color:#3DDCBF}
+.lg-dotx{font-size:10.5px;color:var(--tx3)}
+.lg-prch{font-size:10px;color:#E3B341;border:1px solid rgba(227,179,65,.45);border-radius:5px;padding:0 4px;flex:0 0 auto}
+.lg-ar{color:var(--tx3);font-size:11px;transition:transform .18s;flex:0 0 auto}
+.lg-ex.open .lg-ar{transform:rotate(90deg)}
+.lg-ex .lg-sets{display:none}
+.lg-ex.open .lg-sets{display:grid;gap:2px;padding:2px 0 6px}
+.lg-more{border:0;background:none;color:var(--tx3);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer;margin-left:auto}
+.lg-more:active{color:var(--accent)}
+.lg-menu{position:fixed;z-index:80;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 10px 28px rgba(0,0,0,.4);display:flex;flex-direction:column;min-width:112px;overflow:hidden}
+.lg-menu button{border:0;background:none;color:var(--tx);font:inherit;font-size:13px;text-align:left;padding:11px 14px;cursor:pointer}
+.lg-menu button:active{background:rgba(255,255,255,.06)}
+.lg-menu button[data-mact="del"]{color:#e06e78;border-top:1px solid var(--line)}
 .tc-empty{color:var(--tx3);font-size:12px}
 
 /* p51 卡片色条可见性 */
@@ -6697,17 +6722,38 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function trainCard(l){
     const m=l.meta||{}; const items=m.items||[];
-    const rows=items.map(i=>{
+    const allG=items.reduce((a,i)=>a.concat(i.groups||[]),[]);
+    const totalSets=items.reduce((a,i)=>a+((i.groups&&i.groups.length)?i.groups.length:(i.sets||0)),0);
+    const doneSets=items.reduce((a,i)=>a+((i.groups||[]).filter(g=>g.done).length),0);
+    const vol=items.reduce((a,i)=>a+((i.groups||[]).reduce((x,g)=>x+((g.done&&!g.warmup)?(g.reps||0)*(g.weight||0):0),0)),0);
+    const prs=prOfItems(items,l.date);
+    const prSet=prs.set;
+    const dots=(n,done)=>Array.from({length:Math.min(n,6)},(_,k)=>`<span class="lg-dot${k<done?' on':''}"></span>`).join('')
+      + (n>6?`<span class="lg-dotx">${done}/${n}</span>`:'');
+    const lgd=gs=>{
+      const a=(gs||[]).filter(g=>!g.warmup); if(!a.length) return '';
+      const f=g=>((g.weight>0)?(g.weight+'kg'):'自重')+'×'+(g.reps||0);
+      const same=a.every(g=>(g.weight||0)===(a[0].weight||0)&&(g.reps||0)===(a[0].reps||0));
+      if(same) return ((a[0].weight>0)?(a[0].weight+'kg'):'自重')+' '+a.length+'×'+(a[0].reps||0);
+      const parts=a.map(f);
+      return parts.length>3 ? (parts.slice(0,3).join(' · ')+' · +'+(parts.length-3)) : parts.join(' · ');
+    };
+    const rows=items.map((i,ii)=>{
       const gs=(i.groups||[]);
       const sets = gs.length
         ? gs.map(g=>`<div class="lg-set"><span class="lg-no${g.warmup?' warm':''}">${g.warmup?'W':g.no}</span><em>${g.weight>0?(g.weight+'kg'):'自重'} × ${g.reps}</em>${g.done?'<s>✓</s>':''}${g.rpe?`<i>${['','轻松','刚好','力竭'][g.rpe]||''}</i>`:''}${g.sec?`<i>${g.sec}s</i>`:''}</div>`).join('')
         : `<div class="lg-set"><span class="lg-no">1</span><em>${i.weight>0?(i.weight+'kg'):'自重'} × ${i.reps}</em></div>`;
       const doneN=gs.filter(g=>g.done).length;
-      const vol=gs.reduce((a,g)=>a+((g.done&&!g.warmup)?(g.reps||0)*(g.weight||0):0),0);
       const setsN=gs.length||i.sets||0;
-      return `<div class="lg-ex">
-        <div class="lg-h"><b>${ENGINE.esc(i.name)}</b>
-          <s class="tc-done">${doneN}/${setsN} 组${vol?(' · '+Math.round(vol)+'kg'):''}</s></div>
+      const allDone=setsN>0&&doneN===setsN;
+      return `<div class="lg-ex${allDone?' fin':''}" data-lgx="${l.id}:${ii}">
+        <div class="lg-h">
+          <b>${ENGINE.esc(i.name)}</b>
+          <em>${lgd(gs)}</em>
+          <span class="lg-dots">${dots(setsN,doneN)}</span>
+          ${prSet.has(String(i.exId))?'<span class="lg-prch">PR</span>':''}
+          <span class="lg-ar">▸</span>
+        </div>
         <div class="lg-sets">${sets}</div>
       </div>`;
     }).join('');
@@ -6716,16 +6762,28 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <div class="log-head">
           <span class="log-type fit" style="color:#3DDCBF;border-color:#3DDCBF">训练</span>
           <span class="tag">${l.source==='auto'?'自动同步':'手动'}</span>
-          <span class="log-score">总容量 ${(m.volume||items.reduce((a,i)=>a+(i.volume||0),0))?((m.volume||items.reduce((a,i)=>a+(i.volume||0),0)).toLocaleString()+' kg'):'—'}</span>
           <span class="log-time">${fmtTime(l.time)}</span>
+          <button class="lg-more" data-lmenu="${l.id}" aria-label="更多" type="button">⋯</button>
         </div>
+        <div class="lg-sum">${items.length} 动作 · ${doneSets}/${totalSets} 组 · ${vol?Math.round(vol).toLocaleString()+' kg':'—'}${prs.n?` · <b class="lg-pr">${prs.n} PR</b>`:''}</div>
         ${m.checkin?`<div class="tc-feel"><span>情绪 ${m.checkin.mood}/5 ${FEEL_MOOD[(m.checkin.mood||1)-1]||''}</span><span>状态 ${m.checkin.energy}/5 ${FEEL_ENERGY[(m.checkin.energy||1)-1]||''}</span>${m.checkin.note?`<em>“${ENGINE.esc(m.checkin.note)}”</em>`:''}</div>`:''}
-        <div class="tc-body">${rows||'<div class="tc-empty">暂无明细</div>'}</div>
-        <div class="edit-actions">
-          <button class="btn ghost sm" data-tedit="${l.id}">编辑</button>
-          <button class="btn ghost sm danger" data-del="${l.id}">删除</button>
-        </div>
+        <div class="lg-list">${rows||'<div class="tc-empty">暂无明细</div>'}</div>
       </div>`;
+  }
+  function prOfItems(items,date){
+    const set={}; let n=0;
+    (items||[]).forEach(i=>{
+      const a=(i.groups||[]).filter(g=>!g.warmup);
+      const best=a.reduce((x,g)=>Math.max(x,g.weight||0),0);
+      if(best<=0) return;
+      let hist=0;
+      (train.records||[]).forEach(r=>{
+        if(r.exId!==i.exId || r.date>=date) return;
+        (r.groups||[]).forEach(g=>{ if(!g.warmup) hist=Math.max(hist,g.weight||0); });
+      });
+      if(hist>0 && best>hist){ set[String(i.exId)]=1; n++; }
+    });
+    return {n:n,set:new Set(Object.keys(set))};
   }
   function logCard(l){
     if(l.kind==='train') return trainCard(l);
@@ -6736,12 +6794,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           ${l.tags?`<span class="tag">${ENGINE.esc(l.tags)}</span>`:''}
           <span class="log-score ${moodClass(l.mood)}">精力 ${'●'.repeat(l.score||3)}${'○'.repeat(5-(l.score||3))} · 情绪 ${moodText(l.mood)}</span>
           <span class="log-time" data-lid="${l.id}" title="点击修改日期，可补记昨天">${fmtTime(l.time)}<i>改</i></span>
+          <button class="lg-more" data-lmenu="${l.id}" aria-label="更多" type="button">⋯</button>
         </div>
         <div class="log-body">${ENGINE.esc(l.content)}</div>
-        <div class="edit-actions">
-          <button class="btn ghost sm" data-edit="${l.id}">编辑</button>
-          <button class="btn ghost sm danger" data-del="${l.id}">删除</button>
-        </div>
       </div>`;
   }
   function dayLabel(ds){
@@ -6786,6 +6841,28 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     $('fTag').oninput=e=>{clearTimeout(tmr);tmr=setTimeout(()=>{logFilter.tag=e.target.value.trim();renderLogsPanel();},250);};
     bindLogActions();
   }
+  function openLogMenu(id,anchor){
+    document.querySelectorAll('.lg-menu').forEach(x=>x.remove());
+    const r=anchor.getBoundingClientRect();
+    const el=document.createElement('div'); el.className='lg-menu';
+    el.innerHTML='<button type="button" data-mact="edit">编辑</button><button type="button" data-mact="del">删除</button>';
+    document.body.appendChild(el);
+    el.style.top=Math.round(Math.max(8, Math.min(r.bottom+6, window.innerHeight-96)))+'px';
+    el.style.left=Math.max(12, Math.round(Math.min(r.right-120, window.innerWidth-132)))+'px';
+    el.querySelector('[data-mact="edit"]').onclick=()=>{
+      el.remove();
+      const l=logs.find(x=>String(x.id)===String(id)); if(!l) return;
+      if(l.kind==='train') openTrainSheet(id); else openLogSheet(id);
+    };
+    el.querySelector('[data-mact="del"]').onclick=()=>{
+      el.remove();
+      logs=logs.filter(x=>String(x.id)!==String(id)); save(); renderLogs(); renderLogsPanel();
+    };
+    setTimeout(()=>{
+      const h=e=>{ if(!el.contains(e.target)){ el.remove(); document.removeEventListener('click',h); } };
+      document.addEventListener('click',h);
+    },0);
+  }
   function bindLogActions(){
     document.querySelectorAll('#reportBody [data-del]').forEach(b=>{
       b.addEventListener('click',()=>{ logs=logs.filter(x=>String(x.id)!==String(b.dataset.del)); save(); renderLogs(); renderLogsPanel(); });
@@ -6795,6 +6872,18 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     document.querySelectorAll('#reportBody [data-tedit]').forEach(b=>{
       b.addEventListener('click',()=>openTrainSheet(b.dataset.tedit));
+    });
+    document.querySelectorAll('#reportBody [data-lgx]').forEach(ex=>{
+      const h=ex.querySelector('.lg-h'); if(!h) return;
+      h.addEventListener('click',()=>{
+        const open=ex.classList.contains('open');
+        const list=ex.parentElement;
+        list.querySelectorAll('.lg-ex.open').forEach(o=>o.classList.remove('open'));
+        if(!open) ex.classList.add('open');
+      });
+    });
+    document.querySelectorAll('#reportBody [data-lmenu]').forEach(b=>{
+      b.addEventListener('click',ev=>{ ev.stopPropagation(); openLogMenu(b.dataset.lmenu, b); });
     });
   }
 
