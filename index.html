@@ -1473,7 +1473,15 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .lib-sec-h{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--tx3);margin:12px 0 2px}
 .lib-sec-n{color:var(--accent)}
 .lib-sec-empty{font-size:11.5px;color:var(--tx3);padding:10px 2px}
-.lib-inline{height:calc(100vh - 430px);min-height:340px}
+.fl-drop{position:absolute;left:12px;right:12px;z-index:30;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:10px 12px 12px;box-shadow:0 12px 26px rgba(0,0,0,.22)}
+.fl-sec{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+.fl-lb{font-size:11.5px;color:var(--tx3)}
+.fl-foot{display:flex;gap:8px}
+.fl-foot .btn{flex:1}
+.mine-listwrap{flex:1 1 auto;min-height:0;overflow:auto}
+.ex-item.on{background:rgba(61,220,191,.14);outline:1.5px solid rgba(14,143,122,.55);outline-offset:-1.5px}
+html[data-theme="light"] .ex-item.on{background:#dff7ef;outline:1.5px solid #0e8f7a;outline-offset:-1.5px}
+.lib-inline{position:relative;height:calc(100vh - 430px);min-height:340px}
 .lib-inline #trList{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}
 .lib-mine{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;padding-right:2px}
 .lib-curow{padding:10px 0 2px;text-align:center}
@@ -5399,18 +5407,46 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(trSeg==='mine') renderMine();
     }));
   }
+  let mineQ='';
   function renderMine(){
     const box=$('mineBox'); if(!box) return;
+    if(!box.dataset.init){
+      box.dataset.init='1';
+      box.innerHTML=`<div class="lib-searchrow">
+        <div class="search-wrap"><input type="text" id="mineSearch" placeholder="搜索我的动作" autocomplete="off"></div>
+        <button class="lib-funnel" id="mineFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="mineDot" hidden></em></button>
+      </div>
+      ${filterBodyHtml('flDropMine')}
+      <div class="mine-listwrap" id="mineRows"></div>`;
+      const f=$('mineFunnel'); if(f) f.onclick=()=>toggleDrop('mine');
+      const inp=$('mineSearch');
+      if(inp) inp.addEventListener('input',()=>{
+        mineQ=inp.value; renderMine();
+        const n=$('mineSearch');
+        if(n){ n.focus(); try{ n.setSelectionRange(n.value.length,n.value.length); }catch(e){} }
+      });
+      bindDrop(dropEl('mine'),'mine');
+    }
+    const rows=$('mineRows'); if(!rows) return;
+    const q=(mineQ||'').toLowerCase().trim();
+    const favs=(train.favs||[]).map(findEx).filter(Boolean).filter(e=>{
+      if(trState.part && !partHit(trState.part,e.p)) return false;
+      if((trState.eqs||[]).length && trState.eqs.indexOf(e.e)<0) return false;
+      if(q && !((e.n||'').toLowerCase().includes(q) || (e.en||'').toLowerCase().includes(q))) return false;
+      return true;
+    });
     const lastMap={}; (train.records||[]).forEach(r=>{ lastMap[r.exId]=r; });
-    const favs=(train.favs||[]).map(findEx).filter(Boolean);
-    if(!favs.length){
-      box.innerHTML='<div class="lib-sec-empty">还没有收藏动作。到「动作库」列表点右上角 ☆，动作会进这里。</div>';
+    if(!(train.favs||[]).length){
+      rows.innerHTML='<div class="lib-sec-empty">还没有收藏动作。到「动作库」列表点右上角 ☆，动作会进这里。</div>';
       return;
     }
-    box.innerHTML=
-      `<div class="lib-sec-h">我的收藏 <span class="lib-sec-n">${favs.length}</span></div>`+
+    if(!favs.length){
+      rows.innerHTML='<div class="lib-sec-empty">没有匹配的收藏，换个关键词或重置筛选。</div>';
+      return;
+    }
+    rows.innerHTML=`<div class="lib-sec-h">我的收藏 <span class="lib-sec-n">${favs.length}</span></div>`+
       favs.map(e=>libRowHtml(e,lastMap)).join('');
-    bindLibRows(box);
+    bindLibRows(rows);
   }
   function renderLibInline(parts, eqs){
     const d=$('libBox'); if(!d) return;
@@ -5419,9 +5455,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
         <button class="lib-funnel" id="libFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="libFunnelDot" hidden></em></button>
       </div>
+      ${filterBodyHtml('flDropLib')}
       <div class="ex-list lib-list" id="trList"></div>
       <div class="lib-curow"><button class="lib-cu" id="cuOpen" type="button">＋ 自定义动作</button></div>`;
-    if($('libFunnel')) $('libFunnel').onclick=()=>openFilterSheet();
+    if($('libFunnel')) $('libFunnel').onclick=()=>toggleDrop('lib');
+    try{ bindDrop(dropEl('lib'), 'lib'); }catch(e){}
     if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
   }
   function trRenderHot(){
@@ -5984,52 +6022,64 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
   }
   function trSyncFunnelDot(){
-    const d=$('libFunnelDot'); if(!d) return;
-    d.hidden = !((trState.eqs||[]).length || !!trState.part);
+    const on=((trState.eqs||[]).length || !!trState.part);
+    ['libFunnelDot','mineDot'].forEach(id=>{ const d=$(id); if(d) d.hidden=!on; });
   }
-  function openFilterSheet(){
-    document.querySelectorAll('.msheet').forEach(x=>x.remove());
-    const PART=['全部','胸','背','腿','肩','臂','腹','有氧'];
-    const EQ=['全部','杠铃','哑铃','绳索','器械','自重','壶铃','史密斯','弹力带'];
-    let tmpPart=trState.part||'', tmpEq=(trState.eqs||[]).slice();
-    const el=document.createElement('div'); el.className='msheet';
-    el.innerHTML=`<div class="msheet-box"><div class="ms-head"><b>筛选</b><button class="ms-x" type="button" data-flx>×</button></div>
-      <div class="fl-sec"><span class="fl-lb">部位</span><div class="chip-row" id="flPart">${PART.map(p=>`<button class="fchip${((p==='全部'&&!tmpPart)||tmpPart===p)?' on':''}" data-flpart="${p==='全部'?'':p}" type="button">${p}</button>`).join('')}</div></div>
-      <div class="fl-sec"><span class="fl-lb">器械</span><div class="chip-row" id="flEq">${EQ.map(q=>`<button class="fchip${q==='全部'?(tmpEq.length?'':' on'):(tmpEq.indexOf(q)>=0?' on':'')}" data-fleq="${q}" type="button">${q}</button>`).join('')}</div></div>
-      <div class="cu-btns"><button class="btn ghost sm" type="button" id="flReset">重置</button><button class="btn sm" type="button" id="flGo">显示 <span id="flN">0</span> 个动作</button></div>
+  const FL_PART=['全部','胸','背','腿','肩','臂','腹','有氧'];
+  const FL_EQ=['全部','杠铃','哑铃','绳索','器械','自重','壶铃','史密斯','弹力带'];
+  function filterBodyHtml(dropId){
+    return `<div class="fl-drop" id="${dropId}" hidden>
+      <div class="fl-sec"><span class="fl-lb">部位</span><div class="chip-row">${FL_PART.map(p=>`<button class="fchip" data-flpart="${p==='全部'?'':p}" type="button">${p}</button>`).join('')}</div></div>
+      <div class="fl-sec"><span class="fl-lb">器械</span><div class="chip-row">${FL_EQ.map(q=>`<button class="fchip" data-fleq="${q}" type="button">${q}</button>`).join('')}</div></div>
+      <div class="fl-foot"><button class="btn ghost sm" type="button" data-flreset>重置</button><button class="btn sm" type="button" data-fldone>完成</button></div>
     </div>`;
-    document.body.appendChild(el);
-    const count=()=>{
-      const bak={part:trState.part, eqs:trState.eqs, limit:trState.limit};
-      trState.part=tmpPart; trState.eqs=tmpEq; trState.limit=1e6;
-      const n=trFiltered().length;
-      trState.part=bak.part; trState.eqs=bak.eqs; trState.limit=bak.limit;
-      return n;
-    };
-    const sync=()=>{
-      el.querySelectorAll('[data-flpart]').forEach(b=>b.classList.toggle('on', (b.dataset.flpart||'')===tmpPart));
-      el.querySelectorAll('[data-fleq]').forEach(b=>{
-        const q=b.dataset.fleq;
-        b.classList.toggle('on', q==='全部' ? tmpEq.length===0 : tmpEq.indexOf(q)>=0);
-      });
-      const n=el.querySelector('#flN'); if(n) n.textContent=String(count());
-    };
-    el.querySelectorAll('[data-flpart]').forEach(b=>b.onclick=()=>{ tmpPart=b.dataset.flpart||''; sync(); });
+  }
+  function dropEl(scope){ return $(scope==='mine'?'flDropMine':'flDropLib'); }
+  function syncDrop(scope){
+    const el=dropEl(scope); if(!el) return;
+    el.querySelectorAll('[data-flpart]').forEach(b=>b.classList.toggle('on', (b.dataset.flpart||'')===trState.part));
+    el.querySelectorAll('[data-fleq]').forEach(b=>{
+      const q=b.dataset.fleq;
+      b.classList.toggle('on', q==='全部' ? !(trState.eqs||[]).length : (trState.eqs||[]).indexOf(q)>=0);
+    });
+    trSyncFunnelDot();
+  }
+  function rerenderFiltered(scope){
+    trState.limit=60;
+    if(scope==='mine'){ try{ renderMine(); }catch(e){} }
+    else { try{ trRenderList(); }catch(e){} }
+  }
+  function bindDrop(el, scope){
+    if(!el) return;
+    el.querySelectorAll('[data-flpart]').forEach(b=>b.onclick=()=>{
+      trState.part=b.dataset.flpart||'';
+      syncDrop(scope); rerenderFiltered(scope);
+    });
     el.querySelectorAll('[data-fleq]').forEach(b=>b.onclick=()=>{
       const q=b.dataset.fleq;
-      if(q==='全部'){ tmpEq=[]; }
-      else { const i=tmpEq.indexOf(q); if(i>=0) tmpEq.splice(i,1); else tmpEq.push(q); }
-      sync();
+      if(!trState.eqs) trState.eqs=[];
+      if(q==='全部'){ trState.eqs=[]; }
+      else { const i=trState.eqs.indexOf(q); if(i>=0) trState.eqs.splice(i,1); else trState.eqs.push(q); }
+      syncDrop(scope); rerenderFiltered(scope);
     });
-    el.querySelector('#flReset').onclick=()=>{ tmpPart=''; tmpEq=[]; sync(); };
-    el.querySelector('#flGo').onclick=()=>{
-      trState.part=tmpPart; trState.eqs=tmpEq.slice(); trState.limit=60;
-      el.remove(); trRenderList(); trSyncFunnelDot();
-    };
-    el.querySelectorAll('[data-flx]').forEach(b=>b.onclick=()=>el.remove());
-    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
-    sync();
-    try{ kbAvoid(el, el.querySelector('.msheet-box')); }catch(e){}
+    const rs=el.querySelector('[data-flreset]');
+    if(rs) rs.onclick=()=>{ trState.part=''; trState.eqs=[]; syncDrop(scope); rerenderFiltered(scope); };
+    const dn=el.querySelector('[data-fldone]');
+    if(dn) dn.onclick=()=>{ el.hidden=true; };
+  }
+  function toggleDrop(scope){
+    const el=dropEl(scope); if(!el) return;
+    const open=el.hidden;
+    document.querySelectorAll('.fl-drop').forEach(d=>{ d.hidden=true; });
+    el.hidden=!open;
+    if(open){
+      const wrap=el.parentElement, row=wrap&&wrap.querySelector('.lib-searchrow');
+      if(row){
+        const r=row.getBoundingClientRect(), lr=wrap.getBoundingClientRect();
+        el.style.top=Math.round(r.bottom-lr.top+6)+'px';
+      }
+      syncDrop(scope);
+    }
   }
   function openCuSheet(){
     document.querySelectorAll('.msheet').forEach(x=>x.remove());
@@ -6761,7 +6811,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       lp.querySelectorAll('[data-lpart]').forEach(x=>x.classList.toggle('on', (x.dataset.lpart||'')===trState.part));
       trRenderList();
     });
-    if($('libFunnel')) $('libFunnel').onclick=()=>openFilterSheet();
+    if($('libFunnel')) $('libFunnel').onclick=()=>toggleDrop('lib');
+    try{ bindDrop(dropEl('lib'), 'lib'); }catch(e){}
     if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
     const pbm=$('planBodyMap');
     if(pbm){
