@@ -1865,6 +1865,43 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .lib-pane>*{flex:0 0 auto}
 .lib-pane>.lib-list{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;border:1px solid var(--line);border-radius:12px}
 .lib-pane{overflow:hidden}
+
+/* ===== p142 训练页：三板块切换 ===== */
+.tr-seg{display:flex;gap:6px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--panel);margin:0 0 10px}
+.tr-seg-btn{flex:1;position:relative;min-height:44px;border:0;background:none;color:var(--tx3);font-size:13px;font-weight:600;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:color .18s,background .18s}
+.tr-seg-btn.on{background:rgba(61,220,191,.12);color:var(--accent)}
+.tr-seg-badge{min-width:17px;height:17px;border-radius:9px;font-size:10.5px;line-height:17px;padding:0 5px;background:rgba(61,220,191,.92);color:#04150f;font-weight:700;display:none}
+.tr-seg-badge.on{display:inline-block}
+.tr-panel[hidden]{display:none}
+.lib-inline{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px;display:flex;flex-direction:column}
+.lib-inline .lib-pane{flex:1;min-height:0}
+.lib-inline .lib-pane>.lib-list{flex:1 1 auto;min-height:220px;max-height:calc(100vh - 340px);overflow:auto}
+@media(min-width:900px){.tr-seg,.tr-panel{max-width:840px}}
+.pl-tools{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.pl-tools .plan-reset{margin-left:auto}
+.pl-table{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel2)}
+.pl-th{display:grid;grid-template-columns:20px 1fr 58px 50px 54px;gap:6px;align-items:center;padding:7px 10px;font-size:10.5px;color:var(--tx3);border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.pl-row{display:grid;grid-template-columns:20px 1fr 58px 50px 54px;gap:6px;align-items:center;padding:0 10px;min-height:44px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .16s}
+.pl-row.on{background:rgba(61,220,191,.07)}
+.pl-row.joined{opacity:.55;cursor:default}
+.pl-idx{font-size:11px;color:var(--tx3)}
+.pl-nm{font-size:13.5px;min-width:0}
+.pl-nm b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-sx{font-size:12.5px;color:var(--tx2);white-space:nowrap}
+.pl-wt{font-size:12.5px;color:var(--tx2);white-space:nowrap}
+.pl-st{font-size:10.5px;text-align:right;white-space:nowrap}
+.pl-st.ok{color:var(--accent)}
+.pl-st.adj{color:var(--info)}
+.pl-st.warn{color:var(--risk)}
+.pl-st:not(.ok):not(.adj):not(.warn){color:var(--tx3)}
+.pl-edit{padding:10px;border-bottom:1px solid var(--line);background:var(--panel);animation:plIn .18s ease}
+@keyframes plIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.pl-edit .plan-gear{margin-top:0}
+.pl-edit .plan-note{margin-top:8px}
+.pl-edit-act{display:flex;gap:8px;margin-top:8px}
+.plan-detail,.plan-del{min-height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--tx2);font-size:12px;cursor:pointer}
+.plan-del{color:var(--risk);border-color:rgba(230,120,120,.35)}
+@media(prefers-reduced-motion:reduce){.pl-edit{animation:none}}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -1931,7 +1968,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <div>
         <div class="eyebrow">TRAIN · 训练</div>
         <div class="page-title">今天练什么</div>
-        <div class="page-desc">今日训练置顶，加动作在底部抽屉；练完的组自动落进日志。</div>
+        <div class="page-desc">今日训练、AI 计划、动作库三个板块切换；练完的组自动落进日志。</div>
       </div>
     </div>
     <div id="recTrainWrap">
@@ -5018,44 +5055,55 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const eqs=[...new Set(allExercises().map(e=>e.e))].filter(Boolean);
     const hasHist=(train.records||[]).length>0;
     body.innerHTML=`
-      <div class="tr-today" id="trTodayCard">
-        <div class="tr-tc-head">
-          <div>
-            <div class="tr-tc-lbl">TODAY</div>
-            <div class="tr-tc-stat" id="todayStat">还没有排动作</div>
+      <div class="tr-seg" id="trSeg">
+        <button class="tr-seg-btn on" data-trseg="today" type="button">今日训练<em class="tr-seg-badge" id="segToday"></em></button>
+        <button class="tr-seg-btn" data-trseg="plan" type="button">AI 计划<em class="tr-seg-badge" id="segPlan"></em></button>
+        <button class="tr-seg-btn" data-trseg="lib" type="button">动作库</button>
+      </div>
+      <div class="tr-panel" data-trp="today">
+        <div class="tr-today" id="trTodayCard">
+          <div class="tr-tc-head">
+            <div>
+              <div class="tr-tc-lbl">TODAY</div>
+              <div class="tr-tc-stat" id="todayStat">还没有排动作</div>
+            </div>
+            <button class="btn gen tr-tc-go" id="trStart" type="button" data-act="start">▶ 开始训练</button>
           </div>
-          <button class="btn gen tr-tc-go" id="trStart" type="button" data-act="start">▶ 开始训练</button>
+          <div class="tr-tc-quick">
+            <input id="trQuickText" type="text" autocomplete="off" placeholder="一句话记：卧推 60 5x5">
+            <button class="btn ghost sm" id="trQuickAdd" type="button">记一条</button>
+          </div>
+          <div class="tr-tc-links">
+            <button class="tr-tc-link" id="libOpen" type="button">＋ 加动作</button>
+            <button class="tr-tc-link" id="trRepeat" type="button">重复上次</button>
+          </div>
+          <div id="trToday"></div>
+          <div class="tr-entries" id="trEmpty">
+            <button class="tr-entry ${hasHist?'':'hot'}" data-entry="ai" type="button"><b>AI 帮我排</b><em>按部位生成今日计划</em></button>
+            <button class="tr-entry ${hasHist?'hot':''}" data-entry="mine" type="button"><b>从我的库挑</b><em>点餐式勾选动作</em></button>
+            <button class="tr-entry" data-entry="search" type="button"><b>搜个动作</b><em>1,324 个动作可搜</em></button>
+          </div>
         </div>
-        <div class="tr-tc-quick">
-          <input id="trQuickText" type="text" autocomplete="off" placeholder="一句话记：卧推 60 5x5">
-          <button class="btn ghost sm" id="trQuickAdd" type="button">记一条</button>
-        </div>
-        <div class="tr-tc-links">
-          <button class="tr-tc-link" id="libOpen" type="button">＋ 加动作</button>
-          <button class="tr-tc-link" id="trRepeat" type="button">重复上次</button>
-        </div>
-        <div id="trToday"></div>
-        <div class="tr-entries" id="trEmpty">
-          <button class="tr-entry ${hasHist?'':'hot'}" data-entry="ai" type="button"><b>✨ AI 帮我排</b><em>按部位生成今日计划</em></button>
-          <button class="tr-entry ${hasHist?'hot':''}" data-entry="mine" type="button"><b>⭐ 从我的库挑</b><em>点餐式勾选动作</em></button>
-          <button class="tr-entry" data-entry="search" type="button"><b>🔍 搜个动作</b><em>1,324 个动作可搜</em></button>
+        <div class="tr-strip" id="weekStrip">
+          <button class="tr-strip-h" id="weekStripHead" type="button"><span id="weekSum">本周 · —</span><i>▸</i></button>
+          <div class="tr-strip-b" id="weekBody" hidden>
+            <div id="trChart" class="chart-sm"></div>
+            <div id="trDayDetail" class="day-detail"></div>
+            <div class="tr-sum" id="trStat"></div>
+          </div>
         </div>
       </div>
-      <div class="tr-strip" id="planStrip">
-        <button class="tr-strip-h" id="planStripHead" type="button"><span id="planStripSum">AI 计划 · 点此生成</span><i>▸</i></button>
-        <div class="tr-strip-b" id="planStripBody" hidden>
-          <div class="chip-row" id="plPartChips" style="margin-top:10px">${parts.map((p,i)=>`<button class="fchip ${i===0?'on':''}" data-plpart="${p}">${p}</button>`).join('')}</div>
-          <div class="tr-actions" style="margin-top:8px"><button class="btn sm" id="plGen" type="button">生成计划</button></div>
-          <div id="plOut"></div>
+      <div class="tr-panel" data-trp="plan" hidden>
+        <div class="tr-strip" id="planStrip" style="margin-top:0">
+          <div class="tr-strip-b" id="planStripBody" style="border-top:0;margin-top:0">
+            <div class="chip-row" id="plPartChips">${parts.map((p,i)=>`<button class="fchip ${i===0?'on':''}" data-plpart="${p}">${p}</button>`).join('')}</div>
+            <div class="tr-actions" style="margin-top:8px"><button class="btn sm" id="plGen" type="button">生成计划</button></div>
+            <div id="plOut"></div>
+          </div>
         </div>
       </div>
-      <div class="tr-strip" id="weekStrip">
-        <button class="tr-strip-h" id="weekStripHead" type="button"><span id="weekSum">本周 · —</span><i>▸</i></button>
-        <div class="tr-strip-b" id="weekBody" hidden>
-          <div id="trChart" class="chart-sm"></div>
-          <div id="trDayDetail" class="day-detail"></div>
-          <div class="tr-sum" id="trStat"></div>
-        </div>
+      <div class="tr-panel" data-trp="lib" hidden>
+        <div class="lib-inline" id="libBox"></div>
       </div>
       <div id="trLegacy" hidden>
         <div id="todayBadge"></div>
@@ -5070,7 +5118,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <div class="tr-actions" style="margin-top:14px"><button class="btn sm" id="trAdd" type="button">加入今日训练</button><button class="btn ghost sm" id="trAgain" type="button">沿用上次</button></div>
         </div>
       </div>`;
-    ensureLibDrawer(parts, eqs);
+    renderLibInline(parts, eqs);
     trRenderList();
     renderMyLib();
     trRenderToday();
@@ -5081,70 +5129,65 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     try{ trSyncStrips(); }catch(e){}
   }
 
-  /* 动作库抽屉 */
-  let libTab='search';
+  /* 动作库：页面内板块 */
+  let libTab='search', trSeg='today';
+  function trSetSeg(n){
+    trSeg=n;
+    const seg=$('trSeg'); if(seg) seg.querySelectorAll('[data-trseg]').forEach(b=>b.classList.toggle('on', b.dataset.trseg===n));
+    document.querySelectorAll('#reportBody [data-trp]').forEach(p=>{ p.hidden = p.dataset.trp!==n; });
+    if(n==='lib'){ libShow(libTab||'search'); }
+    if(n==='today'){ try{ trRenderToday(); }catch(e){} }
+    if(n==='plan'){ try{ trRenderPlan(); }catch(e){} }
+  }
   function libShow(t){
     libTab=t;
-    const d=$('libDrawer'); if(!d) return;
+    const d=$('libBox'); if(!d) return;
     d.querySelectorAll('#libTabs [data-lt]').forEach(b=>b.classList.toggle('on', b.dataset.lt===t));
     d.querySelectorAll('[data-ltp]').forEach(p=>{ p.hidden = p.dataset.ltp!==t; });
     if(t==='hot'){ try{ trRenderHot(); }catch(e){} }
     if(t==='mine'){ try{ renderMyLib(); }catch(e){} }
   }
-  function libOpenP(t){
-    const d=$('libDrawer'); if(!d) return;
-    libShow(t||libTab||'search');
-    d.classList.add('on');
-    const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || window.matchMedia('(max-width:999px)').matches;
-    if(!mobile && (t||libTab)==='search'){ setTimeout(()=>{ try{ $('trSearch').focus(); }catch(e){} },220); }
-  }
-  function libClose(){ const d=$('libDrawer'); if(d) d.classList.remove('on'); }
-  function ensureLibDrawer(parts, eqs){
-    const old=document.getElementById('libDrawer'); if(old) old.remove();
-    const d=document.createElement('div');
-    d.id='libDrawer'; d.className='ex-sheet lib-drawer';
+  function libOpenP(t){ trSetSeg('lib'); libShow(t||libTab||'search'); }
+  function libClose(){ if(trSeg==='lib') trSetSeg('today'); }
+  function renderLibInline(parts, eqs){
+    const d=$('libBox'); if(!d) return;
     d.innerHTML=`
-      <div class="ex-sheet-inner lib-inner">
-        <div class="ex-sheet-bar"><span>选择动作</span><button class="ex-sheet-x" id="libClose" type="button">×</button></div>
-        <div class="lib-tabs" id="libTabs">
-          <button class="tab on" data-lt="search" type="button">搜索</button>
-          <button class="tab" data-lt="mine" type="button">我的库</button>
-          <button class="tab" data-lt="hot" type="button">热门</button>
-        </div>
-        <div class="lib-pane" data-ltp="search">
-          <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 器械 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
-          <div class="bodymap" id="bodyMap">${['肩','胸','背','腰腹','臂','腿'].map(p=>{
-            const rc=partRecovery(p);
-            const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
-            const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
-            return `<button class="bm-cell ${st}" data-bmpart="${p}" type="button" aria-label="${p} ${word}"><b>${p}</b><em>${word}</em></button>`;
-          }).join('')}</div>
-          <div class="chip-row" id="trPartChips">${['全部'].concat(parts).map(p=>`<button class="fchip ${(p==='全部'&&!trState.part)||trState.part===p?'on':''}" data-part="${p==='全部'?'':p}">${p}</button>`).join('')}</div>
-          <div class="chip-row" id="trSortRow"><span class="chip-label">排序</span><button class="fchip on" data-sort="freq">常用优先</button><button class="fchip" data-sort="default">默认顺序</button></div>
-          <div class="chip-row" id="trEqChips">${['全部'].concat(['杠铃','哑铃','绳索','器械','自重','壶铃'].filter(x=>eqs.includes(x))).map(q=>`<button class="fchip ${(q==='全部'&&!trState.eq)||trState.eq===q?'on':''}" data-eq="${q==='全部'?'':q}">${q==='全部'?'全部器械':q}</button>`).join('')}</div>
-          <div class="ex-count" id="trCount"></div>
-          <div class="ex-list lib-list" id="trList"></div>
-        </div>
-        <div class="lib-pane" data-ltp="mine" hidden>
-          <div id="myLib"></div>
-          <div class="tr-actions" style="margin-top:10px"><button class="btn ghost sm" id="cuOpen" type="button">＋ 自定义动作</button></div>
-          <div class="cu-form" id="cuForm">
-            <div class="f-row">
-              <div class="f-field"><label class="f-label">动作名称</label><input type="text" id="cuName" placeholder="如：壶铃摇摆"></div>
-              <div class="f-field"><label class="f-label">部位</label><select id="cuPart">${parts.map(p=>`<option value="${p}">${p}</option>`).join('')}</select></div>
-              <div class="f-field"><label class="f-label">器械</label><input type="text" id="cuEquip" placeholder="如：壶铃 / 自重"></div>
-            </div>
-            <div class="f-field"><label class="f-label">动作要领（每行一步）</label><textarea id="cuSteps" style="min-height:80px" placeholder="每行写一步"></textarea></div>
-            <div class="tr-actions"><button class="btn sm" id="cuSave" type="button">保存到动作库</button><button class="btn ghost sm" id="cuCancel" type="button">取消</button></div>
+      <div class="lib-tabs" id="libTabs">
+        <button class="tab on" data-lt="search" type="button">搜索</button>
+        <button class="tab" data-lt="mine" type="button">我的库</button>
+        <button class="tab" data-lt="hot" type="button">热门</button>
+      </div>
+      <div class="lib-pane" data-ltp="search">
+        <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 器械 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
+        <div class="bodymap" id="bodyMap">${['肩','胸','背','腰腹','臂','腿'].map(p=>{
+          const rc=partRecovery(p);
+          const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
+          const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
+          return `<button class="bm-cell ${st}" data-bmpart="${p}" type="button" aria-label="${p} ${word}"><b>${p}</b><em>${word}</em></button>`;
+        }).join('')}</div>
+        <div class="chip-row" id="trPartChips">${['全部'].concat(parts).map(p=>`<button class="fchip ${(p==='全部'&&!trState.part)||trState.part===p?'on':''}" data-part="${p==='全部'?'':p}">${p}</button>`).join('')}</div>
+        <div class="chip-row" id="trSortRow"><span class="chip-label">排序</span><button class="fchip on" data-sort="freq">常用优先</button><button class="fchip" data-sort="default">默认顺序</button></div>
+        <div class="chip-row" id="trEqChips">${['全部'].concat(['杠铃','哑铃','绳索','器械','自重','壶铃'].filter(x=>eqs.includes(x))).map(q=>`<button class="fchip ${(q==='全部'&&!trState.eq)||trState.eq===q?'on':''}" data-eq="${q==='全部'?'':q}">${q==='全部'?'全部器械':q}</button>`).join('')}</div>
+        <div class="ex-count" id="trCount"></div>
+        <div class="ex-list lib-list" id="trList"></div>
+      </div>
+      <div class="lib-pane" data-ltp="mine" hidden>
+        <div id="myLib"></div>
+        <div class="tr-actions" style="margin-top:10px"><button class="btn ghost sm" id="cuOpen" type="button">＋ 自定义动作</button></div>
+        <div class="cu-form" id="cuForm">
+          <div class="f-row">
+            <div class="f-field"><label class="f-label">动作名称</label><input type="text" id="cuName" placeholder="如：壶铃摇摆"></div>
+            <div class="f-field"><label class="f-label">部位</label><select id="cuPart">${parts.map(p=>`<option value="${p}">${p}</option>`).join('')}</select></div>
+            <div class="f-field"><label class="f-label">器械</label><input type="text" id="cuEquip" placeholder="如：壶铃 / 自重"></div>
           </div>
+          <div class="f-field"><label class="f-label">动作要领（每行一步）</label><textarea id="cuSteps" style="min-height:80px" placeholder="每行写一步"></textarea></div>
+          <div class="tr-actions"><button class="btn sm" id="cuSave" type="button">保存到动作库</button><button class="btn ghost sm" id="cuCancel" type="button">取消</button></div>
         </div>
-        <div class="lib-pane" data-ltp="hot" hidden>
-          <div class="ex-count" id="trHotCount"></div>
-          <div class="ex-list lib-list" id="trHotList"></div>
-        </div>
+      </div>
+      <div class="lib-pane" data-ltp="hot" hidden>
+        <div class="ex-count" id="trHotCount"></div>
+        <div class="ex-list lib-list" id="trHotList"></div>
       </div>`;
-    document.body.appendChild(d);
-    d.addEventListener('click',ev=>{ if(ev.target===d) libClose(); });
   }
   function trRenderHot(){
     const box=$('trHotList'); if(!box) return;
@@ -5203,11 +5246,19 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       }
     }catch(e){}
     if($('planStripSum')) $('planStripSum').textContent=pl;
+    const sb=$('segToday');
+    if(sb){ const has=items.length>0; sb.textContent=has?(done+'/'+total):''; sb.classList.toggle('on', has); }
+    const pb2=$('segPlan');
+    if(pb2){
+      let pend=0;
+      try{ pend=(trPlan||[]).filter(i=>!trPlanJoined(i.exId)).length; }catch(e){}
+      pb2.textContent=pend?String(pend):''; pb2.classList.toggle('on', !!pend);
+    }
   }
   function bindDrawer(){
-    const d=$('libDrawer'); if(!d) return;
-    const lo=$('libClose'); if(lo) lo.onclick=libClose;
-    d.querySelectorAll('#libTabs [data-lt]').forEach(b=>b.onclick=()=>libShow(b.dataset.lt));
+    const seg=$('trSeg');
+    if(seg) seg.querySelectorAll('[data-trseg]').forEach(b=>b.onclick=()=>trSetSeg(b.dataset.trseg));
+    if($('libTabs')) $('libTabs').querySelectorAll('[data-lt]').forEach(b=>b.onclick=()=>libShow(b.dataset.lt));
     const lo2=$('libOpen'); if(lo2) lo2.onclick=()=>libOpenP('search');
     const st=$('trStart');
     if(st) st.onclick=()=>{
@@ -5220,14 +5271,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const tb=$('trEmpty');
     if(tb) tb.querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>{
       const k=b.dataset.entry;
-      if(k==='ai'){ const pb=$('planStripBody'); const ph=$('planStripHead'); if(pb) pb.hidden=false; if(ph) ph.querySelector('i').textContent='▾'; try{ $('plGen').click(); }catch(e){}; const ps=$('planStrip'); if(ps) ps.scrollIntoView({block:'center',behavior:'smooth'}); }
+      if(k==='ai'){ trSetSeg('plan'); try{ $('plGen').click(); }catch(e){} }
       else libOpenP(k);
     });
-    const ph=$('planStripHead'), pb=$('planStripBody');
-    if(ph&&pb){
-      ph.onclick=()=>{ const open=pb.hidden; pb.hidden=!open; ph.querySelector('i').textContent=open?'▾':'▸'; };
-      pb.addEventListener('click',()=>setTimeout(()=>{ try{ trSyncStrips(); }catch(e){} },0));
-    }
     const wh=$('weekStripHead'), wb=$('weekBody');
     if(wh&&wb) wh.onclick=()=>{
       const open=wb.hidden; wb.hidden=!open; wh.querySelector('i').textContent=open?'▾':'▸';
@@ -5743,6 +5789,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const day=trDateVal();
     return (train.records||[]).some(r=>r.date===day && r.exId===id);
   }
+  let plOpen=-1;
   function trRenderPlan(){
     const box=$('plOut'); if(!box) return;
     if(!trPlan||!trPlan.length){
@@ -5760,42 +5807,66 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     const pending=trPlan.filter(i=>!trPlanJoined(i.exId)).length;
     const amount=[sum.sets?(sum.sets+' 组'):'', sum.reps?(sum.reps+' 次'):'', sum.vol?((Math.round(sum.vol)).toLocaleString()+'kg'):'', sum.min?(sum.min+' 分钟'):''].filter(Boolean).join(' · ');
+    const rows=trPlan.map((i,idx)=>{
+      const jn=trPlanJoined(i.exId);
+      const adj=i.orig && ((i.sets||0)!==(i.orig.sets||0) || (i.reps||0)!==(i.orig.reps||0) || (i.weight||0)!==(i.orig.weight||0) || (i.dur||0)!==(i.orig.dur||0));
+      const exE=(findEx(i.exId)||{}).e||'';
+      const selfW=(i.weight||0)===0 && !i.dur && exE!=='自重';
+      let cls='', txt='';
+      if(jn){ cls='ok'; txt='✓ 已加入'; }
+      else if(adj){ cls='adj'; txt='已调'; }
+      else if(selfW){ cls='warn'; txt='⚠待设'; }
+      const open=plOpen===idx && !jn;
+      const step=weightStep(findEx(i.exId))||2.5;
+      const wHist=[...new Set((train.records||[]).filter(r=>r.exId===i.exId).map(r=>r.weight||0).concat([i.weight||0]))].filter(w=>w>0).sort((a,b)=>b-a).slice(0,3);
+      const last=trPlanLast(i.exId);
+      const gear = jn ? '<div class="plan-note" style="margin-top:0">已加入今日，去「今日训练」里逐组打勾。</div>'
+        : i.dur
+        ? `<div class="plan-gear"><span class="plan-ctl"><i>分钟</i><button class="pl-step" data-pl="${idx}:dur:-5" type="button">−</button><span class="plan-num" data-pnum="${idx}:dur">${i.dur}</span><button class="pl-step" data-pl="${idx}:dur:5" type="button">+</button></span></div>`
+        : `<div class="plan-gear">
+             <span class="plan-ctl"><i>组</i><button class="pl-step" data-pl="${idx}:sets:-1" type="button">−</button><span class="plan-num" data-pnum="${idx}:sets">${i.sets}</span><button class="pl-step" data-pl="${idx}:sets:1" type="button">+</button></span>
+             <span class="plan-ctl"><i>次</i><button class="pl-step" data-pl="${idx}:reps:-1" type="button">−</button><span class="plan-num" data-pnum="${idx}:reps">${i.reps}</span><button class="pl-step" data-pl="${idx}:reps:1" type="button">+</button></span>
+             <span class="plan-wchips">${wHist.map(w=>`<button class="plan-w ${w===(i.weight||0)?'on':''}" data-plw="${idx}:${w}" type="button">${w}kg</button>`).join('')}
+               <span class="plan-ctl"><i>kg</i><button class="pl-step" data-pl="${idx}:weight:-${step}" type="button">−</button><span class="plan-num" data-pnum="${idx}:weight">${i.weight>0?i.weight:'自重'}</span><button class="pl-step" data-pl="${idx}:weight:${step}" type="button">+</button></span>
+             </span>
+           </div>`;
+      const edit = !open ? '' : `<div class="pl-edit" data-pledit="${idx}">
+          ${gear}
+          <div class="plan-note">${last?ENGINE.esc(last)+' · ':''}${ENGINE.esc(i.note||'')}</div>
+          <div class="pl-edit-act">
+            <button class="plan-detail" data-ex="${i.exId}" type="button">查看动作</button>
+            <button class="plan-del" data-pldel="${idx}" type="button">移除</button>
+          </div>
+        </div>`;
+      return `<div class="pl-row${jn?' joined':''}${open?' on':''}" data-plrow="${idx}">
+          <span class="pl-idx">${idx+1}</span>
+          <span class="pl-nm"><b>${ENGINE.esc(i.name)}</b></span>
+          <span class="pl-sx">${i.dur?(i.dur+'′'):(i.sets+' × '+i.reps)}</span>
+          <span class="pl-wt">${i.weight>0?(i.weight+'kg'):'自重'}</span>
+          <span class="pl-st ${cls}">${txt}</span>
+        </div>${edit}`;
+    }).join('');
     box.innerHTML=`
       <div class="plan-wrap">
-        <div class="plan-head"><b>${ENGINE.esc(label)}日计划</b><span id="plSum">${trPlan.length} 个动作 · ${amount}</span></div>
+        <div class="plan-head"><b>${ENGINE.esc(label)}日计划</b><span id="plSum">${trPlan.length} 动作 · ${amount}</span></div>
+        <div class="pl-tools">
+          <button class="btn sm" id="plImport" type="button" ${pending?'':'disabled'}>${pending?('全部加入 · '+pending):'已全部加入'}</button>
+          <button class="plan-reset" id="plReset" type="button">恢复建议值</button>
+          <button class="plan-reset" id="plRe" type="button">换一组</button>
+        </div>
+        <div class="pl-table"><div class="pl-th"><span>#</span><span>动作</span><span>组 × 次</span><span>重量</span><span>状态</span></div>${rows}</div>
         ${(()=>{const rv=partRecovery(label);return rv.text?`<div class="plan-recovery ${rv.warn?'warn':''}">${ENGINE.esc(rv.text)}</div>`:''})()}
-        <div class="plan-tools"><button class="plan-reset" id="plReset" type="button">恢复建议值</button><em>点动作名看详情</em></div>
-        ${trPlan.map((i,idx)=>{
-          const jn=trPlanJoined(i.exId);
-          const adj=i.orig && ((i.sets||0)!==(i.orig.sets||0) || (i.reps||0)!==(i.orig.reps||0) || (i.weight||0)!==(i.orig.weight||0) || (i.dur||0)!==(i.orig.dur||0));
-          const last=trPlanLast(i.exId);
-          const wHist=[...new Set((train.records||[]).filter(r=>r.exId===i.exId).map(r=>r.weight||0).concat([i.weight||0]))].filter(w=>w>0).sort((a,b)=>b-a).slice(0,3);
-          const step=weightStep(findEx(i.exId))||2.5;
-          const gear = jn
-            ? ''
-            : i.dur
-            ? `<div class="plan-gear"><span class="plan-ctl"><i>分钟</i><button class="pl-step" data-pl="${idx}:dur:-5" type="button">−</button><span class="plan-num" data-pnum="${idx}:dur">${i.dur}</span><button class="pl-step" data-pl="${idx}:dur:5" type="button">+</button></span></div>`
-            : `<div class="plan-gear">
-                <span class="plan-ctl"><i>组</i><button class="pl-step" data-pl="${idx}:sets:-1" type="button">−</button><span class="plan-num" data-pnum="${idx}:sets">${i.sets}</span><button class="pl-step" data-pl="${idx}:sets:1" type="button">+</button></span>
-                <span class="plan-ctl"><i>次</i><button class="pl-step" data-pl="${idx}:reps:-1" type="button">−</button><span class="plan-num" data-pnum="${idx}:reps">${i.reps}</span><button class="pl-step" data-pl="${idx}:reps:1" type="button">+</button></span>
-                <span class="plan-wchips">${wHist.map(w=>`<button class="plan-w ${w===(i.weight||0)?'on':''}" data-plw="${idx}:${w}" type="button">${w}kg</button>`).join('')}
-                  <span class="plan-ctl"><i>kg</i><button class="pl-step" data-pl="${idx}:weight:-${step}" type="button">−</button><span class="plan-num" data-pnum="${idx}:weight">${i.weight>0?i.weight:'自重'}</span><button class="pl-step" data-pl="${idx}:weight:${step}" type="button">+</button></span>
-                </span>
-              </div>`;
-          return `<div class="plan-item${jn?' joined':''}">
-            <div class="plan-line"><span class="plan-name" data-ex="${i.exId}">${ENGINE.esc(i.name)}</span>
-              <span class="plan-tag">${i.src==='hist'?'常用':(i.src==='fav'?'收藏':'推荐')}</span>
-              ${adj?'<span class="plan-adj">已调</span>':''}
-              ${jn?'<span class="plan-joined">✓ 已加入</span>':''}
-              <button class="plan-x" data-pldel="${idx}" type="button" aria-label="移除">×</button>
-            </div>
-            <div class="plan-note">${last?ENGINE.esc(last)+' · ':''}${ENGINE.esc(i.note||'')}</div>
-            ${gear}
-          </div>`;
-        }).join('')}
-        <div class="tr-actions"><button class="btn sm" id="plImport" type="button" ${pending?'':'disabled'}>${pending?('把 '+pending+' 个动作加入今日'):'已全部加入今日'}</button><button class="btn ghost sm" id="plRe" type="button">换一组</button></div>
       </div>`;
-    box.querySelectorAll('.plan-name').forEach(n=>n.onclick=()=>trSelect(n.dataset.ex));
+    // 行点击 = 手风琴展开
+    box.querySelectorAll('[data-plrow]').forEach(r=>r.onclick=()=>{
+      const idx=+r.dataset.plrow;
+      plOpen = (plOpen===idx? -1 : idx);
+      trRenderPlan();
+      if(plOpen>=0){
+        setTimeout(()=>{ const e=box.querySelector(`[data-pledit="${plOpen}"]`); if(e) e.scrollIntoView({block:'nearest',behavior:'smooth'}); },60);
+      }
+    });
+    box.querySelectorAll('.plan-detail').forEach(b=>b.onclick=(ev)=>{ ev.stopPropagation(); trSelect(b.dataset.ex); });
 
     // 参数 stepper（单击 + 长按连发；连发期间不整块重绘）
     const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
@@ -5817,19 +5888,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       };
       const fire=()=>{ if(bump(idx,field,d)) paint(); };
       const stop=()=>{ clearTimeout(hold); clearInterval(timer); hold=timer=null; };
-      b.addEventListener('pointerdown',ev=>{ ev.preventDefault(); fire(); hold=setTimeout(()=>{ timer=setInterval(fire,110); },420); });
+      b.addEventListener('pointerdown',ev=>{ ev.preventDefault(); ev.stopPropagation(); fire(); hold=setTimeout(()=>{ timer=setInterval(fire,110); },420); });
       b.addEventListener('pointerup',()=>{ stop(); trPlanSave(); trRenderPlan(); });
       b.addEventListener('pointercancel',()=>{ stop(); trPlanSave(); trRenderPlan(); });
       b.addEventListener('pointerleave',()=>{ stop(); });
     });
-    box.querySelectorAll('[data-plw]').forEach(b=>b.onclick=()=>{
+    box.querySelectorAll('[data-plw]').forEach(b=>b.onclick=(ev)=>{ ev.stopPropagation();
       const p=b.dataset.plw.split(':'); const i=trPlan[+p[0]]; if(!i || trPlanJoined(i.exId)) return;
       i.weight=parseFloat(p[1]); trPlanSave(); trRenderPlan();
     });
     // 移除动作（可撤销 5 秒）
-    box.querySelectorAll('[data-pldel]').forEach(b=>b.onclick=()=>{
+    box.querySelectorAll('[data-pldel]').forEach(b=>b.onclick=(ev)=>{
+      ev.stopPropagation();
       const idx=+b.dataset.pldel; const item=trPlan[idx]; if(!item) return;
-      trPlan.splice(idx,1); trPlanSave(); trRenderPlan();
+      trPlan.splice(idx,1); plOpen=-1; trPlanSave(); trRenderPlan();
       const t=document.createElement('div'); t.className='toast undo';
       t.innerHTML='已移除 '+ENGINE.esc(item.name)+' <button type="button">撤销</button>';
       document.body.appendChild(t);
@@ -5838,9 +5910,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     if($('plReset')) $('plReset').onclick=()=>{
       if(!trPlanOrig) return;
-      trPlan=trPlanOrig.map(i=>({...i})); trPlanSave(); trRenderPlan(); trToast('已恢复建议值');
+      trPlan=trPlanOrig.map(i=>({...i})); plOpen=-1; trPlanSave(); trRenderPlan(); trToast('已恢复建议值');
     };
-    $('plImport').onclick=()=>{
+    if($('plImport')) $('plImport').onclick=()=>{
       const day=trDateVal(); let added=0, updated=0;
       trPlan.forEach(i=>{
         const exists=(train.records||[]).some(r=>r.date===day && r.exId===i.exId);
@@ -5852,10 +5924,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         trAddPlanned(i.exId, i.sets, i.reps, i.weight||0, true);
         if(exists) updated++; else added++;
       });
-      saveTrain(); trRenderToday(); trRenderPlan(); refreshHome();
+      saveTrain(); plOpen=-1; trRenderToday(); trRenderPlan(); refreshHome();
       trToast('已加入 '+added+' 个动作'+(updated?('，更新 '+updated+' 个'):''));
     };
-    $('plRe').onclick=()=>{ trPlan=genPlan(partPick()); trPlanOrig=null; trPlanSave(); trRenderPlan(); };
+    if($('plRe')) $('plRe').onclick=()=>{ trPlan=genPlan(partPick()); trPlanOrig=null; plOpen=-1; trPlanSave(); trRenderPlan(); };
   }
   function showTrainSummary(){
     const d=trDateVal();
