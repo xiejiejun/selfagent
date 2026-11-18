@@ -1902,6 +1902,28 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .plan-detail,.plan-del{min-height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--tx2);font-size:12px;cursor:pointer}
 .plan-del{color:var(--risk);border-color:rgba(230,120,120,.35)}
 @media(prefers-reduced-motion:reduce){.pl-edit{animation:none}}
+/* 今日卡：状态驱动手风琴 */
+.tr-next{font-size:11.5px;color:var(--tx3);padding:2px 2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto 12px;gap:8px;align-items:center;
+ min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);
+ margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.tc-row:active{border-color:var(--line2)}
+.tc-nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-sx{font-size:11.5px;color:var(--tx2);white-space:nowrap}
+.tc-pr{font-size:11px;color:var(--tx3);border:1px solid var(--line2);border-radius:999px;padding:2px 7px;white-space:nowrap}
+.tc-ar{font-size:11px;color:var(--tx3)}
+.tc-done{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:8px;align-items:center;
+ min-height:38px;padding:0 12px;border:1px dashed var(--line);border-radius:10px;background:transparent;
+ margin-bottom:8px;opacity:.6;cursor:pointer}
+.tc-ok{color:var(--accent);font-size:12px}
+.tc-done .tc-nm{font-size:13px}
+.set-card.open .set-head{cursor:pointer}
+.set-card{padding:8px 10px}
+.set-card .set-row{padding:2px 0}
+.set-more{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin-top:4px}
+.set-more[hidden]{display:none}
+.more-btn{padding:0 10px;min-height:34px;font-size:14px;line-height:1}
+.more-btn.on{color:var(--accent);border-color:var(--accent)}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -5077,6 +5099,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <button class="tr-tc-link" id="libOpen" type="button">＋ 加动作</button>
             <button class="tr-tc-link" id="trRepeat" type="button">重复上次</button>
           </div>
+          <div class="tr-next" id="trNext" hidden></div>
           <div id="trToday"></div>
           <div class="tr-entries" id="trEmpty">
             <button class="tr-entry ${hasHist?'':'hot'}" data-entry="ai" type="button"><b>AI 帮我排</b><em>按部位生成今日计划</em></button>
@@ -5981,6 +6004,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function fillAllRanges(){
     document.querySelectorAll('input[type="range"]').forEach(fillRange);
   }
+  let trOpenUid=undefined;   // undefined=自动；''=全部收起；uid=展开该动作
+  let trFollowTick=false;    // 仅打勾触发时自动顺延到下一个动作
   function trRenderToday(){
     const box=$('trToday'); if(!box) return;
     const d=trDateVal();
@@ -5988,6 +6013,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     let dirty=false;
     items.forEach(r=>{ trUid(r); if(!Array.isArray(r.groups)) dirty=true; ensureGroups(r); });
     if(dirty) saveTrain();
+    let activeUid=null;
+    const pendOf=r=>ensureGroups(r).some(g=>!g.done);
+    if(items.length){
+      if(trOpenUid===undefined){
+        const f=items.find(pendOf); activeUid=f?f.uid:null;
+      } else if(trOpenUid===''){
+        activeUid=null;
+      } else if(items.some(r=>r.uid===trOpenUid)){
+        const r0=items.find(r=>r.uid===trOpenUid);
+        const others=items.filter(r=>r.uid!==trOpenUid && pendOf(r));
+        activeUid=(trFollowTick && !pendOf(r0) && others.length)?others[0].uid:trOpenUid;
+        trOpenUid=activeUid;
+      }
+    }
     box.innerHTML = items.length ? items.map(r=>{
       const gs=ensureGroups(r);
       const last=trLastRec(r.exId);
@@ -5995,15 +6034,31 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const step=weightStep(findEx(r.exId));
       const doneN=gs.filter(g=>g.done).length;
       const sug=suggestWeight(r);
+      const w0=gs[0]?(gs[0].weight||0):(r.weight||0);
+      const sxTxt = gs.length ? (gs.length+' 组 × '+(gs[0].reps||0)+' · '+(w0>0?(w0+'kg'):'自重')) : ((r.dur||0)+' 分钟');
+      const allDone = gs.length>0 && doneN===gs.length;
+
+      if(r.uid!==activeUid){
+        if(allDone){
+          return `<div class="tc-done" data-topen="${r.uid}">
+            <span class="tc-ok">✓</span>
+            <span class="tc-nm">${ENGINE.esc(r.name)}</span>
+            <span class="tc-sx">${gs.length}/${gs.length} · ${w0>0?(w0+'kg'):'自重'}</span>
+          </div>`;
+        }
+        return `<div class="tc-row" data-topen="${r.uid}">
+          <span class="tc-nm">${ENGINE.esc(r.name)}</span>
+          <span class="tc-sx">${sxTxt}</span>
+          <span class="tc-pr">${doneN}/${gs.length}</span>
+          <span class="tc-ar">▸</span>
+        </div>`;
+      }
+
       const rows=gs.map(g=>`
         <div class="set-row ${g.done?'done':''}">
           <button class="set-tick ${g.done?'done':''}" data-tick="${r.uid}:${g.no}" type="button" title="${g.done?'点击标记未完成':'完成这一组，开始休息'}">${g.done?'✓':g.no}</button>
           <button class="set-val" data-setopen="${r.uid}:${g.no}" type="button" title="点击修改重量与次数">${g.weight>0?g.weight+' kg':'自重'} × ${g.reps}</button>
-          <span class="set-edit">
-            <span class="edit-grp"><i>次</i><button class="mini" data-sg="${r.uid}:${g.no}:reps:-1" type="button">−</button><button class="mini" data-sg="${r.uid}:${g.no}:reps:1" type="button">+</button></span>
-            <span class="edit-grp"><i>kg</i><button class="mini" data-sg="${r.uid}:${g.no}:weight:-${step}" type="button" title="减 ${step}kg">−</button><button class="mini" data-sg="${r.uid}:${g.no}:weight:${step}" type="button" title="加 ${step}kg">+</button></span>
-          </span>
-          ${(g.rpe||window.__rpeAsk&&window.__rpeAsk[r.uid+':'+g.no])?`<span class="rpe-set">
+          ${(g.rpe||(window.__rpeAsk&&window.__rpeAsk[r.uid+':'+g.no]))?`<span class="rpe-set">
             <button class="rpe-dot easy ${g.rpe==='easy'?'on':''}" data-rpe="${r.uid}:${g.no}:easy" type="button" title="轻松"></button>
             <button class="rpe-dot ok ${g.rpe==='ok'?'on':''}" data-rpe="${r.uid}:${g.no}:ok" type="button" title="刚好"></button>
             <button class="rpe-dot hard ${g.rpe==='hard'?'on':''}" data-rpe="${r.uid}:${g.no}:hard" type="button" title="力竭"></button>
@@ -6011,24 +6066,33 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         </div>`).join('');
       const hist=(train.records||[]).filter(x=>x.exId===r.exId).map(x=>x.weight||0);
       const wchips=[...new Set(gs.map(g=>g.weight).concat(hist))].filter(w=>w>0).sort((a,b)=>b-a).slice(0,4);
-      return `<div class="set-card">
-        <div class="set-head">
+      return `<div class="set-card open">
+        <div class="set-head" data-tclose="${r.uid}">
           <button class="set-x" data-rmu="${r.uid}" type="button" title="删除该动作今日记录" aria-label="删除">×</button>
           <span class="nm">${ENGINE.esc(r.name)}</span>
-          <span class="meta">${lastTxt}${doneN?(' · 已完成 '+doneN+'/'+gs.length):''}${sug?(' · 建议 '+sug+'kg'):''}</span>
+          <span class="meta">${lastTxt}${doneN?(' · '+doneN+'/'+gs.length):''}${sug?(' · 建议 '+sug+'kg'):''}</span>
         </div>
         ${(r.dur && !(r.groups && r.groups.length))?`<div class="set-row"><span class="set-val">${r.dur} 分钟</span></div>`:rows}
         <div class="set-foot">
-          <button class="tr-minus" data-rmu1="${r.uid}" type="button" ${gs.some(g=>!g.done)&&gs.length>1?'':'disabled'} title="${gs.some(g=>!g.done)&&gs.length>1?'移除最后一个未完成的组':'已完成的组不能移除'}">−1 组</button>
           <button class="tr-plus" data-addu="${r.uid}" type="button">＋1 组</button>
-          <button class="mini-text" data-reststart="${r.uid}" type="button">休息 ${restSecs(r.exId)}s</button>
-          <button class="mini-text" data-hold="${r.uid}" type="button">开始计时</button>
-          ${wchips.length?`<span class="wchips">${wchips.map(w=>`<button class="wchip" data-wc="${r.uid}:${w}" type="button">${w}kg</button>`).join('')}</span>`:`<span class="wchips"><button class="wchip setw" data-setopen="${r.uid}:1" type="button">设重量</button></span>`}
+          <button class="mini-text more-btn" data-moreu="${r.uid}" type="button" title="更多">⋯</button>
+          <span class="set-more" data-more="${r.uid}" hidden>
+            <button class="tr-minus" data-rmu1="${r.uid}" type="button" ${gs.some(g=>!g.done)&&gs.length>1?'':'disabled'}>−1 组</button>
+            <button class="mini-text" data-reststart="${r.uid}" type="button">休息 ${restSecs(r.exId)}s</button>
+            <button class="mini-text" data-hold="${r.uid}" type="button">开始计时</button>
+            ${wchips.length?wchips.map(w=>`<button class="wchip" data-wc="${r.uid}:${w}" type="button">${w}kg</button>`).join(''):''}
+          </span>
         </div>
       </div>`;
     }).join('')
       : '';
 
+    if($('trNext')){
+      const nxt=items.filter(r=>r.uid!==activeUid && pendOf(r));
+      const txt=nxt.length ? ('接下来：'+nxt.slice(0,3).map(r=>r.name+' '+ensureGroups(r).filter(g=>!g.done).length+' 组').join(' · ')) : '';
+      $('trNext').textContent=txt;
+      $('trNext').hidden = !txt;
+    }
     const allG=items.flatMap(r=>ensureGroups(r));
     const sets=allG.length;
     const reps=allG.reduce((a,g)=>a+(g.reps||0),0);
@@ -6037,9 +6101,27 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     try{ trSyncStrips(); }catch(e){}
     if($('trSum')) $('trSum').innerHTML=`<span><b>${items.length}</b>动作</span><span><b>${sets}</b>总组数</span><span><b>${reps}</b>总次数</span><span><b>${Math.round(vol)}</b>容量kg</span>`;
 
-    // 打勾：完成一组 → 开始休息
+    // 展开 / 收起：同一时刻只开一张卡
+    box.querySelectorAll('[data-topen]').forEach(el=>el.onclick=()=>{
+      trOpenUid = (el.dataset.topen===activeUid) ? '' : el.dataset.topen;
+      trFollowTick=false;
+      trRenderToday();
+    });
+    box.querySelectorAll('[data-tclose]').forEach(el=>el.onclick=ev=>{
+      if(ev.target.closest('[data-rmu]')) return;
+      trOpenUid=''; trFollowTick=false; trRenderToday();
+    });
+    // ⋯ 展开更多操作
+    box.querySelectorAll('[data-moreu]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const m=box.querySelector('[data-more="'+b.dataset.moreu+'"]');
+      if(m){ m.hidden=!m.hidden; b.classList.toggle('on', !m.hidden); }
+    });
+    // 打勾：完成一组 → 开始休息（并跟随到该动作 / 自动顺延）
     box.querySelectorAll('[data-tick]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
+      trOpenUid=b.dataset.tick.split(':')[0];
+      trFollowTick=true;
       tickSet(b.dataset.tick);
     });
     // 单组参数 ±
@@ -6094,7 +6176,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const gs=ensureGroups(r);
       const lastG=gs[gs.length-1]||{reps:r.reps,weight:r.weight};
       const ng={no:gs.length+1, reps:lastG.reps, weight:lastG.weight, done:false, uid:r.uid+'s'+Date.now().toString(36)};
-      r.groups.push(ng); r.sets=r.groups.length;
+      r.groups.push(ng); r.sets=r.groups.length; trOpenUid=r.uid;
       saveTrain(); trRenderToday(); refreshHome();
       trToast((r.name||'')+' 已加第 '+(gs.length+1)+' 组 '+(ng.weight>0?ng.weight+'kg × ':'自重 × ')+ng.reps);
     });
