@@ -1324,6 +1324,15 @@ font-size:11px;cursor:pointer;flex:0 0 auto;font-variant-numeric:tabular-nums;wh
 .set-no{width:40px;height:40px;flex:0 0 auto;border-radius:50%;border:1px solid var(--line);
  display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--tx3);background:none;user-select:none}
 .set-no.done{border-color:rgba(61,220,191,.45);color:var(--accent);background:rgba(61,220,191,.10);font-weight:700}
+.set-no.warm{border-style:dashed;color:var(--tx3);font-size:11px;font-weight:600;letter-spacing:.04em}
+.ms-copy{width:100%;min-height:40px;margin:2px 0 8px;border-radius:9px;border:1px dashed var(--line2);
+ background:none;color:var(--tx2);font:inherit;font-size:12.5px;cursor:pointer}
+.ms-copy:active{background:rgba(61,220,191,.08);color:var(--accent)}
+.ld-dir{display:flex;gap:8px;margin:0 0 12px}
+.ld-chip{flex:1;min-height:40px;border-radius:9px;border:1px solid var(--line);background:none;color:var(--tx2);
+ font:inherit;font-size:13px;cursor:pointer}
+.ld-chip.on{border-color:rgba(61,220,191,.5);background:rgba(61,220,191,.10);color:var(--accent);font-weight:600}
+.set-row{touch-action:pan-y}
 html[data-theme="light"] .set-no.done{color:#0B7A68;border-color:rgba(14,143,122,.4);background:rgba(14,143,122,.07)}
 .mini{width:36px;height:36px;font-size:12px}
 .edit-grp{gap:4px;padding:2px 4px}
@@ -1910,19 +1919,21 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media(prefers-reduced-motion:reduce){.pl-edit{animation:none}}
 /* 今日卡：状态驱动手风琴 */
 .tr-next{font-size:11.5px;color:var(--tx3);padding:2px 2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tc-fold{display:grid;grid-template-columns:minmax(0,1fr) auto auto 12px;gap:8px;align-items:center;
+.tc-fold{display:grid;grid-template-columns:auto minmax(0,1fr) auto 12px;gap:8px;align-items:center;
  min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);
  margin-bottom:8px;cursor:pointer;transition:border-color .15s}
 .tc-fold:active{border-color:var(--line2)}
-.tc-nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tc-sx{font-size:11.5px;color:var(--tx2);white-space:nowrap}
+.tc-nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}
+.tc-sx{font-size:11.5px;color:var(--tx2);white-space:normal;line-height:1.45;min-width:0;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tc-pr{font-size:11px;color:var(--tx3);border:1px solid var(--line2);border-radius:999px;padding:2px 7px;white-space:nowrap}
 .tc-ar{font-size:11px;color:var(--tx3)}
-.tcf-done{color:var(--tx3);display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:8px;align-items:center;
+.tcf-done{color:var(--tx3);display:grid;grid-template-columns:14px auto minmax(0,1fr);gap:8px;align-items:center;
  min-height:38px;padding:0 12px;border:1px dashed var(--line);border-radius:10px;background:transparent;
  margin-bottom:8px;opacity:.6;cursor:pointer}
 .tc-ok{color:var(--accent);font-size:12px}
 .tcf-done .tc-nm{font-size:13px}
+.tcf-done .tc-sx{-webkit-line-clamp:1}
 .set-card.open .set-head{cursor:pointer}
 .set-card{padding:8px 10px}
 .set-card .set-row{padding:2px 0}
@@ -4381,8 +4392,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         const items=(train.records||[]).filter(r=>r.date===dk).map(r=>{
           const gs=ensureGroups(r);
           const dn=gs.filter(g=>g.done).length;
-          const iv=gs.filter(g=>g.done).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
-          const pk=(k)=>{ const v=gs.filter(g=>(g[k]||0)>0).slice(-1)[0]; return v?v[k]:0; };
+          const iv=gs.filter(g=>g.done&&!g.warmup).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
+          const pk=(k)=>{ const v=gs.filter(g=>(g[k]||0)>0 && !g.warmup).slice(-1)[0] || gs.filter(g=>(g[k]||0)>0).slice(-1)[0]; return v?v[k]:0; };
           return {exId:r.exId,name:r.name,part:r.part,sets:gs.length,reps:pk('reps'),
             weight:pk('weight'),done:dn,volume:Math.round(iv),
             groups:gs.map(g=>({no:g.no,reps:g.reps,weight:g.weight,done:!!g.done,rpe:g.rpe||0,sec:g.sec||0}))};
@@ -4407,9 +4418,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       let vol=0, names=[];
       const items=list.map(i=>{
         const gs=ensureGroups(i); const dn=gs.filter(g=>g.done).length;
-        const iv=gs.filter(g=>g.done).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
+        const iv=gs.filter(g=>g.done&&!g.warmup).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
         vol+=iv; names.push(i.name);
-        const pk=(k)=>{ const v=gs.filter(g=>(g[k]||0)>0).slice(-1)[0]; return v?v[k]:0; };
+        const pk=(k)=>{ const v=gs.filter(g=>(g[k]||0)>0 && !g.warmup).slice(-1)[0] || gs.filter(g=>(g[k]||0)>0).slice(-1)[0]; return v?v[k]:0; };
         return {exId:i.exId, name:i.name, part:i.part, sets:gs.length,
           reps:pk('reps'), weight:pk('weight'),
           done:dn, volume:Math.round(iv),
@@ -4506,6 +4517,53 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       setTimeout(apply,640);
     });
   }
+  function openLadderSheet(uid){
+    const r=(train.records||[]).find(x=>x.uid===uid); if(!r) return;
+    const gs=ensureGroups(r); if(gs.length<2){ trToast('至少 2 组才能做阶梯'); return; }
+    const step=weightStep(findEx(r.exId));
+    const start=gs[0]?(gs[0].weight||0):(r.weight||0);
+    let dir='up';
+    document.querySelectorAll('.msheet').forEach(x=>x.remove());
+    const el=document.createElement('div'); el.className='msheet';
+    el.innerHTML=`<div class="msheet-box">
+      <div class="ms-title">${ENGINE.esc(r.name)} · 阶梯填充</div>
+      <div class="ms-row"><label>起始 kg</label><input id="ldW" type="number" inputmode="decimal" step="0.5" value="${start}"></div>
+      <div class="ms-row"><label>每组步幅</label><input id="ldS" type="number" inputmode="decimal" step="0.5" value="${step}"></div>
+      <div class="ld-dir"><button class="ld-chip on" data-ld="up" type="button">递增</button><button class="ld-chip" data-ld="down" type="button">递减</button></div>
+      <div class="ms-btns"><button class="btn ghost sm" data-msclose type="button">取消</button><button class="btn sm" data-msok type="button">填充</button></div>
+    </div>`;
+    document.body.appendChild(el);
+    kbAvoid(el, el.querySelector('.msheet-box'));
+    el.querySelectorAll('[data-ld]').forEach(b=>b.onclick=()=>{
+      dir=b.dataset.ld;
+      el.querySelectorAll('[data-ld]').forEach(x=>x.classList.toggle('on', x.dataset.ld===dir));
+    });
+    el.querySelector('[data-msclose]').onclick=()=>el.remove();
+    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    el.querySelector('[data-msok]').onclick=()=>{
+      const w0=Math.max(0,parseFloat(el.querySelector('#ldW').value)||0);
+      const st=Math.max(0,parseFloat(el.querySelector('#ldS').value)||0);
+      let n=0;
+      gs.forEach((g,i)=>{
+        if(g.done) return;
+        const w=dir==='up' ? (w0+i*st) : Math.max(0, w0-i*st);
+        g.weight=Math.round(w*10)/10; n++;
+      });
+      if(n){ r.weight=gs[0].weight||0; saveTrain(); trRenderToday(); refreshHome(); }
+      el.remove();
+      trToast(n?('已填充 '+(dir==='up'?'递增':'递减')+' '+n+' 组'):'没有未完成的组可填充');
+    };
+  }
+  function copyPrevSet(key){
+    const {r,g}=setOf(key); if(!r||!g) return;
+    const gs=ensureGroups(r); const pv=gs[g.no-2];
+    if(!pv){ trToast('第 1 组没有上一组可复制'); return; }
+    if(g.done){ trToast('这一组已完成，先取消完成再复制'); return; }
+    g.weight=pv.weight||0; g.reps=pv.reps||0; g.warmup=!!pv.warmup;
+    r.weight=g.weight; r.reps=g.reps;
+    saveTrain(); trRenderToday(); refreshHome();
+    trToast('已复制上一组：'+(g.weight>0?g.weight+'kg':'自重')+' × '+g.reps);
+  }
   function openSetSheet(key){
     const {r,g}=setOf(key); if(!r||!g) return;
     document.querySelectorAll('.msheet').forEach(x=>x.remove());
@@ -4514,22 +4572,31 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="ms-title">${ENGINE.esc(r.name)} · 第 ${g.no} 组</div>
       <div class="ms-row"><label>重量 kg</label><input id="msW" type="number" inputmode="decimal" step="0.5" value="${g.weight||0}"></div>
       <div class="ms-row"><label>次数</label><input id="msR" type="number" inputmode="numeric" step="1" value="${g.reps||10}"></div>
-      <label class="ms-all"><input type="checkbox" id="msAll" checked> 应用到本动作所有未完成组</label>
+      ${g.no>1?`<button class="ms-copy" id="msCopy" type="button">复制上一组：${(ensureGroups(r)[g.no-2]||{}).weight>0?((ensureGroups(r)[g.no-2].weight)+'kg'):'自重'} × ${(ensureGroups(r)[g.no-2]||{}).reps||0}</button>`:''}
+      <label class="ms-all"><input type="checkbox" id="msWarm" ${g.warmup?'checked':''}> 热身组（灰色标记，不计入容量）</label>
+      <label class="ms-all"><input type="checkbox" id="msAll"> 同步到本动作其余未完成组</label>
       <div class="ms-btns"><button class="btn ghost sm" data-msclose type="button">取消</button><button class="btn sm" data-msok type="button">确定</button></div>
     </div>`;
     document.body.appendChild(el);
     kbAvoid(el, el.querySelector('.msheet-box'));
     const wIn=el.querySelector('#msW'); try{ wIn.focus(); wIn.select(); }catch(e){}
     try{ wIn.scrollIntoView({block:'nearest'}); }catch(e){}
+    const cp=el.querySelector('#msCopy');
+    if(cp) cp.onclick=()=>{
+      const pv=ensureGroups(r)[g.no-2]; if(!pv) return;
+      el.querySelector('#msW').value=pv.weight||0; el.querySelector('#msR').value=pv.reps||0;
+    };
     el.querySelector('[data-msclose]').onclick=()=>el.remove();
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
     el.querySelector('[data-msok]').onclick=()=>{
       const w=Math.max(0,parseFloat(el.querySelector('#msW').value)||0);
       const reps=Math.max(1,parseInt(el.querySelector('#msR').value,10)||1);
       const all=el.querySelector('#msAll').checked;
+      const warm=!!(el.querySelector('#msWarm')&&el.querySelector('#msWarm').checked);
       const gs=ensureGroups(r);
       if(all){ gs.forEach(x=>{ if(!x.done){ x.weight=w; x.reps=reps; } }); r.weight=w; r.reps=reps; }
       else { g.weight=w; g.reps=reps; r.weight=w; r.reps=reps; }
+      g.warmup=warm; if(all){ r.warmup=warm; }
       saveTrain(); trRenderToday(); el.remove();
       trToast('已设为 '+(w>0?w+'kg × ':'自重 × ')+reps);
     };
@@ -5431,6 +5498,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const age=s.t?Math.max(0,(Date.now()-new Date(s.t+'T00:00:00').getTime())/864e5):400;
     return s.c*10 + Math.max(0,60-age*2);
   }
+  /* 组摘要：全组相同时合并，不同则逐组（金字塔/递减组不失真） */
+  function groupsDigest(groups, opts){
+    opts=opts||{}; const lim=opts.lim||3;
+    const arr=(groups||[]).filter(g=>g && !g.warmup);
+    if(!arr.length) return '';
+    const f=g=>(((g.weight||0)>0)?(g.weight+'kg'):'自重')+'×'+(g.reps||0);
+    const same=arr.every(g=>(g.weight||0)===(arr[0].weight||0)&&(g.reps||0)===(arr[0].reps||0));
+    if(same) return (opts.bare?'':arr.length+' 组 · ')+f(arr[0]);
+    return arr.length>lim ? (arr.slice(0,lim).map(f).join(' · ')+' · +'+(arr.length-lim)+' 组') : arr.map(f).join(' · ');
+  }
+  function lastGroupsOf(rec){
+    if(!rec) return [];
+    return (rec.groups&&rec.groups.length) ? rec.groups : [{weight:rec.weight||0, reps:rec.reps||0, warmup:false}];
+  }
   function trLastRec(exId){
     const rs=(train.records||[]).filter(r=>r.exId===exId);
     return rs.length ? rs[rs.length-1] : null;
@@ -5505,7 +5586,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 
   function detailBodyHtml(e){
     const last=trLastRec(e.id);
-    const hist=last?`<div class="ex-my-last">你的上次：${last.weight>0?last.weight+'kg ':''}${last.sets}×${last.reps} · ${trAgo(last.date)}</div>`
+    const hist=last?`<div class="ex-my-last">你的上次：${groupsDigest(lastGroupsOf(last))} · ${trAgo(last.date)}</div>`
       :`<div class="ex-my-last none">还没有练过这个动作</div>`;
     return `<div class="ex-detail">
       <div class="ex-dt-head"><span class="ex-dt-name">${ENGINE.esc(e.n)}</span><span class="ex-dt-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}</span></div>
@@ -6108,12 +6189,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.innerHTML = items.length ? items.map(r=>{
       const gs=ensureGroups(r);
       const last=trLastRec(r.exId);
-      const lastTxt = (last&&last.uid!==r.uid) ? ('上次 '+(last.weight>0?last.weight+'kg ':'')+last.sets+'×'+last.reps) : '';
+      const lastTxt = (last&&last.uid!==r.uid) ? ('上次 '+groupsDigest(lastGroupsOf(last),{bare:true})) : '';
       const step=weightStep(findEx(r.exId));
       const doneN=gs.filter(g=>g.done).length;
       const sug=suggestWeight(r);
       const w0=gs[0]?(gs[0].weight||0):(r.weight||0);
-      const sxTxt = gs.length ? (gs.length+' 组 × '+(gs[0].reps||0)+' · '+(w0>0?(w0+'kg'):'自重')) : ((r.dur||0)+' 分钟');
+      const sxTxt = gs.length ? groupsDigest(gs) : ((r.dur||0)+' 分钟');
       const allDone = gs.length>0 && doneN===gs.length;
 
       if(r.uid!==activeUid){
@@ -6121,7 +6202,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           return `<div class="tcf-done" data-topen="${r.uid}">
             <span class="tc-ok">✓</span>
             <span class="tc-nm">${ENGINE.esc(r.name)}</span>
-            <span class="tc-sx">${gs.length}/${gs.length} · ${w0>0?(w0+'kg'):'自重'}</span>
+            <span class="tc-sx">${doneN}/${gs.length} · ${groupsDigest(gs,{bare:true})}</span>
           </div>`;
         }
         return `<div class="tc-fold" data-topen="${r.uid}">
@@ -6133,8 +6214,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       }
 
       const rows=gs.map(g=>`
-        <div class="set-row ${g.done?'done':''}">
-          <span class="set-no ${g.done?'done':''}" aria-hidden="true">${g.done?'✓':g.no}</span>
+        <div class="set-row ${g.done?'done':''}" data-srow="${r.uid}:${g.no}">
+          <span class="set-no ${g.done?'done':''} ${g.warmup?'warm':''}" aria-hidden="true">${g.warmup?'W':(g.done?'✓':g.no)}</span>
           <button class="set-val" data-setopen="${r.uid}:${g.no}" type="button" title="点击修改重量与次数">${g.weight>0?g.weight+' kg':'自重'} × ${g.reps}</button>
           ${(g.rpe||(window.__rpeAsk&&window.__rpeAsk[r.uid+':'+g.no]))?`<span class="rpe-set">
             <button class="rpe-dot easy ${g.rpe==='easy'?'on':''}" data-rpe="${r.uid}:${g.no}:easy" type="button" title="轻松"></button>
@@ -6170,7 +6251,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const allG=items.flatMap(r=>ensureGroups(r));
     const sets=allG.length;
     const reps=allG.reduce((a,g)=>a+(g.reps||0),0);
-    const vol=allG.reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
+    const vol=allG.reduce((a,g)=>a+(g.warmup?0:(g.reps||0)*(g.weight||0)),0);
     if($('todayBadge')) $('todayBadge').textContent = sets ? ('今日 '+sets+' 组') : '';
     try{ trSyncStrips(); }catch(e){}
     if($('trSum')) $('trSum').innerHTML=`<span><b>${items.length}</b>动作</span><span><b>${sets}</b>总组数</span><span><b>${reps}</b>总次数</span><span><b>${Math.round(vol)}</b>容量kg</span>`;
@@ -6181,11 +6262,46 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       trFollowTick=false;
       trRenderToday();
     });
-    box.querySelectorAll('[data-tclose]').forEach(el=>el.onclick=ev=>{
-      if(ev.target.closest('[data-rmu]')) return;
-      trOpenUid=''; trFollowTick=false; trRenderToday();
+    box.querySelectorAll('[data-tclose]').forEach(el=>{
+      el.onclick=ev=>{
+        if(el.__lp){ el.__lp=false; return; }
+        if(ev.target.closest('[data-rmu]')) return;
+        trOpenUid=''; trFollowTick=false; trRenderToday();
+      };
+      let tm=null;
+      el.addEventListener('touchstart',ev=>{
+        if(ev.target.closest('[data-rmu]')) return;
+        tm=setTimeout(()=>{ el.__lp=true; try{ navigator.vibrate&&navigator.vibrate(12); }catch(e){}
+          try{ openLadderSheet(el.dataset.tclose); }catch(e){} }, 600);
+      },{passive:true});
+      el.addEventListener('touchmove',()=>{ if(tm){ clearTimeout(tm); tm=null; } },{passive:true});
+      el.addEventListener('touchend',()=>{ if(tm){ clearTimeout(tm); tm=null; } });
     });
     // 单组参数 ±
+    if(!box.__swipeBound){
+      box.__swipeBound=true;
+      let tRow=null, x0=0, y0=0, dx=0;
+      box.addEventListener('touchstart',ev=>{
+        const row=ev.target.closest('.set-row[data-srow]'); if(!row) return;
+        tRow=row; x0=ev.touches[0].clientX; y0=ev.touches[0].clientY; dx=0;
+        row.style.transition='none';
+      },{passive:true});
+      box.addEventListener('touchmove',ev=>{
+        if(!tRow) return;
+        dx=ev.touches[0].clientX-x0;
+        const dy=ev.touches[0].clientY-y0;
+        if(Math.abs(dy)>Math.abs(dx)+10){ tRow.style.transform=''; tRow=null; return; }
+        if(dx>0) tRow.style.transform='translateX('+Math.min(dx,72)+'px)';
+      },{passive:true});
+      box.addEventListener('touchend',()=>{
+        if(!tRow) return;
+        const row=tRow; tRow=null;
+        row.style.transition='transform .16s';
+        row.style.transform='';
+        if(dx>56){ copyPrevSet(row.dataset.srow); }
+        dx=0;
+      });
+    }
     box.querySelectorAll('[data-setopen]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation(); openSetSheet(b.dataset.setopen);
     });
@@ -6549,7 +6665,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         meta:{items:(train.records||[]).filter(r=>r.date===dk3).map(r=>{
           const gs=ensureGroups(r); const pk=k=>{const v=gs.filter(g=>(g[k]||0)>0).slice(-1)[0];return v?v[k]:0;};
           const dn=gs.filter(g=>g.done).length;
-          const iv=gs.filter(g=>g.done).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
+          const iv=gs.filter(g=>g.done&&!g.warmup).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
           return {exId:r.exId,name:r.name,part:r.part,sets:gs.length,reps:pk('reps'),weight:pk('weight'),
             done:dn,volume:Math.round(iv),groups:gs.map(g=>({no:g.no,reps:g.reps,weight:g.weight,done:!!g.done,rpe:g.rpe||0,sec:g.sec||0}))};
         }), volume:0}});
@@ -6573,7 +6689,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const rows=items.map(i=>`
       <div class="tc-row">
         <b>${ENGINE.esc(i.name)}</b>
-        <em>${i.sets}×${i.reps}${i.weight>0?(' @'+i.weight+'kg'):' 自重'}</em>
+        <em>${groupsDigest(lastGroupsOf({groups:i.groups, weight:i.weight, reps:i.reps}),{bare:true})}</em>
         <s class="tc-done">${i.done?i.done:'0'}/${i.sets} 组${i.volume?(' · '+i.volume+'kg'):''}</s>
         ${i.groups&&i.groups.some(g=>g.sec)?`<i class="tc-sec">${i.groups.filter(g=>g.sec).map(g=>g.sec+'s').join(' / ')}</i>`:''}
       </div>`).join('');
@@ -7358,7 +7474,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const cur=pick(aW,bW), prev=pick(aP,bP);
     const avg=(a,k)=>{ const v=a.filter(x=>typeof x[k]==='number'&&x[k]>0).map(x=>k==='mood'?moodNorm(x[k]):x[k]); return v.length?v.reduce((x,y)=>x+y,0)/v.length:null; };
     const sets=o=>o.recs.reduce((a,r)=>a+((r.groups&&r.groups.length)?r.groups.filter(g=>g.done).length:(r.sets||0)),0);
-    const vol=o=>o.recs.reduce((a,r)=>a+(((r.groups||[]).filter(g=>g.done)).reduce((x,g)=>x+(g.reps||0)*(g.weight||0),0)),0);
+    const vol=o=>o.recs.reduce((a,r)=>a+(((r.groups||[]).filter(g=>g.done&&!g.warmup)).reduce((x,g)=>x+(g.reps||0)*(g.weight||0),0)),0);
     const kw=o=>{ const c={}; o.logs.forEach(l=>String(l.tags||'').split(/[,、，]/).filter(Boolean).forEach(t=>c[t]=(c[t]||0)+1));
       return Object.keys(c).sort((x,y)=>c[y]-c[x]).slice(0,3); };
     const s1={logs:cur.logs.length, sets:sets(cur), vol:Math.round(vol(cur)), sc:avg(cur.logs,'score'), md:avg(cur.logs,'mood'), kw:kw(cur)};
@@ -7639,7 +7755,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const days={}; recs.forEach(r=>days[r.date]=true);
       let sets=0, vol=0, done=0;
       recs.forEach(r=>{ const gs=(r.groups&&r.groups.length)?r.groups:[]; sets += gs.length||r.sets||0;
-        gs.forEach(g=>{ if(g.done){ done++; vol += (g.reps||0)*(g.weight||0); } }); });
+        gs.forEach(g=>{ if(g.done){ done++; if(!g.warmup) vol += (g.reps||0)*(g.weight||0); } }); });
       const partCnt={}; recs.forEach(r=>{ const k=(r.part||'其他'); partCnt[k]=(partCnt[k]||0)+1; });
       const topPart=Object.keys(partCnt).sort((x,y)=>partCnt[y]-partCnt[x])[0];
       if(/(容量|总重|强度|公斤|kg)/.test(q)){
