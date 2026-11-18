@@ -1464,6 +1464,20 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .ex-fav{border:0;background:none;font-size:17px;line-height:1;padding:2px 4px;cursor:pointer;color:var(--tx3);margin-left:auto}
 .ex-fav.on{color:#e7c56a}
 .ex-more{border:0;background:none;color:var(--tx3);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer}
+.lib-searchrow{display:flex;align-items:center;gap:8px}
+.lib-searchrow .search-wrap{flex:1;min-width:0}
+.lib-funnel{position:relative;flex:0 0 auto;width:40px;height:40px;border-radius:10px;border:1px solid var(--line2);
+  background:var(--panel2);color:var(--tx2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.lib-funnel .dot{position:absolute;top:6px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.lib-partchips{margin:8px 0 2px;padding-bottom:2px}
+.lib-favh{font-size:11.5px;color:var(--tx3);margin:8px 0 2px;letter-spacing:.02em}
+.lib-favh span{color:var(--accent);margin-left:2px}
+.ex-favstar{position:absolute;right:52px;top:9px;width:28px;height:28px;border:0;background:none;color:var(--tx3);
+  font-size:15px;line-height:1;cursor:pointer;padding:0}
+.ex-favstar.on{color:#e7c56a}
+.fl-sec{margin-bottom:12px}
+.fl-lb{display:block;font-size:11.5px;color:var(--tx3);margin-bottom:6px}
+.plan-rec{font-size:11.5px;color:var(--tx3);margin:2px 0 4px}
 .ms-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .ms-head b{font-size:14px;font-weight:600}
 .ms-x{border:0;background:none;color:var(--tx3);font-size:20px;line-height:1;padding:0 4px;cursor:pointer}
@@ -1954,12 +1968,15 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .pl-tools{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
 .pl-tools .plan-reset{margin-left:auto}
 .pl-table{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel2)}
-.pl-th{display:grid;grid-template-columns:20px 1fr 58px 50px 54px;gap:6px;align-items:center;padding:7px 10px;font-size:10.5px;color:var(--tx3);border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
-.pl-row{display:grid;grid-template-columns:20px 1fr 58px 50px 54px;gap:6px;align-items:center;padding:0 10px;min-height:44px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .16s}
+.pl-th{display:grid;grid-template-columns:1fr 56px 50px 44px;gap:6px;align-items:center;padding:7px 10px;font-size:10.5px;color:var(--tx3);border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.pl-row{display:grid;grid-template-columns:1fr 56px 50px 44px;gap:6px;align-items:center;padding:0 10px;min-height:44px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .16s}
 .pl-row.on{background:rgba(61,220,191,.07)}
 .pl-row.joined{opacity:.55;cursor:default}
 .pl-idx{font-size:11px;color:var(--tx3)}
-.pl-nm{font-size:13.5px;min-width:0}
+.pl-nm{font-size:13.5px;min-width:0;display:flex;align-items:baseline;gap:5px;overflow:hidden}
+.pl-no{font-style:normal;font-size:10.5px;color:var(--tx3);flex:0 0 auto}
+.pl-nm b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pl-st{font-size:10px}
 .pl-nm b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-sx{font-size:12.5px;color:var(--tx2);white-space:nowrap}
 .pl-wt{font-size:12.5px;color:var(--tx2);white-space:nowrap}
@@ -4507,7 +4524,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const t0=TRAIN_LIB.find(x=>x.id===id); return t0? t0.n : '';
   }
   function findEx(id){ return allExercises().find(e=>e.id===id); }
-  const trState={q:'',part:'',eq:'',limit:60,sort:'freq'};
+  const trState={q:'',part:'',eqs:[],limit:60,sort:'freq'};
+  const PART_KEYS={'胸':['胸'],'背':['背'],'腿':['上腿','小腿'],'肩':['肩'],'臂':['上臂','前臂'],'腹':['腰腹'],'有氧':['有氧'],'颈':['颈']};
+  const partHit=(part,p)=>{ const g=PART_KEYS[part]; return g?g.indexOf(p)>=0:(p===part); };
   const trToday=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
   const trDateVal=()=>{ const el=$('trDate'); return (el&&el.value)||trToday(); };
   function trUid(r){ if(!r.uid) r.uid='t'+Math.random().toString(36).slice(2,9); return r.uid; }
@@ -5281,7 +5300,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="tr-panel" data-trp="plan" hidden>
         <div class="tr-strip" id="planStrip" style="margin-top:0">
           <div class="tr-strip-b" id="planStripBody" style="border-top:0;margin-top:0">
-            <div class="chip-row" id="plPartChips">${parts.map((p,i)=>`<button class="fchip ${i===0?'on':''}" data-plpart="${p}">${p}</button>`).join('')}</div>
+            <div class="plan-rec" id="planRec"></div>
+            <div class="bodymap" id="planBodyMap">${[['肩','肩'],['胸','胸'],['背','背'],['腹','腰腹'],['臂','上臂'],['腿','上腿']].map((a,i)=>{
+              const p=a[1], rc=partRecovery(p);
+              const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
+              const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
+              return `<button class="bm-cell ${st}${i===0?' on':''}" data-planpart="${p}" data-view="${a[0]}" type="button"><b>${a[0]}</b><em>${word}</em></button>`;
+            }).join('')}</div>
             <div class="tr-actions" style="margin-top:8px"><button class="btn sm" id="plGen" type="button">生成计划</button></div>
             <div id="plOut"></div>
           </div>
@@ -5334,13 +5359,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function renderLibInline(parts, eqs){
     const d=$('libBox'); if(!d) return;
     d.innerHTML=`
-      <div class="search-wrap"><input type="text" id="trSearch" placeholder="器械 + 动作名，如：哑铃 卧推" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
-      <div class="bodymap" id="bodyMap">${['肩','胸','背','腰腹','臂','腿'].map(p=>{
-        const rc=partRecovery(p);
-        const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
-        const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
-        return `<button class="bm-cell ${st}${trState.part===p?' on':''}" data-bmpart="${p}" type="button" aria-label="${p} ${word}"><b>${p}</b><em>${word}</em></button>`;
-      }).join('')}</div>
+      <div class="lib-searchrow">
+        <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
+        <button class="lib-funnel" id="libFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="libFunnelDot" hidden></em></button>
+      </div>
+      <div class="chip-row lib-partchips" id="libPartChips">${['全部','胸','背','腿','肩','臂','腹','有氧'].map(p=>`<button class="fchip ${(p==='全部'&&!trState.part)||trState.part===p?'on':''}" data-lpart="${p==='全部'?'':p}" type="button">${p}</button>`).join('')}</div>
+      <div class="lib-favh" id="favHead" hidden>我的动作库 <span id="favN">0</span></div>
       <div class="lib-favrow"><div class="lib-favscroll" id="myLib"></div><button class="fav-cu" id="cuOpen" type="button">＋ 自定义</button></div>
       <div class="ex-list lib-list" id="trList"></div>`;
   }
@@ -5466,12 +5490,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function trFiltered(){
     const q=trState.q.toLowerCase().trim();
     const base=allExercises().filter(e=>{
-      if(trState.part && e.p!==trState.part) return false;
-      if(trState.eq && e.e!==trState.eq) return false;
+      if(trState.part && !partHit(trState.part,e.p)) return false;
+      if((trState.eqs||[]).length && trState.eqs.indexOf(e.e)<0) return false;
       return true;
     });
     if(!q){
       const seen=new Set(); const uni=base.filter(e=>{ const k=(e.n||'').trim().toLowerCase(); if(!k||seen.has(k)) return false; seen.add(k); return true; });
+      if(trState.sort==='name') return uni.slice().sort((a,b)=>String(a.n).localeCompare(String(b.n),'zh'));
       return uni.slice().sort((a,b)=>(freqScore(b.id)-freqScore(a.id))||(a.n.length-b.n.length));
     }
     const rawToks=q.split(/[\s,，、;；+\/]+/).filter(Boolean);
@@ -5598,6 +5623,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         : `<span class="ex-last none">未练过</span>`;
       return `
       <div class="ex-item ${trSel===e.id?'on':''}" data-ex="${e.id}">
+        <button class="ex-favstar${(train.favs||[]).includes(e.id)?' on':''}" data-favitem="${e.id}" type="button" aria-label="收藏">${(train.favs||[]).includes(e.id)?'★':'☆'}</button>
         <div class="ex-head"><span class="ex-name">${ENGINE.esc(e.n)}${e.custom?' <span class="ex-cu">自定义</span>':''}</span><span class="ex-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'')}</span></div>
         <div class="ex-sub">${sub}</div>
         <button class="ex-add" data-plan="${e.id}" type="button" title="按上次参数加入今日" aria-label="加入今日">＋</button>
@@ -5608,6 +5634,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.querySelectorAll('[data-ex]').forEach(it=>{ it.onclick=()=>trSelect(it.dataset.ex); });
     box.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',ev=>{
       ev.stopPropagation(); trQuickAdd(b.dataset.plan);
+    }));
+    box.querySelectorAll('[data-favitem]').forEach(b=>b.addEventListener('click',ev=>{
+      ev.stopPropagation();
+      trToggleFav(b.dataset.favitem);
+      const on=(train.favs||[]).includes(b.dataset.favitem);
+      b.textContent=on?'★':'☆'; b.classList.toggle('on',on);
     }));
     const c=$('trCount'); if(c) c.textContent = '';
   }
@@ -5848,7 +5880,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const i=train.favs.indexOf(id);
     if(i>=0){ train.favs.splice(i,1); trToast('已从我的动作库移除'); }
     else { train.favs.push(id); trToast('已收藏到我的动作库'); }
-    saveTrain(); renderMyLib(); trSelect(id);
+    saveTrain(); renderMyLib();
+    document.querySelectorAll('[data-favitem]').forEach(b=>{
+      if(b.dataset.favitem!==id) return;
+      const on=train.favs.indexOf(id)>=0;
+      b.textContent=on?'★':'☆'; b.classList.toggle('on',on);
+    });
   }
   function trQuickAdd(id){
     const e=findEx(id); if(!e) return;
@@ -5877,8 +5914,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const favs=(train.favs||[]).map(findEx).filter(Boolean);
     const dayKey=trDateVal();
     const inToday=new Set(train.records.filter(r=>r.date===dayKey).map(r=>r.exId));
+    const fh=$('favHead'), fn=$('favN');
+    if(fh) fh.hidden = !favs.length;
+    if(fn) fn.textContent = String(favs.length);
     if(!favs.length){
-      box.innerHTML='<span class="fav-empty">点详情右上角 ☆ 收藏</span>';
+      box.innerHTML='<span class="fav-empty">点右上角 ☆ 收藏，动作会进这里</span>';
       return;
     }
     box.innerHTML=favs.map(e=>`<span class="fav-chip ${inToday.has(e.id)?'picked':''}" data-fav="${e.id}" title="点=加入/移出今日 · 长按=取消收藏">${inToday.has(e.id)?'<i>✓</i>':''}${ENGINE.esc(e.n)}</span>`).join('');
@@ -5889,6 +5929,50 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       c.addEventListener('touchend',()=>{ if(lp){ clearTimeout(lp); lp=null; } },{passive:true});
       c.addEventListener('touchmove',()=>{ if(lp){ clearTimeout(lp); lp=null; } },{passive:true});
     });
+  }
+  function trSyncFunnelDot(){
+    const d=$('libFunnelDot'); if(!d) return;
+    d.hidden = !((trState.eqs||[]).length || trState.sort==='name');
+  }
+  function openFilterSheet(){
+    document.querySelectorAll('.msheet').forEach(x=>x.remove());
+    const EQ=['杠铃','哑铃','绳索','器械','自重','壶铃','史密斯','弹力带'];
+    let tmpEq=(trState.eqs||[]).slice(), tmpSort=trState.sort||'freq';
+    const el=document.createElement('div'); el.className='msheet';
+    el.innerHTML=`<div class="msheet-box"><div class="ms-head"><b>筛选</b><button class="ms-x" type="button" data-flx>×</button></div>
+      <div class="fl-sec"><span class="fl-lb">器械</span><div class="chip-row" id="flEq">${EQ.map(q=>`<button class="fchip${tmpEq.indexOf(q)>=0?' on':''}" data-fleq="${q}" type="button">${q}</button>`).join('')}</div></div>
+      <div class="fl-sec"><span class="fl-lb">排序</span><div class="chip-row" id="flSort"><button class="fchip${tmpSort==='freq'?' on':''}" data-flsort="freq" type="button">常用优先</button><button class="fchip${tmpSort==='name'?' on':''}" data-flsort="name" type="button">名称</button></div></div>
+      <div class="cu-btns"><button class="btn ghost sm" type="button" id="flReset">重置</button><button class="btn sm" type="button" id="flGo">显示 <span id="flN">0</span> 个动作</button></div>
+    </div>`;
+    document.body.appendChild(el);
+    const count=()=>{
+      const bak={eqs:trState.eqs, sort:trState.sort, limit:trState.limit};
+      trState.eqs=tmpEq; trState.sort=tmpSort; trState.limit=1e6;
+      const n=trFiltered().length;
+      trState.eqs=bak.eqs; trState.sort=bak.sort; trState.limit=bak.limit;
+      return n;
+    };
+    const sync=()=>{
+      el.querySelectorAll('[data-fleq]').forEach(b=>b.classList.toggle('on', tmpEq.indexOf(b.dataset.fleq)>=0));
+      el.querySelectorAll('[data-flsort]').forEach(b=>b.classList.toggle('on', b.dataset.flsort===tmpSort));
+      const n=el.querySelector('#flN'); if(n) n.textContent=String(count());
+    };
+    el.querySelectorAll('[data-fleq]').forEach(b=>b.onclick=()=>{
+      const q=b.dataset.fleq;
+      const i=tmpEq.indexOf(q);
+      if(i>=0) tmpEq.splice(i,1); else tmpEq.push(q);
+      sync();
+    });
+    el.querySelectorAll('[data-flsort]').forEach(b=>b.onclick=()=>{ tmpSort=b.dataset.flsort; sync(); });
+    el.querySelector('#flReset').onclick=()=>{ tmpEq=[]; tmpSort='freq'; sync(); };
+    el.querySelector('#flGo').onclick=()=>{
+      trState.eqs=tmpEq.slice(); trState.sort=tmpSort; trState.limit=60;
+      el.remove(); trRenderList(); trSyncFunnelDot();
+    };
+    el.querySelectorAll('[data-flx]').forEach(b=>b.onclick=()=>el.remove());
+    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    sync();
+    try{ kbAvoid(el, el.querySelector('.msheet-box')); }catch(e){}
   }
   function openCuSheet(){
     document.querySelectorAll('.msheet').forEach(x=>x.remove());
@@ -6019,7 +6103,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }
     trPlan.forEach(i=>{ if(!i.orig) i.orig={sets:i.sets, reps:i.reps, weight:i.weight||0, dur:i.dur||0}; });
     if(!trPlanOrig) trPlanOrig=trPlan.map(i=>({...i}));
-    const label=trPlan[0].part;
+    const PV={'上腿':'腿','小腿':'小腿','上臂':'臂','前臂':'前臂','腰腹':'腹'};
+    const label=PV[trPlan[0].part]||trPlan[0].part;
     const sum={sets:0,reps:0,vol:0,min:0};
     trPlan.forEach(i=>{
       if(i.dur){ sum.min+=i.dur; return; }
@@ -6033,7 +6118,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const exE=(findEx(i.exId)||{}).e||'';
       const selfW=(i.weight||0)===0 && !i.dur && exE!=='自重';
       let cls='', txt='';
-      if(jn){ cls='ok'; txt='✓ 已加入'; }
+      if(jn){ cls='ok'; txt='✓已加'; }
       else if(adj){ cls='adj'; txt='已调'; }
       else if(selfW){ cls='warn'; txt='⚠待设'; }
       const open=plOpen===idx && !jn;
@@ -6059,8 +6144,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           </div>
         </div>`;
       return `<div class="pl-row${jn?' joined':''}${open?' on':''}" data-plrow="${idx}">
-          <span class="pl-idx">${idx+1}</span>
-          <span class="pl-nm"><b>${ENGINE.esc(i.name)}</b></span>
+          <span class="pl-nm"><i class="pl-no">${idx+1}</i><b>${ENGINE.esc(i.name)}</b></span>
           <span class="pl-sx">${i.dur?(i.dur+'′'):(i.sets+' × '+i.reps)}</span>
           <span class="pl-wt">${i.weight>0?(i.weight+'kg'):'自重'}</span>
           <span class="pl-st ${cls}">${txt}</span>
@@ -6074,7 +6158,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <button class="plan-reset" id="plReset" type="button">恢复建议值</button>
           <button class="plan-reset" id="plRe" type="button">换一组</button>
         </div>
-        <div class="pl-table"><div class="pl-th"><span>#</span><span>动作</span><span>组 × 次</span><span>重量</span><span>状态</span></div>${rows}</div>
+        <div class="pl-table"><div class="pl-th"><span>动作</span><span>组 × 次</span><span>重量</span><span>状态</span></div>${rows}</div>
         ${(()=>{const rv=partRecovery(label);return rv.text?`<div class="plan-recovery ${rv.warn?'warn':''}">${ENGINE.esc(rv.text)}</div>`:''})()}
       </div>`;
     // 行点击 = 手风琴展开
@@ -6611,15 +6695,30 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       train.items=[]; saveTrain();
     }
     $('trSearch').addEventListener('input',()=>{ trState.q=$('trSearch').value; trState.limit=60; trRenderList(); renderSuggest(); });
-    const bm=$('bodyMap');
-    if(bm) bm.querySelectorAll('[data-bmpart]').forEach(b=>b.onclick=()=>{
-      const p=b.dataset.bmpart;
-      trState.part = (trState.part===p) ? '' : p;
-      trState.limit=60;
-      bm.querySelectorAll('[data-bmpart]').forEach(x=>x.classList.toggle('on', x.dataset.bmpart===trState.part));
+    const lp=$('libPartChips');
+    if(lp) lp.querySelectorAll('[data-lpart]').forEach(b=>b.onclick=()=>{
+      trState.part=b.dataset.lpart||''; trState.limit=60;
+      lp.querySelectorAll('[data-lpart]').forEach(x=>x.classList.toggle('on', (x.dataset.lpart||'')===trState.part));
       trRenderList();
     });
+    if($('libFunnel')) $('libFunnel').onclick=()=>openFilterSheet();
     if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
+    const pbm=$('planBodyMap');
+    if(pbm){
+      window.planPart=window.planPart||'胸';
+      const syncPlan=()=>{
+        pbm.querySelectorAll('[data-planpart]').forEach(x=>x.classList.toggle('on', x.dataset.planpart===window.planPart));
+        const rc=$('planRec');
+        if(rc){
+          const view=(()=>{ const c=pbm.querySelector('[data-planpart="'+window.planPart+'"]'); return c?(c.dataset.view||window.planPart):window.planPart; })();
+          const r=partRecovery(window.planPart);
+          const txt=(r.text||('今天适合练 '+view)).replace(/上腿/g,'腿').replace(/上臂/g,'臂').replace(/腰腹/g,'腹');
+          rc.textContent=txt;
+        }
+      };
+      pbm.querySelectorAll('[data-planpart]').forEach(b=>b.onclick=()=>{ window.planPart=b.dataset.planpart; syncPlan(); });
+      syncPlan();
+    }
     if($('trFocus')) $('trFocus').onclick=()=>openFocus();
     if($('trFocusTop')) $('trFocusTop').onclick=()=>openFocus();
     const _fm=$('trFocusMain'); if(_fm) _fm.onclick=()=>{
@@ -6632,14 +6731,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(el.scrollTop+el.clientHeight>=el.scrollHeight-24 && trState.limit<trFiltered().length){ trState.limit+=60; trRenderList(true); }
     });
     bindSteppers();
-    window.partPick=()=>{
-      const on=document.querySelector('#plPartChips .fchip.on')||document.querySelector('#plPartChips .fchip');
-      return on?on.dataset.plpart:(parts[0]||'胸');
-    };
-    const pc=$('plPartChips');
-    if(pc) pc.querySelectorAll('[data-plpart]').forEach(b=>b.onclick=()=>{
-      pc.querySelectorAll('[data-plpart]').forEach(x=>x.classList.toggle('on',x===b));
-    });
+    window.partPick=()=>window.planPart||'胸';
     const si=$('trSearch');
     if(si){
       si.addEventListener('keydown',e=>{
