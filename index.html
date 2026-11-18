@@ -1836,9 +1836,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   background:linear-gradient(180deg,rgba(61,220,191,.07),rgba(61,220,191,0) 62%),var(--panel);
   box-shadow:0 8px 26px rgba(0,0,0,.22)}
 .tr-tc-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tr-tc-head>div{min-width:0;flex:1}
 .tr-tc-lbl{font-size:10.5px;letter-spacing:1.8px;color:var(--accent);text-transform:uppercase}
-.tr-tc-stat{font-size:13px;color:var(--tx2);margin-top:3px}
-.tr-tc-go{min-height:44px;padding:0 16px;border-radius:12px;font-size:13.5px;font-weight:600;white-space:nowrap}
+.tr-tc-stat{font-size:12.5px;color:var(--tx2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-tc-go{min-height:44px;padding:0 14px;border-radius:12px;font-size:13px;font-weight:600;white-space:nowrap;flex:none}
 .tr-tc-quick{display:flex;gap:8px;margin-top:12px}
 .tr-tc-quick input{flex:1;min-width:0}
 .tr-tc-links{display:flex;gap:8px;margin-top:8px}
@@ -1868,9 +1869,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 /* ===== p142 训练页：三板块切换 ===== */
 .tr-seg{display:flex;gap:6px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--panel);margin:0 0 10px}
-.tr-seg-btn{flex:1;position:relative;min-height:44px;border:0;background:none;color:var(--tx3);font-size:13px;font-weight:600;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:color .18s,background .18s}
+.tr-seg-btn{white-space:nowrap;font-size:12.5px;flex:1;position:relative;min-height:44px;border:0;background:none;color:var(--tx3);font-weight:600;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:color .18s,background .18s}
 .tr-seg-btn.on{background:rgba(61,220,191,.12);color:var(--accent)}
-.tr-seg-badge{min-width:17px;height:17px;border-radius:9px;font-size:10.5px;line-height:17px;padding:0 5px;background:rgba(61,220,191,.92);color:#04150f;font-weight:700;display:none}
+.tr-seg-badge{margin-left:4px;min-width:17px;height:17px;border-radius:9px;font-size:10.5px;line-height:17px;padding:0 5px;background:rgba(61,220,191,.92);color:#04150f;font-weight:700;display:none}
 .tr-seg-badge.on{display:inline-block}
 .tr-panel[hidden]{display:none}
 .lib-inline{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px;display:flex;flex-direction:column}
@@ -1904,19 +1905,19 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media(prefers-reduced-motion:reduce){.pl-edit{animation:none}}
 /* 今日卡：状态驱动手风琴 */
 .tr-next{font-size:11.5px;color:var(--tx3);padding:2px 2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tc-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto 12px;gap:8px;align-items:center;
+.tc-fold{display:grid;grid-template-columns:minmax(0,1fr) auto auto 12px;gap:8px;align-items:center;
  min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);
  margin-bottom:8px;cursor:pointer;transition:border-color .15s}
-.tc-row:active{border-color:var(--line2)}
+.tc-fold:active{border-color:var(--line2)}
 .tc-nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tc-sx{font-size:11.5px;color:var(--tx2);white-space:nowrap}
 .tc-pr{font-size:11px;color:var(--tx3);border:1px solid var(--line2);border-radius:999px;padding:2px 7px;white-space:nowrap}
 .tc-ar{font-size:11px;color:var(--tx3)}
-.tc-done{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:8px;align-items:center;
+.tcf-done{color:var(--tx3);display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:8px;align-items:center;
  min-height:38px;padding:0 12px;border:1px dashed var(--line);border-radius:10px;background:transparent;
  margin-bottom:8px;opacity:.6;cursor:pointer}
 .tc-ok{color:var(--accent);font-size:12px}
-.tc-done .tc-nm{font-size:13px}
+.tcf-done .tc-nm{font-size:13px}
 .set-card.open .set-head{cursor:pointer}
 .set-card{padding:8px 10px}
 .set-card .set-row{padding:2px 0}
@@ -1924,6 +1925,26 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .set-more[hidden]{display:none}
 .more-btn{padding:0 10px;min-height:34px;font-size:14px;line-height:1}
 .more-btn.on{color:var(--accent);border-color:var(--accent)}
+/* 练后感受 */
+.tr-feel{margin-top:4px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel)}
+.tr-feel[hidden]{display:none}
+.feel-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.feel-hd b{font-size:13.5px}
+.feel-tip{font-size:11px;color:var(--tx3)}
+.feel-row{display:grid;grid-template-columns:34px 1fr 46px;gap:10px;align-items:center;margin-bottom:8px}
+.feel-lbl{font-size:12px;color:var(--tx3)}
+.feel-val{font-size:12px;color:var(--accent);text-align:right;white-space:nowrap}
+.feel-sum{display:flex;gap:16px;font-size:12.5px;color:var(--tx2)}
+.feel-sum b{color:var(--accent)}
+.feel-note{margin-top:8px;font-size:12.5px;color:var(--tx2);line-height:1.5}
+.feel-note.dim{color:var(--tx3)}
+.feel-save{margin-top:2px;display:block;width:100%}
+.tr-feel input[type=range]{--p:50%;height:28px;background:linear-gradient(90deg,var(--accent) var(--p),var(--line2) var(--p));
+ border-radius:14px;background-size:100% 4px;background-repeat:no-repeat;background-position:0 center}
+.log-body.feel-line{color:var(--tx3);font-size:11.5px}
+.tc-feel{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;font-size:11.5px;color:var(--tx3);padding:2px 0 8px}
+.tc-feel span{color:var(--accent)}
+.tc-feel em{font-style:normal;color:var(--tx2);flex:1 1 100%}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -2057,7 +2078,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
         <div class="fast-box" id="fastBox">
           <textarea id="fastInput" rows="2" placeholder="一句话记下：跑了5公里 / 加班到十点，很焦虑 / 昨晚睡了6小时"></textarea>
           <div class="fast-bar">
-            <span class="fast-hint">自动认类型和标签 · 也可直接写「卧推 60 5x5」记训练</span>
+            <span class="fast-hint">自动认类型和标签 · 训练记录会自动同步，不用手写</span>
             <span class="fast-right">
               <button class="ybtn" id="fastYesterday" type="button">记到昨天</button>
               <button class="btn sm" id="fastSave" type="button">存下</button>
@@ -2626,6 +2647,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <span class="log-time">${fmtTime(l.time)}</span>
         </div>
         <div class="log-body">${ENGINE.esc(names)}${(m.items||[]).length>3?'…':''}</div>
+        ${m.checkin?`<div class="log-body feel-line">情绪 ${m.checkin.mood}/5 · 状态 ${m.checkin.energy}/5${m.checkin.note?(' · '+ENGINE.esc(m.checkin.note)):''}</div>`:''}
       </div>`;
       }
       return `
@@ -4380,7 +4402,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const item=Object.assign({}, base || {id:'autotr-'+d}, {
         kind:'train', source:(base&&base.source==='manual')?'manual':'auto', type:fitType.key, tags:'训练',
         score:null, mood:null, content:names.join('、'), time:new Date().toISOString(), date:d,
-        meta:{items:items, volume:Math.round(vol)}});
+        meta:{items:items, volume:Math.round(vol), checkin:((train.checkins||{})[d]||null)}});
       logs=logs.filter(l=>!(l.kind==='train' && l.date===d));
       logs.push(item);
       save(); renderLogs();
@@ -5091,15 +5113,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             </div>
             <button class="btn gen tr-tc-go" id="trStart" type="button" data-act="start">▶ 开始训练</button>
           </div>
-          <div class="tr-tc-quick">
-            <input id="trQuickText" type="text" autocomplete="off" placeholder="一句话记：卧推 60 5x5">
-            <button class="btn ghost sm" id="trQuickAdd" type="button">记一条</button>
-          </div>
           <div class="tr-tc-links">
             <button class="tr-tc-link" id="libOpen" type="button">＋ 加动作</button>
             <button class="tr-tc-link" id="trRepeat" type="button">重复上次</button>
           </div>
           <div class="tr-next" id="trNext" hidden></div>
+          <div class="tr-feel" id="trFeel" hidden></div>
           <div id="trToday"></div>
           <div class="tr-entries" id="trEmpty">
             <button class="tr-entry ${hasHist?'':'hot'}" data-entry="ai" type="button"><b>AI 帮我排</b><em>按部位生成今日计划</em></button>
@@ -5245,7 +5264,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(go){
       let act='start', txt='▶ 开始训练';
       if(items.length){
-        if(total && done>=total){ act='summary'; txt='练完了 ✓ 看小结'; }
+        if(total && done>=total){ act='summary'; txt='看小结 ✓'; }
         else if(done>0){ act='continue'; txt='继续训练 ▶'; }
       }
       go.dataset.act=act; go.textContent=txt;
@@ -6006,6 +6025,48 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   let trOpenUid=undefined;   // undefined=自动；''=全部收起；uid=展开该动作
   let trFollowTick=false;    // 仅打勾触发时自动顺延到下一个动作
+  let feelEditing=false;
+  const FEEL_MOOD=['很差','偏低','一般','不错','很好'];
+  const FEEL_ENERGY=['很累','偏累','一般','不错','充沛'];
+  function trRenderFeel(items){
+    const el=$('trFeel'); if(!el) return;
+    const d=trDateVal();
+    const total=items.reduce((a,r)=>a+ensureGroups(r).length,0);
+    const done=items.reduce((a,r)=>a+ensureGroups(r).filter(g=>g.done).length,0);
+    if(!total || done<total){ el.hidden=true; el.innerHTML=''; feelEditing=false; return; }
+    const ck=(train.checkins||{})[d];
+    if(ck && !feelEditing){
+      el.hidden=false;
+      el.innerHTML=`<div class="feel-hd"><b>今天练完了 · 练后感受</b><button class="mini-text" id="feelEdit" type="button">改一下</button></div>
+        <div class="feel-sum"><span>情绪 <b>${ck.mood}/5</b> ${FEEL_MOOD[ck.mood-1]||''}</span><span>状态 <b>${ck.energy}/5</b> ${FEEL_ENERGY[ck.energy-1]||''}</span></div>
+        ${ck.note?`<div class="feel-note">“${ENGINE.esc(ck.note)}”</div>`:`<div class="feel-note dim">没写感受，点「改一下」补一句</div>`}`;
+      if($('feelEdit')) $('feelEdit').onclick=()=>{ feelEditing=true; trRenderFeel(items); };
+      return;
+    }
+    const m=ck?ck.mood:3, e=ck?ck.energy:3;
+    el.hidden=false;
+    el.innerHTML=`<div class="feel-hd"><b>今天练完了 · 记一下感受</b><span class="feel-tip">拖动即可</span></div>
+      <div class="feel-row"><span class="feel-lbl">情绪</span>
+        <input type="range" min="1" max="5" step="1" value="${m}" id="feelMood" aria-label="情绪">
+        <span class="feel-val" id="feelMoodTxt">${FEEL_MOOD[m-1]}</span></div>
+      <div class="feel-row"><span class="feel-lbl">状态</span>
+        <input type="range" min="1" max="5" step="1" value="${e}" id="feelEnergy" aria-label="状态">
+        <span class="feel-val" id="feelEnergyTxt">${FEEL_ENERGY[e-1]}</span></div>
+      <input id="feelNote" type="text" autocomplete="off" placeholder="一句话感受（可不填）：今天推得挺稳 / 有点虚…" value="${ck&&ck.note?ENGINE.esc(ck.note):''}">
+      <button class="btn sm feel-save" id="feelSave" type="button">保存感受</button>`;
+    const mo=$('feelMood'), en=$('feelEnergy');
+    const paint=(r,txt,arr)=>{ if(!r) return; if($(txt)) $(txt).textContent=arr[(+r.value)-1]; try{ fillRange(r); }catch(err){} };
+    if(mo){ mo.oninput=()=>paint(mo,'feelMoodTxt',FEEL_MOOD); }
+    if(en){ en.oninput=()=>paint(en,'feelEnergyTxt',FEEL_ENERGY); }
+    ['feelMood','feelEnergy'].forEach(id=>{ const r=$(id); if(r){ r.style.setProperty('--p', (((+r.value)-1)/4*100)+'%'); if(r.oninput) r.oninput(); } });
+    if($('feelSave')) $('feelSave').onclick=()=>{
+      train.checkins=train.checkins||{};
+      train.checkins[d]={mood:+($('feelMood')?$('feelMood').value:3), energy:+($('feelEnergy')?$('feelEnergy').value:3),
+        note:(($('feelNote')&&$('feelNote').value)||'').trim(), at:Date.now()};
+      feelEditing=false; try{ __syncAt=0; }catch(e){} saveTrain(); trRenderToday(); refreshHome();
+      trToast('练后感受已记录');
+    };
+  }
   function trRenderToday(){
     const box=$('trToday'); if(!box) return;
     const d=trDateVal();
@@ -6040,13 +6101,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 
       if(r.uid!==activeUid){
         if(allDone){
-          return `<div class="tc-done" data-topen="${r.uid}">
+          return `<div class="tcf-done" data-topen="${r.uid}">
             <span class="tc-ok">✓</span>
             <span class="tc-nm">${ENGINE.esc(r.name)}</span>
             <span class="tc-sx">${gs.length}/${gs.length} · ${w0>0?(w0+'kg'):'自重'}</span>
           </div>`;
         }
-        return `<div class="tc-row" data-topen="${r.uid}">
+        return `<div class="tc-fold" data-topen="${r.uid}">
           <span class="tc-nm">${ENGINE.esc(r.name)}</span>
           <span class="tc-sx">${sxTxt}</span>
           <span class="tc-pr">${doneN}/${gs.length}</span>
@@ -6093,6 +6154,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       $('trNext').textContent=txt;
       $('trNext').hidden = !txt;
     }
+    try{ trRenderFeel(items); }catch(e){}
     const allG=items.flatMap(r=>ensureGroups(r));
     const sets=allG.length;
     const reps=allG.reduce((a,g)=>a+(g.reps||0),0);
@@ -6448,17 +6510,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const cand=allExercises().filter(e=>e.n.includes(name) || e.en.toLowerCase().includes(name.toLowerCase())).sort((a,b)=>a.n.length-b.n.length)[0];
       return { name:cand?cand.n:name, part:cand?cand.p:'其他', sets, reps, weight, exId:cand?cand.id:('cuq'+Date.now().toString(36)) };
     }
-    if($('trQuickAdd')){
-      const addQuick=()=>{
-        const p=parseQuickTrain($('trQuickText')?$('trQuickText').value:'');
-        if(!p){ trToast('写成「名称 重量 组×次」，如：卧推 60 5x5'); return; }
-        addRec({exId:p.exId, name:p.name, part:p.part, sets:p.sets, reps:p.reps, weight:p.weight});
-        if($('trQuickText')) $('trQuickText').value='';
-        trToast('已记：'+p.name+' '+p.sets+'×'+p.reps+(p.weight>0?' @'+p.weight+'kg':''));
-      };
-      $('trQuickAdd').addEventListener('click', addQuick);
-      $('trQuickText').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addQuick(); } });
-    }
     if($('trRepeat')){
       $('trRepeat').addEventListener('click',()=>{
         const dates=Array.from(new Set((train.records||[]).map(r=>r.date))).sort();
@@ -6536,6 +6587,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <span class="log-score">总容量 ${(m.volume||items.reduce((a,i)=>a+(i.volume||0),0))?((m.volume||items.reduce((a,i)=>a+(i.volume||0),0)).toLocaleString()+' kg'):'—'}</span>
           <span class="log-time">${fmtTime(l.time)}</span>
         </div>
+        ${m.checkin?`<div class="tc-feel"><span>情绪 ${m.checkin.mood}/5 ${FEEL_MOOD[(m.checkin.mood||1)-1]||''}</span><span>状态 ${m.checkin.energy}/5 ${FEEL_ENERGY[(m.checkin.energy||1)-1]||''}</span>${m.checkin.note?`<em>“${ENGINE.esc(m.checkin.note)}”</em>`:''}</div>`:''}
         <div class="tc-body">${rows||'<div class="tc-empty">暂无明细</div>'}</div>
         ${items.length?`<details class="tc-more"><summary>展开每组明细</summary><div class="tg-wrap">${allDetail}</div></details>`:''}
         <div class="edit-actions">
