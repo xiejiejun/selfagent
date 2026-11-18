@@ -1990,13 +1990,26 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .pl-tools{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
 .pl-tools .plan-reset{margin-left:auto}
 .pl-table{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel2)}
-.pl-th{display:grid;grid-template-columns:1fr 56px 50px 44px;gap:6px;align-items:center;padding:7px 10px;font-size:10.5px;color:var(--tx3);border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
-.pl-row{display:grid;grid-template-columns:1fr 56px 50px 44px;gap:6px;align-items:center;padding:0 10px;min-height:44px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .16s}
+.pl-th{display:grid;grid-template-columns:1fr 62px 62px;gap:6px;align-items:center;padding:7px 10px;font-size:10.5px;color:var(--tx3);border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.pl-row{display:grid;grid-template-columns:1fr 62px 62px;gap:6px;align-items:center;padding:0 10px;min-height:44px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .16s}
 .pl-row.on{background:rgba(61,220,191,.07)}
 .pl-row.joined{opacity:.55;cursor:default}
 .pl-idx{font-size:11px;color:var(--tx3)}
 .pl-nm{font-size:13.5px;min-width:0;display:flex;align-items:baseline;gap:5px;overflow:hidden}
 .pl-no{font-style:normal;font-size:10.5px;color:var(--tx3);flex:0 0 auto}
+.pl-tag{font-style:normal;font-size:9.5px;color:#a8792d;background:rgba(201,150,60,.14);border-radius:4px;padding:1px 4px;margin-left:4px}
+.pl-warn{font:inherit;font-size:10.5px;color:#a8792d;background:rgba(201,150,60,.14);border:1px solid rgba(201,150,60,.45);border-radius:6px;padding:2px 6px;cursor:pointer}
+.pl-jjoined{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);color:var(--tx3);font:inherit;font-size:11.5px;padding:10px;cursor:pointer}
+.pl-empty{font-size:11.5px;color:var(--tx3);padding:12px 10px}
+.pl-go{padding:10px 0 2px}
+.pl-go .btn{width:100%}
+.plan-head{position:relative}
+.pl-sum{font-size:11px;color:var(--tx3);margin-left:8px}
+.plan-more{position:absolute;right:0;top:-4px;width:28px;height:28px;border:0;background:none;color:var(--tx3);font-size:16px;cursor:pointer}
+.plan-menu{position:absolute;right:0;top:26px;z-index:25;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,.25);padding:4px;min-width:132px}
+.plan-menu button{display:block;width:100%;background:none;border:0;font:inherit;font-size:12px;color:var(--tx2);padding:9px 12px;text-align:left;cursor:pointer;border-radius:7px}
+.plan-empty{padding:16px 4px}
+.plan-empty-t{font-size:12px;color:var(--tx2);line-height:1.7;margin-bottom:10px}
 .pl-nm b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .pl-st{font-size:10px}
 .pl-nm b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -5330,7 +5343,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
               return `<button class="bm-cell ${st}${i===0?' on':''}" data-planpart="${p}" data-view="${a[0]}" type="button"><b>${a[0]}</b><em>${word}</em></button>`;
             }).join('')}</div>
-            <div class="tr-actions" style="margin-top:8px"><button class="btn sm" id="plGen" type="button">生成计划</button></div>
             <div id="plOut"></div>
           </div>
         </div>
@@ -5544,7 +5556,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const tb=$('trEmpty');
     if(tb) tb.querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>{
       const k=b.dataset.entry;
-      if(k==='ai'){ trSetSeg('plan'); try{ $('plGen').click(); }catch(e){} }
+      if(k==='ai'){ trSetSeg('plan'); try{ planGenerate(window.planPart||'胸'); }catch(e){} }
       else libOpenP(k);
     });
     const wh=$('weekStripHead'), wb=$('weekBody');
@@ -6201,12 +6213,58 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return (train.records||[]).some(r=>r.date===day && r.exId===id);
   }
   let plOpen=-1;
+  let plJoinedOpen=false;
+  function planRecommend(){
+    const PV={'上腿':'腿','上臂':'臂','腰腹':'腹'};
+    const parts=['胸','背','上腿','肩','上臂','腰腹'];
+    let best=null;
+    parts.forEach(p=>{
+      let h=0;
+      try{ const r=partRecovery(p); h=(r&&r.h!=null)?r.h:0; }catch(e){ h=0; }
+      if(!best || h>best.h) best={p:p,h:h};
+    });
+    const p=best?best.p:'胸';
+    return {part:p, view:PV[p]||p, h:best?best.h:0};
+  }
+  function planGenerate(part){
+    part=part||window.planPart||'胸';
+    const PV={'上腿':'腿','上臂':'臂','腰腹':'腹'};
+    trPlan=genPlan(part); trPlanOrig=null; plOpen=-1; plJoinedOpen=false;
+    trPlanSave(); trRenderPlan();
+    trToast('已生成 '+(PV[part]||part)+'日计划');
+  }
+  function planImportAll(){
+    const day=trDateVal(); let added=0, updated=0;
+    trPlan.forEach(i=>{
+      const exists=(train.records||[]).some(r=>r.date===day && r.exId===i.exId);
+      if(i.dur){
+        if(exists){ const r=train.records.find(r=>r.date===day && r.exId===i.exId); r.dur=i.dur; updated++; saveTrain(); }
+        else { addRec({exId:i.exId, name:i.name, part:i.part, sets:1, reps:1, weight:0, dur:i.dur}); added++; }
+        return;
+      }
+      trAddPlanned(i.exId, i.sets, i.reps, i.weight||0, true);
+      if(exists) updated++; else added++;
+    });
+    saveTrain(); plOpen=-1; plJoinedOpen=false;
+    trRenderToday(); trRenderPlan(); refreshHome();
+    return {added:added, updated:updated};
+  }
   function trRenderPlan(){
     const box=$('plOut'); if(!box) return;
     if(!trPlan||!trPlan.length){
       const draft=train.planDraft;
       if(draft && draft.length){ trPlan=draft.map(i=>({...i})); }
-      else { box.innerHTML=''; return; }
+      else {
+        const rec=planRecommend();
+        const rv=(()=>{ try{ return partRecovery(rec.part)||{}; }catch(e){ return {}; } })();
+        box.innerHTML=`<div class="plan-empty">
+          <div class="plan-empty-t">${(rv.h && rv.h<900)?('上次练'+rec.view+'是 '+rv.h+' 天前'):('最近没练过'+rec.view)} · 今天推荐练【${rec.view}】</div>
+          <button class="btn sm" id="plReco" type="button">一键生成${rec.view}日计划</button>
+        </div>`;
+        const rb=$('plReco');
+        if(rb) rb.onclick=()=>{ window.planPart=rec.part; planGenerate(rec.part); };
+        return;
+      }
     }
     trPlan.forEach(i=>{ if(!i.orig) i.orig={sets:i.sets, reps:i.reps, weight:i.weight||0, dur:i.dur||0}; });
     if(!trPlanOrig) trPlanOrig=trPlan.map(i=>({...i}));
@@ -6219,27 +6277,22 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     const pending=trPlan.filter(i=>!trPlanJoined(i.exId)).length;
     const amount=[sum.sets?(sum.sets+' 组'):'', sum.reps?(sum.reps+' 次'):'', sum.vol?((Math.round(sum.vol)).toLocaleString()+'kg'):'', sum.min?(sum.min+' 分钟'):''].filter(Boolean).join(' · ');
-    const rows=trPlan.map((i,idx)=>{
+    const mkRow=(i,idx)=>{
       const jn=trPlanJoined(i.exId);
       const adj=i.orig && ((i.sets||0)!==(i.orig.sets||0) || (i.reps||0)!==(i.orig.reps||0) || (i.weight||0)!==(i.orig.weight||0) || (i.dur||0)!==(i.orig.dur||0));
       const exE=(findEx(i.exId)||{}).e||'';
       const selfW=(i.weight||0)===0 && !i.dur && exE!=='自重';
-      let cls='', txt='';
-      if(jn){ cls='ok'; txt='✓已加'; }
-      else if(adj){ cls='adj'; txt='已调'; }
-      else if(selfW){ cls='warn'; txt='⚠待设'; }
       const open=plOpen===idx && !jn;
       const step=weightStep(findEx(i.exId))||2.5;
-      const wHist=[...new Set((train.records||[]).filter(r=>r.exId===i.exId).map(r=>r.weight||0).concat([i.weight||0]))].filter(w=>w>0).sort((a,b)=>b-a).slice(0,3);
+      const wHist=[...new Set((train.records||[]).filter(r=>r.exId===i.exId).map(r=>r.weight||0).concat([i.weight||0]) )].filter(w=>w>0).sort((a,b)=>b-a).slice(0,3);
       const last=trPlanLast(i.exId);
-      const gear = jn ? '<div class="plan-note" style="margin-top:0">已加入今日，去「今日训练」里逐组打勾。</div>'
-        : i.dur
+      const gear = i.dur
         ? `<div class="plan-gear"><span class="plan-ctl"><i>分钟</i><button class="pl-step" data-pl="${idx}:dur:-5" type="button">−</button><span class="plan-num" data-pnum="${idx}:dur">${i.dur}</span><button class="pl-step" data-pl="${idx}:dur:5" type="button">+</button></span></div>`
         : `<div class="plan-gear">
              <span class="plan-ctl"><i>组</i><button class="pl-step" data-pl="${idx}:sets:-1" type="button">−</button><span class="plan-num" data-pnum="${idx}:sets">${i.sets}</span><button class="pl-step" data-pl="${idx}:sets:1" type="button">+</button></span>
              <span class="plan-ctl"><i>次</i><button class="pl-step" data-pl="${idx}:reps:-1" type="button">−</button><span class="plan-num" data-pnum="${idx}:reps">${i.reps}</span><button class="pl-step" data-pl="${idx}:reps:1" type="button">+</button></span>
              <span class="plan-wchips">${wHist.map(w=>`<button class="plan-w ${w===(i.weight||0)?'on':''}" data-plw="${idx}:${w}" type="button">${w}kg</button>`).join('')}
-               <span class="plan-ctl"><i>kg</i><button class="pl-step" data-pl="${idx}:weight:-${step}" type="button">−</button><span class="plan-num" data-pnum="${idx}:weight">${i.weight>0?i.weight:'自重'}</span><button class="pl-step" data-pl="${idx}:weight:${step}" type="button">+</button></span>
+               <span class="plan-ctl"><i>kg</i><button class="pl-step" data-pl="${idx}:weight:-${step}" type="button">−</button><span class="plan-num" data-pnum="${idx}:weight">${(i.weight||0)>0?i.weight:'自重'}</span><button class="pl-step" data-pl="${idx}:weight:${step}" type="button">+</button></span>
              </span>
            </div>`;
       const edit = !open ? '' : `<div class="pl-edit" data-pledit="${idx}">
@@ -6250,25 +6303,40 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <button class="plan-del" data-pldel="${idx}" type="button">移除</button>
           </div>
         </div>`;
+      const wtCell = selfW
+        ? `<button class="pl-warn" data-plwarn="${idx}" type="button">⚠自选</button>`
+        : (i.weight>0?(i.weight+'kg'):'自重');
       return `<div class="pl-row${jn?' joined':''}${open?' on':''}" data-plrow="${idx}">
           <span class="pl-nm"><i class="pl-no">${idx+1}</i><b>${ENGINE.esc(i.name)}</b></span>
-          <span class="pl-sx">${i.dur?(i.dur+'′'):(i.sets+' × '+i.reps)}</span>
-          <span class="pl-wt">${i.weight>0?(i.weight+'kg'):'自重'}</span>
-          <span class="pl-st ${cls}">${txt}</span>
+          <span class="pl-sx">${i.dur?(i.dur+'′'):(i.sets+' × '+i.reps)}${adj?'<em class="pl-tag">已调</em>':''}</span>
+          <span class="pl-wt">${wtCell}</span>
         </div>${edit}`;
-    }).join('');
+    };
+    const pendRows=[], joinedRows=[];
+    trPlan.forEach((i,idx)=>{ (trPlanJoined(i.exId)?joinedRows:pendRows).push(mkRow(i,idx)); });
+    const rv=(()=>{ try{ return partRecovery(label)||{}; }catch(e){ return {}; } })();
     box.innerHTML=`
       <div class="plan-wrap">
-        <div class="plan-head"><b>${ENGINE.esc(label)}日计划</b><span id="plSum">${trPlan.length} 动作 · ${amount}</span></div>
+        <div class="plan-head">
+          <b>${ENGINE.esc(label)}日计划</b><span class="pl-sum">${trPlan.length} 动作 · ${amount}</span>
+          <button class="plan-more" id="plMore" type="button" aria-label="更多">⋯</button>
+          <div class="plan-menu" id="plMenu" hidden>
+            <button type="button" data-plm="reset">恢复建议值</button>
+            <button type="button" data-plm="again">换一组</button>
+          </div>
+        </div>
         <div class="pl-tools">
           <button class="btn sm" id="plImport" type="button" ${pending?'':'disabled'}>${pending?('全部加入 · '+pending):'已全部加入'}</button>
-          <button class="plan-reset" id="plReset" type="button">恢复建议值</button>
-          <button class="plan-reset" id="plRe" type="button">换一组</button>
         </div>
-        <div class="pl-table"><div class="pl-th"><span>动作</span><span>组 × 次</span><span>重量</span><span>状态</span></div>${rows}</div>
-        ${(()=>{const rv=partRecovery(label);return rv.text?`<div class="plan-recovery ${rv.warn?'warn':''}">${ENGINE.esc(rv.text)}</div>`:''})()}
+        <div class="pl-table"><div class="pl-th"><span>动作</span><span>组 × 次</span><span>重量</span></div>
+          ${pendRows.length?pendRows.join(''):'<div class="pl-empty">待加入的动作都处理完了</div>'}
+          ${joinedRows.length?`<button class="pl-jjoined" id="plJoined" type="button">已加入 ${joinedRows.length} ${plJoinedOpen?'▾':'▸'}</button>${plJoinedOpen?joinedRows.join(''):''}`:''}
+        </div>
+        ${rv.text?`<div class="plan-recovery ${rv.warn?'warn':''}">${ENGINE.esc(rv.text)}</div>`:''}
+        <div class="pl-go"><button class="btn sm" id="plGoToday" type="button">${pending?('加入剩余 '+pending+' 个 · 去训练 ▸'):'去今日训练 ▸'}</button></div>
       </div>`;
-    // 行点击 = 手风琴展开
+
+    // 行手风琴
     box.querySelectorAll('[data-plrow]').forEach(r=>r.onclick=()=>{
       const idx=+r.dataset.plrow;
       plOpen = (plOpen===idx? -1 : idx);
@@ -6279,14 +6347,37 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     box.querySelectorAll('.plan-detail').forEach(b=>b.onclick=(ev)=>{ ev.stopPropagation(); trSelect(b.dataset.ex); });
 
-    // 参数 stepper（单击 + 长按连发；连发期间不整块重绘）
+    // 重量警徽 = 入口
+    box.querySelectorAll('[data-plwarn]').forEach(b=>b.onclick=(ev)=>{
+      ev.stopPropagation(); plOpen=+b.dataset.plwarn; trRenderPlan();
+    });
+
+    // 已加入折叠
+    if($('plJoined')) $('plJoined').onclick=()=>{ plJoinedOpen=!plJoinedOpen; trRenderPlan(); };
+
+    // ⋯ 菜单
+    if($('plMore')) $('plMore').onclick=(ev)=>{
+      ev.stopPropagation();
+      const m=$('plMenu'); if(m) m.hidden=!m.hidden;
+    };
+    box.querySelectorAll('[data-plm]').forEach(b=>b.onclick=()=>{
+      const k=b.dataset.plm;
+      if(k==='reset'){
+        if(!trPlanOrig) return;
+        trPlan=trPlanOrig.map(i=>({...i})); plOpen=-1; trPlanSave(); trRenderPlan(); trToast('已恢复建议值');
+      } else {
+        planGenerate(trPlan[0]&&trPlan[0].part?trPlan[0].part:(window.planPart||'胸'));
+      }
+    });
+
+    // 参数 stepper
     const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
     const bump=(idx,field,d)=>{
       const i=trPlan[idx]; if(!i || trPlanJoined(i.exId)) return false;
       if(field==='sets') i.sets=clamp((i.sets||1)+d,1,20);
       else if(field==='reps') i.reps=clamp((i.reps||1)+d,1,100);
       else if(field==='weight') i.weight=Math.max(0,Math.round(((i.weight||0)+d)*10)/10);
-      else if(field==='dur') i.dur=clamp((i.dur||20)+d,5,90);
+      else if(field==='dur') i.dur=clamp((i.dur||0)+d,5,90);
       else return false;
       return true;
     };
@@ -6295,7 +6386,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       let hold=null, timer=null;
       const paint=()=>{ const i=trPlan[idx]; if(!i) return;
         const num=box.querySelector(`[data-pnum="${idx}:${field}"]`);
-        if(num) num.textContent = field==='weight' ? (i.weight>0?i.weight:'自重') : i[field];
+        if(num) num.textContent = field==='weight' ? ((i.weight||0)>0?i.weight:'自重') : i[field];
       };
       const fire=()=>{ if(bump(idx,field,d)) paint(); };
       const stop=()=>{ clearTimeout(hold); clearInterval(timer); hold=timer=null; };
@@ -6308,7 +6399,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const p=b.dataset.plw.split(':'); const i=trPlan[+p[0]]; if(!i || trPlanJoined(i.exId)) return;
       i.weight=parseFloat(p[1]); trPlanSave(); trRenderPlan();
     });
-    // 移除动作（可撤销 5 秒）
     box.querySelectorAll('[data-pldel]').forEach(b=>b.onclick=(ev)=>{
       ev.stopPropagation();
       const idx=+b.dataset.pldel; const item=trPlan[idx]; if(!item) return;
@@ -6319,26 +6409,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       t.querySelector('button').onclick=()=>{ trPlan.splice(Math.min(idx,trPlan.length),0,item); trPlanSave(); trRenderPlan(); t.remove(); };
       setTimeout(()=>{ try{t.remove();}catch(e){} },5000);
     });
-    if($('plReset')) $('plReset').onclick=()=>{
-      if(!trPlanOrig) return;
-      trPlan=trPlanOrig.map(i=>({...i})); plOpen=-1; trPlanSave(); trRenderPlan(); trToast('已恢复建议值');
-    };
     if($('plImport')) $('plImport').onclick=()=>{
-      const day=trDateVal(); let added=0, updated=0;
-      trPlan.forEach(i=>{
-        const exists=(train.records||[]).some(r=>r.date===day && r.exId===i.exId);
-        if(i.dur){
-          if(exists){ const r=train.records.find(r=>r.date===day && r.exId===i.exId); r.dur=i.dur; updated++; saveTrain(); }
-          else { addRec({exId:i.exId, name:i.name, part:i.part, sets:1, reps:1, weight:0, dur:i.dur}); added++; }
-          return;
-        }
-        trAddPlanned(i.exId, i.sets, i.reps, i.weight||0, true);
-        if(exists) updated++; else added++;
-      });
-      saveTrain(); plOpen=-1; trRenderToday(); trRenderPlan(); refreshHome();
-      trToast('已加入 '+added+' 个动作'+(updated?('，更新 '+updated+' 个'):''));
+      const r=planImportAll();
+      trToast('已加入 '+r.added+' 个动作'+(r.updated?('，更新 '+r.updated+' 个'):''));
     };
-    if($('plRe')) $('plRe').onclick=()=>{ trPlan=genPlan(partPick()); trPlanOrig=null; plOpen=-1; trPlanSave(); trRenderPlan(); };
+    if($('plGoToday')) $('plGoToday').onclick=()=>{
+      const pend=trPlan.filter(i=>!trPlanJoined(i.exId)).length;
+      if(pend){ const r=planImportAll(); trToast('已加入 '+r.added+' 个动作'); }
+      plOpen=-1; trSetSeg('today'); try{ trRenderToday(); }catch(e){}
+    };
   }
   function showTrainSummary(){
     const d=trDateVal();
@@ -6827,7 +6906,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           rc.textContent=txt;
         }
       };
-      pbm.querySelectorAll('[data-planpart]').forEach(b=>b.onclick=()=>{ window.planPart=b.dataset.planpart; syncPlan(); });
+      pbm.querySelectorAll('[data-planpart]').forEach(b=>b.onclick=()=>{
+        window.planPart=b.dataset.planpart; syncPlan();
+        try{ planGenerate(b.dataset.planpart); }catch(e){}
+      });
       syncPlan();
     }
     if($('trFocus')) $('trFocus').onclick=()=>openFocus();
@@ -6868,12 +6950,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         inp.value=v;
       });
     });
-    $('plGen').addEventListener('click',()=>{
-      const part=partPick();
-      trPlan=genPlan(part); trPlanOrig=null; trPlanSave();
-      trRenderPlan();
-      if(trPlan.length) trToast('已生成 '+part+' 日计划');
-    });
+    if($('plGen')) $('plGen').addEventListener('click',()=>{ planGenerate(partPick()); });
     function parseQuickTrain(txt){
       let s=(txt||'').trim(); if(!s) return null;
       let sets=3, reps=10, weight=0;
