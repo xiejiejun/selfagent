@@ -1006,9 +1006,9 @@ background:var(--accent);box-shadow:0 10px 26px -8px rgba(61,220,191,.6);transit
 .tr-sum{font-size:12px;color:var(--tx3)}
 .tr-sum b{font-size:16px;color:var(--tx);font-weight:600}
 /* ===== 动作详情抽屉（移动端） ===== */
-.ex-sheet{position:fixed;inset:0;z-index:115;background:rgba(6,8,10,.6);backdrop-filter:blur(5px);display:none;align-items:flex-end}
+.ex-sheet{position:fixed;inset:0;z-index:115;background:rgba(6,8,10,.6);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:16px}
 .ex-sheet.on{display:flex}
-.ex-sheet-inner{width:100%;max-height:78vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-top-left-radius:16px;border-top-right-radius:16px;padding:14px 16px 22px}
+.ex-sheet-inner{width:min(92vw,356px);max-height:82vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px 18px}.ex-sheet.plan-sheet{align-items:flex-end;justify-content:center}.ex-sheet.plan-sheet .ex-sheet-inner{width:100%;max-height:78vh;border-radius:16px 16px 0 0}
 .ex-sheet-bar{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--tx3);margin-bottom:10px;position:sticky;top:-14px;background:var(--panel);padding:6px 0}
 .ex-sheet-x{background:none;border:0;color:var(--tx3);font-size:22px;line-height:1;cursor:pointer}
 .ex-dt-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px}
@@ -1464,6 +1464,18 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .ex-fav{border:0;background:none;font-size:17px;line-height:1;padding:2px 4px;cursor:pointer;color:var(--tx3);margin-left:auto}
 .ex-fav.on{color:#e7c56a}
 .ex-more{border:0;background:none;color:var(--tx3);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer}
+.lib-segrow{margin:0 0 8px}
+.lib-seg{display:inline-flex;padding:2px;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}
+.lib-seg button{border:0;background:none;font:inherit;font-size:12.5px;color:var(--tx3);padding:6px 14px;border-radius:8px;cursor:pointer}
+.lib-seg button.on{background:var(--accent);color:#fff}
+.lib-sec-h{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--tx3);margin:12px 0 2px}
+.lib-sec-n{color:var(--accent)}
+.lib-sec-empty{font-size:11.5px;color:var(--tx3);padding:10px 2px}
+.lib-inline{height:calc(100vh - 430px);min-height:340px}
+.lib-inline #trList{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}
+.lib-mine{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;padding-right:2px}
+.lib-curow{padding:10px 0 2px;text-align:center}
+.lib-cu{border:1px dashed var(--line2);background:none;color:var(--tx3);font:inherit;font-size:12px;padding:8px 14px;border-radius:10px;cursor:pointer}
 .lib-searchrow{display:flex;align-items:center;gap:8px}
 .lib-searchrow .search-wrap{flex:1;min-width:0}
 .lib-funnel{position:relative;flex:0 0 auto;width:40px;height:40px;border-radius:10px;border:1px solid var(--line2);
@@ -5349,24 +5361,83 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(n==='today'){ try{ trRenderToday(); }catch(e){} }
     if(n==='plan'){ try{ trRenderPlan(); }catch(e){} }
   }
+  let libSeg='lib';
   function libShow(){
     libTab='search';
-    try{ renderMyLib(); }catch(e){}
-    try{ trRenderList(); }catch(e){}
+    try{ libSwitch(libSeg||'lib'); }catch(e){}
+  }
+  function libSwitch(k){
+    libSeg=k;
+    const sg=$('libSeg');
+    if(sg) sg.querySelectorAll('[data-libtab]').forEach(b=>b.classList.toggle('on', b.dataset.libtab===k));
+    const mine=$('libMine'), list=$('trList');
+    if(mine) mine.hidden = (k!=='mine');
+    if(list) list.hidden = (k==='mine');
+    if(k==='mine'){ try{ renderMine(); }catch(e){} }
+    else { try{ trRenderList(); }catch(e){} }
+    try{ trSyncFunnelDot(); }catch(e){}
+  }
+  function libRowHtml(e,lastMap){
+    const last=lastMap[e.id];
+    const sub=last
+      ? `<span class="ex-last">上次 ${last.weight>0?last.weight+'kg ':''}${last.sets}×${last.reps}</span><span class="ex-ago">${trAgo(last.date)}</span>`
+      : `<span class="ex-last none">未练过</span>`;
+    const fav=(train.favs||[]).includes(e.id);
+    return `<div class="ex-item ${trSel===e.id?'on':''}" data-ex="${e.id}">
+        <button class="ex-favstar${fav?' on':''}" data-favitem="${e.id}" type="button" aria-label="收藏">${fav?'★':'☆'}</button>
+        <div class="ex-head"><span class="ex-name">${ENGINE.esc(e.n)}${e.custom?' <span class="ex-cu">自定义</span>':''}</span><span class="ex-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'')}</span></div>
+        <div class="ex-sub">${sub}</div>
+        <button class="ex-add" data-plan="${e.id}" type="button" title="按上次参数加入今日" aria-label="加入今日">＋</button>
+      </div>`;
+  }
+  function bindLibRows(box){
+    box.querySelectorAll('[data-ex]').forEach(it=>{ it.onclick=()=>trSelect(it.dataset.ex); });
+    box.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',ev=>{
+      ev.stopPropagation(); trQuickAdd(b.dataset.plan);
+    }));
+    box.querySelectorAll('[data-favitem]').forEach(b=>b.addEventListener('click',ev=>{
+      ev.stopPropagation();
+      trToggleFav(b.dataset.favitem);
+      const on=(train.favs||[]).includes(b.dataset.favitem);
+      b.textContent=on?'★':'☆'; b.classList.toggle('on',on);
+      if(libSeg==='mine') renderMine();
+    }));
+  }
+  function renderMine(){
+    const box=$('libMine'); if(!box) return;
+    const lastMap={}; (train.records||[]).forEach(r=>{ lastMap[r.exId]=r; });
+    const favs=(train.favs||[]).map(findEx).filter(Boolean);
+    const seen=new Set(favs.map(e=>e.id));
+    const shot=allExercises().filter(e=>!seen.has(e.id)).sort((a,b)=>(freqScore(b.id)-freqScore(a.id))||(a.n.length-b.n.length)).slice(0,10);
+    box.innerHTML=
+      `<div class="lib-sec-h">我的收藏 <span class="lib-sec-n">${favs.length}</span></div>`+
+      (favs.length ? favs.map(e=>libRowHtml(e,lastMap)).join('')
+                   : '<div class="lib-sec-empty">还没有收藏动作。在动作库列表点右上角 ☆，动作会进这里</div>')+
+      `<div class="lib-sec-h">常用动作</div>`+
+      (shot.length ? shot.map(e=>libRowHtml(e,lastMap)).join('')
+                   : '<div class="lib-sec-empty">还没有记录，先练几次</div>');
+    bindLibRows(box);
   }
   function libOpenP(){ trSetSeg('lib'); try{ libShow(); }catch(e){} }
   function libClose(){ if(trSeg==='lib') trSetSeg('today'); }
   function renderLibInline(parts, eqs){
     const d=$('libBox'); if(!d) return;
     d.innerHTML=`
+      <div class="lib-segrow"><div class="lib-seg" id="libSeg">
+        <button type="button" data-libtab="mine">我的</button><button type="button" class="on" data-libtab="lib">动作库</button>
+      </div></div>
       <div class="lib-searchrow">
         <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
         <button class="lib-funnel" id="libFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="libFunnelDot" hidden></em></button>
       </div>
-      <div class="chip-row lib-partchips" id="libPartChips">${['全部','胸','背','腿','肩','臂','腹','有氧'].map(p=>`<button class="fchip ${(p==='全部'&&!trState.part)||trState.part===p?'on':''}" data-lpart="${p==='全部'?'':p}" type="button">${p}</button>`).join('')}</div>
-      <div class="lib-favh" id="favHead" hidden>我的动作库 <span id="favN">0</span></div>
-      <div class="lib-favrow"><div class="lib-favscroll" id="myLib"></div><button class="fav-cu" id="cuOpen" type="button">＋ 自定义</button></div>
-      <div class="ex-list lib-list" id="trList"></div>`;
+      <div class="lib-mine" id="libMine" hidden></div>
+      <div class="ex-list lib-list" id="trList"></div>
+      <div class="lib-curow"><button class="lib-cu" id="cuOpen" type="button">＋ 自定义动作</button></div>`;
+    const sg=d.querySelector('#libSeg');
+    if(sg) sg.querySelectorAll('[data-libtab]').forEach(b=>b.onclick=()=>libSwitch(b.dataset.libtab));
+    if($('libFunnel')) $('libFunnel').onclick=()=>openFilterSheet();
+    if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
+    try{ libSwitch(libSeg||'lib'); }catch(e){}
   }
   function trRenderHot(){
     const box=$('trHotList'); if(!box) return;
@@ -5616,19 +5687,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const from=append?Math.max(0,trState.limit-60):0;
     const lastMap={};
     (train.records||[]).forEach(r=>{ lastMap[r.exId]=r; });
-    const html=list.slice(from,trState.limit).map(e=>{
-      const last=lastMap[e.id];
-      const sub=last
-        ? `<span class="ex-last">上次 ${last.weight>0?last.weight+'kg ':''}${last.sets}×${last.reps}</span><span class="ex-ago">${trAgo(last.date)}</span>`
-        : `<span class="ex-last none">未练过</span>`;
-      return `
-      <div class="ex-item ${trSel===e.id?'on':''}" data-ex="${e.id}">
-        <button class="ex-favstar${(train.favs||[]).includes(e.id)?' on':''}" data-favitem="${e.id}" type="button" aria-label="收藏">${(train.favs||[]).includes(e.id)?'★':'☆'}</button>
-        <div class="ex-head"><span class="ex-name">${ENGINE.esc(e.n)}${e.custom?' <span class="ex-cu">自定义</span>':''}</span><span class="ex-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'')}</span></div>
-        <div class="ex-sub">${sub}</div>
-        <button class="ex-add" data-plan="${e.id}" type="button" title="按上次参数加入今日" aria-label="加入今日">＋</button>
-      </div>`;
-    }).join('');
+    const html=list.slice(from,trState.limit).map(e=>libRowHtml(e,lastMap)).join('');
     if(append){ box.insertAdjacentHTML('beforeend', html); }
     else { box.innerHTML = html || '<div class="ex-item" style="color:var(--tx3);cursor:default">没有匹配的动作，换个更短的关键词试试，或点下方「自定义动作」新增。</div>'; box.scrollTop=0; }
     box.querySelectorAll('[data-ex]').forEach(it=>{ it.onclick=()=>trSelect(it.dataset.ex); });
@@ -5932,42 +5991,42 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function trSyncFunnelDot(){
     const d=$('libFunnelDot'); if(!d) return;
-    d.hidden = !((trState.eqs||[]).length || trState.sort==='name');
+    d.hidden = !((trState.eqs||[]).length || !!trState.part);
   }
   function openFilterSheet(){
     document.querySelectorAll('.msheet').forEach(x=>x.remove());
+    const PART=['全部','胸','背','腿','肩','臂','腹','有氧'];
     const EQ=['杠铃','哑铃','绳索','器械','自重','壶铃','史密斯','弹力带'];
-    let tmpEq=(trState.eqs||[]).slice(), tmpSort=trState.sort||'freq';
+    let tmpPart=trState.part||'', tmpEq=(trState.eqs||[]).slice();
     const el=document.createElement('div'); el.className='msheet';
     el.innerHTML=`<div class="msheet-box"><div class="ms-head"><b>筛选</b><button class="ms-x" type="button" data-flx>×</button></div>
+      <div class="fl-sec"><span class="fl-lb">部位</span><div class="chip-row" id="flPart">${PART.map(p=>`<button class="fchip${((p==='全部'&&!tmpPart)||tmpPart===p)?' on':''}" data-flpart="${p==='全部'?'':p}" type="button">${p}</button>`).join('')}</div></div>
       <div class="fl-sec"><span class="fl-lb">器械</span><div class="chip-row" id="flEq">${EQ.map(q=>`<button class="fchip${tmpEq.indexOf(q)>=0?' on':''}" data-fleq="${q}" type="button">${q}</button>`).join('')}</div></div>
-      <div class="fl-sec"><span class="fl-lb">排序</span><div class="chip-row" id="flSort"><button class="fchip${tmpSort==='freq'?' on':''}" data-flsort="freq" type="button">常用优先</button><button class="fchip${tmpSort==='name'?' on':''}" data-flsort="name" type="button">名称</button></div></div>
       <div class="cu-btns"><button class="btn ghost sm" type="button" id="flReset">重置</button><button class="btn sm" type="button" id="flGo">显示 <span id="flN">0</span> 个动作</button></div>
     </div>`;
     document.body.appendChild(el);
     const count=()=>{
-      const bak={eqs:trState.eqs, sort:trState.sort, limit:trState.limit};
-      trState.eqs=tmpEq; trState.sort=tmpSort; trState.limit=1e6;
+      const bak={part:trState.part, eqs:trState.eqs, limit:trState.limit};
+      trState.part=tmpPart; trState.eqs=tmpEq; trState.limit=1e6;
       const n=trFiltered().length;
-      trState.eqs=bak.eqs; trState.sort=bak.sort; trState.limit=bak.limit;
+      trState.part=bak.part; trState.eqs=bak.eqs; trState.limit=bak.limit;
       return n;
     };
     const sync=()=>{
+      el.querySelectorAll('[data-flpart]').forEach(b=>b.classList.toggle('on', (b.dataset.flpart||'')===tmpPart));
       el.querySelectorAll('[data-fleq]').forEach(b=>b.classList.toggle('on', tmpEq.indexOf(b.dataset.fleq)>=0));
-      el.querySelectorAll('[data-flsort]').forEach(b=>b.classList.toggle('on', b.dataset.flsort===tmpSort));
       const n=el.querySelector('#flN'); if(n) n.textContent=String(count());
     };
+    el.querySelectorAll('[data-flpart]').forEach(b=>b.onclick=()=>{ tmpPart=b.dataset.flpart||''; sync(); });
     el.querySelectorAll('[data-fleq]').forEach(b=>b.onclick=()=>{
-      const q=b.dataset.fleq;
-      const i=tmpEq.indexOf(q);
+      const q=b.dataset.fleq; const i=tmpEq.indexOf(q);
       if(i>=0) tmpEq.splice(i,1); else tmpEq.push(q);
       sync();
     });
-    el.querySelectorAll('[data-flsort]').forEach(b=>b.onclick=()=>{ tmpSort=b.dataset.flsort; sync(); });
-    el.querySelector('#flReset').onclick=()=>{ tmpEq=[]; tmpSort='freq'; sync(); };
+    el.querySelector('#flReset').onclick=()=>{ tmpPart=''; tmpEq=[]; sync(); };
     el.querySelector('#flGo').onclick=()=>{
-      trState.eqs=tmpEq.slice(); trState.sort=tmpSort; trState.limit=60;
-      el.remove(); trRenderList(); trSyncFunnelDot();
+      trState.part=tmpPart; trState.eqs=tmpEq.slice(); trState.limit=60;
+      el.remove(); libSwitch('lib'); trRenderList(); trSyncFunnelDot();
     };
     el.querySelectorAll('[data-flx]').forEach(b=>b.onclick=()=>el.remove());
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
@@ -6694,7 +6753,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       train.items.forEach(i=>{ const rec={date:d, exId:i.exId, name:i.name, part:i.part, sets:i.sets, reps:i.reps, weight:i.weight, dur:i.dur||0}; rec.uid=trUid(rec); train.records.push(rec); });
       train.items=[]; saveTrain();
     }
-    $('trSearch').addEventListener('input',()=>{ trState.q=$('trSearch').value; trState.limit=60; trRenderList(); renderSuggest(); });
+    $('trSearch').addEventListener('input',()=>{
+      trState.q=$('trSearch').value; trState.limit=60;
+      if(libSeg!=='lib') libSwitch('lib');
+      trRenderList(); renderSuggest();
+    });
     const lp=$('libPartChips');
     if(lp) lp.querySelectorAll('[data-lpart]').forEach(b=>b.onclick=()=>{
       trState.part=b.dataset.lpart||''; trState.limit=60;
