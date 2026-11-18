@@ -5764,7 +5764,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function trSelect(id){
     trSel=id;
-    trRenderList();
+    const lb=$('trList');
+    if(lb){
+      lb.querySelectorAll('[data-ex]').forEach(it=>it.classList.toggle('on', it.dataset.ex===id));
+    } else { trRenderList(); }
     const qbSel=document.querySelector('.train-side .quick-box');
     if(qbSel) qbSel.classList.add('ready');
     const e=findEx(id); if(!e) return;
