@@ -1293,8 +1293,8 @@ border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--tx2);f
 .bodymap{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 2px}
 .bm-cell{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;border-radius:9px;
 border:1px solid var(--line);background:rgba(255,255,255,.02);cursor:pointer;color:var(--tx)}
-.bm-cell b{font-weight:600;font-size:13px}
-.bm-cell em{font-style:normal;font-size:10px;color:var(--tx3)}
+.bm-cell b{font-weight:600;font-size:13px;white-space:nowrap}
+.bm-cell em{font-style:normal;font-size:10px;color:var(--tx3);white-space:nowrap}
 .bm-cell.ok{border-color:rgba(61,220,191,.35);background:rgba(61,220,191,.05)}
 .bm-cell.ok b{color:var(--accent)}
 .bm-cell.resting{border-color:rgba(231,197,106,.4);background:rgba(231,197,106,.06)}
@@ -1448,6 +1448,28 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .lg-menu button{border:0;background:none;color:var(--tx);font:inherit;font-size:13px;text-align:left;padding:11px 14px;cursor:pointer}
 .lg-menu button:active{background:rgba(255,255,255,.06)}
 .lg-menu button[data-mact="del"]{color:#e06e78;border-top:1px solid var(--line)}
+.lib-favrow{display:flex;align-items:center;gap:8px;margin:8px 0 4px}
+.lib-favscroll{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;padding:2px 0;scrollbar-width:none}
+.lib-favscroll::-webkit-scrollbar{display:none}
+.fav-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:6px 10px;border-radius:8px;
+  border:1px solid var(--line2);background:var(--panel2);color:var(--tx2);cursor:pointer;white-space:nowrap}
+.fav-chip.picked{border-color:rgba(61,220,191,.55);color:var(--accent);background:rgba(61,220,191,.12)}
+.fav-chip:active{transform:scale(.96)}
+.fav-chip i{font-style:normal;font-size:11px}
+.fav-empty{font-size:11.5px;color:var(--tx3);white-space:nowrap}
+.fav-cu{flex:0 0 auto;font-size:11.5px;color:var(--accent);background:none;border:1px solid rgba(61,220,191,.4);
+  border-radius:8px;padding:6px 9px;cursor:pointer;white-space:nowrap}
+.bm-cell.on{outline:2px solid var(--accent);outline-offset:1px}
+.ex-dt-head{align-items:center}
+.ex-fav{border:0;background:none;font-size:17px;line-height:1;padding:2px 4px;cursor:pointer;color:var(--tx3);margin-left:auto}
+.ex-fav.on{color:#e7c56a}
+.ex-more{border:0;background:none;color:var(--tx3);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer}
+.ms-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ms-head b{font-size:14px;font-weight:600}
+.ms-x{border:0;background:none;color:var(--tx3);font-size:20px;line-height:1;padding:0 4px;cursor:pointer}
+.cu-sheet{padding:2px 0 6px}
+.cu-btns{display:flex;gap:8px;margin-top:8px}
+.cu-btns .btn{flex:1;justify-content:center}
 .tc-empty{color:var(--tx3);font-size:12px}
 
 /* p51 卡片色条可见性 */
@@ -5302,55 +5324,25 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(n==='today'){ try{ trRenderToday(); }catch(e){} }
     if(n==='plan'){ try{ trRenderPlan(); }catch(e){} }
   }
-  function libShow(t){
-    libTab=t;
-    const d=$('libBox'); if(!d) return;
-    d.querySelectorAll('#libTabs [data-lt]').forEach(b=>b.classList.toggle('on', b.dataset.lt===t));
-    d.querySelectorAll('[data-ltp]').forEach(p=>{ p.hidden = p.dataset.ltp!==t; });
-    if(t==='hot'){ try{ trRenderHot(); }catch(e){} }
-    if(t==='mine'){ try{ renderMyLib(); }catch(e){} }
+  function libShow(){
+    libTab='search';
+    try{ renderMyLib(); }catch(e){}
+    try{ trRenderList(); }catch(e){}
   }
-  function libOpenP(t){ trSetSeg('lib'); libShow(t||libTab||'search'); }
+  function libOpenP(){ trSetSeg('lib'); try{ libShow(); }catch(e){} }
   function libClose(){ if(trSeg==='lib') trSetSeg('today'); }
   function renderLibInline(parts, eqs){
     const d=$('libBox'); if(!d) return;
     d.innerHTML=`
-      <div class="lib-tabs" id="libTabs">
-        <button class="tab on" data-lt="search" type="button">搜索</button>
-        <button class="tab" data-lt="mine" type="button">我的库</button>
-        <button class="tab" data-lt="hot" type="button">热门</button>
-      </div>
-      <div class="lib-pane" data-ltp="search">
-        <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 器械 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
-        <div class="bodymap" id="bodyMap">${['肩','胸','背','腰腹','臂','腿'].map(p=>{
-          const rc=partRecovery(p);
-          const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
-          const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
-          return `<button class="bm-cell ${st}" data-bmpart="${p}" type="button" aria-label="${p} ${word}"><b>${p}</b><em>${word}</em></button>`;
-        }).join('')}</div>
-        <div class="chip-row" id="trPartChips">${['全部'].concat(parts).map(p=>`<button class="fchip ${(p==='全部'&&!trState.part)||trState.part===p?'on':''}" data-part="${p==='全部'?'':p}">${p}</button>`).join('')}</div>
-        <div class="chip-row" id="trSortRow"><span class="chip-label">排序</span><button class="fchip on" data-sort="freq">常用优先</button><button class="fchip" data-sort="default">默认顺序</button></div>
-        <div class="chip-row" id="trEqChips">${['全部'].concat(['杠铃','哑铃','绳索','器械','自重','壶铃'].filter(x=>eqs.includes(x))).map(q=>`<button class="fchip ${(q==='全部'&&!trState.eq)||trState.eq===q?'on':''}" data-eq="${q==='全部'?'':q}">${q==='全部'?'全部器械':q}</button>`).join('')}</div>
-        <div class="ex-count" id="trCount"></div>
-        <div class="ex-list lib-list" id="trList"></div>
-      </div>
-      <div class="lib-pane" data-ltp="mine" hidden>
-        <div id="myLib"></div>
-        <div class="tr-actions" style="margin-top:10px"><button class="btn ghost sm" id="cuOpen" type="button">＋ 自定义动作</button></div>
-        <div class="cu-form" id="cuForm">
-          <div class="f-row">
-            <div class="f-field"><label class="f-label">动作名称</label><input type="text" id="cuName" placeholder="如：壶铃摇摆"></div>
-            <div class="f-field"><label class="f-label">部位</label><select id="cuPart">${parts.map(p=>`<option value="${p}">${p}</option>`).join('')}</select></div>
-            <div class="f-field"><label class="f-label">器械</label><input type="text" id="cuEquip" placeholder="如：壶铃 / 自重"></div>
-          </div>
-          <div class="f-field"><label class="f-label">动作要领（每行一步）</label><textarea id="cuSteps" style="min-height:80px" placeholder="每行写一步"></textarea></div>
-          <div class="tr-actions"><button class="btn sm" id="cuSave" type="button">保存到动作库</button><button class="btn ghost sm" id="cuCancel" type="button">取消</button></div>
-        </div>
-      </div>
-      <div class="lib-pane" data-ltp="hot" hidden>
-        <div class="ex-count" id="trHotCount"></div>
-        <div class="ex-list lib-list" id="trHotList"></div>
-      </div>`;
+      <div class="search-wrap"><input type="text" id="trSearch" placeholder="器械 + 动作名，如：哑铃 卧推" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
+      <div class="bodymap" id="bodyMap">${['肩','胸','背','腰腹','臂','腿'].map(p=>{
+        const rc=partRecovery(p);
+        const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
+        const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
+        return `<button class="bm-cell ${st}${trState.part===p?' on':''}" data-bmpart="${p}" type="button" aria-label="${p} ${word}"><b>${p}</b><em>${word}</em></button>`;
+      }).join('')}</div>
+      <div class="lib-favrow"><div class="lib-favscroll" id="myLib"></div><button class="fav-cu" id="cuOpen" type="button">＋ 自定义</button></div>
+      <div class="ex-list lib-list" id="trList"></div>`;
   }
   function trRenderHot(){
     const box=$('trHotList'); if(!box) return;
@@ -5480,7 +5472,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     if(!q){
       const seen=new Set(); const uni=base.filter(e=>{ const k=(e.n||'').trim().toLowerCase(); if(!k||seen.has(k)) return false; seen.add(k); return true; });
-      if(trState.sort==='default') return uni;
       return uni.slice().sort((a,b)=>(freqScore(b.id)-freqScore(a.id))||(a.n.length-b.n.length));
     }
     const rawToks=q.split(/[\s,，、;；+\/]+/).filter(Boolean);
@@ -5609,33 +5600,32 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="ex-item ${trSel===e.id?'on':''}" data-ex="${e.id}">
         <div class="ex-head"><span class="ex-name">${ENGINE.esc(e.n)}${e.custom?' <span class="ex-cu">自定义</span>':''}</span><span class="ex-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'')}</span></div>
         <div class="ex-sub">${sub}</div>
-        <button class="ex-add" data-plan="${e.id}" type="button" title="加入今日计划（组数/次数/重量）" aria-label="加入今日计划">＋</button>
+        <button class="ex-add" data-plan="${e.id}" type="button" title="按上次参数加入今日" aria-label="加入今日">＋</button>
       </div>`;
     }).join('');
     if(append){ box.insertAdjacentHTML('beforeend', html); }
     else { box.innerHTML = html || '<div class="ex-item" style="color:var(--tx3);cursor:default">没有匹配的动作，换个更短的关键词试试，或点下方「自定义动作」新增。</div>'; box.scrollTop=0; }
     box.querySelectorAll('[data-ex]').forEach(it=>{ it.onclick=()=>trSelect(it.dataset.ex); });
     box.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',ev=>{
-      ev.stopPropagation(); openPlanSheet(b.dataset.plan);
+      ev.stopPropagation(); trQuickAdd(b.dataset.plan);
     }));
-    const c=$('trCount'); if(c) c.textContent = list.length ? `共 ${list.length} 个动作 · 已显示 ${Math.min(trState.limit,list.length)}` : '无匹配结果';
+    const c=$('trCount'); if(c) c.textContent = '';
   }
 
   function detailBodyHtml(e){
     const last=trLastRec(e.id);
     const hist=last?`<div class="ex-my-last">你的上次：${groupsDigest(lastGroupsOf(last))} · ${trAgo(last.date)}</div>`
       :`<div class="ex-my-last none">还没有练过这个动作</div>`;
+    const fav=(train.favs||[]).includes(e.id);
     return `<div class="ex-detail">
-      <div class="ex-dt-head"><span class="ex-dt-name">${ENGINE.esc(e.n)}</span><span class="ex-dt-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}</span></div>
+      <div class="ex-dt-head"><span class="ex-dt-name">${ENGINE.esc(e.n)}</span><span class="ex-dt-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}</span><button class="ex-fav${fav?' on':''}" data-sheet-fav="${e.id}" type="button" aria-label="收藏">${fav?'★':'☆'}</button><button class="ex-more" data-sheet-more="${e.id}" type="button" aria-label="更多">⋯</button></div>
       ${hist}
       ${e.en?`<div class="ex-en">${ENGINE.esc(e.en)}</div>`:''}
       ${e.g?`<div class="ex-media"><div class="gif-ph">动画加载中…</div><img class="ex-gif" alt="${ENGINE.esc(e.n)} 动画"></div>`:''}
       <h4>动作要领</h4><ol>${(e.s||[]).map(x=>`<li>${ENGINE.esc(x)}</li>`).join('')}</ol>
       ${e.t?`<h4>目标肌群</h4><div class="tip">${ENGINE.esc(e.t)}</div>`:''}
       <div class="tr-actions">
-        <button class="btn sm" data-sheet-add="${e.id}">＋ 加入今日计划</button>
-        <button class="btn ghost sm" data-sheet-fav="${e.id}">${(train.favs||[]).includes(e.id)?'★ 已收藏':'☆ 收藏'}</button>
-        <button class="btn ghost sm" data-sheet-name="${e.id}">编辑名称</button>
+        <button class="btn sm" data-sheet-add="${e.id}">＋ 加入今日</button>
       </div>
     </div>`;
   }
@@ -5736,8 +5726,27 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const ph=root.querySelector('.gif-ph');
     if(img && e.g){ trLoadGif(img, e.g, ph); }
     root.querySelectorAll('[data-sheet-add]').forEach(b=>b.onclick=()=>showAddPlan(b.dataset.sheetAdd, root));
-    root.querySelectorAll('[data-sheet-fav]').forEach(b=>b.onclick=()=>{ trToggleFav(b.dataset.sheetFav); });
-    root.querySelectorAll('[data-sheet-name]').forEach(b=>b.onclick=()=>trEditName(b.dataset.sheetName));
+    root.querySelectorAll('[data-sheet-fav]').forEach(b=>b.onclick=()=>{
+      trToggleFav(b.dataset.sheetFav);
+      const on=(train.favs||[]).includes(b.dataset.sheetFav);
+      b.textContent=on?'★':'☆'; b.classList.toggle('on',on);
+    });
+    root.querySelectorAll('[data-sheet-more]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); openExMore(b.dataset.sheetMore, b); });
+  }
+  function openExMore(id, anchor){
+    document.querySelectorAll('.lg-menu').forEach(x=>x.remove());
+    const r=anchor.getBoundingClientRect();
+    const el=document.createElement('div'); el.className='lg-menu';
+    el.style.zIndex='10060';
+    const hasFav=(train.favs||[]).includes(id);
+    el.innerHTML='<button type="button" data-mact="name">编辑名称</button>'+(hasFav?'<button type="button" data-mact="unfav">取消收藏</button>':'');
+    document.body.appendChild(el);
+    el.style.top=Math.round(Math.max(8,Math.min(r.bottom+6,window.innerHeight-110)))+'px';
+    el.style.left=Math.max(12,Math.round(Math.min(r.right-120, window.innerWidth-132)))+'px';
+    el.querySelector('[data-mact="name"]').onclick=()=>{ el.remove(); trEditName(id); };
+    const uf=el.querySelector('[data-mact="unfav"]');
+    if(uf) uf.onclick=()=>{ el.remove(); trToggleFav(id); const e=findEx(id); if(e) openExSheet(e); };
+    setTimeout(()=>{ const h=ev=>{ if(!el.contains(ev.target)){ el.remove(); document.removeEventListener('click',h); } }; document.addEventListener('click',h); },0);
   }
   function openExSheet(e){
     let sh=document.getElementById('exSheet');
@@ -5754,7 +5763,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     sh.classList.add('on');
   }
   function trSelect(id){
-    try{ libClose(); }catch(e){}
     trSel=id;
     trRenderList();
     const qbSel=document.querySelector('.train-side .quick-box');
@@ -5839,6 +5847,16 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     else { train.favs.push(id); trToast('已收藏到我的动作库'); }
     saveTrain(); renderMyLib(); trSelect(id);
   }
+  function trQuickAdd(id){
+    const e=findEx(id); if(!e) return;
+    const day=trDateVal();
+    if(train.records.some(r=>r.date===day && r.exId===id)){ trToast('「'+e.n+'」已在今日训练里'); return; }
+    const last=trLastRec(id);
+    addRec({exId:e.id, name:e.n, part:e.p,
+      sets:last?(last.sets||3):3, reps:last?(last.reps||10):10,
+      weight:last?(last.weight||0):0, dur:(last&&last.dur)||0});
+    trToast('已加入今日：'+e.n);
+  }
   function trToggleToday(id){
     const e=findEx(id); if(!e) return;
     const dayKey=trDateVal();
@@ -5854,23 +5872,45 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function renderMyLib(){
     const box=$('myLib'); if(!box) return;
     const favs=(train.favs||[]).map(findEx).filter(Boolean);
-    if(!favs.length){
-      const HOT=['深蹲','卧推','硬拉','引体','划船','平板支撑'];
-      const hot=HOT.map(k=>allExercises().filter(e=>e.n.includes(k)).sort((a,b)=>a.n.length-b.n.length)[0]).filter(Boolean);
-      const hotHtml=hot.length?`<div class="my-hot">${hot.map(e=>`<span class="lib-chip" data-hot="${e.id}"><button class="chip-star" data-favstar="${e.id}" type="button" title="收藏到我的动作库">☆</button><span class="chip-nm">${ENGINE.esc(e.n)}</span></span>`).join('')}</div>`:'';
-      box.innerHTML=`<details class="my-lib"><summary class="my-head">我的动作库 <span class="my-count">0</span><span class="my-tip">点开选动作</span></summary><div class="my-empty">还没有收藏动作，点下面任意一个直接开始记录；收藏后常用动作会按部位归类。</div>${hotHtml}</details>`;
-      box.querySelectorAll('[data-hot]').forEach(c=>c.onclick=()=>trToggleToday(c.dataset.hot));
-      box.querySelectorAll('[data-favstar]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); trToggleFav(b.dataset.favstar); });
-      return;
-    }
     const dayKey=trDateVal();
     const inToday=new Set(train.records.filter(r=>r.date===dayKey).map(r=>r.exId));
-    const byPart={}; favs.forEach(e=>{ (byPart[e.p]=byPart[e.p]||[]).push(e); });
-    const groups=Object.keys(byPart).map(pt=>`
-      <div class="lib-group"><span class="lib-part">${ENGINE.esc(pt)}</span><div class="lib-chips">${byPart[pt].map(e=>`<span class="lib-chip ${inToday.has(e.id)?'picked':''}" data-fav="${e.id}" title="点一下加入/移出今日"><button class="chip-star" data-favstar="${e.id}" type="button" title="取消收藏">★</button><span class="chip-nm">${inToday.has(e.id)?'✓ ':''}${ENGINE.esc(e.n)}</span></span>`).join('')}</div></div>`).join('');
-    box.innerHTML=`<details class="my-lib"><summary class="my-head">我的动作库 <span class="my-count">${favs.length}</span><span class="my-tip">打勾即记入今日</span></summary>${groups}</details>`;
-    box.querySelectorAll('[data-fav]').forEach(c=>c.onclick=()=>trToggleToday(c.dataset.fav));
-    box.querySelectorAll('[data-favstar]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); trToggleFav(b.dataset.favstar); });
+    if(!favs.length){
+      box.innerHTML='<span class="fav-empty">点详情右上角 ☆ 收藏</span>';
+      return;
+    }
+    box.innerHTML=favs.map(e=>`<span class="fav-chip ${inToday.has(e.id)?'picked':''}" data-fav="${e.id}" title="点=加入/移出今日 · 长按=取消收藏">${inToday.has(e.id)?'<i>✓</i>':''}${ENGINE.esc(e.n)}</span>`).join('');
+    box.querySelectorAll('[data-fav]').forEach(c=>{
+      let lp=null;
+      c.onclick=()=>{ if(c.dataset.lp){ delete c.dataset.lp; return; } trToggleToday(c.dataset.fav); };
+      c.addEventListener('touchstart',()=>{ lp=setTimeout(()=>{ lp=null; c.dataset.lp='1'; trToggleFav(c.dataset.fav); trToast('已取消收藏'); },600); },{passive:true});
+      c.addEventListener('touchend',()=>{ if(lp){ clearTimeout(lp); lp=null; } },{passive:true});
+      c.addEventListener('touchmove',()=>{ if(lp){ clearTimeout(lp); lp=null; } },{passive:true});
+    });
+  }
+  function openCuSheet(){
+    document.querySelectorAll('.msheet').forEach(x=>x.remove());
+    const el=document.createElement('div'); el.className='msheet';
+    el.innerHTML=`<div class="msheet-box"><div class="ms-head"><b>自定义动作</b><button class="ms-x" type="button" data-cux>×</button></div>
+      <div class="cu-sheet">
+        <div class="f-field"><label class="f-label">动作名称</label><input type="text" id="cuName" placeholder="如：壶铃摇摆"></div>
+        <div class="f-row">
+          <div class="f-field"><label class="f-label">部位</label><select id="cuPart"><option>肩</option><option>胸</option><option>背</option><option>腰腹</option><option>臂</option><option>腿</option><option>其他</option></select></div>
+          <div class="f-field"><label class="f-label">器械</label><input type="text" id="cuEquip" placeholder="如：壶铃 / 自重"></div>
+        </div>
+        <div class="f-field"><label class="f-label">动作要领（每行一步）</label><textarea id="cuSteps" placeholder="每行写一步"></textarea></div>
+      </div>
+      <div class="cu-btns"><button class="btn ghost sm" type="button" data-cux>取消</button><button class="btn sm" type="button" id="cuSave">保存到动作库</button></div>
+    </div>`;
+    document.body.appendChild(el);
+    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    el.querySelectorAll('[data-cux]').forEach(b=>b.onclick=()=>el.remove());
+    el.querySelector('#cuSave').onclick=()=>{
+      const n=(el.querySelector('#cuName').value||'').trim(); if(!n){ trToast('请填写动作名称'); return; }
+      const steps=(el.querySelector('#cuSteps').value||'').split('\n').map(x=>x.trim()).filter(Boolean);
+      train.custom.push({id:'cu'+Date.now().toString(36), n, p:el.querySelector('#cuPart').value||'其他', e:(el.querySelector('#cuEquip').value||'自重').trim(), t:'', g:'', s:steps.length?steps:['自定义动作，按个人经验执行'], custom:true});
+      saveTrain(); el.remove(); trRenderList(); trToast('已加入动作库');
+    };
+    try{ kbAvoid(el, el.querySelector('.msheet-box')); }catch(e){}
   }
   let trPlan=null, trPlanOrig=null;
   function partLastDate(part){
@@ -6568,28 +6608,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       train.items=[]; saveTrain();
     }
     $('trSearch').addEventListener('input',()=>{ trState.q=$('trSearch').value; trState.limit=60; trRenderList(); renderSuggest(); });
-    if($('bodyMap')) $('bodyMap').querySelectorAll('[data-bmpart]').forEach(b=>b.onclick=()=>{
+    const bm=$('bodyMap');
+    if(bm) bm.querySelectorAll('[data-bmpart]').forEach(b=>b.onclick=()=>{
       const p=b.dataset.bmpart;
-      const chip=Array.from($('trPartChips').querySelectorAll('[data-part]')).find(x=>x.dataset.part===p);
-      if(chip) chip.click();
-      else trToast('动作库里没有「'+p+'」部位的动作');
-    });
-    $('trPartChips').querySelectorAll('[data-part]').forEach(b=>b.onclick=()=>{
-      trState.part=b.dataset.part; trState.limit=60;
-      $('trPartChips').querySelectorAll('[data-part]').forEach(x=>x.classList.toggle('on', x===b));
+      trState.part = (trState.part===p) ? '' : p;
+      trState.limit=60;
+      bm.querySelectorAll('[data-bmpart]').forEach(x=>x.classList.toggle('on', x.dataset.bmpart===trState.part));
       trRenderList();
     });
-    const sr=$('trSortRow');
-    if(sr) sr.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{
-      trState.sort=b.dataset.sort;
-      sr.querySelectorAll('[data-sort]').forEach(x=>x.classList.toggle('on',x===b));
-      trState.limit=60; trRenderList();
-    });
-    $('trEqChips').querySelectorAll('[data-eq]').forEach(b=>b.onclick=()=>{
-      trState.eq=b.dataset.eq; trState.limit=60;
-      $('trEqChips').querySelectorAll('[data-eq]').forEach(x=>x.classList.toggle('on', x===b));
-      trRenderList();
-    });
+    if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
     if($('trFocus')) $('trFocus').onclick=()=>openFocus();
     if($('trFocusTop')) $('trFocusTop').onclick=()=>openFocus();
     const _fm=$('trFocusMain'); if(_fm) _fm.onclick=()=>{
@@ -6626,15 +6653,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       });
       si.addEventListener('blur',()=>setTimeout(()=>{ const b=$('trSug'); if(b) b.classList.remove('on'); },180));
     }
-    $('cuOpen').addEventListener('click',()=>$('cuForm').classList.add('open'));
-    $('cuCancel').addEventListener('click',()=>$('cuForm').classList.remove('open'));
-    $('cuSave').addEventListener('click',()=>{
-      const n=($('cuName').value||'').trim(); if(!n){ trToast('请填写动作名称'); return; }
-      const steps=($('cuSteps').value||'').split('\n').map(x=>x.trim()).filter(Boolean);
-      train.custom.push({id:'cu'+Date.now().toString(36), n, p:$('cuPart').value||'其他', e:($('cuEquip').value||'自重').trim(), t:'', g:'', s:steps.length?steps:['自定义动作，按个人经验执行'], custom:true});
-      saveTrain(); $('cuForm').classList.remove('open'); $('cuName').value=''; $('cuSteps').value='';
-      trRenderList(); trToast('已加入动作库');
-    });
+    if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
     document.querySelectorAll('#reportBody .stepper button').forEach(b=>{
       b.addEventListener('click',()=>{
         const inp=b.parentElement.querySelector('input'); if(!inp) return;
