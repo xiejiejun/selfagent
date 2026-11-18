@@ -1838,7 +1838,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .tr-tc-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .tr-tc-head>div{min-width:0;flex:1}
 .tr-tc-lbl{font-size:10.5px;letter-spacing:1.8px;color:var(--accent);text-transform:uppercase}
-.tr-tc-stat{font-size:12.5px;color:var(--tx2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-tc-stat{font-size:12.5px;color:var(--tx2);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.tr-tc-stat span{white-space:nowrap}
 .tr-tc-go{min-height:44px;padding:0 14px;border-radius:12px;font-size:13px;font-weight:600;white-space:nowrap;flex:none}
 .tr-tc-quick{display:flex;gap:8px;margin-top:12px}
 .tr-tc-quick input{flex:1;min-width:0}
@@ -1923,6 +1924,18 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .set-card .set-row{padding:2px 0}
 .set-more{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin-top:4px}
 .set-more[hidden]{display:none}
+/* 卡底 +1 / −1 平铺 */
+.set-foot{display:flex;align-items:stretch;gap:8px;margin-top:8px;flex-wrap:wrap}
+.set-foot .tr-plus,.set-foot .tr-minus{flex:1 1 0;min-width:0;height:38px;border-radius:9px;
+ font:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:transform .1s,background .15s}
+.set-foot .tr-plus{border:1px solid rgba(61,220,191,.5);background:rgba(61,220,191,.10);color:var(--accent)}
+.set-foot .tr-plus:active{transform:scale(.97);background:rgba(61,220,191,.18)}
+.set-foot .tr-minus{border:1px solid rgba(230,110,120,.5);background:rgba(230,110,120,.10);color:#E6808A}
+.set-foot .tr-minus:active:not(:disabled){transform:scale(.97);background:rgba(230,110,120,.18)}
+.set-foot .tr-minus:disabled{opacity:.38;cursor:not-allowed;color:var(--tx3);border-color:var(--line);background:none}
+html[data-theme="light"] .set-foot .tr-minus{color:#C0392B;border-color:rgba(192,57,43,.4);background:rgba(192,57,43,.06)}
+html[data-theme="light"] .set-foot .tr-plus{color:#0B7A68;border-color:rgba(14,143,122,.45);background:rgba(14,143,122,.08)}
+.set-foot .wchip{flex:0 0 auto}
 .more-btn{padding:0 10px;min-height:34px;font-size:14px;line-height:1}
 .more-btn.on{color:var(--accent);border-color:var(--accent)}
 /* 练后感受 */
@@ -5258,7 +5271,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const items=(train.records||[]).filter(r=>r.date===day);
     let total=0, done=0;
     items.forEach(r=>{ const gs=ensureGroups(r); total+=gs.length; done+=gs.filter(g=>g.done).length; });
-    if($('todayStat')) $('todayStat').textContent = items.length ? (items.length+' 个动作 · 已完成 '+done+'/'+total+' 组') : '还没有排动作';
+    if($('todayStat')) $('todayStat').innerHTML = items.length ? ('<span>'+items.length+' 动作</span><span>'+done+'/'+total+' 组</span>') : '还没有排动作';
     if($('trEmpty')) $('trEmpty').hidden = !!items.length;
     const go=$('trStart');
     if(go){
@@ -6135,14 +6148,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         </div>
         ${(r.dur && !(r.groups && r.groups.length))?`<div class="set-row"><span class="set-val">${r.dur} 分钟</span></div>`:rows}
         <div class="set-foot">
-          <button class="tr-plus" data-addu="${r.uid}" type="button">＋1 组</button>
-          <button class="mini-text more-btn" data-moreu="${r.uid}" type="button" title="更多">⋯</button>
-          <span class="set-more" data-more="${r.uid}" hidden>
-            <button class="tr-minus" data-rmu1="${r.uid}" type="button" ${gs.some(g=>!g.done)&&gs.length>1?'':'disabled'}>−1 组</button>
-            <button class="mini-text" data-reststart="${r.uid}" type="button">休息 ${restSecs(r.exId)}s</button>
-            <button class="mini-text" data-hold="${r.uid}" type="button">开始计时</button>
-            ${wchips.length?wchips.map(w=>`<button class="wchip" data-wc="${r.uid}:${w}" type="button">${w}kg</button>`).join(''):''}
-          </span>
+          <button class="tr-plus" data-addu="${r.uid}" type="button">+1</button>
+          <button class="tr-minus" data-rmu1="${r.uid}" type="button" ${gs.some(g=>!g.done)&&gs.length>1?'':'disabled'}>−1</button>
+          ${wchips.length?wchips.map(w=>`<button class="wchip" data-wc="${r.uid}:${w}" type="button">${w}kg</button>`).join(''):''}
         </div>
       </div>`;
     }).join('')
@@ -6172,12 +6180,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.querySelectorAll('[data-tclose]').forEach(el=>el.onclick=ev=>{
       if(ev.target.closest('[data-rmu]')) return;
       trOpenUid=''; trFollowTick=false; trRenderToday();
-    });
-    // ⋯ 展开更多操作
-    box.querySelectorAll('[data-moreu]').forEach(b=>b.onclick=ev=>{
-      ev.stopPropagation();
-      const m=box.querySelector('[data-more="'+b.dataset.moreu+'"]');
-      if(m){ m.hidden=!m.hidden; b.classList.toggle('on', !m.hidden); }
     });
     // 打勾：完成一组 → 开始休息（并跟随到该动作 / 自动顺延）
     box.querySelectorAll('[data-tick]').forEach(b=>b.onclick=ev=>{
