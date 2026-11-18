@@ -2152,6 +2152,11 @@ html[data-theme="light"] .fm-foot .fm-nav,html[data-theme="light"] .fm-more .fm-
 html[data-theme="light"] .fm-nav.next{background:rgba(14,143,122,.08);border-color:rgba(14,143,122,.42);color:#0B7A68}
 html[data-theme="light"] .fm-mini.toggle.on{background:rgba(14,143,122,.08);border-color:rgba(14,143,122,.42);color:#0B7A68}
 html[data-theme="light"] .fm-mini.finish{background:#0E8F7A;border-color:#0E8F7A;color:#fff}
+
+/* 休息结束遮罩：恢复模糊背景，脉冲改用透明度 */
+.rest.alarm{background:rgba(4,7,9,.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:alarmPulse 1s ease 3 both}
+html[data-theme="light"] .rest.alarm{background:rgba(243,246,250,.96);color:var(--tx)}
+@keyframes alarmPulse{0%,100%{opacity:1}50%{opacity:.82}}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -4871,6 +4876,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       g.sec=Math.max(1, Math.round((now-window.__grpStart[key0])/1000));
       delete window.__grpStart[key0];
     }
+    if(g.done && !confirm('取消第 '+g.no+' 组的完成状态？')) return null;
     g.done=!g.done;
     window.__rpeAsk=window.__rpeAsk||{};
     if(g.done){
