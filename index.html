@@ -1826,6 +1826,45 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     overflow-y:auto;-webkit-overflow-scrolling:touch;
   }
 }
+
+/* ===== p134 训练页：三层结构 ===== */
+.tr-hero{margin:0 0 12px}
+.tr-hero-t{font-family:var(--serif);font-weight:600;font-size:24px;letter-spacing:.3px}
+.tr-hero-s{color:var(--tx3);font-size:12.5px;margin-top:4px}
+.tr-today{
+  border:1px solid var(--line2);border-radius:16px;padding:14px;margin-bottom:10px;
+  background:linear-gradient(180deg,rgba(61,220,191,.07),rgba(61,220,191,0) 62%),var(--panel);
+  box-shadow:0 8px 26px rgba(0,0,0,.22)}
+.tr-tc-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tr-tc-lbl{font-size:10.5px;letter-spacing:1.8px;color:var(--accent);text-transform:uppercase}
+.tr-tc-stat{font-size:13px;color:var(--tx2);margin-top:3px}
+.tr-tc-go{min-height:44px;padding:0 16px;border-radius:12px;font-size:13.5px;font-weight:600;white-space:nowrap}
+.tr-tc-quick{display:flex;gap:8px;margin-top:12px}
+.tr-tc-quick input{flex:1;min-width:0}
+.tr-tc-links{display:flex;gap:8px;margin-top:8px}
+.tr-tc-link{flex:1;min-height:40px;border:1px dashed var(--line2);background:transparent;color:var(--tx2);border-radius:10px;font-size:13px;cursor:pointer}
+.tr-tc-link:hover{color:var(--accent);border-color:rgba(61,220,191,.5)}
+.tr-entries{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+.tr-entries[hidden]{display:none}
+@media(min-width:520px){.tr-entries{grid-template-columns:repeat(3,1fr)}}
+.tr-entry{text-align:left;border:1px solid var(--line2);background:var(--panel2);border-radius:12px;padding:12px;cursor:pointer;min-height:66px}
+.tr-entry b{display:block;font-size:14px;color:var(--tx);font-weight:600}
+.tr-entry em{display:block;font-style:normal;font-size:11.5px;color:var(--tx3);margin-top:4px}
+.tr-entry.hot{border-color:rgba(61,220,191,.5);box-shadow:inset 0 0 0 1px rgba(61,220,191,.12),0 0 22px rgba(61,220,191,.09)}
+.tr-strip{border:1px solid var(--line);border-radius:12px;margin-top:10px;background:var(--panel)}
+.tr-strip-h{width:100%;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px;background:none;border:0;color:var(--tx2);font-size:13px;cursor:pointer;text-align:left}
+.tr-strip-b{padding:0 12px 12px;border-top:1px solid var(--line);margin-top:2px}
+.lib-drawer{z-index:112!important}
+@media(min-width:900px){.tr-today,.tr-strip{max-width:840px}.tr-tc-quick input{max-width:520px}.lib-inner{max-width:760px;margin:0 auto}}
+.lib-inner{max-height:86vh;display:flex;flex-direction:column;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+.lib-tabs{display:flex;gap:6px;margin:2px 0 10px}
+.lib-tabs .tab{flex:1;min-height:38px;border-radius:9px;border:1px solid var(--line2);background:var(--panel2);color:var(--tx2);font-size:13px;cursor:pointer}
+.lib-tabs .tab.on{border-color:rgba(61,220,191,.5);color:var(--accent);background:rgba(61,220,191,.10)}
+.lib-pane{flex:1;min-height:0;display:flex;flex-direction:column}
+.lib-pane[hidden]{display:none}
+.lib-pane>*{flex:0 0 auto}
+.lib-pane>.lib-list{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.lib-pane{overflow:hidden}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -1892,11 +1931,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <div>
         <div class="eyebrow">TRAIN · 训练</div>
         <div class="page-title">今天练什么</div>
-        <div class="page-desc">挑动作、排今日计划、开练；练完的组会自动落进日志。</div>
+        <div class="page-desc">今日训练置顶，加动作在底部抽屉；练完的组自动落进日志。</div>
       </div>
     </div>
     <div id="recTrainWrap">
-    <div class="zone-sep"><span>训练 · 动作库</span></div>
+    <div class="zone-sep"><span>训练 · 今日</span></div>
     <div class="report-shell sub-zone"><div class="body-slot" id="slotRecord"><div class="md" id="reportBody"></div></div></div>
     </div>
   </section>
@@ -4977,27 +5016,118 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const body=$('reportBody');
     const parts=[...new Set(allExercises().map(e=>e.p))];
     const eqs=[...new Set(allExercises().map(e=>e.e))].filter(Boolean);
+    const hasHist=(train.records||[]).length>0;
     body.innerHTML=`
-      <h1>训练 · 动作库与每日记录</h1>
-      <div class="kicker">1,324 EXERCISES · ANIMATED DEMOS · SETS × REPS</div>
-      <div class="hint" style="margin-bottom:14px">搜索支持中文与英文，空格分词更准（如「坐姿 划船」）；动作名、器械、目标肌群与要领全文都参与匹配，不加空格也能命中（如「T杠」）。</div>
-      <div class="train-grid">
-        <div>
-          <div id="myLib"></div>
-          <div class="train-search">
-            <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 器械 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
-            <div class="bodymap" id="bodyMap">${['肩','胸','背','腰腹','臂','腿'].map(p=>{
-              const rc=partRecovery(p);
-              const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
-              const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
-              return `<button class="bm-cell ${st}" data-bmpart="${p}" type="button" aria-label="${p} ${word}"><b>${p}</b><em>${word}</em></button>`;
-            }).join('')}</div>
-            <div class="chip-row" id="trPartChips">${['全部'].concat(parts).map(p=>`<button class="fchip ${(p==='全部'&&!trState.part)||trState.part===p?'on':''}" data-part="${p==='全部'?'':p}">${p}</button>`).join('')}</div>
-            <div class="chip-row" id="trSortRow"><span class="chip-label">排序</span><button class="fchip on" data-sort="freq">常用优先</button><button class="fchip" data-sort="default">默认顺序</button></div>
-            <div class="chip-row" id="trEqChips">${['全部'].concat(['杠铃','哑铃','绳索','器械','自重','壶铃'].filter(x=>eqs.includes(x))).map(q=>`<button class="fchip ${(q==='全部'&&!trState.eq)||trState.eq===q?'on':''}" data-eq="${q==='全部'?'':q}">${q==='全部'?'全部器械':q}</button>`).join('')}</div>
+      <div class="tr-today" id="trTodayCard">
+        <div class="tr-tc-head">
+          <div>
+            <div class="tr-tc-lbl">TODAY</div>
+            <div class="tr-tc-stat" id="todayStat">还没有排动作</div>
           </div>
+          <button class="btn gen tr-tc-go" id="trStart" type="button" data-act="start">▶ 开始训练</button>
+        </div>
+        <div class="tr-tc-quick">
+          <input id="trQuickText" type="text" autocomplete="off" placeholder="一句话记：卧推 60 5x5">
+          <button class="btn ghost sm" id="trQuickAdd" type="button">记一条</button>
+        </div>
+        <div class="tr-tc-links">
+          <button class="tr-tc-link" id="libOpen" type="button">＋ 加动作</button>
+          <button class="tr-tc-link" id="trRepeat" type="button">重复上次</button>
+        </div>
+        <div id="trToday"></div>
+        <div class="tr-entries" id="trEmpty">
+          <button class="tr-entry ${hasHist?'':'hot'}" data-entry="ai" type="button"><b>✨ AI 帮我排</b><em>按部位生成今日计划</em></button>
+          <button class="tr-entry ${hasHist?'hot':''}" data-entry="mine" type="button"><b>⭐ 从我的库挑</b><em>点餐式勾选动作</em></button>
+          <button class="tr-entry" data-entry="search" type="button"><b>🔍 搜个动作</b><em>1,324 个动作可搜</em></button>
+        </div>
+      </div>
+      <div class="tr-strip" id="planStrip">
+        <button class="tr-strip-h" id="planStripHead" type="button"><span id="planStripSum">AI 计划 · 点此生成</span><i>▸</i></button>
+        <div class="tr-strip-b" id="planStripBody" hidden>
+          <div class="chip-row" id="plPartChips" style="margin-top:10px">${parts.map((p,i)=>`<button class="fchip ${i===0?'on':''}" data-plpart="${p}">${p}</button>`).join('')}</div>
+          <div class="tr-actions" style="margin-top:8px"><button class="btn sm" id="plGen" type="button">生成计划</button></div>
+          <div id="plOut"></div>
+        </div>
+      </div>
+      <div class="tr-strip" id="weekStrip">
+        <button class="tr-strip-h" id="weekStripHead" type="button"><span id="weekSum">本周 · —</span><i>▸</i></button>
+        <div class="tr-strip-b" id="weekBody" hidden>
+          <div id="trChart" class="chart-sm"></div>
+          <div id="trDayDetail" class="day-detail"></div>
+          <div class="tr-sum" id="trStat"></div>
+        </div>
+      </div>
+      <div id="trLegacy" hidden>
+        <div id="todayBadge"></div>
+        <div id="trSelBox"></div>
+        <div id="trDetail"></div>
+        <div id="trFormBox">
+          <div class="f-row" style="margin-top:14px">
+            <div class="f-field"><label class="f-label">组数</label><div class="stepper"><button data-step="-1" type="button">−</button><input id="trSets" type="number" inputmode="numeric" value="3" min="1" max="20" data-delta="1"><button data-step="1" type="button">+</button></div></div>
+            <div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-step="-1" type="button">−</button><input id="trReps" type="number" inputmode="numeric" value="10" min="1" max="100" data-delta="1"><button data-step="1" type="button">+</button></div></div>
+            <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-w="-1" type="button">−</button><input id="trWeight" type="number" inputmode="decimal" value="0" min="0" step="0.5" data-delta="2.5" placeholder="自重填 0"><button data-w="1" type="button">+</button></div></div>
+          </div>
+          <div class="tr-actions" style="margin-top:14px"><button class="btn sm" id="trAdd" type="button">加入今日训练</button><button class="btn ghost sm" id="trAgain" type="button">沿用上次</button></div>
+        </div>
+      </div>`;
+    ensureLibDrawer(parts, eqs);
+    trRenderList();
+    renderMyLib();
+    trRenderToday();
+    try{ trRenderPlan(); }catch(e){ console.warn('plan',e); }
+    bindTrain();
+    bindDrawer();
+    try{ trRenderHot(); }catch(e){}
+    try{ trSyncStrips(); }catch(e){}
+  }
+
+  /* 动作库抽屉 */
+  let libTab='search';
+  function libShow(t){
+    libTab=t;
+    const d=$('libDrawer'); if(!d) return;
+    d.querySelectorAll('#libTabs [data-lt]').forEach(b=>b.classList.toggle('on', b.dataset.lt===t));
+    d.querySelectorAll('[data-ltp]').forEach(p=>{ p.hidden = p.dataset.ltp!==t; });
+    if(t==='hot'){ try{ trRenderHot(); }catch(e){} }
+    if(t==='mine'){ try{ renderMyLib(); }catch(e){} }
+  }
+  function libOpenP(t){
+    const d=$('libDrawer'); if(!d) return;
+    libShow(t||libTab||'search');
+    d.classList.add('on');
+    const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || window.matchMedia('(max-width:999px)').matches;
+    if(!mobile && (t||libTab)==='search'){ setTimeout(()=>{ try{ $('trSearch').focus(); }catch(e){} },220); }
+  }
+  function libClose(){ const d=$('libDrawer'); if(d) d.classList.remove('on'); }
+  function ensureLibDrawer(parts, eqs){
+    const old=document.getElementById('libDrawer'); if(old) old.remove();
+    const d=document.createElement('div');
+    d.id='libDrawer'; d.className='ex-sheet lib-drawer';
+    d.innerHTML=`
+      <div class="ex-sheet-inner lib-inner">
+        <div class="ex-sheet-bar"><span>选择动作</span><button class="ex-sheet-x" id="libClose" type="button">×</button></div>
+        <div class="lib-tabs" id="libTabs">
+          <button class="tab on" data-lt="search" type="button">搜索</button>
+          <button class="tab" data-lt="mine" type="button">我的库</button>
+          <button class="tab" data-lt="hot" type="button">热门</button>
+        </div>
+        <div class="lib-pane" data-ltp="search">
+          <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 器械 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
+          <div class="bodymap" id="bodyMap">${['肩','胸','背','腰腹','臂','腿'].map(p=>{
+            const rc=partRecovery(p);
+            const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
+            const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
+            return `<button class="bm-cell ${st}" data-bmpart="${p}" type="button" aria-label="${p} ${word}"><b>${p}</b><em>${word}</em></button>`;
+          }).join('')}</div>
+          <div class="chip-row" id="trPartChips">${['全部'].concat(parts).map(p=>`<button class="fchip ${(p==='全部'&&!trState.part)||trState.part===p?'on':''}" data-part="${p==='全部'?'':p}">${p}</button>`).join('')}</div>
+          <div class="chip-row" id="trSortRow"><span class="chip-label">排序</span><button class="fchip on" data-sort="freq">常用优先</button><button class="fchip" data-sort="default">默认顺序</button></div>
+          <div class="chip-row" id="trEqChips">${['全部'].concat(['杠铃','哑铃','绳索','器械','自重','壶铃'].filter(x=>eqs.includes(x))).map(q=>`<button class="fchip ${(q==='全部'&&!trState.eq)||trState.eq===q?'on':''}" data-eq="${q==='全部'?'':q}">${q==='全部'?'全部器械':q}</button>`).join('')}</div>
           <div class="ex-count" id="trCount"></div>
-          <div class="ex-list" id="trList"></div>
+          <div class="ex-list lib-list" id="trList"></div>
+        </div>
+        <div class="lib-pane" data-ltp="mine" hidden>
+          <div id="myLib"></div>
+          <div class="tr-actions" style="margin-top:10px"><button class="btn ghost sm" id="cuOpen" type="button">＋ 自定义动作</button></div>
           <div class="cu-form" id="cuForm">
             <div class="f-row">
               <div class="f-field"><label class="f-label">动作名称</label><input type="text" id="cuName" placeholder="如：壶铃摇摆"></div>
@@ -5005,57 +5135,107 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               <div class="f-field"><label class="f-label">器械</label><input type="text" id="cuEquip" placeholder="如：壶铃 / 自重"></div>
             </div>
             <div class="f-field"><label class="f-label">动作要领（每行一步）</label><textarea id="cuSteps" style="min-height:80px" placeholder="每行写一步"></textarea></div>
-            <div class="tr-actions"><button class="btn sm" id="cuSave">保存到动作库</button><button class="btn ghost sm" id="cuCancel">取消</button></div>
+            <div class="tr-actions"><button class="btn sm" id="cuSave" type="button">保存到动作库</button><button class="btn ghost sm" id="cuCancel" type="button">取消</button></div>
           </div>
-          <div class="tr-actions" style="margin-top:12px"><button class="btn ghost sm" id="cuOpen">＋ 自定义动作</button></div>
         </div>
-        <div class="train-side">
-          <div class="today-box">
-            <div class="h-title" style="font-size:15px;margin-bottom:6px">定制计划</div>
-            <div class="hint" style="margin-bottom:10px">选今日要练的部位，Agent 会结合你近 8 周的记录、常用动作与收藏，给出动作、组次与重量建议。</div>
-            <div class="plan-in">
-              <div class="chip-row" id="plPartChips">${parts.map((p,i)=>`<button class="fchip ${i===0?'on':''}" data-plpart="${p}">${p}</button>`).join('')}</div>
-              <button class="btn sm" id="plGen">生成计划</button>
-            </div>
-            <div id="plOut"></div>
-            <div class="pool-wrap">
-              <div class="pool-h"><span>今日训练计划</span><em id="todayBadge"></em></div>
-              <div id="trToday"></div>
-            </div>
-          </div>
-          <div class="quick-box" hidden>
-            <div class="h-title" style="font-size:17px;margin-bottom:10px">今日训练 · 快捷记录</div>
-            <div class="quick-line">
-              <input id="trQuickText" type="text" placeholder="直接写：卧推 60 5x5 ／ 深蹲 3x10 ／ 引体 4x8">
-              <button class="btn ghost sm" id="trQuickAdd">记一条</button>
-            </div>
-            <div class="tr-actions" style="margin:10px 0 0"><button class="btn ghost sm" id="trRepeat">重复上次训练</button></div>
-            <div class="sel-ex" id="trSelBox">未选择动作 · 在左侧列表点「＋」选组数、次数与重量，加入今日训练计划</div>
-            <div id="trFormBox">
-            <div id="trDetail"></div>
-            <div class="f-row" style="margin-top:14px">
-              <div class="f-field"><label class="f-label">组数</label><div class="stepper"><button data-step="-1" type="button">−</button><input id="trSets" type="number" inputmode="numeric" value="3" min="1" max="20" data-delta="1"><button data-step="1" type="button">+</button></div></div>
-              <div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-step="-1" type="button">−</button><input id="trReps" type="number" inputmode="numeric" value="10" min="1" max="100" data-delta="1"><button data-step="1" type="button">+</button></div></div>
-              <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-w="-1" type="button">−</button><input id="trWeight" type="number" inputmode="decimal" value="0" min="0" step="0.5" data-delta="2.5" placeholder="自重填 0"><button data-w="1" type="button">+</button></div></div>
-            </div>
-            <div class="tr-actions" style="margin-top:14px"><button class="btn sm" id="trAdd">加入今日训练</button><button class="btn ghost sm" id="trAgain">沿用上次</button></div>
-            </div>
-          </div>
-          <div class="today-box">
-            <div class="h-title" style="font-size:15px;margin-bottom:4px">近 7 日训练量（组）</div>
-            <div id="trChart" class="chart-sm"></div>
-            <div id="trDayDetail" class="day-detail"></div>
-            <div class="tr-sum" id="trStat"></div>
-          </div>
+        <div class="lib-pane" data-ltp="hot" hidden>
+          <div class="ex-count" id="trHotCount"></div>
+          <div class="ex-list lib-list" id="trHotList"></div>
         </div>
       </div>`;
-    trRenderList();
-    renderMyLib();
-    trRenderToday();
-    try{ trRenderPlan(); }catch(e){ console.warn('plan',e); }
-    bindTrain();
-    const qb0=document.querySelector('.train-side .quick-box');
-    if(qb0) qb0.classList.toggle('ready', !!trSel);
+    document.body.appendChild(d);
+    d.addEventListener('click',ev=>{ if(ev.target===d) libClose(); });
+  }
+  function trRenderHot(){
+    const box=$('trHotList'); if(!box) return;
+    const seen=new Set(); const uni=[];
+    allExercises().forEach(e=>{ const k=(e.n||'').trim().toLowerCase(); if(!k||seen.has(k)) return; seen.add(k); uni.push(e); });
+    const hot=uni.slice().sort((a,b)=>(freqScore(b.id)-freqScore(a.id))||(a.n.length-b.n.length)).slice(0,24);
+    const lastMap={}; (train.records||[]).forEach(r=>{ lastMap[r.exId]=r; });
+    box.innerHTML=hot.map(e=>{
+      const last=lastMap[e.id];
+      const sub=last?`<span class="ex-last">上次 ${last.weight>0?last.weight+'kg ':''}${last.sets}×${last.reps}</span><span class="ex-ago">${trAgo(last.date)}</span>`
+                   :`<span class="ex-last none">未练过</span>`;
+      return `<div class="ex-item" data-ex="${e.id}">
+        <div class="ex-head"><span class="ex-name">${ENGINE.esc(e.n)}</span><span class="ex-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'')}</span></div>
+        <div class="ex-sub">${sub}</div>
+        <button class="ex-add" data-plan="${e.id}" type="button" aria-label="加入今日计划">＋</button>
+      </div>`;
+    }).join('') || '<div class="ex-item" style="color:var(--tx3);cursor:default">还没有常用动作，先去练几次</div>';
+    box.querySelectorAll('[data-ex]').forEach(it=>{ it.onclick=()=>trSelect(it.dataset.ex); });
+    box.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',ev=>{
+      ev.stopPropagation(); openPlanSheet(b.dataset.plan);
+    }));
+    const c=$('trHotCount'); if(c) c.textContent='常用优先 · 前 '+hot.length+' 个';
+  }
+  function trSyncStrips(){
+    const day=trDateVal();
+    const items=(train.records||[]).filter(r=>r.date===day);
+    let total=0, done=0;
+    items.forEach(r=>{ const gs=ensureGroups(r); total+=gs.length; done+=gs.filter(g=>g.done).length; });
+    if($('todayStat')) $('todayStat').textContent = items.length ? (items.length+' 个动作 · 已完成 '+done+'/'+total+' 组') : '还没有排动作';
+    if($('trEmpty')) $('trEmpty').hidden = !!items.length;
+    const go=$('trStart');
+    if(go){
+      let act='start', txt='▶ 开始训练';
+      if(items.length){
+        if(total && done>=total){ act='summary'; txt='练完了 ✓ 看小结'; }
+        else if(done>0){ act='continue'; txt='继续训练 ▶'; }
+      }
+      go.dataset.act=act; go.textContent=txt;
+    }
+    const fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const now=new Date(); const dow=(now.getDay()+6)%7;
+    const mon=new Date(now.getFullYear(),now.getMonth(),now.getDate()-dow);
+    const kMon=fmt(mon), kNow=fmt(now);
+    const pMon=new Date(mon.getTime()-7*864e5), pEnd=new Date(mon.getTime()-864e5);
+    const thisW=(train.records||[]).filter(r=>r.date>=kMon && r.date<=kNow).reduce((a,r)=>a+(r.sets||0),0);
+    const lastW=(train.records||[]).filter(r=>r.date>=fmt(pMon) && r.date<=fmt(pEnd)).reduce((a,r)=>a+(r.sets||0),0);
+    let wk='本周 '+thisW+' 组';
+    if(lastW>0){ const dd=Math.round((thisW-lastW)/lastW*100); wk+=' · 比上周 '+(dd>0?'+':'')+dd+'%'; }
+    if($('weekSum')) $('weekSum').textContent=wk;
+    let pl='AI 计划 · 点此生成';
+    try{
+      if(trPlan && trPlan.length){
+        const label=(trPlan[0]&&trPlan[0].part)||'';
+        const sets=trPlan.reduce((a,i)=>a+(i.dur?0:(i.sets||0)),0);
+        pl='AI 计划 · '+(label?label+'日 · ':'')+trPlan.length+' 个动作'+(sets?(' · '+sets+' 组'):'')+(trPlan.every(i=>trPlanJoined(i.exId))?' · 已导入 ✓':'');
+      }
+    }catch(e){}
+    if($('planStripSum')) $('planStripSum').textContent=pl;
+  }
+  function bindDrawer(){
+    const d=$('libDrawer'); if(!d) return;
+    const lo=$('libClose'); if(lo) lo.onclick=libClose;
+    d.querySelectorAll('#libTabs [data-lt]').forEach(b=>b.onclick=()=>libShow(b.dataset.lt));
+    const lo2=$('libOpen'); if(lo2) lo2.onclick=()=>libOpenP('search');
+    const st=$('trStart');
+    if(st) st.onclick=()=>{
+      const act=st.dataset.act||'start';
+      if(act==='summary'){ try{ showTrainSummary(); }catch(e){} return; }
+      const items=(train.records||[]).filter(r=>r.date===trDateVal());
+      if(!items.length){ trToast('今日还没有动作，先加几个'); libOpenP('mine'); return; }
+      try{ openFocus(); }catch(e){}
+    };
+    const tb=$('trEmpty');
+    if(tb) tb.querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>{
+      const k=b.dataset.entry;
+      if(k==='ai'){ const pb=$('planStripBody'); const ph=$('planStripHead'); if(pb) pb.hidden=false; if(ph) ph.querySelector('i').textContent='▾'; try{ $('plGen').click(); }catch(e){}; const ps=$('planStrip'); if(ps) ps.scrollIntoView({block:'center',behavior:'smooth'}); }
+      else libOpenP(k);
+    });
+    const ph=$('planStripHead'), pb=$('planStripBody');
+    if(ph&&pb){
+      ph.onclick=()=>{ const open=pb.hidden; pb.hidden=!open; ph.querySelector('i').textContent=open?'▾':'▸'; };
+      pb.addEventListener('click',()=>setTimeout(()=>{ try{ trSyncStrips(); }catch(e){} },0));
+    }
+    const wh=$('weekStripHead'), wb=$('weekBody');
+    if(wh&&wb) wh.onclick=()=>{
+      const open=wb.hidden; wb.hidden=!open; wh.querySelector('i').textContent=open?'▾':'▸';
+      if(open){
+        try{ trRenderToday(); }catch(e){}
+        setTimeout(()=>{ try{ const ex=(typeof echarts!=='undefined')?echarts.getInstanceByDom($('trChart')):null; if(ex) ex.resize(); }catch(e){} },80);
+      }
+    };
   }
 
   const TR_SYN=[
@@ -5309,6 +5489,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     sh.classList.add('on');
   }
   function trAddPlanned(id, sets, reps, weight, silent){
+    try{ libClose(); }catch(err){}
     const e=findEx(id); if(!e) return;
     const day=trDateVal();
     const old=train.records.find(r=>r.date===day && r.exId===id);
@@ -5350,6 +5531,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     sh.classList.add('on');
   }
   function trSelect(id){
+    try{ libClose(); }catch(e){}
     trSel=id;
     trRenderList();
     const qbSel=document.querySelector('.train-side .quick-box');
@@ -5773,13 +5955,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         </div>
       </div>`;
     }).join('')
-      : '<div class="tr-row" style="color:var(--tx3);border:none">还没有添加动作，先从左侧选一个动作。</div>';
+      : '';
 
     const allG=items.flatMap(r=>ensureGroups(r));
     const sets=allG.length;
     const reps=allG.reduce((a,g)=>a+(g.reps||0),0);
     const vol=allG.reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
     if($('todayBadge')) $('todayBadge').textContent = sets ? ('今日 '+sets+' 组') : '';
+    try{ trSyncStrips(); }catch(e){}
     if($('trSum')) $('trSum').innerHTML=`<span><b>${items.length}</b>动作</span><span><b>${sets}</b>总组数</span><span><b>${reps}</b>总次数</span><span><b>${Math.round(vol)}</b>容量kg</span>`;
 
     // 打勾：完成一组 → 开始休息
