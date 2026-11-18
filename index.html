@@ -5276,6 +5276,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="tr-seg" id="trSeg">
         <button class="tr-seg-btn on" data-trseg="today" type="button">今日训练<em class="tr-seg-badge" id="segToday"></em></button>
         <button class="tr-seg-btn" data-trseg="plan" type="button">AI 计划<em class="tr-seg-badge" id="segPlan"></em></button>
+        <button class="tr-seg-btn" data-trseg="mine" type="button">我的</button>
         <button class="tr-seg-btn" data-trseg="lib" type="button">动作库</button>
       </div>
       <div class="tr-panel" data-trp="today">
@@ -5324,6 +5325,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           </div>
         </div>
       </div>
+      <div class="tr-panel" data-trp="mine" hidden>
+        <div class="lib-inline" id="mineBox"></div>
+      </div>
       <div class="tr-panel" data-trp="lib" hidden>
         <div class="lib-inline" id="libBox"></div>
       </div>
@@ -5358,25 +5362,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const seg=$('trSeg'); if(seg) seg.querySelectorAll('[data-trseg]').forEach(b=>b.classList.toggle('on', b.dataset.trseg===n));
     document.querySelectorAll('#reportBody [data-trp]').forEach(p=>{ p.hidden = p.dataset.trp!==n; });
     if(n==='lib'){ libShow(libTab||'search'); }
+    if(n==='mine'){ try{ renderMine(); }catch(e){} }
     if(n==='today'){ try{ trRenderToday(); }catch(e){} }
     if(n==='plan'){ try{ trRenderPlan(); }catch(e){} }
   }
-  let libSeg='lib';
   function libShow(){
     libTab='search';
-    try{ libSwitch(libSeg||'lib'); }catch(e){}
+    try{ trRenderList(); }catch(e){}
   }
-  function libSwitch(k){
-    libSeg=k;
-    const sg=$('libSeg');
-    if(sg) sg.querySelectorAll('[data-libtab]').forEach(b=>b.classList.toggle('on', b.dataset.libtab===k));
-    const mine=$('libMine'), list=$('trList');
-    if(mine) mine.hidden = (k!=='mine');
-    if(list) list.hidden = (k==='mine');
-    if(k==='mine'){ try{ renderMine(); }catch(e){} }
-    else { try{ trRenderList(); }catch(e){} }
-    try{ trSyncFunnelDot(); }catch(e){}
-  }
+  function libSwitch(){ try{ trRenderList(); }catch(e){} }
   function libRowHtml(e,lastMap){
     const last=lastMap[e.id];
     const sub=last
@@ -5400,44 +5394,33 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       trToggleFav(b.dataset.favitem);
       const on=(train.favs||[]).includes(b.dataset.favitem);
       b.textContent=on?'★':'☆'; b.classList.toggle('on',on);
-      if(libSeg==='mine') renderMine();
+      if(trSeg==='mine') renderMine();
     }));
   }
   function renderMine(){
-    const box=$('libMine'); if(!box) return;
+    const box=$('mineBox'); if(!box) return;
     const lastMap={}; (train.records||[]).forEach(r=>{ lastMap[r.exId]=r; });
     const favs=(train.favs||[]).map(findEx).filter(Boolean);
-    const seen=new Set(favs.map(e=>e.id));
-    const shot=allExercises().filter(e=>!seen.has(e.id)).sort((a,b)=>(freqScore(b.id)-freqScore(a.id))||(a.n.length-b.n.length)).slice(0,10);
+    if(!favs.length){
+      box.innerHTML='<div class="lib-sec-empty">还没有收藏动作。到「动作库」列表点右上角 ☆，动作会进这里。</div>';
+      return;
+    }
     box.innerHTML=
       `<div class="lib-sec-h">我的收藏 <span class="lib-sec-n">${favs.length}</span></div>`+
-      (favs.length ? favs.map(e=>libRowHtml(e,lastMap)).join('')
-                   : '<div class="lib-sec-empty">还没有收藏动作。在动作库列表点右上角 ☆，动作会进这里</div>')+
-      `<div class="lib-sec-h">常用动作</div>`+
-      (shot.length ? shot.map(e=>libRowHtml(e,lastMap)).join('')
-                   : '<div class="lib-sec-empty">还没有记录，先练几次</div>');
+      favs.map(e=>libRowHtml(e,lastMap)).join('');
     bindLibRows(box);
   }
-  function libOpenP(){ trSetSeg('lib'); try{ libShow(); }catch(e){} }
-  function libClose(){ if(trSeg==='lib') trSetSeg('today'); }
   function renderLibInline(parts, eqs){
     const d=$('libBox'); if(!d) return;
     d.innerHTML=`
-      <div class="lib-segrow"><div class="lib-seg" id="libSeg">
-        <button type="button" data-libtab="mine">我的</button><button type="button" class="on" data-libtab="lib">动作库</button>
-      </div></div>
       <div class="lib-searchrow">
         <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作名 / 肌群" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
         <button class="lib-funnel" id="libFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="libFunnelDot" hidden></em></button>
       </div>
-      <div class="lib-mine" id="libMine" hidden></div>
       <div class="ex-list lib-list" id="trList"></div>
       <div class="lib-curow"><button class="lib-cu" id="cuOpen" type="button">＋ 自定义动作</button></div>`;
-    const sg=d.querySelector('#libSeg');
-    if(sg) sg.querySelectorAll('[data-libtab]').forEach(b=>b.onclick=()=>libSwitch(b.dataset.libtab));
     if($('libFunnel')) $('libFunnel').onclick=()=>openFilterSheet();
     if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
-    try{ libSwitch(libSeg||'lib'); }catch(e){}
   }
   function trRenderHot(){
     const box=$('trHotList'); if(!box) return;
@@ -6026,7 +6009,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.querySelector('#flReset').onclick=()=>{ tmpPart=''; tmpEq=[]; sync(); };
     el.querySelector('#flGo').onclick=()=>{
       trState.part=tmpPart; trState.eqs=tmpEq.slice(); trState.limit=60;
-      el.remove(); libSwitch('lib'); trRenderList(); trSyncFunnelDot();
+      el.remove(); trRenderList(); trSyncFunnelDot();
     };
     el.querySelectorAll('[data-flx]').forEach(b=>b.onclick=()=>el.remove());
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
@@ -6755,7 +6738,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }
     $('trSearch').addEventListener('input',()=>{
       trState.q=$('trSearch').value; trState.limit=60;
-      if(libSeg!=='lib') libSwitch('lib');
       trRenderList(); renderSuggest();
     });
     const lp=$('libPartChips');
