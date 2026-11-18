@@ -1805,6 +1805,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .fast-box textarea,.fab-inner textarea,.imp-area{line-height:1.5}
   input[type=range],input[type=checkbox],input[type=radio],input[type=file]{font-size:initial !important}
 }
+
+/* ===== p131 模式球：禁长按选择，长按换挡改为双击换挡 ===== */
+.mode-orb,.mode-orb *,.orb-opt,.orb-opt *{
+  -webkit-user-select:none!important;user-select:none!important;
+  -webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent;
+}
+.mode-orb{touch-action:manipulation}
+.orb-opt{cursor:pointer}
 </style>
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://gcore.jsdelivr.net" crossorigin>
@@ -4544,22 +4552,27 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       })[0]||null;
       const hoverMark=(x,y)=>{ const hit=optAt(x,y);
         el.querySelectorAll('.orb-opt').forEach(o=>o.classList.toggle('hover',o===hit)); };
+      let tapTimer=null, dbl=false, wasMenu=false;
+      const openOrbMenu=()=>{
+        el.classList.add('menu-on');
+        try{ if(navigator.vibrate) navigator.vibrate(16); }catch(e){}
+      };
+      const dropTap=()=>{ if(tapTimer){ clearTimeout(tapTimer); tapTimer=null; } };
       el.addEventListener('pointerdown',ev=>{
         if(ev.pointerType==='mouse' && ev.button!==0) return;
         clearT();
+        wasMenu = el.classList.contains('menu-on');
+        if(tapTimer){ dropTap(); dbl=true; } else { dbl=false; }
         st.phase='pressing'; st.sx=ev.clientX; st.sy=ev.clientY; st.t0=Date.now();
         try{ el.setPointerCapture(ev.pointerId); }catch(e){}
-        st.timer=setTimeout(()=>{
-          st.timer=null;
-          if(st.phase==='pressing'){ st.phase='menu'; el.classList.add('menu-on');
-            try{ if(navigator.vibrate) navigator.vibrate(18); }catch(e){} }
-        },450);
       });
       el.addEventListener('pointermove',ev=>{
         if(st.phase==='idle') return;
         const dx=ev.clientX-st.sx, dy=ev.clientY-st.sy;
         if(st.phase==='pressing' && Math.hypot(dx,dy)>8){
-          clearT(); st.phase='dragging'; el.classList.add('dragging');
+          clearT(); dropTap(); dbl=false;
+          if(el.classList.contains('menu-on')) el.classList.remove('menu-on');
+          st.phase='dragging'; el.classList.add('dragging');
         }
         if(st.phase==='dragging'){
           const r=el.getBoundingClientRect();
@@ -4571,14 +4584,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const finish=ev=>{
         clearT();
         const phase=st.phase;
-        if(phase==='menu'){
-          const o=optAt(ev.clientX,ev.clientY);
-          if(o) orbSetMode(o.getAttribute('data-opt'));
-          el.classList.remove('menu-on','dragging'); st.phase='idle';
-          el.querySelectorAll('.orb-opt').forEach(o=>o.classList.remove('hover'));
-          return;
-        }
         if(phase==='dragging'){
+          dropTap(); dbl=false;
           const h=el.offsetHeight||56, vw=window.innerWidth, vh=window.innerHeight;
           __orbCfg.side = ev.clientX < vw/2 ? 'left' : 'right';
           __orbCfg.bottom = vh - (ev.clientY - h/2) - h;
@@ -4588,13 +4595,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         }
         const dt=Date.now()-st.t0, dx=ev.clientX-st.sx, dy=ev.clientY-st.sy;
         st.phase='idle';
-        if(dt<300 && Math.hypot(dx,dy)<8) orbRunDefault();
+        if(Math.hypot(dx,dy)>=8 || dt>=600) return;
+        if(wasMenu){ wasMenu=false; el.classList.remove('menu-on'); return; }
+        if(dbl){ dbl=false; dropTap(); openOrbMenu(); return; }
+        dropTap();
+        tapTimer=setTimeout(()=>{ tapTimer=null; orbRunDefault(); }, 250);
       };
       el.addEventListener('pointerup',finish);
       el.addEventListener('pointercancel',()=>{
-        clearT(); el.classList.remove('menu-on','dragging');
+        clearT(); dropTap(); dbl=false; wasMenu=false; el.classList.remove('menu-on','dragging');
         el.style.left=''; el.style.top=''; st.phase='idle'; orbPlace(el);
       });
+      document.addEventListener('pointerdown',ev=>{
+        if(el.classList.contains('menu-on') && !el.contains(ev.target)) el.classList.remove('menu-on');
+      }, true);
       el.querySelectorAll('.orb-opt').forEach(o=>o.addEventListener('click',ev=>{
         ev.stopPropagation(); orbSetMode(o.getAttribute('data-opt'));
         el.classList.remove('menu-on');
@@ -7703,7 +7717,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   apply(document.documentElement.getAttribute('data-theme')||'dark');
 })();
 </script>
-<div class="mode-orb" id="modeOrb" data-mode="record" role="button" aria-label="单击执行当前模式，长按切换模式">
+<div class="mode-orb" id="modeOrb" data-mode="record" role="button" aria-label="单击执行当前模式，双击切换模式">
 <div class="orb-core">
 <svg class="orb-ring" viewBox="0 0 62 62" aria-hidden="true">
 <defs><linearGradient id="foGrad" x1="0" y1="0" x2="1" y2="1">
