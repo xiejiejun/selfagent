@@ -1321,6 +1321,10 @@ font-size:11px;cursor:pointer;flex:0 0 auto;font-variant-numeric:tabular-nums;wh
 /* ===== p45 触控目标 / 窄屏组行 ===== */
 .set-val{min-height:40px;min-width:104px;padding:8px 10px;font-size:14px}
 .set-tick{width:40px;height:40px;font-size:13px}
+.set-no{width:40px;height:40px;flex:0 0 auto;border-radius:50%;border:1px solid var(--line);
+ display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--tx3);background:none;user-select:none}
+.set-no.done{border-color:rgba(61,220,191,.45);color:var(--accent);background:rgba(61,220,191,.10);font-weight:700}
+html[data-theme="light"] .set-no.done{color:#0B7A68;border-color:rgba(14,143,122,.4);background:rgba(14,143,122,.07)}
 .mini{width:36px;height:36px;font-size:12px}
 .edit-grp{gap:4px;padding:2px 4px}
 .set-edit{display:flex;gap:8px;flex-wrap:wrap}
@@ -6130,7 +6134,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 
       const rows=gs.map(g=>`
         <div class="set-row ${g.done?'done':''}">
-          <button class="set-tick ${g.done?'done':''}" data-tick="${r.uid}:${g.no}" type="button" title="${g.done?'点击标记未完成':'完成这一组，开始休息'}">${g.done?'✓':g.no}</button>
+          <span class="set-no ${g.done?'done':''}" aria-hidden="true">${g.done?'✓':g.no}</span>
           <button class="set-val" data-setopen="${r.uid}:${g.no}" type="button" title="点击修改重量与次数">${g.weight>0?g.weight+' kg':'自重'} × ${g.reps}</button>
           ${(g.rpe||(window.__rpeAsk&&window.__rpeAsk[r.uid+':'+g.no]))?`<span class="rpe-set">
             <button class="rpe-dot easy ${g.rpe==='easy'?'on':''}" data-rpe="${r.uid}:${g.no}:easy" type="button" title="轻松"></button>
@@ -6180,13 +6184,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.querySelectorAll('[data-tclose]').forEach(el=>el.onclick=ev=>{
       if(ev.target.closest('[data-rmu]')) return;
       trOpenUid=''; trFollowTick=false; trRenderToday();
-    });
-    // 打勾：完成一组 → 开始休息（并跟随到该动作 / 自动顺延）
-    box.querySelectorAll('[data-tick]').forEach(b=>b.onclick=ev=>{
-      ev.stopPropagation();
-      trOpenUid=b.dataset.tick.split(':')[0];
-      trFollowTick=true;
-      tickSet(b.dataset.tick);
     });
     // 单组参数 ±
     box.querySelectorAll('[data-setopen]').forEach(b=>b.onclick=ev=>{
