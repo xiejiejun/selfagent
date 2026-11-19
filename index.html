@@ -1484,6 +1484,53 @@ html[data-theme="light"] .cu-act.del{background:rgba(224,90,90,.12)}
 .ai-head .ai-bar{flex:1 1 auto;margin:0}
 .ai-empty{font-size:12.5px;color:var(--tx3);line-height:1.6;padding:2px 2px 10px}
 .ai-head #aiRunBtn{flex:0 0 auto;white-space:nowrap;align-self:flex-start}
+/* ---------- 洞察 Feed ---------- */
+.ins-bar{display:flex;align-items:stretch;gap:8px;margin:2px 0 12px}
+.ins-cell{flex:1 1 0;padding:9px 10px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.03);min-width:0}
+.ins-cell .k{display:block;font-size:10.5px;color:var(--tx3);letter-spacing:.04em}
+.ins-cell .v{display:block;font-size:16px;font-weight:600;color:var(--tx);margin-top:2px;line-height:1.2}
+.ins-cell .v em{font-style:normal;font-size:11px;color:var(--tx3);font-weight:400}
+.ins-cell .s{display:block;font-size:10.5px;color:var(--tx3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ins-feed{display:flex;flex-direction:column;gap:9px}
+.ins-card{border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.035);padding:11px 13px 12px;position:relative}
+.ins-card[data-cat="rest"]{border-left:3px solid #E8B23A}
+.ins-card[data-cat="mood"]{border-left:3px solid #6D8CFF}
+.ins-card[data-cat="fit"]{border-left:3px solid #3EC478}
+.ins-card[data-cat="energy"]{border-left:3px solid #2FD1C5}
+.ins-top{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.ins-cat{font-size:10.5px;color:var(--tx3);letter-spacing:.06em}
+.ins-lv{font-size:10px;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.07);color:var(--tx2)}
+.ins-lv.warn{background:rgba(232,178,58,.16);color:#E8B23A}
+.ins-lv.up{background:rgba(62,196,120,.16);color:#3EC478}
+.ins-more{margin-left:auto;width:30px;height:26px;border:0;background:none;color:var(--tx3);font-size:15px;line-height:1;border-radius:7px}
+.ins-more:active{background:rgba(255,255,255,.06)}
+.ins-head{font-size:13.5px;line-height:1.55;color:var(--tx);font-weight:600}
+.ins-why{font-size:11.5px;line-height:1.65;color:var(--tx3);margin-top:5px}
+.ins-acts{display:flex;gap:8px;margin-top:9px}
+.ins-acts .btn{min-height:30px;font-size:12px;padding:0 12px}
+.ins-ev{margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ins-ev[hidden]{display:none!important}
+.ins-ev .ev-chip{max-width:48%;flex:0 1 auto;font-size:10px;padding:3px 7px}
+.ins-ev-t{font-size:10.5px;color:var(--tx3);width:100%;margin-bottom:2px}
+.ins-week{margin-top:14px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;background:linear-gradient(180deg,rgba(47,209,197,.07),rgba(255,255,255,.02))}
+.ins-week .h{font-size:12px;color:var(--tx2);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.ins-week .h b{font-size:13px;color:var(--tx);font-weight:600}
+.ins-week .row{display:flex;gap:8px;flex-wrap:wrap}
+.ins-week .kv{font-size:11.5px;color:var(--tx3)}
+.ins-week .kv b{color:var(--tx);font-weight:600;font-size:12.5px}
+.ins-foot{display:flex;gap:8px;margin-top:14px}
+.ins-foot .btn{flex:1 1 0;min-height:34px;font-size:12.5px}
+.ins-two{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.ins-two>div{display:flex;gap:8px;align-items:flex-start}
+.ins-two span{flex:0 0 34px;font-size:10.5px;color:var(--tx3);padding-top:2px}
+.ins-two b{flex:1 1 0;font-size:12px;font-weight:500;line-height:1.6;color:var(--tx2)}
+.arch-box{max-height:86vh;display:flex;flex-direction:column}
+.arch-body{overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 14px}
+.arch-t{font-size:11px;color:var(--tx3);letter-spacing:.06em;margin:14px 0 6px}
+.arch-t:first-child{margin-top:2px}
+html[data-theme="light"] .ins-card{background:#fff}
+html[data-theme="light"] .ins-cell{background:#fff}
+html[data-theme="light"] .ins-ev .ev-chip{border-color:#E3E8F0;background:#F7F9FC}
 .ex-item.cu-item .ex-head{flex-wrap:wrap;gap:2px 8px}
 .ex-item.cu-item .ex-name{white-space:normal;word-break:break-word;max-width:100%}
 .ex-item.cu-item .ex-meta{white-space:normal;font-size:11px}
@@ -9727,13 +9774,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function aiFillReport(tab){
     const box=document.getElementById('aiBox'); if(!box) return;
     if(!aiReady()){
-      box.innerHTML='<div class="ai-bar off"><i class="ai-dot"></i><span>未配置 AI · 当前为内置规则版，去「设置 → AI 服务」填入 API Key 后可生成</span></div>';
+      let hasKey=false; try{ hasKey=!!(aiCfgSecond()&&aiCfgSecond().key); }catch(e){}
+      box.innerHTML='<div class="ai-bar off"><i class="ai-dot"></i><span>'+(hasKey?'当前是内置规则版 · 去「设置 → AI 服务」把引擎切到 API，就能生成 AI 洞察':'未配置 AI · 当前为内置规则版，去「设置 → AI 服务」填入 API Key 后可生成')+'</span></div>';
       return;
     }
     let hit=null; try{ hit=aiCacheGet(tab, aiFingerprint()); }catch(e){}
     if(hit && hit.data){ aiShowCache(tab, hit); return; }
     aiPlaceholder(tab);
   }
+  function aiCfgSecond(){ try{ return aiCfg(); }catch(e){ return null; } }
   function aiPlaceholder(tab){
     const box=document.getElementById('aiBox'); if(!box) return;
     box.innerHTML=aiHeadHtml('AI 分析还没生成 · 点右侧按钮按最新记录生成（约 8 秒）', false, '生成分析')+
@@ -9745,8 +9794,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     let logsN=0; try{ logsN=aiStat().logsN||0; }catch(e){}
     const t=new Date(hit.ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
     box.innerHTML=aiHeadHtml('AI · '+aiCfg().model+' · '+t+' 生成 · 依据 '+(logsN||'—')+' 条记录', false, '重新生成')+
-      aiRenderReport(tab, hit.data);
+      (hit.data&&hit.data.oneline?'<div class="ai-one">'+ENGINE.esc(hit.data.oneline)+'</div>':'')+
+      '<div class="ai-empty"><button class="btn ghost sm" type="button" data-aiarch="'+tab+'">完整 AI 报告 ▸</button></div>';
     aiRunBind(tab, box);
+    const ab=box.querySelector('[data-aiarch]');
+    if(ab) ab.onclick=()=>{ try{ openArchive(tab); }catch(e){} };
   }
   function aiRunReport(tab){
     const box=document.getElementById('aiBox'); if(!box) return;
@@ -9765,9 +9817,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       aiCacheSet(tab, fp, data);
       try{ setTimeout(aiMemRefresh, 300); }catch(e){}
       box.innerHTML=aiHeadHtml('AI · '+aiCfg().model+' · 依据 '+(st0.logsN||0)+' 条记录生成', false, '重新生成')+
-        aiRenderReport(tab, data)+
-        '<div class="ai-src" style="border:0;background:none;padding:2px 2px 6px">AI 生成内容仅供参考，不构成医疗或投资建议</div>';
+        (data.oneline?'<div class="ai-one">'+ENGINE.esc(data.oneline)+'</div>':'')+
+        '<div class="ai-empty"><button class="btn ghost sm" type="button" data-aiarch="'+tab+'">完整 AI 报告 ▸</button><span style="margin-left:8px">共 '+(data.sections||[]).length+' 节 · 仅供参考</span></div>';
       aiRunBind(tab, box);
+      const ab2=box.querySelector('[data-aiarch]');
+      if(ab2) ab2.onclick=()=>{ try{ openArchive(tab); }catch(e){} };
       if($('aiLast')) $('aiLast').textContent=aiLastText();
       if($('aiUsage')) $('aiUsage').textContent=aiUsageText();
       if($('aiSum')) $('aiSum').textContent=aiSummary();
@@ -9780,6 +9834,223 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       try{ trToast('离线模式 · 已用内置规则'); }catch(e2){}
     });
   }
+  /* ---------- 洞察 Feed：规则引擎产出 insights[]（与 LLM 契约同构） ---------- */
+  let __feed={items:[],tab:'persona'};
+  function insAgg(){
+    const now=Date.now(), ms=864e5;
+    const lg=(logs||[]).filter(l=>l.kind!=='train');
+    const win=(arr,a,b)=>arr.filter(l=>{ const t=now-new Date(l.time||(l.date+'T12:00:00')).getTime(); return t>a && t<=b; });
+    const avg=(arr,k)=>{ const v=arr.map(l=>l[k]).filter(x=>typeof x==='number'&&x>=0); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; };
+    const moodAvg=arr=>{ const v=arr.map(l=>moodNorm(l.mood)).filter(x=>x>0); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; };
+    const R=win(lg,0,7*ms), P=win(lg,7*ms,14*ms);
+    const rAvg=avg(R,'score'), pAvg=avg(P,'score'), rMood=moodAvg(R), pMood=moodAvg(P);
+    const rec7=(train.records||[]).filter(r=>{ const t=now-new Date((r.date||'')+'T00:00:00').getTime(); return t<=7*ms && t>=0; });
+    const recP=(train.records||[]).filter(r=>{ const t=now-new Date((r.date||'')+'T00:00:00').getTime(); return t>7*ms && t<=14*ms; });
+    const sets7=rec7.reduce((a,b)=>a+(b.sets||0),0), setsP=recP.reduce((a,b)=>a+(b.sets||0),0);
+    const days7=Array.from(new Set(rec7.map(r=>r.date))).length;
+    const night=lg.filter(l=>{ const h=new Date(l.time||(l.date+'T12:00:00')).getHours(); return h>=23||h<=3; });
+    const nd=d=>{ const x=new Date(d+'T00:00:00'); x.setDate(x.getDate()+1); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+    const chk=d=>d||'';
+    const nightNext={};
+    night.forEach(l=>{ const d=(l.date||'').slice(0,10); if(d) nightNext[nd(d)]=true; });
+    const aN=lg.filter(l=>nightNext[(l.date||'').slice(0,10)]);
+    const aO=lg.filter(l=>!nightNext[(l.date||'').slice(0,10)]);
+    const nA=avg(aN,'score'), nO=avg(aO,'score');
+    const nightDiff=(nA!=null&&nO!=null&&aN.length>=2)?(nA-nO):null;
+    const anx=win(lg,0,14*ms).filter(l=>/焦虑|烦|压抑|崩溃|累到|情绪低|失眠/.test(String((l.content||'')+' '+(l.tags||''))));
+    const evOf=l=>({id:l.id, label:((l.date||'').slice(5)||'')+' '+String(l.content||'').slice(0,8)});
+    return {now,ms,lg,R,P,rAvg,pAvg,rMood,pMood,rec7,recP,sets7,setsP,days7,night,nightDiff,anx,evOf};
+  }
+  function insPartGap(){
+    const now=Date.now();
+    const last={};
+    (train.records||[]).forEach(r=>{ if(!r.part) return; const p=(r.part||'').match(/胸|背|腿|臀|肩|臂|腹|腰腹|有氧/)||[]; const k=p[0]||r.part; if(!last[k]||r.date>last[k]) last[k]=r.date; });
+    let worst=null;
+    Object.keys(last).forEach(k=>{ const g=Math.round((now-new Date(last[k]+'T00:00:00').getTime())/864e5); if(g>=0 && (!worst||g>worst.gap)) worst={part:k,gap:g,date:last[k]}; });
+    return worst;
+  }
+  function insStall(){
+    const byEx={};
+    (train.records||[]).sort((a,b)=>(a.date>b.date?1:-1)).forEach(r=>{ if(!r.exId||!r.weight) return; (byEx[r.exId]=byEx[r.exId]||[]).push(r); });
+    let best=null;
+    Object.keys(byEx).forEach(k=>{
+      const rs=byEx[k].slice(-3);
+      if(rs.length<2) return;
+      const w0=rs[rs.length-1].weight, w1=rs[rs.length-2].weight;
+      if(Math.abs(w0-w1)>0.01) return;
+      const gap=Math.round((Date.now()-new Date(rs[rs.length-1].date+'T00:00:00').getTime())/864e5);
+      if(gap>21) return;
+      if(!best || rs.length>best.n) best={n:rs.length, name:rs[rs.length-1].name||'该动作', weight:w0, exId:rs[rs.length-1].exId, recs:rs};
+    });
+    return best;
+  }
+  function genInsights(){
+    const g=insAgg(), out=[];
+    const f1=v=>v==null?null:(Math.round(v*10)/10).toFixed(1);
+    const push=o=>{ if(o) out.push(o); };
+    /* 精力 */
+    if(g.rAvg!=null && g.pAvg!=null){
+      const diff=g.rAvg-g.pAvg;
+      if(diff<=-0.5) push({cat:'energy',catLabel:'精力',lv:'warn',head:'近 7 天精力 '+f1(g.rAvg)+'，比前一周低 '+f1(Math.abs(diff)),
+        why:'7 天均值对比：本周 '+f1(g.rAvg)+' vs 上周 '+f1(g.pAvg)+'（'+g.R.length+' 条 vs '+g.P.length+' 条记录）',
+        conf:'基于 '+(g.R.length+g.P.length)+' 条记录', refs:g.R.slice().sort((a,b)=>(a.score||5)-(b.score||5)).slice(0,3).map(g.evOf)});
+      else if(diff>=0.5) push({cat:'energy',catLabel:'精力',lv:'up',head:'精力在回升，本周均值 '+f1(g.rAvg)+'，高出 '+f1(diff),
+        why:'7 天均值对比：本周 '+f1(g.rAvg)+' vs 上周 '+f1(g.pAvg)+'，保持当前作息',
+        conf:'基于 '+(g.R.length+g.P.length)+' 条记录', refs:g.R.slice(-3).map(g.evOf)});
+    }
+    /* 作息 → 次日精力 */
+    if(g.nightDiff!=null){
+      const bad=g.nightDiff<0;
+      push({cat:'rest',catLabel:'作息',lv:bad?'warn':'up',
+        head:'深夜记录后的次日精力 '+(bad?'低 ':'高 ')+f1(Math.abs(g.nightDiff)),
+        why:'深夜（23:00 后）记录 '+g.night.length+' 次，这些日子的次日精力均值 '+(f1(g.nightDiff)==null?'':f1(g.nightDiff))+(bad?'，比其余日子低 ':'，比其余日子高 ')+f1(Math.abs(g.nightDiff))+' 分',
+        conf:'深夜记录 '+g.night.length+' 条', refs:g.night.slice(-4).map(g.evOf)});
+    }
+    /* 情绪 */
+    if(g.rMood!=null && g.rMood<=3.5){
+      const w=g.anx.length>=3?('近 14 天有 '+g.anx.length+' 条记录提到焦虑/疲劳/失眠'):('本周情绪均值 '+f1(g.rMood)+'，偏低');
+      push({cat:'mood',catLabel:'情绪',lv:'warn',head:w,
+        why:'情绪均值 '+f1(g.rMood)+'/5'+(g.anx.length?('，关键词命中 '+g.anx.length+' 条'):''),
+        conf:'基于 '+g.R.length+' 条本周记录', refs:g.anx.slice(-4).map(g.evOf)});
+    } else if(g.rMood!=null && g.rMood>=4){
+      push({cat:'mood',catLabel:'情绪',lv:'up',head:'本周情绪稳定在 '+f1(g.rMood)+'/5', why:'7 天情绪均值 '+f1(g.rMood)+'，无连续低分记录', conf:'基于 '+g.R.length+' 条记录', refs:g.R.slice(-3).map(g.evOf)});
+    }
+    /* 训练停滞 → 可加重量 */
+    const st=insStall();
+    if(st) push({cat:'fit',catLabel:'健身',lv:'up',head:st.name+' 连续 '+st.n+' 次都是 '+st.weight+'kg，可以试 '+(st.weight*1.05).toFixed(1).replace('.0','')+'kg',
+      why:'最近 '+st.n+' 次同重量、无递增，按 5% 递增推算', conf:'基于 '+st.n+' 次记录', refs:st.recs.map(r=>({id:r.id||'', label:(r.date||'').slice(5)+' '+st.name})), act:{kind:'planAdd', exId:st.exId, label:'按上次参数加入今日'}});
+    /* 部位空窗 */
+    const pg=insPartGap();
+    if(pg && pg.gap>=12) push({cat:'fit',catLabel:'训练',lv:'warn',head:pg.part+' 已经 '+pg.gap+' 天没练了',
+      why:'上次训练 '+(pg.date||'')+'，其它部位间隔都更短', conf:'基于全部训练记录', refs:[], act:{kind:'gotoPlan', label:'去排计划'}});
+    /* 训练量 */
+    if(g.sets7||g.setsP){
+      const d=g.sets7-g.setsP;
+      push({cat:'fit',catLabel:'训练',lv:(d>=0?'up':'warn'),head:'本周 '+g.sets7+' 组 · '+(g.setsP===0?'上周没有训练记录':(d>=0?'比上周多 '+d:'比上周少 '+Math.abs(d))+' 组'),
+        why:g.days7+' 个训练日，上周 '+g.setsP+' 组', conf:'基于 '+g.rec7.length+' 条训练记录', refs:[]});
+    }
+    /* 记录连续性 */
+    try{
+      const st2=streakDays();
+      if(st2>=3) push({cat:'mood',catLabel:'记录',lv:'up',head:'已连续 '+st2+' 天有记录', why:'连续打卡影响画像置信度，继续保持', conf:'', refs:[]});
+      else if(st2===0) push({cat:'mood',catLabel:'记录',lv:'warn',head:'今天还没有记录', why:'断开一天，画像会停在旧数据上', conf:'', refs:[]});
+    }catch(e){}
+    /* 训练→次日精力（沿用既有统计） */
+    try{
+      const c=corrTrainingEnergy();
+      if(c && Math.abs(c.diff)>=0.5) push({cat:'energy',catLabel:'训练',lv:(c.diff>0?'up':'warn'),head:'训练日次日精力 '+(c.diff>0?'+':'')+c.diff.toFixed(1),
+        why:'训练后 '+c.n+' 天 vs 不训练 '+c.n2+' 天的精力均值差', conf:'基于 '+c.n+' 天样本', refs:[]});
+    }catch(e){}
+    const wmap={warn:0,up:1,flat:2};
+    out.sort((a,b)=>(wmap[a.lv]||2)-(wmap[b.lv]||2));
+    return out;
+  }
+  function insCardHtml(it,i){
+    const refs=(it.refs||[]).filter(r=>r&&r.id);
+    return `<div class="ins-card" data-cat="${it.cat}">
+      <div class="ins-top"><span class="ins-cat">${ENGINE.esc(it.catLabel||'')}</span><span class="ins-lv ${it.lv||''}">${it.lv==='warn'?'需留意':it.lv==='up'?'在变好':'状态'}</span><button class="ins-more" type="button" data-insmore="${i}" aria-label="依据">⋯</button></div>
+      <div class="ins-head">${ENGINE.esc(it.head)}</div>
+      ${it.assume?`<div class="ins-two"><div><span>假设</span><b>${ENGINE.esc(it.assume)}</b></div><div><span>预期</span><b>${ENGINE.esc(it.expect||'')}</b></div></div>`:''}
+      ${it.why?'<div class="ins-why">'+ENGINE.esc(it.why)+'</div>':''}
+      ${(refs.length||it.conf)?`<div class="ins-ev" id="insEv${i}" hidden>${it.conf?'<span class="ins-ev-t">'+ENGINE.esc(it.conf)+'</span>':''}${refs.map(r=>`<button type="button" class="ev-chip" data-ev="${r.id}">${ENGINE.esc(r.label||'')}</button>`).join('')}</div>`:''}
+      ${it.act?`<div class="ins-acts"><button class="btn ghost sm" type="button" data-insact="${i}" data-act="${it.act.kind}" data-ex="${ENGINE.esc(it.act.exId||'')}">${ENGINE.esc(it.act.label)}</button></div>`:''}
+    </div>`;
+  }
+  function insBarHtml(){
+    const g=insAgg();
+    const f1=v=>v==null?'—':(Math.round(v*10)/10).toFixed(1);
+    const md=g.rMood==null?null:(g.rMood<=1.5?'很糟':g.rMood<=2.5?'低落':g.rMood<=3.5?'一般':g.rMood<=4.5?'不错':'很好');
+    const dir=(g.rAvg!=null&&g.pAvg!=null)?(g.rAvg-g.pAvg>0.5?'↑ 回升':(g.rAvg-g.pAvg<-0.5?'↓ 下滑':'→ 持平')):'→ 样本少';
+    return `<div class="ins-bar">
+      <div class="ins-cell"><span class="k">精力</span><span class="v">${f1(g.rAvg)}<em>/5</em></span><span class="s">${dir}（上周 ${f1(g.pAvg)}）</span></div>
+      <div class="ins-cell"><span class="k">情绪</span><span class="v">${md||'—'}</span><span class="s">上周 ${g.pMood==null?'—':f1(g.pMood)+'/5'}</span></div>
+      <div class="ins-cell"><span class="k">本周训练</span><span class="v">${g.sets7}<em>组</em></span><span class="s">${g.days7} 个训练日</span></div>
+    </div>`;
+  }
+  function insWeekHtml(){
+    const g=insAgg();
+    const f1=v=>v==null?'—':(Math.round(v*10)/10).toFixed(1);
+    return `<div class="ins-week"><div class="h"><b>本周回顾</b><span style="color:var(--tx3);font-size:11px">自动汇总 · 共 ${g.R.length} 条记录</span></div>
+      <div class="row"><span class="kv">记录 <b>${g.R.length}</b> 条</span><span class="kv">训练 <b>${g.sets7}</b> 组</span><span class="kv">精力 <b>${f1(g.rAvg)}</b></span><span class="kv">情绪 <b>${f1(g.rMood)}</b></span></div></div>`;
+  }
+  function insFootHtml(tab){
+    const lbl={persona:'历史报告归档',plan:'规划报告归档',trend:'推演报告归档'}[tab]||'报告归档';
+    return `<div class="ins-foot"><button class="btn ghost sm" type="button" data-arch="${tab}">${lbl} ▸</button></div>`;
+  }
+  function feedPersonaHtml(){
+    const items=genInsights();
+    __feed={items:items, tab:'persona'};
+    return insBarHtml()+'<div class="ins-feed">'+(items.length?items.map(insCardHtml).join(''):'<div class="lib-sec-empty">记录还不够，先写 3 条就能生成第一条洞察。</div>')+'</div>'+insWeekHtml()+insFootHtml('persona');
+  }
+  function feedPlanHtml(){
+    const g=insAgg(), out=[];
+    const st=insStall(), pg=insPartGap();
+    const load=(g.sets7<=0?'本周还没有训练记录，先按一次全身或推拉腿填满':(g.sets7<12?'本周只有 '+g.sets7+' 组，建议补 1 次训练':'本周 '+g.sets7+' 组，负荷已够，别再堆量'));
+    out.push({cat:'fit',catLabel:'本周重点',lv:'flat',head:load,why:g.days7+' 个训练日 · 上周 '+g.setsP+' 组',conf:'',refs:[],act:{kind:'gotoPlan',label:'排本周计划'}});
+    if(st) out.push({cat:'fit',catLabel:'加重建议',lv:'up',head:st.name+'：'+st.weight+'kg → '+(st.weight*1.05).toFixed(1).replace('.0','')+'kg',why:'连续 '+st.n+' 次同重量无递增',conf:'基于 '+st.n+' 次记录',refs:[],act:{kind:'planAdd',exId:st.exId,label:'加入今日'}});
+    if(pg&&pg.gap>=10) out.push({cat:'fit',catLabel:'部位优先',lv:'warn',head:pg.part+' 已 '+pg.gap+' 天未练，本周排进一次',why:'上次训练 '+(pg.date||''),conf:'',refs:[],act:{kind:'gotoPlan',label:'去排计划'}});
+    if(g.rAvg!=null&&g.rAvg<=3) out.push({cat:'energy',catLabel:'降负荷',lv:'warn',head:'精力均值 '+f1num(g.rAvg)+'，单次组数砍 10–20%',why:'精力连续偏低时堆量只会拖长恢复',conf:'基于 '+g.R.length+' 条记录',refs:g.R.slice(-3).map(g.evOf),act:{kind:'gotoPlan',label:'按轻量排'}});
+    if(g.nightDiff!=null&&g.nightDiff<0) out.push({cat:'rest',catLabel:'作息',lv:'warn',head:'把训练放到 21:00 前，深夜记录后次日精力更低',why:'深夜记录 '+g.night.length+' 次，次日精力低 '+f1num(Math.abs(g.nightDiff))+' 分',conf:'',refs:g.night.slice(-3).map(g.evOf)});
+    __feed={items:out, tab:'plan'};
+    return '<div class="ins-feed">'+out.map(insCardHtml).join('')+'</div>'+insFootHtml('plan');
+  }
+  function f1num(v){ return v==null?'—':(Math.round(v*10)/10).toFixed(1); }
+  function feedTrendHtml(){
+    const g=insAgg(), out=[];
+    const setsBase=g.sets7, en=g.rAvg==null?3:g.rAvg;
+    out.push({cat:'energy',catLabel:'当前基线',lv:'flat',head:'每周 '+setsBase+' 组 · 精力 '+f1num(g.rAvg)+' · 情绪 '+f1num(g.rMood),
+      why:'以近 7 天为基线，下面是两组外推，不是预测',conf:'基于 '+g.R.length+' 条记录 + 本周训练',refs:[]});
+    out.push({cat:'fit',catLabel:'如果维持',lv:'flat',head:'维持每周 '+setsBase+' 组 · 作息不变',
+      assume:'每周 '+setsBase+' 组，睡眠模式不变',expect:'2–3 周后容量持平，精力大致回到 '+f1num(en)+' 附近，不出现新的疲劳信号',conf:'',refs:[]});
+    out.push({cat:'fit',catLabel:'如果加强',lv:'up',head:'每周 +2 组 · 逐次加 5%',
+      assume:'每周 '+(setsBase+2)+' 组，主力动作每次加 5% 重量',expect:'2–3 周后容量约 '+(setsBase+4)+' 组/周，进步可见；精力掉到 '+f1num(Math.max(1,en-0.6))+' 以下就停一轮',conf:'',refs:[],act:{kind:'gotoPlan',label:'按加强版排'}});
+    out.push({cat:'rest',catLabel:'如果过载',lv:'warn',head:'周容量拉到 '+(Math.round(setsBase*1.4)||12)+' 组以上 · 继续熬夜',
+      assume:'容量 ×1.4 且仍然深夜记录',expect:'恢复跟不上，先出现精力下滑（预计 '+f1num(Math.max(1,en-1.2))+'）而不是力量下降',conf:'按当前两周趋势外推',refs:g.night.slice(-3).map(g.evOf)});
+    out.push({cat:'mood',catLabel:'预警信号',lv:'warn',head:'连续 2 天精力 ≤2 或睡不满 6 小时 → 减一档',why:'出现即先砍 20% 容量，别硬顶',conf:'',refs:[],act:{kind:'gotoPlan',label:'改轻量计划'}});
+    __feed={items:out, tab:'trend'};
+    return '<div class="ins-feed">'+out.map(insCardHtml).join('')+'</div>'+insFootHtml('trend');
+  }
+  function bindFeed(box){
+    if(!box) return;
+    box.querySelectorAll('[data-insmore]').forEach(b=>{
+      b.onclick=()=>{ const ev=box.querySelector('#insEv'+b.dataset.insmore); if(ev){ ev.hidden=!ev.hidden; b.textContent=ev.hidden?'⋯':'×'; } };
+    });
+    box.querySelectorAll('[data-insact]').forEach(b=>{
+      b.onclick=()=>{ try{
+        const k=b.dataset.act, ex=b.dataset.ex||'';
+        if(k==='planAdd'){ try{ openPage('record'); trSetSeg('plan'); setTimeout(()=>{ try{ openPlanSheet(ex); }catch(e){} }, 240); }catch(e){} }
+        else if(k==='gotoPlan'){ try{ openPage('record'); trSetSeg('plan'); }catch(e){} }
+        else if(k==='gotoTrain'){ try{ openPage('record'); }catch(e){} }
+      }catch(e){} };
+    });
+    const ab=box.querySelector('[data-arch]');
+    if(ab) ab.onclick=()=>{ try{ openArchive(ab.dataset.arch); }catch(e){} };
+    try{ bindEvChips(box); }catch(e){}
+  }
+  function openArchive(tab){
+    document.querySelectorAll('.msheet.arch').forEach(x=>x.remove());
+    const t=new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const lbl={persona:'画像',plan:'规划',trend:'推演'}[tab]||'报告';
+    let ai=null; try{ ai=aiCacheAll()[tab]; }catch(e){}
+    let rule='';
+    try{
+      const d=ENGINE.analyze(logs);
+      rule = tab==='persona' ? (briefHtml()+rptChartHtml()+evidenceHtml()+profileSummaryHtml()+'<h1>个人画像报告 · Persona</h1><div class="kicker">基于 '+logs.length+' 条记录</div>'+ENGINE.genPersona(logs,d))
+        : tab==='plan' ? ENGINE.genPlan(logs,d) : ENGINE.genTrend(logs,d);
+    }catch(e){ rule='<div class="ai-empty">规则版生成失败。</div>'; }
+    const el=document.createElement('div'); el.className='msheet arch';
+    el.innerHTML='<div class="msheet-box arch-box"><div class="ms-head"><b>'+lbl+'报告归档</b><button class="ms-x" type="button" data-ax>×</button></div>'+
+      '<div class="arch-body">'+
+      '<div class="arch-t">AI 版 · '+(ai?'生成于 '+new Date(ai.ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'尚未生成')+'</div>'+
+      (ai?aiRenderReport(tab, ai.data):'<div class="ai-empty">在分析页点「生成分析」后，完整 AI 报告会出现在这里。</div>')+
+      '<div class="arch-t">内置规则版 · 现在 '+t+' 重算</div>'+rule+
+      '</div></div>';
+    document.body.appendChild(el);
+    el.onclick=ev=>{ if(ev.target===el) el.remove(); };
+    el.querySelector('[data-ax]').onclick=()=>el.remove();
+    if(tab==='persona'){ try{ drawRptCharts(); }catch(e){} }
+  }
+
   /* ---------- 报告渲染 ---------- */
   function renderReport(){
     disposeCharts();
@@ -9793,13 +10064,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!logs.length){ body.innerHTML=ENGINE.genEmpty(); return; }
     const d=ENGINE.analyze(logs);
     const stamp=fmtTime(new Date().toISOString());
-    const out={
-      persona:`${briefHtml()}${rptChartHtml()}${evidenceHtml()}${profileSummaryHtml()}<details class="report-fold"><summary>展开完整画像报告 · 共 9 节</summary><h1>个人画像报告 · Persona</h1><div class="kicker">基于 ${logs.length} 条记录 · ${stamp} 生成</div>${ENGINE.genPersona(logs,d)}</details>`,
-      plan:`<h1>个性化适配规划 · Plan</h1><div class="kicker">ALIGNED WITH PERSONA</div>${ENGINE.genPlan(logs,d)}`,
-      trend:`<h1>趋势推演报告 · Scenario</h1><div class="kicker">BEHAVIOR EXTRAPOLATION · NOT PROPHECY</div>${ENGINE.genTrend(logs,d)}`
-    };
+    const out={};
+    out[currentTab] = currentTab==='plan' ? feedPlanHtml() : currentTab==='trend' ? feedTrendHtml() : feedPersonaHtml();
     body.innerHTML=(['persona','plan','trend'].includes(currentTab)?'<div id="aiBox"></div>':'')+out[currentTab];
-    if(currentTab==='persona') drawRptCharts();
+    try{ bindFeed(body); }catch(e){}
     try{ initAsk(); }catch(e){}
     if(['persona','plan','trend'].includes(currentTab)){ try{ aiFillReport(currentTab); }catch(e){} }
     if(btn) btn.textContent = '已自动同步 · '+logs.length+' 条记录';
