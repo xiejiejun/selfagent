@@ -2236,6 +2236,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .cd-sheet-inner{padding:4px 2px 10px}
 .ex-sheet.cd-sheet{align-items:flex-end;justify-content:center}
 .ex-sheet.cd-sheet .ex-sheet-inner{border-radius:16px 16px 0 0;padding-bottom:24px}
+.add-mode{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--tx);font:inherit;text-align:left;cursor:pointer}
+.add-mode:active{transform:scale(.99)}
+.add-mode-ic{font-size:20px;line-height:1}
+.add-mode span:nth-child(2){flex:1;display:flex;flex-direction:column;gap:3px}
+.add-mode b{font-size:14px;font-weight:600}
+.add-mode i{font-style:normal;font-size:11.5px;color:var(--tx3)}
+.add-mode em{font-style:normal;color:var(--tx3)}
 .cd-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .cd-h span{font-size:14px;font-weight:600}
 .cd-lbl{font-size:11px;color:var(--tx3);margin:12px 0 6px}
@@ -5847,8 +5854,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <button class="btn gen tr-tc-go" id="trStart" type="button" data-act="start">▶ 开始训练</button>
           </div>
           <div class="tr-tc-links">
-            <button class="tr-tc-link" id="libOpen" type="button">＋ 添加动作</button>
-            <button class="tr-tc-link" id="cdOpen" type="button">＋ 有氧</button>
+            <button class="tr-tc-link" id="libOpen" type="button">＋ 添加</button>
             <button class="tr-tc-link" id="camPick" type="button">拍照识别器械</button>
             <button class="tr-tc-link" id="trRepeat" type="button">导入上次训练</button>
           </div>
@@ -6192,9 +6198,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(seg) seg.querySelectorAll('[data-trseg]').forEach(b=>b.onclick=()=>trSetSeg(b.dataset.trseg));
     if($('libTabs')) $('libTabs').querySelectorAll('[data-lt]').forEach(b=>b.onclick=()=>libShow(b.dataset.lt));
     const lo2=$('libOpen'); if(lo2) lo2.onclick=()=>{
-      try{ trSetSeg('lib'); }catch(e){}
-      setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="lib"]'); if(p) p.scrollIntoView({block:'start'}); },60);
-      setTimeout(()=>{ const inp=document.getElementById('trSearch'); if(inp) inp.focus(); },160);
+      openAddSheet();
     };
     try{ bindCardioEntry(); }catch(e){}
     const st=$('trStart');
@@ -7655,6 +7659,29 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       saveTrain(); trRenderToday(); refreshHome(); el.remove();
       trToast('已加入有氧：'+modal+' '+dur+' 分钟');
     };
+  }
+  function openAddSheet(){
+    let el=document.getElementById('addModeSheet');
+    if(!el){ el=document.createElement('div'); el.id='addModeSheet'; document.body.appendChild(el); }
+    el.className='ex-sheet on cd-sheet';
+    el.innerHTML=`<div class="ex-sheet-inner cd-sheet-inner">
+      <div class="cd-head"><h2>添加</h2><button class="cd-x" data-adclose type="button">×</button></div>
+      <button class="add-mode" data-adm="strength" type="button"><span class="add-mode-ic">💪</span><span><b>力量动作</b><i>从动作库挑选，带组次</i></span><em>›</em></button>
+      <button class="add-mode" data-adm="cardio" type="button"><span class="add-mode-ic">🏃</span><span><b>有氧</b><i>时长 + 强度 + 距离</i></span><em>›</em></button>
+    </div>`;
+    const close=()=>{ el.classList.remove('on'); el.innerHTML=''; };
+    el.onclick=ev=>{ if(ev.target===el) close(); };
+    el.querySelector('[data-adclose]').onclick=close;
+    el.querySelectorAll('[data-adm]').forEach(b=>b.onclick=()=>{
+      const m=b.dataset.adm; close();
+      if(m==='strength'){
+        try{ trSetSeg('lib'); }catch(e){}
+        setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="lib"]'); if(p) p.scrollIntoView({block:'start'}); },60);
+        setTimeout(()=>{ const inp=document.getElementById('trSearch'); if(inp) inp.focus(); },160);
+      } else {
+        openCardioSheet();
+      }
+    });
   }
   function bindCardioEntry(){
     const b=$('cdOpen'); if(b) b.onclick=()=>openCardioSheet();
