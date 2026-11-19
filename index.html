@@ -2406,7 +2406,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .tr-next{font-size:11.5px;color:var(--tx3);padding:2px 2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tc-row{margin-bottom:8px}
 html,body{touch-action:manipulation}
-body.dragging-row{overflow:hidden}
+.drag-on{overscroll-behavior:contain}
+[data-urow].dragging{position:relative;z-index:5;transition:none;box-shadow:0 10px 24px rgba(0,0,0,.35);border-radius:10px;opacity:.96}
+[data-urow].dragging *{pointer-events:none}
 #trToday{display:flex;flex-direction:column}
 .tc-row{grid-template-columns:16px minmax(0,1fr) auto 24px!important}
 .tc-row .pl-nm b{font-weight:600}
@@ -2443,6 +2445,9 @@ body.dragging-row{overflow:hidden}
 .set-card{padding:8px 10px}
 .set-card .set-row{padding:2px 0}
 .set-more{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin-top:4px}
+.set-head .nm{flex:1 1 auto!important;display:block!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.set-head .set-more{width:auto!important;flex:0 0 auto!important;margin:0 0 0 auto!important;display:block!important;gap:0!important;flex-wrap:nowrap!important}
+.set-head .pl-drag{flex:0 0 auto!important}
 .set-more[hidden]{display:none}
 /* 卡底 +1 / −1 平铺 */
 .set-foot{display:flex;align-items:stretch;gap:8px;margin-top:8px;flex-wrap:wrap}
@@ -8242,59 +8247,74 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.addEventListener('contextmenu',ev=>{ const t=ev.target.closest('[data-urow],[data-drag],.cd-card'); if(t) ev.preventDefault(); });
     if(!box.__dragBound){
       box.__dragBound=true;
-      let drag=null;
+      let drag=null, rafId=0, pendingY=0;
+      const nodeKey=n=>n.dataset&&n.dataset.urow;
       const saveOrder=()=>{
-        const keys=[...box.querySelectorAll('[data-urow]')].map(n=>n.dataset.urow).filter(Boolean);
+        const keys=[...box.children].map(nodeKey).filter(Boolean);
         train.order=train.order||{}; train.order[trDateVal()]=keys;
         saveTrain();
       };
       box.addEventListener('pointerdown',ev=>{
         const h=ev.target.closest('[data-drag]'); if(!h) return;
         const row=h.closest('[data-urow]'); if(!row) return;
-        drag={row, y0:ev.clientY, moved:false, lastY:ev.clientY};
-        row.classList.add('dragging');
+        if(ev.pointerType==='mouse' && ev.button!==0) return;
+        const rr=row.getBoundingClientRect();
+        drag={row,h,startY:ev.clientY,lastY:ev.clientY,moved:false,
+              boxTop:box.getBoundingClientRect().top,
+              startTop:rr.top-box.getBoundingClientRect().top,
+              h0:rr.height,id:ev.pointerId};
         try{ h.setPointerCapture(ev.pointerId); }catch(e){}
-        try{ document.body.classList.add('dragging-row'); }catch(e){}
+        row.classList.add('dragging');
+        box.classList.add('drag-on');
         ev.preventDefault();
       });
-      box.addEventListener('pointermove',ev=>{
+      const paint=()=>{
+        rafId=0;
         if(!drag) return;
-        ev.preventDefault();
-        const dy=ev.clientY-drag.y0;
-        if(!drag.moved && Math.abs(dy)>5) drag.moved=true;
-        drag.lastY=ev.clientY;
-        drag.row.style.transform='translateY('+dy+'px)';
-        // 实时换位：越过相邻卡中线立即物理移动
-        const rc=drag.row.getBoundingClientRect();
-        const next=drag.row.nextElementSibling, prev=drag.row.previousElementSibling;
-        if(next){
-          const nr=next.getBoundingClientRect();
-          if(rc.top+rc.height/2 > nr.top+nr.height/2){
-            box.insertBefore(next, drag.row);
-            drag.y0=ev.clientY; drag.row.style.transform='';
-            try{ haptic('light'); }catch(e){}
-          }
-        } else if(prev){
-          const pr=prev.getBoundingClientRect();
-          if(rc.top+rc.height/2 < pr.top+pr.height/2){
-            box.insertBefore(drag.row, prev);
-            drag.y0=ev.clientY; drag.row.style.transform='';
-            try{ haptic('light'); }catch(e){}
-          }
+        const dt=drag.lastY-drag.startY;
+        if(!drag.moved && Math.abs(dt)>4) drag.moved=true;
+        const wantTop=drag.startTop+dt;
+        const bTop=box.getBoundingClientRect().top;
+        const curTop=drag.row.getBoundingClientRect().top-bTop;
+        drag.row.style.transform='translateY('+(wantTop-curTop)+'px)';
+        // 按累计位移判定目标位（含跨多行），换位后 transform 自动补偿
+        const center=wantTop+drag.h0/2;
+        const list=[...box.children].filter(n=>nodeKey(n));
+        let idx=0;
+        list.forEach(n=>{
+          if(n===drag.row) return;
+          const r=n.getBoundingClientRect();
+          if(center > (r.top-bTop)+r.height/2) idx++;
+        });
+        const cur=list.indexOf(drag.row);
+        if(idx!==cur){
+          const target=list[idx];
+          if(target && target!==drag.row){ box.insertBefore(drag.row, target); try{ haptic('light'); }catch(e){} }
+          else if(!target){ /* 已在末尾 */ }
         }
-      });
+      };
+      const apply=(ev)=>{
+        if(!drag) return;
+        drag.lastY=ev.clientY;
+        if(!rafId) rafId=requestAnimationFrame(paint);
+        ev.preventDefault();
+      };
       const finish=()=>{
         if(!drag) return;
         const d=drag; drag=null;
+        if(rafId){ cancelAnimationFrame(rafId); rafId=0; }
         d.row.classList.remove('dragging'); d.row.style.transform='';
-        try{ document.body.classList.remove('dragging-row'); }catch(e){}
+        box.classList.remove('drag-on');
+        try{ d.h.releasePointerCapture(d.id); }catch(e){}
         if(!d.moved) return;
         saveOrder();
         trOpenUid=''; trRenderToday();
         try{ haptic('core'); }catch(e){}
       };
+      box.addEventListener('pointermove',apply);
       box.addEventListener('pointerup',finish);
-      box.addEventListener('pointercancel',()=>{ if(drag){ drag.row.classList.remove('dragging'); drag.row.style.transform=''; drag=null; } try{ document.body.classList.remove('dragging-row'); }catch(e){} });
+      box.addEventListener('pointercancel',finish);
+      box.addEventListener('lostpointercapture',finish);
     }
     // 单组参数 ±
     if(!box.__swipeBound){
