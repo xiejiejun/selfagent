@@ -1467,6 +1467,17 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .ex-fav.on{color:#e7c56a}
 .ex-more{border:0;background:none;color:var(--tx3);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer}
 /* p236 动作照片 */
+.ex-item.cu-item{padding-right:14px}
+.ex-item.cu-item .ex-head{flex-wrap:wrap;gap:2px 8px}
+.ex-item.cu-item .ex-name{white-space:normal;word-break:break-word;max-width:100%}
+.ex-item.cu-item .ex-meta{white-space:normal;font-size:11px}
+.mine-listwrap{overflow-x:hidden}
+.ex-acts{display:flex;gap:8px;margin-top:9px}
+.ex-mini{flex:0 0 auto;min-height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:none;
+  color:var(--tx2);font:inherit;font-size:12px;cursor:pointer}
+.ex-mini.danger{color:#e05a5a;border-color:rgba(224,90,90,.4)}
+.ex-mini:active{background:rgba(255,255,255,.04)}
+.cf-ask .cu-btns .btn[data-cfok]{background:#e05a5a;border-color:#e05a5a;color:#fff}
 .ex-photo-wrap{margin:10px 0 2px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0b0f13}
 .ex-photo{display:block;width:100%;max-height:220px;object-fit:cover;cursor:zoom-in}
 .ex-photo-cap{font-size:11px;color:var(--tx3);padding:6px 2px 0}
@@ -5735,17 +5746,61 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       return true;
     });
     const lastMap={}; (train.records||[]).forEach(r=>{ lastMap[r.exId]=r; });
-    if(!(train.favs||[]).length){
-      rows.innerHTML='<div class="lib-sec-empty">还没有收藏动作。到「动作库」列表点右上角 ☆，动作会进这里。</div>';
+    const customs=allExercises().filter(e=>e.custom).filter(e=>{
+      if(trState.part && !partHit(trState.part,e.p)) return false;
+      if((trState.eqs||[]).length && trState.eqs.indexOf(e.e)<0) return false;
+      if(q && !((e.n||'').toLowerCase().includes(q) || (e.en||'').toLowerCase().includes(q))) return false;
+      return true;
+    });
+    const secCu = customs.length ? `<div class="lib-sec-h">自定义动作 <span class="lib-sec-n">${customs.length}</span></div>`+customs.map(e=>cuRowHtml(e,lastMap)).join('') : '';
+    const secFav = favs.length ? `<div class="lib-sec-h">我的收藏 <span class="lib-sec-n">${favs.length}</span></div>`+favs.map(e=>libRowHtml(e,lastMap)).join('') : '';
+    if(!secCu && !secFav){
+      const filtering=(q||trState.part||(trState.eqs||[]).length);
+      rows.innerHTML='<div class="lib-sec-empty">'+(filtering?'没有匹配的动作，换个关键词或重置筛选。':'还没有自定义动作，也没有收藏。去「动作库 → ＋ 添加动作」建一个，或给常用动作点 ☆。')+'</div>';
       return;
     }
-    if(!favs.length){
-      rows.innerHTML='<div class="lib-sec-empty">没有匹配的收藏，换个关键词或重置筛选。</div>';
-      return;
-    }
-    rows.innerHTML=`<div class="lib-sec-h">我的收藏 <span class="lib-sec-n">${favs.length}</span></div>`+
-      favs.map(e=>libRowHtml(e,lastMap)).join('');
+    rows.innerHTML=secCu+secFav;
     bindLibRows(rows);
+    rows.querySelectorAll('[data-cuedit]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); try{ openCuSheet({edit:b.dataset.cuedit}); }catch(e){} });
+    rows.querySelectorAll('[data-cudel]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); try{ cuDelete(b.dataset.cudel); }catch(e){} });
+  }
+  function cuRowHtml(e,lastMap){
+    const last=lastMap[e.id];
+    const sub=last
+      ? `<span class="ex-last">上次 ${last.weight>0?last.weight+'kg ':''}${last.sets}×${last.reps}</span><span class="ex-ago">${trAgo(last.date)}</span>`
+      : `<span class="ex-last none">未练过</span>`;
+    return `<div class="ex-item cu-item" data-ex="${e.id}">
+        <div class="ex-head"><span class="ex-name">${ENGINE.esc(e.n)} <span class="ex-cu">自定义</span></span><span class="ex-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'')}</span></div>
+        <div class="ex-sub">${sub}</div>
+        <div class="ex-acts"><button class="ex-mini" data-cuedit="${e.id}" type="button">编辑</button><button class="ex-mini danger" data-cudel="${e.id}" type="button">删除</button></div>
+      </div>`;
+  }
+  function cuAsk(msg, desc, onOk, okText){
+    document.querySelectorAll('.cf-ask').forEach(x=>x.remove());
+    const el=document.createElement('div'); el.className='msheet cf-ask';
+    el.innerHTML='<div class="msheet-box" style="padding:18px 16px"><div style="font-size:14.5px;margin-bottom:6px">'+msg+'</div>'+
+      (desc?'<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">'+desc+'</div>':'')+
+      '<div class="cu-btns"><button class="btn ghost sm" type="button" data-cfno>取消</button><button class="btn sm" type="button" data-cfok>'+ENGINE.esc(okText||'删除')+'</button></div></div>';
+    document.body.appendChild(el);
+    el.onclick=ev=>{ if(ev.target===el) el.remove(); };
+    el.querySelector('[data-cfno]').onclick=()=>el.remove();
+    el.querySelector('[data-cfok]').onclick=()=>{ el.remove(); try{ onOk(); }catch(e){} };
+  }
+  function cuDelete(id){
+    const e=findEx(id); if(!e) return;
+    cuAsk('删除「'+e.n+'」？','动作库条目会被移除，历史训练记录仍保留。','');
+    const cf=document.querySelector('.cf-ask [data-cfok]');
+    if(cf) cf.onclick=()=>{
+      const box=document.querySelector('.cf-ask'); if(box) box.remove();
+      train.custom=(train.custom||[]).filter(c=>c.id!==id);
+      train.favs=(train.favs||[]).filter(x=>x!==id);
+      if(train.plan) train.plan=train.plan.filter(x=>x.id!==id);
+      saveTrain();
+      try{ const sh=document.getElementById('exSheet'); if(sh) sh.classList.remove('on'); }catch(err){}
+      try{ renderMine(); }catch(err){}
+      try{ trRenderList(); }catch(err){}
+      try{ trToast('已删除动作'); }catch(err){}
+    };
   }
   function renderLibInline(parts, eqs){
     const d=$('libBox'); if(!d) return;
@@ -6197,11 +6252,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.style.zIndex='10060';
     const hasFav=(train.favs||[]).includes(id);
     const ex0=findEx(id);
-    el.innerHTML='<button type="button" data-mact="name">重命名</button>'+(ex0&&ex0.custom?'<button type="button" data-mact="photo">'+(ex0.img?'换张照片':'加张照片')+'</button>':'')+(hasFav?'<button type="button" data-mact="unfav">取消收藏</button>':'');
+    el.innerHTML='<button type="button" data-mact="name">重命名</button>'+(ex0&&ex0.custom?'<button type="button" data-mact="photo">'+(ex0.img?'换张照片':'加张照片')+'</button><button type="button" data-mact="edit">编辑动作</button><button type="button" data-mact="del">删除动作</button>':'')+(hasFav?'<button type="button" data-mact="unfav">取消收藏</button>':'');
     document.body.appendChild(el);
     el.style.top=Math.round(Math.max(8,Math.min(r.bottom+6,window.innerHeight-110)))+'px';
     el.style.left=Math.max(12,Math.round(Math.min(r.right-120, window.innerWidth-132)))+'px';
     el.querySelector('[data-mact="name"]').onclick=()=>{ el.remove(); trEditName(id); };
+    const ed=el.querySelector('[data-mact="edit"]');
+    if(ed) ed.onclick=()=>{ el.remove(); try{ openCuSheet({edit:id}); }catch(e){} };
+    const dl=el.querySelector('[data-mact="del"]');
+    if(dl) dl.onclick=()=>{ el.remove(); try{ cuDelete(id); }catch(e){} };
     const ph=el.querySelector('[data-mact="photo"]');
     if(ph) ph.onclick=()=>{
       el.remove();
@@ -6468,13 +6527,50 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
     el.querySelectorAll('[data-cux]').forEach(b=>b.onclick=()=>el.remove());
     let preThumb=null;
-    if(pre.img){
+    if(pre.img && !pre.edit){
       const th=document.createElement('div'); th.className='cu-thumb';
       th.innerHTML='<img src="'+pre.img+'" alt=""><span>这张照片会存进动作详情（只在本机）</span>';
       const sheet=el.querySelector('.cu-sheet');
       const btns=sheet.querySelector('.cu-btns');
       if(btns) sheet.insertBefore(th, btns); else sheet.appendChild(th);
       camThumb(pre.img, t=>{ preThumb=t; });
+    }
+    const editId=pre.edit||null;
+    const edEx=editId?findEx(editId):null;
+    if(edEx){
+      const hd=el.querySelector('.ms-head b'); if(hd) hd.textContent='编辑动作';
+      el.querySelector('#cuName').value=edEx.n||'';
+      el.querySelector('#cuEquip').value=edEx.e||'';
+      const sel0=el.querySelector('#cuPart');
+      if([].slice.call(sel0.options).some(o=>o.text===edEx.p)) sel0.value=edEx.p;
+      el.querySelector('#cuSteps').value=(edEx.s||[]).join('\n');
+      if(edEx.img){
+        const th0=document.createElement('div'); th0.className='cu-thumb';
+        th0.innerHTML='<img src="'+edEx.img+'" alt=""><span>当前照片</span>';
+        el.querySelector('.cu-sheet').appendChild(th0);
+        preThumb=edEx.img;
+      }
+      const phRow=document.createElement('div'); phRow.className='backup-row';
+      phRow.innerHTML='<button class="btn ghost sm" type="button" id="cuPhoto">'+(edEx.img?'换张照片':'加张照片')+'</button>';
+      el.querySelector('.cu-sheet').appendChild(phRow);
+      phRow.querySelector('#cuPhoto').onclick=()=>{
+        const inp=document.createElement('input');
+        inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
+        inp.style.display='none'; document.body.appendChild(inp);
+        inp.onchange=()=>{
+          const f=(inp.files||[])[0]; try{ inp.remove(); }catch(e){}
+          if(!f) return;
+          camCompress(f, url=>{ if(!url){ trToast('图片读取失败'); return; } camThumb(url, t=>{
+            if(!t){ trToast('图片处理失败'); return; }
+            preThumb=t;
+            const old=el.querySelector('.cu-thumb');
+            if(old) old.innerHTML='<img src="'+t+'" alt=""><span>已换新照片</span>';
+            else { const th2=document.createElement('div'); th2.className='cu-thumb'; th2.innerHTML='<img src="'+t+'" alt=""><span>已换新照片</span>'; el.querySelector('.cu-sheet').appendChild(th2); }
+            trToast('照片已更新');
+          }); });
+        };
+        inp.click();
+      };
     }
     if(pre.name) el.querySelector('#cuName').value=pre.name;
     if(pre.equip) el.querySelector('#cuEquip').value=pre.equip;
@@ -6488,9 +6584,23 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.querySelector('.cu-sheet').appendChild(cuAi);
     let checked=null, checking=false;
     const cuBtn=el.querySelector('#cuSave');
+    if(editId) cuBtn.textContent='保存修改';
     const doSave=(name, stp)=>{
       const part=el.querySelector('#cuPart').value||'其他';
       const equip=(el.querySelector('#cuEquip').value||'自重').trim();
+      if(editId){
+        const c=(train.custom||[]).find(x=>x.id===editId);
+        if(c){
+          c.n=name; c.p=part; c.e=equip;
+          if(stp&&stp.length) c.s=stp;
+          if(preThumb){ c.img=preThumb; c.imgCap='我拍的器械：'+equip; }
+        }
+        saveTrain(); el.remove();
+        try{ renderMine(); }catch(e){}
+        try{ trRenderList(); }catch(e){}
+        try{ trToast('已保存修改'); }catch(e){}
+        return;
+      }
       const itm={id:'cu'+Date.now().toString(36), n:name, p:part, e:equip, t:'', g:(checked&&checked.gif)||'', s:(stp&&stp.length)?stp:['自定义动作，按个人经验执行'], custom:true};
       if(preThumb){ itm.img=preThumb; itm.imgCap='我拍的器械：'+equip; }
       train.custom.push(itm);
@@ -6502,6 +6612,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const steps=(el.querySelector('#cuSteps').value||'').split('\n').map(x=>x.trim()).filter(Boolean);
       const part=el.querySelector('#cuPart').value||'其他';
       const equip=(el.querySelector('#cuEquip').value||'自重').trim();
+      if(editId){ doSave(n, steps); return; }
       if(checked){ doSave(checked.norm||n, checked.steps||steps); return; }
       if(!aiReady() || !AG || !AG.dedupe){
         const l=gifFindLocal(n, part, equip);
