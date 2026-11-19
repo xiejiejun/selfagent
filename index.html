@@ -1377,8 +1377,14 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 /* ===== p46 专注组行：点击计时 + 左滑操作 ===== */
 .fm-row{position:relative;overflow:hidden;transition:background .18s,box-shadow .18s}
 .fm-row .fm-main{display:flex;align-items:center;gap:10px;width:100%;min-height:44px}
-.fm-row.timing{background:rgba(232,178,58,.14);box-shadow:inset 0 0 0 1px rgba(232,178,58,.45);animation:fmBreath 1.5s ease-in-out infinite}
-.fm-row.timing .fm-val,.fm-row.timing .fm-val i{color:#f2c14e}
+.fm-row.timing{background:rgba(45,212,160,.13);box-shadow:inset 0 0 0 1px rgba(45,212,160,.5);animation:fmBreath 1.5s ease-in-out infinite}
+.fm-row.timing .fm-val,.fm-row.timing .fm-val i{color:#33e0ac}
+.fm-row{position:relative}
+.fm-swipe{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:12px;background:linear-gradient(90deg,rgba(45,212,160,.06),rgba(45,212,160,.34));border:1px solid rgba(45,212,160,.55);color:#3ff0bb;font-size:13.5px;font-weight:800;letter-spacing:.02em;pointer-events:none;animation:fmSwipePulse 1.1s ease-in-out infinite;text-shadow:0 0 10px rgba(45,212,160,.45)}
+.fm-swipe b{font-size:26px;line-height:1;font-weight:900}
+.fm-swipe em{font-style:normal}
+@keyframes fmSwipePulse{0%,100%{transform:translate(-4px,-50%);opacity:.72}50%{transform:translate(10px,-50%);opacity:1}}
+@media (prefers-reduced-motion:reduce){ .fm-swipe{animation:none} }
 .fm-row.done{background:rgba(62,196,120,.13);box-shadow:inset 0 0 0 1px rgba(62,196,120,.42)}
 .fm-row.done .fm-val{color:#7fe0a7}
 @keyframes fmBreath{0%,100%{box-shadow:inset 0 0 0 1px rgba(232,178,58,.45),0 0 0 0 rgba(232,178,58,0)}50%{box-shadow:inset 0 0 0 1px rgba(232,178,58,.9),0 0 0 5px rgba(232,178,58,.12)}}
@@ -5694,9 +5700,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         return `
         <div class="fm-row ${g.done?'done':''} ${st?'timing':''}" data-fmrow="${k}">
           <div class="fm-main">
-            <button class="fm-tick ${g.done?'done':''}" data-fmtick="${k}" type="button" aria-label="${g.done?'取消完成':'完成第 '+g.no+' 组'}">${g.done?'✓':g.no}</button>
+            <span class="fm-tick ${g.done?'done':''}" aria-hidden="true">${g.done?'✓':g.no}</span>
             <span class="fm-val">${g.weight>0?g.weight+' kg':'自重'} × ${g.reps}<i>${st?('· 计时 '+Math.max(1,Math.round((Date.now()-st)/1000))+'s'):(g.done&&g.sec?('· '+g.sec+'s'):'')}</i></span>
-            ${(hintOn && !g.done && g===firstUndone)?'<span class="fm-hint" aria-hidden="true">‹‹ 左滑</span>':''}
+            ${st?'<span class="fm-swipe" aria-hidden="true"><b>›››</b><em>右滑结束</em></span>':((hintOn && !g.done && g===firstUndone)?'<span class="fm-hint" aria-hidden="true">点一下开始计时</span>':'')}
           </div>
           <span class="fm-side">
             <button class="fm-act" data-fmedit="${k}" type="button">编辑</button>
@@ -5799,6 +5805,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         if(x0==null) return;
         const dx=x-x0, dy=y-y0;
         if(Math.abs(dx) < Math.abs(dy)*1.2) return;
+        const running=window.__grpStart && window.__grpStart[key];
+        if(running){
+          if(dx>=52){ swiped=true; fmStop(key); return; }
+          return;
+        }
         if(dx<-30 && !row.classList.contains('open')){ row.classList.add('open'); swiped=true; }
         else if(dx>24 && row.classList.contains('open')){ row.classList.remove('open'); swiped=true; }
       };
@@ -5897,12 +5908,17 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     window.__grpStart=window.__grpStart||{};
     const p=key.split(':'); const {r,g}=setOf(p[0]+':'+p[1]); if(!r||!g) return;
     const st=window.__grpStart[key];
-    if(!st){
-      if(g.done){ trToast('这组已完成，点 ○ 取消后可重新计时'); return; }
-      window.__grpStart[key]=Date.now();
-      renderFocus();
-      return;
-    }
+    if(st){ trToast('本组计时中，向右滑动结束'); return; }
+    if(g.done){ trToast('这组已完成，先取消完成再计时'); return; }
+    window.__grpStart[key]=Date.now();
+    try{ haptic('light'); }catch(e){}
+    renderFocus();
+    return;
+  }
+  function fmStop(key){
+    window.__grpStart=window.__grpStart||{};
+    const p=key.split(':'); const {r,g}=setOf(p[0]+':'+p[1]); if(!r||!g) return;
+    const st=window.__grpStart[key];
     const sec=Math.max(1,Math.round((Date.now()-st)/1000));
     delete window.__grpStart[key];
     g.sec=sec; g.done=true; g.timed=true;
