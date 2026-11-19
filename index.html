@@ -1027,6 +1027,10 @@ background:#0d1216;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
 #logMood::-moz-range-thumb,#eMood::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#0d1216;border:2px solid #fff}
 /* ===== 搜索联想 ===== */
 .search-wrap{position:relative}
+.search-wrap .search-go{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:9px;background:none;color:var(--tx3);cursor:pointer;transition:color .16s,background .16s}
+.search-wrap .search-go:hover{color:var(--accent);background:rgba(61,220,191,.12)}
+.search-wrap .search-go:active{transform:translateY(-50%) scale(.94)}
+.search-wrap input[type="text"]{padding-right:42px}
 .search-sug{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:60;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:none}
 .search-sug.on{display:block}
 .sug-item{display:flex;justify-content:space-between;gap:10px;padding:9px 12px;font-size:12.5px;cursor:pointer}
@@ -1625,7 +1629,7 @@ html[data-theme="light"] .ins-dots i.on{background:#8A94A6}
 .mine-listwrap{flex:1 1 auto;min-height:0;overflow:auto}
 .ex-item.on{background:rgba(61,220,191,.14);outline:1.5px solid rgba(14,143,122,.55);outline-offset:-1.5px}
 html[data-theme="light"] .ex-item.on{background:#dff7ef;outline:1.5px solid #0e8f7a;outline-offset:-1.5px}
-.lib-inline{position:relative;height:calc(100vh - 430px);min-height:340px}
+.lib-inline{position:relative;height:calc(100vh - 236px);min-height:430px}
 .lib-inline #trList{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}
 .lib-mine{flex:1 1 auto;min-height:0;max-height:none;overflow:auto;padding-right:2px}
 .lib-curow{padding:10px 0 2px;text-align:center}
@@ -2220,7 +2224,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .tr-panel[hidden]{display:none}
 .lib-inline{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px;display:flex;flex-direction:column}
 .lib-inline .lib-pane{flex:1;min-height:0}
-.lib-inline .lib-pane>.lib-list{flex:1 1 auto;min-height:220px;max-height:calc(100vh - 340px);overflow:auto}
+.lib-inline .lib-pane>.lib-list{flex:1 1 auto;min-height:260px;max-height:calc(100vh - 190px);overflow:auto}
 @media(min-width:900px){.tr-seg,.tr-panel{max-width:840px}}
 .pl-tools{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
 .pl-tools .plan-reset{margin-left:auto}
@@ -6384,7 +6388,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!box.dataset.init){
       box.dataset.init='1';
       box.innerHTML=`<div class="lib-searchrow">
-        <div class="search-wrap"><input type="text" id="mineSearch" placeholder="搜索动作" autocomplete="off"></div>
+        <div class="search-wrap"><input type="text" id="mineSearch" placeholder="搜索动作" autocomplete="off"><button class="search-go" id="mineGo" type="button" aria-label="确认搜索"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button></div>
         <button class="lib-funnel" id="mineFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="mineDot" hidden></em></button>
       </div>
       ${filterBodyHtml('flDropMine')}
@@ -6396,6 +6400,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         const n=$('mineSearch');
         if(n){ n.focus(); try{ n.setSelectionRange(n.value.length,n.value.length); }catch(e){} }
       });
+      const go=$('mineGo');
+      if(go && inp) go.onclick=()=>{
+        mineQ=inp.value; renderMine();
+        try{ inp.blur(); }catch(e){}
+        const rw=$('mineRows'); if(rw) rw.scrollTop=0;
+        const n2=$('mineSearch'); if(n2) n2.setAttribute('data-kb','off');
+        trToast(mineQ.trim()?('已搜索 '+mineQ.trim()):'已显示全部动作');
+      };
       bindDrop(dropEl('mine'),'mine');
     }
     const rows=$('mineRows'); if(!rows) return;
@@ -6518,7 +6530,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const d=$('libBox'); if(!d) return;
     d.innerHTML=`
       <div class="lib-searchrow">
-        <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作" autocomplete="off"><div class="search-sug" id="trSug"></div></div>
+        <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作" autocomplete="off"><button class="search-go" id="libGo" type="button" aria-label="确认搜索"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button><div class="search-sug" id="trSug"></div></div>
         <button class="lib-funnel" id="libFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="libFunnelDot" hidden></em></button>
       </div>
       ${filterBodyHtml('flDropLib')}
@@ -8745,6 +8757,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       trState.q=$('trSearch').value; trState.limit=60;
       trRenderList(); renderSuggest();
     });
+    if($('libGo')) $('libGo').onclick=()=>{
+      const inp=$('trSearch'), v=(inp?inp.value:'').trim();
+      trState.q=v; trState.limit=60;
+      trRenderList();
+      const sug=$('trSug'); if(sug){ sug.innerHTML=''; sug.hidden=true; }
+      try{ if(inp) inp.blur(); }catch(e){}
+      const l3=$('trList'); if(l3) l3.scrollTop=0;
+      trToast(v?('已搜索 '+v):'已显示全部动作');
+    };
     const lp=$('libPartChips');
     if(lp) lp.querySelectorAll('[data-lpart]').forEach(b=>b.onclick=()=>{
       trState.part=b.dataset.lpart||''; trState.limit=60;
