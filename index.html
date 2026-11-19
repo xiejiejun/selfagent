@@ -1027,6 +1027,24 @@ background:#0d1216;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
 #logMood::-moz-range-thumb,#eMood::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#0d1216;border:2px solid #fff}
 /* ===== 搜索联想 ===== */
 .search-wrap{position:relative}
+.lib-airow{display:flex;justify-content:flex-end;margin:-2px 0 8px}
+.library-ai,.lib-ai{border:1px solid rgba(61,220,191,.45);background:rgba(61,220,191,.08);color:var(--accent);font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.lib-ai:active{transform:scale(.97)}
+.aif-in{padding:0 0 4px}
+.aif-in textarea{width:100%;min-height:76px;resize:none;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03);color:var(--tx);font:inherit;font-size:13.5px;padding:10px 12px;line-height:1.5}
+.aif-chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 10px}
+.aif-chip{border:1px solid var(--line);background:none;color:var(--tx3);font:inherit;font-size:11.5px;padding:5px 10px;border-radius:999px;cursor:pointer}
+.aif-chip:active{color:var(--accent);border-color:rgba(61,220,191,.5)}
+.aif-res{display:grid;gap:8px;margin-top:10px;max-height:46dvh;overflow:auto}
+.aif-row{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03);cursor:pointer}
+.aif-row:active{background:rgba(61,220,191,.1)}
+.aif-row .nm{font-size:14.5px;font-weight:700}
+.aif-row .mt{font-size:11.5px;color:var(--tx3);margin-top:3px}
+.aif-row .why{font-size:11.5px;color:var(--accent);margin-top:4px;line-height:1.45}
+.aif-row .go{margin-left:auto;font-size:11.5px;color:var(--tx3);flex:0 0 auto}
+.aif-empty{padding:14px 4px;text-align:center;color:var(--tx3);font-size:12.5px;line-height:1.6}
+.aif-new{width:100%;margin-top:6px}
+.aif-steps{margin:8px 0 0;padding:0 0 0 4px;font-size:12px;color:var(--tx3);line-height:1.6}
 .search-wrap .search-go{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:9px;background:none;color:var(--tx3);cursor:pointer;transition:color .16s,background .16s}
 .search-wrap .search-go:hover{color:var(--accent);background:rgba(61,220,191,.12)}
 .search-wrap .search-go:active{transform:translateY(-50%) scale(.94)}
@@ -6534,11 +6552,107 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <button class="lib-funnel" id="libFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="libFunnelDot" hidden></em></button>
       </div>
       ${filterBodyHtml('flDropLib')}
+      <div class="lib-airow"><button class="lib-ai" id="libAiFind" type="button">✦ AI 帮我找</button></div>
       <div class="ex-list lib-list" id="trList"></div>
       <div class="lib-curow"><button class="lib-cu" id="cuOpen" type="button">＋ 添加动作</button></div>`;
     if($('libFunnel')) $('libFunnel').onclick=()=>toggleDrop('lib');
     try{ bindDrop(dropEl('lib'), 'lib'); }catch(e){}
     if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
+  }
+  function aiFindEx(name){
+    const q=String(name||'').trim().toLowerCase();
+    if(!q) return null;
+    const list=allExercises();
+    const hit=list.find(e=>String(e.n||'').trim().toLowerCase()===q);
+    if(hit) return hit;
+    const hit2=list.find(e=>String(e.n||'').toLowerCase().indexOf(q)>=0);
+    if(hit2) return hit2;
+    const hit3=list.find(e=>q.indexOf(String(e.n||'').toLowerCase())>=0 && String(e.n||'').length>=2);
+    return hit3||null;
+  }
+  function openAiFind(){
+    document.querySelectorAll('.msheet').forEach(x=>x.remove());
+    const el=document.createElement('div'); el.className='msheet';
+    el.innerHTML=`<div class="msheet-box"><div class="ms-head"><b>AI 帮我找动作</b><button class="ms-x" type="button" data-aifx>×</button></div>
+      <div class="aif-in">
+        <textarea id="aifQ" placeholder="描述想练的动作，如：练背但没有器械 / 想练臀中肌 / 肩后束孤立"></textarea>
+        <div class="aif-chips">
+          <button class="aif-chip" data-aifc="练背但没有器械" type="button">练背没有器械</button>
+          <button class="aif-chip" data-aifc="想练臀中肌" type="button">臀中肌</button>
+          <button class="aif-chip" data-aifc="肩后束孤立" type="button">肩后束</button>
+          <button class="aif-chip" data-aifc="核心稳定，不伤腰" type="button">核心稳定</button>
+        </div>
+        <button class="btn sm" id="aifGo" type="button" style="width:100%">AI 帮我找</button>
+      </div>
+      <div class="aif-res" id="aifRes"></div>
+    </div>`;
+    document.body.appendChild(el);
+    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    el.querySelectorAll('[data-aifx]').forEach(b=>b.onclick=()=>el.remove());
+    const qEl=el.querySelector('#aifQ'), resEl=el.querySelector('#aifRes'), goEl=el.querySelector('#aifGo');
+    el.querySelectorAll('[data-aifc]').forEach(b=>b.onclick=()=>{ qEl.value=b.dataset.aifc; });
+    const render=(matches, create, note)=>{
+      const blocks=[];
+      if(matches.length){
+        blocks.push(`<div class="aif-empty" style="padding:0 0 2px;text-align:left;color:var(--tx3)">${note||'库内找到 '+matches.length+' 个可用的'}</div>`);
+        blocks.push(matches.map(m=>`<div class="aif-row" data-aifid="${m.ex?m.ex.id:''}">
+          <div><div class="nm">${ENGINE.esc(m.name)}</div>${m.ex?`<div class="mt">${ENGINE.esc(m.ex.p||'')} · ${ENGINE.esc(m.ex.e||'自重')}</div>`:''}
+          ${m.why?`<div class="why">${ENGINE.esc(m.why)}</div>`:''}</div>
+          <span class="go">查看 ›</span></div>`).join(''));
+      }
+      if(create){
+        blocks.push(`<div class="aif-empty">库里没有合适的动作，可以新建「${ENGINE.esc(create.name||qEl.value.trim())}」</div>
+          <button class="btn sm aif-new" id="aifCreate" type="button">创建自定义动作（要领已备好）</button>
+          ${create.steps&&create.steps.length?`<div class="aif-steps">${create.steps.map((x,i)=>`<div>${i+1}. ${ENGINE.esc(x)}</div>`).join('')}</div>`:''}`);
+      }
+      if(!blocks.length) blocks.push('<div class="aif-empty">没找到结果，换个说法再试一次</div>');
+      resEl.innerHTML=blocks.join('');
+      resEl.querySelectorAll('[data-aifid]').forEach(r=>{
+        const id=r.dataset.aifid; if(!id) return;
+        r.onclick=()=>{ const ex=findEx(id); if(ex){ el.remove(); try{ openExSheet(ex); }catch(e){} } };
+      });
+      const cb=resEl.querySelector('#aifCreate');
+      if(cb) cb.onclick=()=>{
+        el.remove();
+        openCuSheet({name:create.name||qEl.value.trim(), part:create.part||'', equip:create.equip||'', steps:(create.steps||[]).slice(0,6)});
+      };
+    };
+    const localRun=(q)=>{
+      const kw=q.split(/[\s，,、\/]+/).filter(Boolean);
+      const list=allExercises().filter(e=>kw.length? kw.some(k=>String(e.n||'').indexOf(k)>=0 || String(e.p||'')===k) : false).slice(0,6);
+      render(list.map(e=>({ex:e,name:e.n,why:'名称/部位与描述相关'})), list.length?null:{name:q,steps:[]}, 'AI 未配置，先用本地关键词匹配');
+    };
+    goEl.onclick=()=>{
+      const q=(qEl.value||'').trim();
+      if(!q){ trToast('先写下你想练的动作或目标'); return; }
+      if(!aiReady()){ localRun(q); trToast('未配置 AI，已用本地匹配'); return; }
+      resEl.innerHTML='<div class="aif-empty">AI 正在检索动作库…</div>';
+      goEl.disabled=true; goEl.textContent='检索中…';
+      const catalog=allExercises().map(e=>e.n+'｜'+e.p+'｜'+(e.e||'自重')).slice(0,320).join('\n');
+      const sys='你是健身动作库检索员。根据用户描述，从给定动作库里挑选最合适的 2-5 个动作并给简短理由；如果库里确实没有合适的，给一个建议新建的标准动作。只输出 JSON，不要任何解释：{"matches":[{"name":"库中动作原名","why":"20字内理由"}],"create":null 或 {"name":"标准名称","part":"胸/背/腿/肩/臂/腰腹/其他","equip":"器械或自重","steps":["4-6步，每步一句，动词开头"]}}';
+      aiChat({system:sys, user:'用户描述：'+q+'\n动作库（名称｜部位｜器械）：\n'+catalog, temp:0.2}).then(txt=>{
+        let o=null;
+        try{ o=JSON.parse(String(txt||'').replace(/^```(json)?/i,'').replace(/```$/,'').trim()); }catch(e){}
+        if(!o){ goEl.disabled=false; goEl.textContent='AI 帮我找'; resEl.innerHTML='<div class="aif-empty">AI 返回格式异常，换个说法再试</div>'; return; }
+        const matches=(Array.isArray(o.matches)?o.matches:[]).map(m=>{
+          const ex=aiFindEx(m&&m.name);
+          return ex?{ex:ex,name:ex.n,why:String((m&&m.why)||'')}:null;
+        }).filter(Boolean).slice(0,5);
+        const create=(o.create && (!matches.length || o.create.name))?{
+          name:String(o.create.name||'').trim(),
+          part:String(o.create.part||'').trim(),
+          equip:String(o.create.equip||'').trim(),
+          steps:(Array.isArray(o.create.steps)?o.create.steps:[]).filter(x=>typeof x==='string'&&x.trim())
+        }:null;
+        goEl.disabled=false; goEl.textContent='AI 帮我找';
+        render(matches, matches.length?null:create, '');
+        if(matches.length && create) { /* 有匹配时不推新建 */ }
+      }).catch(err=>{
+        goEl.disabled=false; goEl.textContent='AI 帮我找';
+        localRun(q);
+        trToast('AI 调用失败，已用本地匹配');
+      });
+    };
   }
   function trRenderHot(){
     const box=$('trHotList'); if(!box) return;
@@ -7331,6 +7445,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         inp.click();
       };
     }
+    if(Array.isArray(pre.steps) && pre.steps.length) el.querySelector('#cuSteps').value=pre.steps.join('\n');
     if(pre.name) el.querySelector('#cuName').value=pre.name;
     if(pre.equip) el.querySelector('#cuEquip').value=pre.equip;
     if(pre.part){
@@ -8757,6 +8872,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       trState.q=$('trSearch').value; trState.limit=60;
       trRenderList(); renderSuggest();
     });
+    if($('libAiFind')) $('libAiFind').onclick=()=>{ try{ openAiFind(); }catch(e){ trToast('打开失败：'+e.message); } };
     if($('libGo')) $('libGo').onclick=()=>{
       const inp=$('trSearch'), v=(inp?inp.value:'').trim();
       trState.q=v; trState.limit=60;
