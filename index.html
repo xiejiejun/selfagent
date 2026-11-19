@@ -2306,6 +2306,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .rm-i.del{color:#E0574F}
 /* 折叠行：从这条开始 */
 .tc-fold.next{border-left:3px solid var(--accent);padding-left:9px}
+.tc-drag,.set-drag{touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab;color:var(--tx3);font-size:15px;line-height:1;padding:6px 8px;flex:0 0 auto}
+.set-drag{margin-left:auto;margin-right:2px}
+[data-urow].dragging{position:relative;z-index:9;opacity:.92;box-shadow:0 8px 22px rgba(0,0,0,.35);border-radius:12px;background:var(--panel)}
+.tcf-done,.tc-fold,.set-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.cd-sheet-inner .cd-hintline{font-size:12px;color:var(--tx3);line-height:1.5}
 .tc-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:7px;vertical-align:middle;animation:cdPulse 1.8s ease-in-out infinite}
 /* 今日空态头 */
 .tr-empty-h{padding:4px 2px 10px;display:flex;flex-direction:column;gap:2px}
@@ -2399,11 +2404,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media(prefers-reduced-motion:reduce){.pl-edit{animation:none}}
 /* 今日卡：状态驱动手风琴 */
 .tr-next{font-size:11.5px;color:var(--tx3);padding:2px 2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tc-fold{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr) auto 12px;gap:8px;align-items:center;
+.tc-fold{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr) auto auto 12px;gap:8px;align-items:center;
  min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);
  margin-bottom:8px;cursor:pointer;transition:border-color .15s}
 .tc-fold:active{border-color:var(--line2)}
-.tc-nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+.tc-nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}
+.tc-fold .tc-sx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-drag{padding:6px 2px 6px 6px}
 .tc-sx{font-size:11.5px;color:var(--tx2);white-space:normal;line-height:1.45;min-width:0;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tc-pr{font-size:11px;color:var(--tx3);border:1px solid var(--line2);border-radius:999px;padding:2px 7px;white-space:nowrap}
@@ -5527,15 +5534,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function renderFocus(){
     const rs=focusList();
-    if(!rs.length){ closeFocus(); return; }
+    const cds=trCardioFor(trDateVal());
+    const pre=cds.find(c=>c.role==='pre' && !c.done && !c.skipped);
+    const post=cds.find(c=>c.role==='post' && !c.done && !c.skipped);
+    const adhoc=cds.filter(c=>!c.role && !c.done && !c.skipped);
+    if(!rs.length && !pre && !adhoc.length){ closeFocus(); return; }
+    if(!rs.length){
+      if(!window.__fmPhase) window.__fmPhase = pre?'warmup':'cardio';
+      const c = pre || adhoc[0];
+      if(c){ renderFocusCd(c, pre?'warmup':'cardio', rs, cds); return; }
+    }
     if(!__focusUids.length || __focusUids.every(u=>!rs.some(r=>r.uid===u))) __focusUids=rs.map(r=>r.uid);
     __focusUids=__focusUids.filter(u=>rs.some(r=>r.uid===u));
     let r=rs.find(x=>x.uid===__focusUids[__focusIdx])||rs.find(x=>x.uid===__focusUids[0])||rs[0];
     __focusIdx=__focusUids.indexOf(r.uid); if(__focusIdx<0) __focusIdx=0;
     try{ localStorage.setItem('_focus_prog', JSON.stringify({date:trDateVal(), uid:r.uid})); }catch(e){}
-    const cds=trCardioFor(trDateVal());
-    const pre=cds.find(c=>c.role==='pre' && !c.done && !c.skipped);
-    const post=cds.find(c=>c.role==='post' && !c.done && !c.skipped);
     if(!window.__fmPhase){ window.__fmPhase = pre ? 'warmup' : 'strength'; }
     if(window.__fmPhase==='warmup' && !pre){ window.__fmPhase='strength'; }
     if(window.__fmPhase==='cooldown' && !post){ window.__fmPhase='strength'; }
@@ -5544,6 +5557,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       renderFocusCd(c, window.__fmPhase, rs, cds);
       return;
     }
+    if(window.__fmPhase==='cardio'){
+      const c=adhoc[0]||cds.find(x=>!x.done&&!x.skipped);
+      if(c){ renderFocusCd(c, 'cardio', rs, cds); return; }
+      window.__fmPhase = rs.length?'strength':'done';
+    }
+    if(window.__fmPhase==='done'){ closeFocus(); showTrainSummary(); return; }
     // 力量全部完成 → 过渡页 → 收尾
     let dSum=0, tSum=0;
     rs.forEach(x=>{ const q=ensureGroups(x); tSum+=q.length; dSum+=q.filter(g=>g.done).length; });
@@ -5839,10 +5858,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!el){ el=document.createElement('div'); el.id='focusMode'; el.className='focus-mode'; bodyAppend(el); }
     el.setAttribute('data-theme','focus');
     const isPre = phase==='warmup';
+    const tag = phase==='warmup'?'热身':phase==='cooldown'?'收尾':'有氧';
     const icon=CARDIO_ICON[c.modal]||'🏃';
     const sec=cdSec(c), run=!!c.run;
-    const target=Math.max(1,(c.dur||20))*60;
-    const pct=Math.min(100,Math.round(sec/target*100));
+    const target=c.dur?c.dur*60:0;
+    const pct=target?Math.min(100,Math.round(sec/target*100)):Math.round((sec%60)/60*100);
     let tAll=0,dAll=0;
     rs.forEach(x=>{ const q=ensureGroups(x); tAll+=q.length; dAll+=q.filter(g=>g.done).length; });
     const gp = tAll? Math.round(dAll/tAll*100) : 0;
@@ -5852,12 +5872,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }).join('') + cds.filter(x=>!x.done&&!x.skipped).map(x=>`<button class="fm-chip cd ${x.uid===c.uid?'on':''}" data-fmcdjump2="${x.uid}" type="button"><span>${CARDIO_ICON[x.modal]||'🏃'} ${ENGINE.esc(x.modal)}</span><em>${x.role==='pre'?'热身':x.role==='post'?'收尾':'有氧'}</em></button>`).join('');
     const distLabel = CD_DIST.includes(c.modal)?'+0.5 km':'+5 层';
     el.innerHTML=`<div class="fm-progress"><i style="width:${gp}%"></i></div>
-      <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span>${isPre?'热身':'收尾'} · ${dAll}/${tAll} 组已完成</span></div>
+      <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span>${tag}${tAll?(' · '+dAll+'/'+tAll+' 组已完成'):''}</span></div>
       <div class="fm-strip" role="tablist" aria-label="今日安排">${chips}</div>
       <div class="fmc-scr">
-        <div class="fmc-head"><span class="fmc-ic">${icon}</span><div class="fmc-tt"><b>${ENGINE.esc(c.modal)}</b><em>${isPre?'热身':'收尾'} · 目标 ${c.dur||20} 分钟</em></div></div>
+        <div class="fmc-head"><span class="fmc-ic">${icon}</span><div class="fmc-tt"><b>${ENGINE.esc(c.modal)}</b><em>${tag} · ${target?('目标 '+(c.dur)+' 分钟'):'点开始计时，结束按实际时长记录'}</em></div></div>
         <div class="fmc-ring" data-fmcdring2="${c.uid}" style="--p:${pct}">
-          <div class="fmc-in"><span class="fmc-time" data-fmcdt2="${c.uid}">${cdFmt(sec)}</span><em data-fmcdsub>${[c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):'', '目标 '+(c.dur||20)+'′'].filter(Boolean).join(' · ')}</em></div>
+          <div class="fmc-in"><span class="fmc-time" data-fmcdt2="${c.uid}">${cdFmt(sec)}</span><em data-fmcdsub>${c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):(target?'目标 '+c.dur+'′':'计时中')}</em></div>
         </div>
         <div class="fmc-main">
           <button class="fmc-start ${run?'on':''}" data-fmcdrun2="${c.uid}" type="button">${run?'暂停':(sec>0?'继续':'开始')}</button>
@@ -5888,19 +5908,26 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(c.run) cdPause(c); else { cdStart(c); try{ haptic('core'); }catch(e){} }
       saveTrain(); renderFocus();
     });
+    const nextPhase = ()=>{
+      if(c.role==='post') return 'done';
+      if(rs.length) return 'strength';
+      const more=(train.cardio||[]).some(x=>x.date===trDateVal() && x.uid!==c.uid && !x.done && !x.skipped);
+      return more ? 'cardio' : 'done';
+    };
     el.querySelectorAll('[data-fmcdone2]').forEach(b=>b.onclick=()=>{
       cdFinish(c); saveTrain(); refreshHome();
       try{ haptic('core'); }catch(e){}
-      trToast('有氧完成：'+c.modal+' '+(c.dur||0)+' 分钟');
+      trToast('有氧完成：'+c.modal+' '+(c.dur||1)+' 分钟，已记录');
       cdAskLv(c);
-      window.__fmPhase = c.role==='post' ? 'done' : 'strength';
+      window.__fmPhase = nextPhase();
       if(window.__fmPhase==='done'){ closeFocus(); showTrainSummary(); return; }
       renderFocus();
     });
     el.querySelectorAll('[data-fmcdskip2]').forEach(b=>b.onclick=()=>{
       c.skipped=true; saveTrain(); trRenderToday();
       trToast('已跳过这次有氧');
-      window.__fmPhase = c.role==='post' ? 'done' : 'strength';
+      window.__fmPhase = (()=>{ if(c.role==='post') return 'done'; if(rs.length) return 'strength';
+        return (train.cardio||[]).some(x=>x.date===trDateVal() && x.uid!==c.uid && !x.done && !x.skipped) ? 'cardio' : 'done'; })();
       if(window.__fmPhase==='done'){ closeFocus(); showTrainSummary(); return; }
       renderFocus();
     });
@@ -5916,7 +5943,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     window.__fmCdTick2=setInterval(()=>{
       const t=el.querySelector('[data-fmcdt2]'); if(!t){ clearInterval(window.__fmCdTick2); window.__fmCdTick2=null; return; }
       const s2=cdSec(c); t.textContent=cdFmt(s2);
-      const ring=el.querySelector('[data-fmcdring2]'); if(ring) ring.style.setProperty('--p',Math.min(100,Math.round(s2/target*100)));
+      const ring=el.querySelector('[data-fmcdring2]'); if(ring) ring.style.setProperty('--p', target?Math.min(100,Math.round(s2/target*100)):Math.round((s2%60)/60*100));
     },1000);
     el.classList.add('on');
   }
@@ -5954,7 +5981,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function openFocus(){
     window.__fmPhase=null;
     const rs=focusList();
-    if(!rs.length){ trToast('先把动作加入今日'); return; }
+    const cdsP=trCardioFor(trDateVal()).filter(c=>!c.done && !c.skipped);
+    if(!rs.length && !cdsP.length){ trToast('先把动作或有氧加入今日'); return; }
     __focusUids=rs.map(r=>r.uid);
     __focusIdx=0;
     try{
@@ -6471,7 +6499,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const act=st.dataset.act||'start';
       if(act==='summary'){ try{ showTrainSummary(); }catch(e){} return; }
       const items=(train.records||[]).filter(r=>r.date===trDateVal());
-      if(!items.length){
+      const cdsP2=trCardioFor(trDateVal()).filter(c=>!c.done && !c.skipped);
+      if(!items.length && !cdsP2.length){
         trToast('今日还没有动作，先在计划里加几个');
         try{ trSetSeg('plan'); }catch(e){}
         setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="plan"]'); if(p) p.scrollIntoView({block:'start'}); },60);
@@ -7860,8 +7889,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       trToast('练后感受已记录');
     };
   }
-  const CARDIO_MODALS=['跑步','骑行','游泳','跳绳','椭圆机','划船机','快走','爬楼'];
-  const CARDIO_ICON={'跑步':'🏃','骑行':'🚴','游泳':'🏊','跳绳':'🪢','椭圆机':'🌀','划船机':'🚣','快走':'🚶','爬楼':'🪜'};
+  const CARDIO_MODALS=['跑步','骑行','游泳','跳绳','椭圆机','划船机','快走','爬坡','爬楼'];
+  const CARDIO_ICON={'跑步':'🏃','骑行':'🚴','游泳':'🏊','跳绳':'🪢','椭圆机':'🌀','划船机':'🚣','快走':'🚶','爬坡':'⛰️','爬楼':'🪜'};
   function trCardioFor(d){
     return (train.cardio||[]).filter(c=>c.date===d).sort((a,b)=>(a.ts||0)-(b.ts||0));
   }
@@ -7881,22 +7910,38 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     r.run=false; r.t0=0;
     if((r.sec||0)>0) r.dur=Math.max(1,Math.round(r.sec/60));
     r.done=true;
+    cdLog(r);
   }
-  const CD_DIST=['跑步','骑行','快走','游泳','椭圆机','划船机'];
+  function cdLog(r){
+    if(!r) return;
+    try{
+      const pad=n=>String(n).padStart(2,'0');
+      const d=new Date();
+      const dk=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const tl=`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const mins=Math.max(1,Math.round((r.sec||0)/60));
+      const line='有氧 · '+r.modal+' '+mins+' 分钟'+(r.dist?(' · '+r.dist+(CD_DIST.includes(r.modal)?' km':' 层')):'')+(r.lv?(' · '+r.lv):'');
+      logs.unshift({id:'cd'+Date.now().toString(36), time:d.toISOString(), date:dk, day:tl,
+        kind:'train', content:line, tags:['有氧'], score:0, mood:0,
+        meta:{cardio:{modal:r.modal, min:mins, sec:Math.round(r.sec||0), dist:r.dist||0, lv:r.lv||''}}});
+      save(); try{ renderLogs(); }catch(e){}
+    }catch(e){ try{ localStorage.setItem('cdlog_err', String(e&&e.stack||e)); }catch(_){ } }
+  }
+  const CD_DIST=['跑步','骑行','快走','游泳','椭圆机','划船机','爬坡'];
   function cdCardHtml(r){
     const icon=CARDIO_ICON[r.modal]||'🏃';
     const done=!!r.done, running=!!r.run;
     const sec=cdSec(r);
     const st=done?'done':running?'run':'plan';
     const badge=done?'✓ 已完成':running?'进行中':'计划';
-    const extra=[r.dist?(CD_DIST.includes(r.modal)?(r.dist+' km'):(r.dist+' 层')):'', (r.dur||0)+'′ 目标'].filter(Boolean).join(' · ');
+    const extra=[r.dist?(CD_DIST.includes(r.modal)?(r.dist+' km'):(r.dist+' 层')):'', (done&&r.dur)?(r.dur+'′ 完成'):''].filter(Boolean).join(' · ');
     const distChip=(!done&&!running&&CD_DIST.includes(r.modal))?'<button type="button" class="cd-chip" data-cddist2="'+r.uid+'">+0.5 km</button>':'';
     const floorChip=(!done&&!running&&r.modal==='爬楼')?'<button type="button" class="cd-chip" data-cddist3="'+r.uid+'">+5 层</button>':'';
     return `<div class="cd-card ${st}" data-cduid="${r.uid}">
       <div class="cd-top"><span class="cd-ic">${icon}</span><span class="cd-nm">${ENGINE.esc(r.modal)}${r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':''}</span>
         <span class="cd-bd"><i></i>${badge}</span>
         <button class="cd-x" type="button" data-cddel="${r.uid}" aria-label="移除">×</button></div>
-      <div class="cd-meta">${extra}${(running||sec>0)?(' · <span class="cd-timer" data-cdtimer="'+r.uid+'">'+cdFmt(sec)+'</span>'):''}</div>
+      <div class="cd-meta">${extra}${(running||sec>0)?((extra?' · ':'')+'<span class="cd-timer" data-cdtimer="'+r.uid+'">'+cdFmt(sec)+'</span>'):''}</div>
       ${done?'':`<div class="cd-acts">
         <button type="button" class="cd-run" data-cdrun="${r.uid}">${running?'暂停':'开始计时'}</button>
         <button type="button" data-cdfin="${r.uid}">完成</button>
@@ -7906,15 +7951,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function openCardioSheet(){
     document.querySelectorAll('.cd-sheet').forEach(x=>x.remove());
-    let modal='跑步', dur=20, lv='中等';
+    let modal='跑步', dur=0, lv='中等';
     const el=document.createElement('div');
     el.className='ex-sheet on cd-sheet';
     el.innerHTML=`<div class="ex-sheet-inner cd-sheet-inner">
       <div class="cd-h"><span>添加有氧</span><button class="ex-sheet-x" type="button" data-cdx>×</button></div>
       <div class="cd-lbl">项目</div>
       <div class="cd-chips" data-cdm>${CARDIO_MODALS.map(m=>`<button type="button" data-cdmv="${m}" class="${m===modal?'on':''}">${CARDIO_ICON[m]} ${m}</button>`).join('')}</div>
-      <div class="cd-lbl">时长</div>
-      <div class="cd-step"><button type="button" data-cdd="-5">−</button><b data-cddur>${dur}</b><button type="button" data-cdd="5">+</button><span class="hint" style="margin:0">分钟</span></div>
+      <div class="cd-lbl">计时</div>
+      <div class="cd-hintline">不预设时长：点开始计时，停止时按实际时长记录</div>
       <div class="cd-lbl">强度</div>
       <div class="cd-lv3">${['轻松','中等','强度'].map(x=>`<button type="button" data-cdlv="${x}" class="${x===lv?'on':''}">${x}</button>`).join('')}</div>
       <input class="cd-dist" data-cddist placeholder="距离 km（可选）" inputmode="decimal">
@@ -7923,7 +7968,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     document.body.appendChild(el);
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
     el.querySelector('[data-cdx]').onclick=()=>el.remove();
-    const paint=()=>{ el.querySelector('[data-cddur]').textContent=dur; };
     el.querySelectorAll('[data-cdmv]').forEach(b=>b.onclick=()=>{
       el.querySelectorAll('[data-cdmv]').forEach(x=>x.classList.toggle('on',x===b));
       modal=b.dataset.cdmv;
@@ -7932,21 +7976,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       el.querySelectorAll('[data-cdlv]').forEach(x=>x.classList.toggle('on',x===b));
       lv=b.dataset.cdlv;
     });
-    el.querySelectorAll('[data-cdd]').forEach(b=>{
-      let hold=null, tick=null;
-      const stop=()=>{ clearTimeout(hold); clearInterval(tick); hold=tick=null; };
-      const fire=()=>{ dur=Math.max(5,Math.min(180,dur+parseInt(b.dataset.cdd,10))); paint(); };
-      b.addEventListener('pointerdown',ev=>{ ev.preventDefault(); fire(); hold=setTimeout(()=>{ tick=setInterval(fire,110); },420); });
-      b.addEventListener('pointerup',stop);
-      b.addEventListener('pointercancel',stop);
-      b.addEventListener('pointerleave',stop);
-    });
     el.querySelector('[data-cdok]').onclick=()=>{
       const dist=parseFloat(el.querySelector('[data-cddist]').value)||0;
       train.cardio=train.cardio||[];
       train.cardio.push({uid:'cd'+Date.now().toString(36), date:trDateVal(), modal:modal, dur:dur, dist:dist, lv:lv, done:false, ts:Date.now()});
       saveTrain(); trRenderToday(); refreshHome(); el.remove();
-      trToast('已加入有氧：'+modal+' '+dur+' 分钟');
+      trToast('已加入有氧：'+modal+'，点开始计时');
     };
   }
   function openAddSheet(){
@@ -7956,7 +7991,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.innerHTML=`<div class="ex-sheet-inner cd-sheet-inner">
       <div class="cd-head"><h2>添加</h2><button class="cd-x" data-adclose type="button">×</button></div>
       <button class="add-mode" data-adm="strength" type="button"><span class="add-mode-ic">💪</span><span><b>力量动作</b><i>从动作库挑选，带组次</i></span><em>›</em></button>
-      <button class="add-mode" data-adm="cardio" type="button"><span class="add-mode-ic">🏃</span><span><b>有氧</b><i>时长 + 强度 + 距离</i></span><em>›</em></button>
+      <button class="add-mode" data-adm="cardio" type="button"><span class="add-mode-ic">🏃</span><span><b>有氧</b><i>计时 + 强度 + 距离</i></span><em>›</em></button>
     </div>`;
     const close=()=>{ el.classList.remove('on'); el.innerHTML=''; };
     el.onclick=ev=>{ if(ev.target===el) close(); };
@@ -8035,17 +8070,18 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 
       if(r.uid!==activeUid){
         if(allDone){
-          return `<div class="tcf-done tr-fade" style="--i:${items.indexOf(r)}" data-topen="${r.uid}">
+          return `<div class="tcf-done tr-fade" style="--i:${items.indexOf(r)}" data-topen="${r.uid}" data-urow="${r.uid}">
             <span class="tc-ok">✓</span>
             <span class="tc-nm">${ENGINE.esc(r.name)}</span>
             <span class="tc-sx">${doneN}/${gs.length} · ${groupsDigest(gs,{bare:true})}</span>
           </div>`;
         }
         const isNext = r.uid===firstPendingUid;
-        return `<div class="tc-fold tr-fade ${isNext?'next':''}" style="--i:${items.indexOf(r)}" data-topen="${r.uid}">
+        return `<div class="tc-fold tr-fade ${isNext?'next':''}" style="--i:${items.indexOf(r)}" data-topen="${r.uid}" data-urow="${r.uid}">
           <span class="tc-nm">${isNext?'<i class="tc-dot" aria-hidden="true"></i>':''}${ENGINE.esc(r.name)}</span>
           <span class="tc-sx">${sxTxt}</span>
           <span class="tc-pr">${doneN}/${gs.length}</span>
+          <span class="tc-drag" data-drag="1" aria-label="按住拖动排序">≡</span>
           <span class="tc-ar">▸</span>
         </div>`;
       }
@@ -8063,10 +8099,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const hist=(train.records||[]).filter(x=>x.exId===r.exId).map(x=>x.weight||0);
       const wchips=[...new Set(gs.map(g=>g.weight).concat(hist))].filter(w=>w>0).sort((a,b)=>b-a).slice(0,4);
       const stCls = allDone?'st-done':(doneN>0?'st-run':'');
-      return `<div class="set-card open tr-fade ${stCls}" style="--i:${items.indexOf(r)}">
+      return `<div class="set-card open tr-fade ${stCls}" style="--i:${items.indexOf(r)}" data-urow="${r.uid}">
         <div class="set-head" data-tclose="${r.uid}">
           <span class="nm">${ENGINE.esc(r.name)}</span>
           <span class="meta">${lastTxt}${doneN?(' · '+doneN+'/'+gs.length):''}${sug?(' · 建议 '+sug+'kg'):''}</span>
+          <span class="set-drag" data-drag="1" aria-label="按住拖动排序">≡</span>
           <button class="set-more" data-rmore="${r.uid}" type="button" aria-label="更多操作">⋯</button>
         </div>
         ${(r.dur && !(r.groups && r.groups.length))?`<div class="set-row"><span class="set-val">${r.dur} 分钟</span></div>`:rows}
@@ -8086,7 +8123,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       let txt = nxt.length ? ('接下来：'+nxt.slice(0,3).map(r=>r.name+' '+ensureGroups(r).filter(g=>!g.done).length+' 组').join(' · ')) : '';
       if(!nxt.length){
         const pc=cds.filter(c=>!c.done);
-        if(pc.length) txt='接下来：'+pc.slice(0,2).map(c=>c.modal+(c.role==='pre'?' · 热身':c.role==='post'?' · 收尾':'')+' '+(c.dur||0)+' 分钟').join(' · ');
+        if(pc.length) txt='接下来：'+pc.slice(0,2).map(c=>c.modal+(c.role==='pre'?' · 热身':c.role==='post'?' · 收尾':'')+' '+(c.dur?c.dur+' 分钟':'计时')).join(' · ');
       }
       $('trNext').textContent=txt;
       $('trNext').hidden = !txt;
@@ -8160,19 +8197,55 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     box.querySelectorAll('[data-tclose]').forEach(el=>{
       el.onclick=ev=>{
-        if(el.__lp){ el.__lp=false; return; }
-        if(ev.target.closest('[data-rmu]')) return;
+        if(ev.target.closest('[data-rmore]')||ev.target.closest('[data-drag]')) return;
         trOpenUid=''; trFollowTick=false; trRenderToday();
       };
-      let tm=null;
-      el.addEventListener('touchstart',ev=>{
-        if(ev.target.closest('[data-rmu]')) return;
-        tm=setTimeout(()=>{ el.__lp=true; try{ navigator.vibrate&&navigator.vibrate(12); }catch(e){}
-          try{ openLadderSheet(el.dataset.tclose); }catch(e){} }, 600);
-      },{passive:true});
-      el.addEventListener('touchmove',()=>{ if(tm){ clearTimeout(tm); tm=null; } },{passive:true});
-      el.addEventListener('touchend',()=>{ if(tm){ clearTimeout(tm); tm=null; } });
     });
+    // 拖动排序 + 禁止长按复制 / 选择
+    try{ box.style.webkitUserSelect='none'; box.style.userSelect='none'; }catch(e){}
+    box.addEventListener('contextmenu',ev=>{ const t=ev.target.closest('[data-urow],[data-drag],.cd-card'); if(t) ev.preventDefault(); });
+    if(!box.__dragBound){
+      box.__dragBound=true;
+      let drag=null;
+      const rows=()=>[...box.querySelectorAll('[data-urow]')];
+      box.addEventListener('pointerdown',ev=>{
+        const h=ev.target.closest('[data-drag]'); if(!h) return;
+        const row=h.closest('[data-urow]'); if(!row) return;
+        const r0=row.getBoundingClientRect();
+        drag={row, y0:ev.clientY, dy:0, cy:r0.top+r0.height/2, id:ev.pointerId};
+        row.classList.add('dragging'); try{ h.setPointerCapture(ev.pointerId); }catch(e){}
+        ev.preventDefault();
+      });
+      box.addEventListener('pointermove',ev=>{
+        if(!drag) return;
+        drag.dy=ev.clientY-drag.y0;
+        drag.row.style.transform='translateY('+drag.dy+'px)';
+        ev.preventDefault();
+      });
+      const finish=ev=>{
+        if(!drag) return;
+        const d=drag; drag=null;
+        d.row.classList.remove('dragging'); d.row.style.transform='';
+        if(Math.abs(d.dy)<14) return;
+        const cy=d.cy+d.dy;
+        const order=rows().filter(x=>x!==d.row);
+        let idx=order.findIndex(x=>{ const r=x.getBoundingClientRect(); return cy < r.top+r.height/2; });
+        if(idx<0) idx=order.length;
+        const uids=order.map(x=>x.dataset.urow);
+        uids.splice(idx,0,d.row.dataset.urow);
+        const recs=train.records||[];
+        const pos=[]; recs.forEach((r,i)=>{ if(uids.includes(r.uid)) pos.push(i); });
+        if(pos.length===uids.length){
+          const objs=uids.map(u=>recs.find(r=>r.uid===u));
+          pos.forEach((p,k)=>{ recs[p]=objs[k]; });
+          saveTrain();
+        }
+        trOpenUid=''; trRenderToday();
+        try{ haptic('core'); }catch(e){}
+      };
+      box.addEventListener('pointerup',finish);
+      box.addEventListener('pointercancel',()=>{ if(drag){ drag.row.classList.remove('dragging'); drag.row.style.transform=''; drag=null; } });
+    }
     // 单组参数 ±
     if(!box.__swipeBound){
       box.__swipeBound=true;
@@ -11248,6 +11321,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function coachMark(k){ const st=coachState(); st[k]=1; try{ localStorage.setItem(COACH_KEY, JSON.stringify(st)); }catch(e){} }
   function coach(k, text, anchor, opts){
     if(!text) return false;
+    if(document.getElementById('focusMode')) return false;
     if(document.getElementById('coach')) return false;
     opts=opts||{};
     if(!opts.replay && coachSeen(k)) return false;
