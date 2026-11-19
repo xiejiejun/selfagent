@@ -2409,8 +2409,10 @@ html,body{touch-action:manipulation}
 .drag-on{overscroll-behavior:contain}
 .pl-row,[data-urow],.set-card,.set-head,.cd-card,.ex-row,.lib-row,.pl-drag{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .pl-row *,[data-urow] *,.cd-card *{-webkit-touch-callout:none}
-[data-urow].dragging{position:relative;z-index:5;transition:none;box-shadow:0 10px 24px rgba(0,0,0,.35);border-radius:10px;opacity:.96}
-[data-urow].dragging *{pointer-events:none}
+.dragging, .pl-row.dragging{position:relative;z-index:6;transition:none!important;box-shadow:0 14px 30px rgba(0,0,0,.4);border-radius:12px;opacity:.97;cursor:grabbing}
+.dragging *{pointer-events:none}
+.pl-row{transition:transform .18s var(--ease, ease), box-shadow .18s ease}
+.pl-row.dragging{transition:none!important}
 #trToday{display:flex;flex-direction:column}
 .tc-row{grid-template-columns:16px minmax(0,1fr) auto 24px!important}
 .tc-row .pl-nm b{font-weight:600}
@@ -7682,34 +7684,23 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       });
     });
     // ≡ 拖动排序
-    box.querySelectorAll('[data-pldrag]').forEach(h=>{
-      h.addEventListener('pointerdown',e=>{
-        e.preventDefault(); e.stopPropagation();
-        const idx=+h.dataset.pldrag, row=h.closest('.pl-row');
-        if(!row) return;
-        const rows=[...box.querySelectorAll('.pl-row')];
-        const h0=row.getBoundingClientRect().height+8;
-        let pos=0;
-        row.style.zIndex=5; row.style.boxShadow='0 10px 24px rgba(0,0,0,.28)'; row.classList.add('swipe');
-        const move=ev=>{
-          pos=ev.clientY-e0y;
-          row.style.transform='translateY('+pos+'px)';
-          const shift=Math.round(pos/h0);
-          rows.forEach((o,i2)=>{ if(o===row) return; o.style.transform = (i2>=idx && i2<idx+shift+1) || (i2<=idx && i2>idx+shift) ? 'translateY('+(shift>0?-h0:h0)+'px)' : ''; });
-        };
-        let e0y=e.clientY;
-        const up=()=>{
-          document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); document.removeEventListener('pointercancel',up);
-          const shift=Math.round(pos/h0); const to=Math.max(0,Math.min(trPlan.length-1,idx+shift));
-          row.style.transform=''; row.style.boxShadow=''; row.style.zIndex=''; row.classList.remove('swipe');
-          rows.forEach(o=>{ o.style.transform=''; });
-          if(to!==idx){ const it=trPlan.splice(idx,1)[0]; trPlan.splice(to,0,it); trPlanSave(); trRenderPlan(); trToast('顺序已更新'); }
-        };
-        document.addEventListener('pointermove',move);
-        document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up);
+    // 计划页拖拽：与今日训练共用 liveDragBind，同一套阈值/跟手/放大反馈
+    [...box.querySelectorAll('[data-pldrag]')].map(h=>h.closest('.pl-row')).filter(Boolean)
+      .map(r=>r.parentElement).filter(Boolean)
+      .filter((c,i,arr)=>arr.indexOf(c)===i)
+      .forEach(cont=>{
+        liveDragBind(cont,{
+          nodes:()=>[...cont.querySelectorAll('.pl-row')],
+          rowSel:'.pl-row', handle:'[data-pldrag]',
+          onDrop:()=>{
+            const idxs=[...cont.querySelectorAll('.pl-row')].map(n=>+n.dataset.plrow);
+            const objs=idxs.map(i=>trPlan[i]);
+            const pos=idxs.slice().sort((a,b)=>a-b);
+            pos.forEach((p,k)=>{ if(objs[k]) trPlan[p]=objs[k]; });
+            trPlanSave(); trRenderPlan(); trToast('顺序已更新');
+          }
+        });
       });
-    });
-
     // 行手风琴
     box.querySelectorAll('[data-plrow]').forEach(r=>r.onclick=()=>{
       const idx=+r.dataset.plrow;
@@ -8061,6 +8052,75 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     saveTrain();
     trToast('已按有氧习惯挂载'+(h.pre&&h.post?'（前 + 后）':(h.pre?'（训练前）':'（训练后）')));
   }
+  // 统一拖拽（今日训练 / 计划页共用同一套参数）
+  function liveDragBind(cont,opt){
+    if(!cont || cont.__ldb) return; cont.__ldb=1;
+    const o=opt||{};
+    let drag=null, raf=0;
+    const list=()=>{
+      if(o.nodes) return o.nodes().filter(n=>n&&n.isConnected);
+      return [...cont.children].filter(n=>n.matches && n.matches(o.rowSel||'.pl-row'));
+    };
+    const paint=()=>{
+      raf=0; if(!drag) return;
+      const dt=drag.lastY-drag.startY;
+      if(!drag.moved && Math.abs(dt)>4) drag.moved=true;
+      const wantTop=drag.startTop+dt;
+      const bTop=cont.getBoundingClientRect().top;
+      drag.ty=wantTop-drag.layoutTop;
+      drag.row.style.transform='translateY('+drag.ty+'px) scale(1.03)';
+      const center=wantTop+drag.h0/2;
+      const arr=list();
+      let idx=0;
+      arr.forEach(n=>{
+        if(n===drag.row) return;
+        const r=n.getBoundingClientRect();
+        if(center > (r.top-bTop)+r.height/2) idx++;
+      });
+      const cur=arr.indexOf(drag.row);
+      if(idx!==cur){
+        let target;
+        if(idx>cur){ target=arr[idx+1]; if(!target){ cont.appendChild(drag.row); target=null; } }
+        else { target=arr[idx]; }
+        if(target){ cont.insertBefore(drag.row, target); }
+        else if(idx>cur){ /* 已移至末尾 */ }
+        const bTop2=cont.getBoundingClientRect().top;
+        drag.layoutTop=drag.row.getBoundingClientRect().top-bTop2-drag.ty;  // 换位后重新锚定布局位置
+        try{ haptic('light'); }catch(e){}
+      }
+    };
+    const finish=ev=>{
+      if(!drag) return;
+      const d=drag; drag=null;
+      if(raf){ cancelAnimationFrame(raf); raf=0; }
+      d.row.style.transform=''; d.row.classList.remove('dragging');
+      cont.classList.remove('drag-on');
+      try{ d.h.releasePointerCapture(d.id); }catch(e){}
+      if(!d.moved) return;
+      try{ o.onDrop && o.onDrop(d.row); }catch(e){}
+      try{ haptic('core'); }catch(e){}
+    };
+    cont.addEventListener('pointerdown',ev=>{
+      const h=ev.target.closest(o.handle||'[data-drag],[data-pldrag]'); if(!h) return;
+      const row=h.closest(o.rowSel||'[data-urow],.pl-row'); if(!row) return;
+      if(ev.pointerType==='mouse' && ev.button!==0) return;
+      const rr=row.getBoundingClientRect(), bt=cont.getBoundingClientRect().top;
+      drag={row,h,startY:ev.clientY,lastY:ev.clientY,moved:false,startTop:rr.top-bt,layoutTop:rr.top-bt,ty:0,h0:rr.height,id:ev.pointerId};
+      try{ h.setPointerCapture(ev.pointerId); }catch(e){}
+      row.classList.add('dragging');
+      cont.classList.add('drag-on');
+      ev.preventDefault(); ev.stopPropagation();
+    },{passive:false});
+    cont.addEventListener('pointermove',ev=>{
+      if(!drag) return;
+      drag.lastY=ev.clientY;
+      if(!raf) raf=requestAnimationFrame(paint);
+      ev.preventDefault();
+    },{passive:false});
+    cont.addEventListener('pointerup',finish);
+    cont.addEventListener('pointercancel',finish);
+    cont.addEventListener('lostpointercapture',finish);
+  }
   function trRenderToday(){
     const box=$('trToday'); if(!box) return;
     const d=trDateVal();
@@ -8287,77 +8347,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     // 拖动排序 + 禁止长按复制 / 选择
     try{ box.style.webkitUserSelect='none'; box.style.userSelect='none'; }catch(e){}
     box.addEventListener('contextmenu',ev=>{ const t=ev.target.closest('[data-urow],[data-drag],.cd-card'); if(t) ev.preventDefault(); });
-    if(!box.__dragBound){
-      box.__dragBound=true;
-      let drag=null, rafId=0, pendingY=0;
-      const nodeKey=n=>n.dataset&&n.dataset.urow;
-      const saveOrder=()=>{
-        const keys=[...box.children].map(nodeKey).filter(Boolean);
+    liveDragBind(box,{
+      nodes:()=>[...box.children].filter(n=>n.dataset&&n.dataset.urow),
+      rowSel:'[data-urow]', handle:'[data-drag]',
+      onDrop:()=>{
+        const keys=[...box.children].map(n=>n.dataset&&n.dataset.urow).filter(Boolean);
         train.order=train.order||{}; train.order[trDateVal()]=keys;
-        saveTrain();
-      };
-      box.addEventListener('pointerdown',ev=>{
-        const h=ev.target.closest('[data-drag]'); if(!h) return;
-        const row=h.closest('[data-urow]'); if(!row) return;
-        if(ev.pointerType==='mouse' && ev.button!==0) return;
-        const rr=row.getBoundingClientRect();
-        drag={row,h,startY:ev.clientY,lastY:ev.clientY,moved:false,
-              boxTop:box.getBoundingClientRect().top,
-              startTop:rr.top-box.getBoundingClientRect().top,
-              h0:rr.height,id:ev.pointerId};
-        try{ h.setPointerCapture(ev.pointerId); }catch(e){}
-        row.classList.add('dragging');
-        box.classList.add('drag-on');
-        ev.preventDefault();
-      });
-      const paint=()=>{
-        rafId=0;
-        if(!drag) return;
-        const dt=drag.lastY-drag.startY;
-        if(!drag.moved && Math.abs(dt)>4) drag.moved=true;
-        const wantTop=drag.startTop+dt;
-        const bTop=box.getBoundingClientRect().top;
-        const curTop=drag.row.getBoundingClientRect().top-bTop;
-        drag.row.style.transform='translateY('+(wantTop-curTop)+'px)';
-        // 按累计位移判定目标位（含跨多行），换位后 transform 自动补偿
-        const center=wantTop+drag.h0/2;
-        const list=[...box.children].filter(n=>nodeKey(n));
-        let idx=0;
-        list.forEach(n=>{
-          if(n===drag.row) return;
-          const r=n.getBoundingClientRect();
-          if(center > (r.top-bTop)+r.height/2) idx++;
-        });
-        const cur=list.indexOf(drag.row);
-        if(idx!==cur){
-          const target=list[idx];
-          if(target && target!==drag.row){ box.insertBefore(drag.row, target); try{ haptic('light'); }catch(e){} }
-          else if(!target){ /* 已在末尾 */ }
-        }
-      };
-      const apply=(ev)=>{
-        if(!drag) return;
-        drag.lastY=ev.clientY;
-        if(!rafId) rafId=requestAnimationFrame(paint);
-        ev.preventDefault();
-      };
-      const finish=()=>{
-        if(!drag) return;
-        const d=drag; drag=null;
-        if(rafId){ cancelAnimationFrame(rafId); rafId=0; }
-        d.row.classList.remove('dragging'); d.row.style.transform='';
-        box.classList.remove('drag-on');
-        try{ d.h.releasePointerCapture(d.id); }catch(e){}
-        if(!d.moved) return;
-        saveOrder();
-        trOpenUid=''; trRenderToday();
-        try{ haptic('core'); }catch(e){}
-      };
-      box.addEventListener('pointermove',apply);
-      box.addEventListener('pointerup',finish);
-      box.addEventListener('pointercancel',finish);
-      box.addEventListener('lostpointercapture',finish);
-    }
+        saveTrain(); trOpenUid=''; trRenderToday();
+      }
+    });
     // 单组参数 ±
     if(!box.__swipeBound){
       box.__swipeBound=true;
