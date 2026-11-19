@@ -1044,6 +1044,7 @@ background:#0d1216;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
 .aif-row .go{margin-left:auto;font-size:11.5px;color:var(--tx3);flex:0 0 auto}
 .aif-empty{padding:14px 4px;text-align:center;color:var(--tx3);font-size:12.5px;line-height:1.6}
 .aif-new{width:100%;margin-top:6px}
+.aif-stepsbox{margin-top:6px;padding-top:8px;border-top:1px dashed var(--line)}
 .aif-steps{margin:8px 0 0;padding:0 0 0 4px;font-size:12px;color:var(--tx3);line-height:1.6}
 .search-wrap .search-go{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:9px;background:none;color:var(--tx3);cursor:pointer;transition:color .16s,background .16s}
 .search-wrap .search-go:hover{color:var(--accent);background:rgba(61,220,191,.12)}
@@ -6591,36 +6592,46 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.querySelectorAll('[data-aifx]').forEach(b=>b.onclick=()=>el.remove());
     const qEl=el.querySelector('#aifQ'), resEl=el.querySelector('#aifRes'), goEl=el.querySelector('#aifGo');
     el.querySelectorAll('[data-aifc]').forEach(b=>b.onclick=()=>{ qEl.value=b.dataset.aifc; });
+    let lastTry={matches:[],create:null};
     const render=(matches, create, note)=>{
+      lastTry={matches:matches||[],create:create||null};
       const blocks=[];
       if(matches.length){
-        blocks.push(`<div class="aif-empty" style="padding:0 0 2px;text-align:left;color:var(--tx3)">${note||'库内找到 '+matches.length+' 个可用的'}</div>`);
+        blocks.push(`<div class="aif-empty" style="padding:0 0 2px;text-align:left;color:var(--tx3)">${note||'库内找到 '+matches.length+' 个可用的'} · 点开可看动作详情</div>`);
         blocks.push(matches.map(m=>`<div class="aif-row" data-aifid="${m.ex?m.ex.id:''}">
           <div><div class="nm">${ENGINE.esc(m.name)}</div>${m.ex?`<div class="mt">${ENGINE.esc(m.ex.p||'')} · ${ENGINE.esc(m.ex.e||'自重')}</div>`:''}
           ${m.why?`<div class="why">${ENGINE.esc(m.why)}</div>`:''}</div>
           <span class="go">查看 ›</span></div>`).join(''));
+      } else {
+        blocks.push(`<div class="aif-empty">${note==='AI 未配置，先用本地关键词匹配'?'本地没找到匹配':'库里没有合适的动作'}，可以在下面新建一个</div>`);
       }
-      if(create){
-        blocks.push(`<div class="aif-empty">库里没有合适的动作，可以新建「${ENGINE.esc(create.name||qEl.value.trim())}」</div>
-          <button class="btn sm aif-new" id="aifCreate" type="button">创建自定义动作（要领已备好）</button>
-          ${create.steps&&create.steps.length?`<div class="aif-steps">${create.steps.map((x,i)=>`<div>${i+1}. ${ENGINE.esc(x)}</div>`).join('')}</div>`:''}`);
-      }
-      if(!blocks.length) blocks.push('<div class="aif-empty">没找到结果，换个说法再试一次</div>');
+      const newName=((create&&create.name)||(qEl.value||'')).trim();
+      const steps=(create&&create.steps)?create.steps:[];
+      blocks.push(`<div class="aif-stepsbox">
+        <button class="btn ${matches.length?'ghost':'sm'} aif-new" id="aifCreate" type="button">${matches.length?'都不是想要的？新建':'创建自定义动作'}「${ENGINE.esc(newName)}」</button>
+        ${steps.length?`<div class="aif-steps">${steps.map((x,i)=>`<div>${i+1}. ${ENGINE.esc(x)}</div>`).join('')}</div>`:''}
+      </div>`);
       resEl.innerHTML=blocks.join('');
       resEl.querySelectorAll('[data-aifid]').forEach(r=>{
         const id=r.dataset.aifid; if(!id) return;
-        r.onclick=()=>{ const ex=findEx(id); if(ex){ el.remove(); try{ openExSheet(ex); }catch(e){} } };
+        r.onclick=()=>{
+          const ex=findEx(id); if(!ex) return;
+          el.style.display='none';
+          window.__exSheetBack=()=>{ el.style.display=''; };
+          try{ openExSheet(ex); }catch(e){ el.style.display=''; }
+        };
       });
       const cb=resEl.querySelector('#aifCreate');
       if(cb) cb.onclick=()=>{
         el.remove();
-        openCuSheet({name:create.name||qEl.value.trim(), part:create.part||'', equip:create.equip||'', steps:(create.steps||[]).slice(0,6)});
+        window.__exSheetBack=null;
+        openCuSheet({name:newName, part:(create&&create.part)||'', equip:(create&&create.equip)||'', steps:steps.slice(0,6)});
       };
     };
     const localRun=(q)=>{
       const kw=q.split(/[\s，,、\/]+/).filter(Boolean);
       const list=allExercises().filter(e=>kw.length? kw.some(k=>String(e.n||'').indexOf(k)>=0 || String(e.p||'')===k) : false).slice(0,6);
-      render(list.map(e=>({ex:e,name:e.n,why:'名称/部位与描述相关'})), list.length?null:{name:q,steps:[]}, 'AI 未配置，先用本地关键词匹配');
+      render(list.map(e=>({ex:e,name:e.n,why:'名称/部位与描述相关'})), {name:q,steps:[]}, 'AI 未配置，先用本地关键词匹配');
     };
     goEl.onclick=()=>{
       const q=(qEl.value||'').trim();
@@ -6645,8 +6656,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           steps:(Array.isArray(o.create.steps)?o.create.steps:[]).filter(x=>typeof x==='string'&&x.trim())
         }:null;
         goEl.disabled=false; goEl.textContent='AI 帮我找';
-        render(matches, matches.length?null:create, '');
-        if(matches.length && create) { /* 有匹配时不推新建 */ }
+        render(matches, create, '');
       }).catch(err=>{
         goEl.disabled=false; goEl.textContent='AI 帮我找';
         localRun(q);
@@ -7175,8 +7185,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       sh.id='exSheet'; sh.className='ex-sheet';
       sh.innerHTML='<div class="ex-sheet-inner"><div class="ex-sheet-bar"><span>动作详情</span><button class="ex-sheet-x" id="exSheetX" type="button">×</button></div><div id="exSheetBody"></div></div>';
       document.body.appendChild(sh);
-      sh.addEventListener('click',ev=>{ if(ev.target===sh){ sh.classList.remove('on'); ensureSelVisible(); } });
-      sh.querySelector('#exSheetX').onclick=()=>{ sh.classList.remove('on'); ensureSelVisible(); };
+      const closeEx=()=>{
+        sh.classList.remove('on');
+        try{ ensureSelVisible(); }catch(e){}
+        const cb=window.__exSheetBack; window.__exSheetBack=null;
+        if(cb){ try{ cb(); }catch(e){} }
+      };
+      sh.addEventListener('click',ev=>{ if(ev.target===sh){ closeEx(); } });
+      sh.querySelector('#exSheetX').onclick=closeEx;
+      window.__exSheetClose=closeEx;
     }
     sh.querySelector('#exSheetBody').innerHTML=detailBodyHtml(e);
     bindDetail(sh.querySelector('#exSheetBody'), e);
