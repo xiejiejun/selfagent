@@ -1675,6 +1675,38 @@ html[data-theme="light"] .ob-p.on{background:rgba(14,143,122,.1);border-color:rg
 html[data-theme="light"] .grad-mask{background:rgba(243,246,250,.94)}
 html[data-theme="light"] .coach-mask .tour-hole{box-shadow:0 0 0 2000px rgba(18,26,38,.62);outline-color:rgba(14,143,122,.8)}
 
+/* Agent 接入：AI 报告 / 问答 / 设置 */
+.ai-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx3);padding:8px 10px;border:1px solid rgba(61,220,191,.18);border-radius:10px;background:rgba(61,220,191,.05);margin:0 0 10px}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:#3DDCBF;animation:aiPulse 1.2s infinite}
+@keyframes aiPulse{0%,100%{opacity:.35}50%{opacity:1}}
+.ai-bar.off{border-color:rgba(240,106,90,.28);background:rgba(240,106,90,.06);color:#e08b84}
+.ai-report{margin:0 0 14px}
+.ai-sec{border:1px solid var(--line);border-radius:12px;padding:12px 13px;margin:0 0 10px;background:rgba(255,255,255,.02)}
+.ai-sec-t{font-size:13.5px;font-weight:600;color:var(--tx);margin:0 0 6px}
+.ai-sec p{margin:0 0 6px;font-size:12.6px;line-height:1.7;color:var(--tx2)}
+.ai-sec-src{font-size:10.5px;color:var(--tx3);font-family:var(--mono);letter-spacing:.4px;margin-top:4px}
+.ai-one{font-size:12.5px;color:var(--tx2);margin:0 0 10px;line-height:1.7}
+.ai-src{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ai-chip{font:inherit;font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:var(--tx2);cursor:pointer}
+.ai-chip:hover{border-color:rgba(61,220,191,.5);color:#3DDCBF}
+.ai-fold{margin:10px 0 0}
+.ai-fold summary{cursor:pointer;font-size:11.5px;color:var(--tx3);padding:6px 0}
+.plan-why{font-size:12px;color:var(--tx2);border-left:2px solid rgba(61,220,191,.5);padding:7px 0 7px 9px;margin:8px 0;background:rgba(61,220,191,.04);border-radius:0 6px 6px 0;line-height:1.6}
+.sig.ai{border-color:rgba(61,220,191,.35)}
+.ai-eng{display:flex;gap:6px;padding:4px;margin:10px 0 0;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03)}
+.ai-eng button{flex:1;padding:9px 0;border:1px solid transparent;border-radius:999px;background:none;color:var(--tx3);font:inherit;font-size:13px;cursor:pointer;transition:background .2s ease,color .2s ease,border-color .2s ease}
+.ai-eng button.on{background:linear-gradient(135deg,rgba(61,220,191,.2),rgba(61,220,191,.05));border-color:rgba(61,220,191,.45);color:var(--accent);font-weight:600}
+html[data-theme="light"] .ai-eng{background:#fff}
+html[data-theme="light"] .ai-eng button.on{background:rgba(13,138,120,.1);border-color:rgba(13,138,120,.5);color:#0b6f63}
+.ai-prev[hidden]{display:none}
+.ai-grid{display:grid;gap:8px}
+.ai-grid input,.ai-grid select{width:100%;height:36px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--tx);padding:0 10px;font:inherit;font-size:12.5px}
+.ai-prev{width:100%;min-height:170px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--tx2);font:inherit;font-size:11.5px;line-height:1.6;padding:10px;resize:vertical}
+html[data-theme="light"] .ai-sec{background:#fff}
+html[data-theme="light"] .ai-grid input,html[data-theme="light"] .ai-prev,html[data-theme="light"] .ai-chip{background:#fff}
+html[data-theme="light"] .ai-bar{background:rgba(14,143,122,.07);color:#3b6f66}
+html[data-theme="light"] .plan-why{background:rgba(14,143,122,.06)}
+
 /* p56 训练页：加动作符号 + 今日计划池 + 专注入口 */
 .ex-add{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;
   border:1px solid rgba(61,220,191,.42);background:rgba(61,220,191,.08);color:#3DDCBF;
@@ -6458,6 +6490,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     trPlan=genPlan(part); trPlanOrig=null; plOpen=-1; plJoinedOpen=false;
     trPlanSave(); trRenderPlan();
     trToast('已生成 '+(PV[part]||part)+'日计划');
+    try{ aiPlanWhy(PV[part]||part); }catch(e){}
   }
   function planImportAll(){
     const day=trDateVal(); let added=0, updated=0;
@@ -7695,6 +7728,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       train:'休息 '+restUser+' · 自动下一组 '+auto,
       theme:theme,
       data:cloud+' · '+logsN+' 条日志',
+      ai:aiSummary(),
       about:'v0.9 体验版'
     };
   }
@@ -7705,6 +7739,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       train:'<path d="M4 9.5v5M7.2 8v8M16.8 8v8M20 9.5v5M7.2 12h9.6"/>',
       appearance:'<path d="M20 14.7A8.6 8.6 0 0 1 9.3 4 7.2 7.2 0 1 0 20 14.7z"/>',
       data:'<ellipse cx="12" cy="6" rx="6.8" ry="2.8"/><path d="M5.2 6v12c0 1.6 3 2.8 6.8 2.8s6.8-1.2 6.8-2.8V6"/><path d="M5.2 12c0 1.6 3 2.8 6.8 2.8s6.8-1.2 6.8-2.8"/>',
+      ai:'<path d="M12 3.2l1.5 4.2 4.2 1.5-4.2 1.5L12 14.6l-1.5-4.2L6.3 8.9l4.2-1.5z"/><path d="M18 15.4l.8 2.1 2.1.8-2.1.8-.8 2.1-2.1-.8z"/>',
       about:'<circle cx="12" cy="12" r="8.4"/><path d="M12 11v6M12 7.7v.5"/>'
     };
     return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(m[k]||'')+'</svg>';
@@ -7767,6 +7802,75 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     else if(window.matchMedia('(min-width:1000px)').matches) openSetPanel('profile');
     else openSetPanel('');
   }
+  /* ---------- AI 服务设置 ---------- */
+  function aiSummary(){
+    const c=aiCfg();
+    if(c.engine==='api' && c.base && c.key) return 'API · '+c.model+' · 已用 '+c.count+' 次';
+    if(c.engine==='api') return 'API · 未填 Key（仍走内置规则）';
+    return '内置规则 · 离线';
+  }
+  function aiUsageText(){
+    const c=aiCfg();
+    const last=c.last? (Math.round((Date.now()-c.last)/60000)+' 分钟前') : '未使用';
+    return '已调用 '+c.count+' 次 · 约 '+c.tokens.toLocaleString()+' tokens · 上次 '+last;
+  }
+  function aiLastText(){
+    const fp=aiFingerprint();
+    const hit=aiCacheGet('persona', fp, 24*3600e3);
+    if(!hit) return '还没有 AI 分析结果';
+    const mins=Math.round((Date.now()-hit.ts)/60000);
+    return '基于 '+((typeof logs!=='undefined'?(logs||[]):[]).length)+' 条记录 · '+(mins<1?'刚刚':mins+' 分钟前');
+  }
+  function bindAISettings(){
+    const c=aiCfg();
+    const base=$('aiBase'), key=$('aiKey'), model=$('aiModel'), msg=$('aiMsg');
+    if(base) base.value=c.base||'https://api.deepseek.com/v1';
+    if(model && !model.value) model.value=c.model;
+    if(key) key.value=c.key||'';
+    if(model) model.value=c.model||'deepseek-chat';
+    const seg=$('aiEngineSeg');
+    if(seg) seg.querySelectorAll('[data-aie]').forEach(b=>{
+      b.onclick=()=>{
+        aiSave({engine:b.dataset.aie});
+        seg.querySelectorAll('[data-aie]').forEach(x=>x.classList.toggle('on', x.dataset.aie===b.dataset.aie));
+        if($('aiSum')) $('aiSum').textContent=aiSummary();
+        if(msg) msg.textContent = b.dataset.aie==='api' ? '已切到自定义 API（填好 Base/Key 才会真正调用）' : '已切回内置规则引擎（完全离线）';
+        try{ renderReport(); }catch(e){}
+      };
+    });
+    const save=()=>{
+      aiSave({base:(base&&base.value||'').trim(), key:(key&&key.value||'').trim(), model:(model&&model.value||'').trim()||'deepseek-chat'});
+      if($('aiSum')) $('aiSum').textContent=aiSummary();
+      if($('aiUsage')) $('aiUsage').textContent=aiUsageText();
+      if(msg) msg.textContent='已保存到本机（不进备份）';
+    };
+    if($('aiSaveCfg')) $('aiSaveCfg').onclick=save;
+    if($('aiClearKey')) $('aiClearKey').onclick=()=>{ aiSave({key:''}); if(key) key.value=''; if($('aiSum')) $('aiSum').textContent=aiSummary(); if(msg) msg.textContent='Key 已清除'; };
+    if($('aiTest')) $('aiTest').onclick=()=>{
+      save();
+      const k=(key&&key.value||'').trim();
+      if(!k || !(base&&base.value)){ if(msg) msg.textContent='先填 Base URL 与 Key'; return; }
+      if(msg) msg.textContent='测试中…';
+      const t0=Date.now();
+      aiChat({system:'你是连通性测试助手。', user:'只回复 ok', stream:false, temp:0}).then(r=>{
+        if(msg) msg.textContent='连通 · '+(Date.now()-t0)+'ms · 返回「'+String(r||'').trim().slice(0,20)+'」';
+      }).catch(e=>{ if(msg) msg.textContent='失败：'+(e&&e.message||e); });
+    };
+    const anon=$('aiAnonSwitch');
+    if(anon) anon.onclick=()=>{
+      const v=anon.getAttribute('aria-checked')!=='true';
+      aiSave({anon:v}); anon.setAttribute('aria-checked', v?'true':'false');
+    };
+    if($('aiPreview')) $('aiPreview').onclick=()=>{
+      const el=$('aiPrev'); if(!el) return;
+      if(!el.hidden){ el.hidden=true; el.value=''; return; }
+      const d=aiDigest(false);
+      el.hidden=false;
+      el.value='【将发送给 AI 的全部内容 · 约 '+d.tokens+' tokens · 不含设备与账号信息】\n\n'+d.text;
+    };
+    if($('aiUsage')) $('aiUsage').textContent=aiUsageText();
+    if($('aiLast')) $('aiLast').textContent=aiLastText();
+  }
   function renderSettingsPanel(){
     const body=$('reportBody');
     const saved = Object.keys(profile).length ? `<span class="profile-saved">已保存</span>` : '';
@@ -7810,6 +7914,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <span class="sr-main"><b>外观</b><small id="themeSum">${ENGINE.esc(sum.theme)}</small></span>
             <button class="toggle" id="setThemeSwitch" role="switch" type="button" aria-checked="${sum.theme==='浅色'?'true':'false'}" aria-label="切换深浅主题"><i></i></button>
           </div>
+          <button class="set-row" data-panel="ai" type="button">
+            <span class="sr-ico">${setRowIco('ai')}</span>
+            <span class="sr-main"><b>AI 服务</b><small id="aiSum">${ENGINE.esc(sum.ai)}</small></span>
+            <span class="sr-arrow">›</span>
+          </button>
           <button class="set-row" data-panel="data" type="button">
             <span class="sr-ico">${setRowIco('data')}</span>
             <span class="sr-main"><b>数据与同步</b><small>${ENGINE.esc(sum.data)}</small></span>
@@ -7852,10 +7961,48 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             </div>
           </section>
 
+          <section class="set-panel" data-p="ai" hidden>
+            <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>AI 服务</h2></div>
+            <div class="setting-sec">
+              <h2 style="font-size:14px">引擎</h2>
+              <div class="hint">内置规则完全离线、零费用；自定义 API 走 OpenAI 兼容接口（DeepSeek / Moonshot / OpenAI 均可）。Key 只存在这台设备，不进备份导出。</div>
+              <div class="ai-eng" id="aiEngineSeg">
+                <button type="button" data-aie="rule" class="${aiCfg().engine==='api'?'':'on'}">内置规则</button>
+                <button type="button" data-aie="api" class="${aiCfg().engine==='api'?'on':''}">自定义 API</button>
+              </div>
+              <div class="ai-grid" style="margin-top:10px">
+                <input id="aiBase" type="text" autocomplete="off" spellcheck="false" placeholder="Base URL，如 https://api.deepseek.com/v1">
+                <input id="aiKey" type="password" autocomplete="off" spellcheck="false" placeholder="API Key（仅本机保存）">
+                <input id="aiModel" type="text" autocomplete="off" spellcheck="false" placeholder="模型名，如 deepseek-chat">
+              </div>
+              <div class="backup-row">
+                <button class="btn ghost sm" id="aiTest" type="button">测试连接</button>
+                <button class="btn ghost sm" id="aiSaveCfg" type="button">保存</button>
+                <button class="btn ghost sm" id="aiClearKey" type="button">清除 Key</button>
+              </div>
+              <div class="backup-msg" id="aiMsg"></div>
+            </div>
+            <div class="setting-sec">
+              <div class="set-inline">
+                <div><b style="font-size:13.5px">匿名化发送</b><div class="hint" style="margin:4px 0 0">发送前隐去手机号、邮箱，只保留日期与文本</div></div>
+                <button class="toggle" id="aiAnonSwitch" role="switch" type="button" aria-checked="${aiCfg().anon!==false?'true':'false'}" aria-label="匿名化发送"><i></i></button>
+              </div>
+              <div class="backup-row" style="margin-top:12px"><button class="btn ghost sm" id="aiPreview" type="button">查看将发送给 AI 的内容</button></div>
+              <textarea class="ai-prev" id="aiPrev" readonly hidden></textarea>
+              <div class="hint" style="margin-top:10px">上下文按三级压缩：统计摘要 + 近 14 天原文 + 更早记录只给关键词，单次约 3–4k tokens。</div>
+            </div>
+            <div class="setting-sec">
+              <h2 style="font-size:14px">用量</h2>
+              <div class="hint" id="aiUsage"></div>
+              <div class="hint" style="margin-top:8px">上次分析：<span id="aiLast"></span></div>
+            </div>
+          </section>
+
           <section class="set-panel" data-p="data" hidden>
             <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>数据与同步</h2></div>
             <div class="setting-sec">
               <h2 style="font-size:14px">本地备份</h2>
+              <div class="hint">备份不含 AI 服务的 Key（它单独存本机，不随导出流转）。</div>
               <div class="hint">数据只存在这台设备的浏览器里。换机、清理浏览数据前先导出；iPhone 建议按 Safari「分享 → 添加到主屏幕」长期使用，数据更不易被清理。</div>
               <div class="backup-row">
                 <button class="btn ghost sm" id="expBtn">导出备份</button>
@@ -7887,8 +8034,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <section class="set-panel" data-p="about" hidden>
             <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>关于</h2></div>
             <div class="setting-sec">
-              <div class="hint">SelfAgent · 自我认知 v0.9 体验版。这是本地静态原型，Agent 输出由内置规则引擎根据你输入的关键词实时合成，用于体验「录入 → 画像 → 规划 → 趋势推演」的完整流程，并非真实大模型。</div>
-              <div class="hint">数据仅保存在你本地浏览器（localStorage），不会上传；真实产品将接入大模型 API，输出更深刻、个性化的分析。</div>
+              <div class="hint">SelfAgent · 自我认知 v0.9 体验版。默认用内置规则引擎（完全离线），可在「AI 服务」里接自己的 OpenAI 兼容 API：同一份数据契约，规则与模型可随时切换。</div>
+              <div class="hint">数据仅保存在你本地浏览器（localStorage）。只有在你自行配置 API 后，压缩后的记录摘要才会发送给你填的服务商；内置规则永远不上传。</div>
               <div class="hint">趋势推演仅为基于行为记录的可能性参考，不构成对未来结果的确定性预言。</div>
               <div class="hint" style="margin-top:10px">快捷键：空格＝随手记，T＝专注训练。悬浮球可拖拽吸附屏幕左右边缘，长按切换默认模式。</div>
             </div>
@@ -7978,6 +8125,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   })();
   function bindSettingsActions(){
     bindBackup();
+    try{ bindAISettings(); }catch(e){}
     const crb=$('coachReplayBtn'); if(crb) crb.onclick=()=>{ try{ coachReplay(); }catch(e){} };
     if(window.__cloudFill) window.__cloudFill();
     const onTypeChange = ()=>{ saveSettings(); renderSettingsPanel(); refreshLogForm(); renderLogs(); };
@@ -8091,6 +8239,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(worst && worst.gap>=12) sigs.push(['warn',`${worst.pt} 已经 ${worst.gap} 天没练了`]);
     }catch(e){}
     if($('homeSignals')) $('homeSignals').innerHTML = sigs.map(x=>`<div class="sig ${x[0]==='warn'?'warn':''}">${ENGINE.esc(x[1])}</div>`).join('');
+    try{ setTimeout(()=>{ try{ aiHomeInsight(); }catch(e){} }, 260); }catch(e){}
     try{ renderReview(false); }catch(e){}
   }
 
@@ -8495,6 +8644,48 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       sub:'可以继续问：训练次数 / 组数 / 容量 / 状态最差的一天 / 加班和睡眠 / 最久没练的部位。',
       refs:sc.lg.slice(0,4).map(evOf)};
   }
+  function aiAskEnhance(q, r, box){
+    if(!aiReady()) return;
+    const bar=document.createElement('div'); bar.className='ai-bar'; bar.id='aiAskBar';
+    bar.innerHTML='<i class="ai-dot"></i><span>AI 正在结合你的记录回答…</span>';
+    box.appendChild(bar);
+    aiAsk(q, r, box).then(out=>{
+      const a=box.querySelector('.ask-a'); if(!a) return;
+      a.innerHTML='<b>AI 回答</b><p>'+ENGINE.esc(out.answer)+'</p>'+
+        '<div class="ask-sub">'+(out.confidence!=null?('置信度 '+Math.round(out.confidence*100)+'% · '):'')+'模型 '+ENGINE.esc(aiCfg().model)+' · 原文依据见下</div>';
+      const ids=(out.evidence||[]).filter(Boolean);
+      if(ids.length){
+        let src=box.querySelector('.ask-src');
+        if(!src){ src=document.createElement('div'); src.className='ask-src'; box.appendChild(src); }
+        src.innerHTML='<span class="ask-src-t">依据 '+ids.length+' 条</span>'+ids.map(id=>{
+          const l=(logs||[]).find(x=>x.id===id); if(!l) return '';
+          const p=String(l.date||'').split('-');
+          return '<button type="button" class="ev-chip" data-ev="'+id+'">'+((p[1]||'')+'/'+(p[2]||'')+' '+ENGINE.esc(String(l.content||'').slice(0,14)))+'</button>';
+        }).join('');
+        bindEvChips(src);
+      }
+      if(bar) bar.remove();
+      const hist=(window.__askHist||[]); hist.push({q:q, a:out.answer}); window.__askHist=hist.slice(-4);
+      if($('aiUsage')) $('aiUsage').textContent=aiUsageText();
+    }).catch(e=>{
+      if(!bar) return;
+      bar.className='ai-bar off';
+      bar.innerHTML='<i class="ai-dot"></i><span>离线模式 · 已用内置规则'+(e&&e.message?('（'+e.message+'）'):'')+'</span>';
+      try{ trToast('离线模式 · 已用内置规则'); }catch(e2){}
+      setTimeout(()=>{ try{ bar.remove(); }catch(e3){} }, 4500);
+    });
+  }
+  function bindEvChips(scope){
+    (scope||document).querySelectorAll('[data-ev]').forEach(el=>{
+      if(el.__bev) return; el.__bev=1;
+      el.addEventListener('click',()=>{
+        const id=el.dataset.ev; const l=(logs||[]).find(x=>x.id===id);
+        if(!l) return;
+        openPage('log');
+        if(l.kind==='train') openTrainSheet(id); else openLogSheet(id);
+      });
+    });
+  }
   function renderAsk(q){
     const box=$('askAns'); if(!box) return;
     const r=answerAsk(q);
@@ -8503,14 +8694,353 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.innerHTML=`<div class="ask-q">${ENGINE.esc(q)}<em>${ENGINE.esc(r.range||'')}</em></div>
       <div class="ask-a"><b>${ENGINE.esc(r.title)}</b><p>${r.main}</p>${r.sub?`<div class="ask-sub">${r.sub}</div>`:''}</div>
       ${evRefHtml(r.refs||[])}`;
-    box.querySelectorAll('[data-ev]').forEach(el=>{
-      el.addEventListener('click',()=>{
-        const id=el.dataset.ev; const l=(logs||[]).find(x=>x.id===id);
-        if(!l) return;
-        openPage('log');
-        if(l.kind==='train') openTrainSheet(id); else openLogSheet(id);
+    try{ bindEvChips(box); }catch(e){}
+    try{ aiAskEnhance(q, r, box); }catch(e){}
+  }
+
+  /* ==================== Agent 接入层：规则引擎 / LLM 共用同一份契约 ==================== */
+  const AI_KEY='selfagent_ai_v1';
+  const AIC_KEY='selfagent_ai_cache_v1';
+  const AI_CONTRACT={
+    persona:['energy','mood','fitness','work','values'],
+    plan:['focus','sessions','rationale'],
+    trend:['baseline','scenarios','watch'],
+    ask:['answer','evidence','confidence']
+  };
+  let __aiCfg=null;
+  function aiCfg(){
+    if(__aiCfg) return __aiCfg;
+    let c={}; try{ c=JSON.parse(localStorage.getItem(AI_KEY)||'{}')||{}; }catch(e){}
+    __aiCfg={engine:(c.engine==='api'?'api':'rule'), base:String(c.base||'').trim(), key:String(c.key||'').trim(),
+      model:String(c.model||'deepseek-chat').trim(), anon:c.anon!==false, count:+c.count||0, tokens:+c.tokens||0,
+      last:+c.last||0, lastFp:String(c.lastFp||'')};
+    return __aiCfg;
+  }
+  function aiSave(patch){
+    const c=Object.assign({}, aiCfg(), patch||{});
+    const raw={engine:c.engine,base:c.base,key:c.key,model:c.model,anon:c.anon,count:c.count,tokens:c.tokens,last:c.last,lastFp:c.lastFp};
+    try{ localStorage.setItem(AI_KEY, JSON.stringify(raw)); }catch(e){}
+    __aiCfg=raw; return c;
+  }
+  function aiReady(){ const c=aiCfg(); return c.engine==='api' && !!c.base && !!c.key; }
+  function aiUsage(u, chars){
+    const c=aiCfg();
+    let tk=(u&&u.total_tokens)?u.total_tokens:Math.ceil((chars||0)/1.6);
+    if(!isFinite(tk)||tk<0) tk=0;
+    aiSave({count:c.count+1, tokens:c.tokens+tk, last:Date.now()});
+    return tk;
+  }
+
+  function aiChat(o){
+    o=o||{};
+    const c=aiCfg();
+    if(!c.base||!c.key) return Promise.reject(new Error('未配置 AI'));
+    const base=c.base.replace(/\/+$/,'');
+    const url=base.indexOf('/chat/completions')>=0 ? base : base+'/chat/completions';
+    const ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+    const to=setTimeout(()=>{ try{ ctrl&&ctrl.abort(); }catch(e){} }, 60000);
+    const body={model:c.model||'deepseek-chat',
+      messages:[{role:'system',content:o.system||''},{role:'user',content:o.user||''}],
+      temperature:(o.temp!=null?+o.temp:0.4), stream:!!o.stream};
+    return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.key},
+      body:JSON.stringify(body), signal:ctrl?ctrl.signal:undefined}).then(r=>{
+      if(!r.ok){ clearTimeout(to); return r.text().catch(()=>'').then(t=>{ throw new Error('HTTP '+r.status+(t?' · '+String(t).slice(0,80):'')); }); }
+      if(!o.stream){
+        return r.json().then(j=>{
+          clearTimeout(to); aiUsage(j.usage, 0);
+          const str=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
+          if(o.onLine) String(str).split(/\r?\n/).forEach(x=>{ const t=x.trim(); if(t) try{ o.onLine(t); }catch(e){} });
+          return str;
+        });
+      }
+      const rd=r.body.getReader(), dec=new TextDecoder();
+      let buf='', full='', lineBuf='';
+      const pump=()=>rd.read().then(({done,value})=>{
+        if(done){
+          clearTimeout(to); aiUsage(null, full.length);
+          if(lineBuf.trim() && o.onLine) try{ o.onLine(lineBuf.trim()); }catch(e){}
+          return full;
+        }
+        buf+=dec.decode(value,{stream:true});
+        let idx;
+        while((idx=buf.indexOf('\n'))>=0){
+          const raw=buf.slice(0,idx).replace(/\r$/,''); buf=buf.slice(idx+1);
+          if(raw.indexOf('data:')!==0) continue;
+          const data=raw.slice(5).trim();
+          if(data==='[DONE]') continue;
+          let j; try{ j=JSON.parse(data); }catch(e){ continue; }
+          const d=(j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content)||'';
+          if(!d) continue;
+          full+=d; lineBuf+=d;
+          if(o.onDelta) try{ o.onDelta(d, full); }catch(e){}
+          let nl;
+          while((nl=lineBuf.indexOf('\n'))>=0){
+            const ln=lineBuf.slice(0,nl).trim(); lineBuf=lineBuf.slice(nl+1);
+            if(ln && o.onLine) try{ o.onLine(ln); }catch(e){}
+          }
+        }
+        return pump();
       });
+      return pump();
+    }).catch(e=>{
+      clearTimeout(to);
+      if(e&&e.name==='AbortError') throw new Error('请求超时');
+      const raw=String(e&&e.message||e);
+      if(/Failed to fetch|NetworkError|Load failed|ERR_|net::/i.test(raw)) throw new Error('网络不可达');
+      throw (e instanceof Error)?e:new Error(raw);
     });
+  }
+
+  /* ---------- 事件归一 / 统计摘要 / 三级压缩 ---------- */
+  function aiP2(n){ return String(n).padStart(2,'0'); }
+  function aiDayStr(t){ const d=new Date(t); return d.getFullYear()+'-'+aiP2(d.getMonth()+1)+'-'+aiP2(d.getDate()); }
+  function aiMask(t){
+    return String(t||'')
+      .replace(/1\d{10}/g,'[手机号]')
+      .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g,'[邮箱]')
+      .replace(/身份证[:：]?\d{6,}/g,'身份证[已隐去]');
+  }
+  function aiStat(){
+    const lg=((typeof logs!=='undefined'?(logs||[]):[])).filter(l=>l.kind!=='train');
+    const recs=(typeof train!=='undefined'&&train&&Array.isArray(train.records))?train.records:[];
+    const types=(typeof settings!=='undefined'&&settings&&Array.isArray(settings.types))?settings.types:[];
+    const lab=k=>{ const t=types.find(x=>x.key===k); return t?t.label:('其他'); };
+    const sc=lg.filter(l=>typeof l.score==='number'&&l.score>0).map(l=>l.score);
+    const md=lg.filter(l=>l.mood>0).map(l=>moodNorm(l.mood));
+    const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+    const tmap={}; lg.forEach(l=>{ tmap[l.type]=(tmap[l.type]||0)+1; });
+    const tagmap={}; lg.forEach(l=>{ String(l.tags||'').split(/[,、，]/).filter(Boolean).forEach(t=>tagmap[t]=(tagmap[t]||0)+1); });
+    const daySet={}; lg.forEach(l=>{ if(l.date) daySet[l.date]=1; });
+    const dates=Object.keys(daySet).sort();
+    let done=0, vol=0, rpe={easy:0,ok:0,hard:0};
+    const partLast={};
+    recs.forEach(r=>{
+      (Array.isArray(r.groups)?r.groups:[]).forEach(g=>{ if(!g.done) return; done++; if(!g.warmup) vol+=(g.reps||0)*(g.weight||0); if(g.rpe&&rpe[g.rpe]!=null) rpe[g.rpe]++; });
+      const pt=(r.part||''); if(pt){ if(!partLast[pt]||r.date>partLast[pt]) partLast[pt]=r.date; }
+    });
+    const weeks=[];
+    for(let w=3;w>=0;w--){
+      const lo=Date.now()-(w+1)*7*864e5, hi=Date.now()-w*7*864e5;
+      let v=0,n=0;
+      recs.forEach(r=>{ const t=new Date((r.date||'')+'T00:00:00').getTime(); if(t>lo&&t<=hi){ n++; (r.groups||[]).forEach(g=>{ if(g.done&&!g.warmup) v+=(g.reps||0)*(g.weight||0); }); } });
+      weeks.push({w:'T-'+(w+1), n:n, v:Math.round(v)});
+    }
+    const gaps={};
+    Object.keys(partLast).forEach(p=>{ gaps[p]=Math.round((Date.now()-new Date(partLast[p]+'T00:00:00').getTime())/864e5); });
+    return {logsN:lg.length, days:dates.length, from:dates[0]||'', to:dates[dates.length-1]||'',
+      energy:mean(sc), mood:mean(md), streak:(typeof streakDays==='function'?streakDays():0),
+      tmap:Object.keys(tmap).sort((a,b)=>tmap[b]-tmap[a]).map(k=>lab(k)+'×'+tmap[k]),
+      tags:Object.keys(tagmap).sort((a,b)=>tagmap[b]-tagmap[a]).slice(0,6).map(k=>k+'×'+tagmap[k]),
+      recs:recs.length, done:done, vol:Math.round(vol), rpe:rpe, gaps:gaps, weeks:weeks,
+      lg:lg, recsRaw:recs};
+  }
+  function aiDigest(slim){
+    const st=aiStat();
+    const c=aiCfg();
+    const anon=c.anon!==false;
+    const f1=v=>v==null?'—':(Math.round(v*10)/10).toFixed(1);
+    const lines=[];
+    lines.push('【统计摘要】');
+    lines.push('日志 '+st.logsN+' 条 / '+st.days+' 个记录日 / 跨度 '+(st.from||'—')+' ~ '+(st.to||'—')+' / 连续打卡 '+st.streak+' 天');
+    lines.push('平均精力 '+f1(st.energy)+'/5 · 平均情绪 '+f1(st.mood)+'/5');
+    if(st.tmap.length) lines.push('类型分布：'+st.tmap.join(' · '));
+    if(st.tags.length) lines.push('高频标签：'+st.tags.join(' · '));
+    lines.push('训练：'+st.recs+' 个动作 / 完成 '+st.done+' 组 / 总容量 '+st.vol+' kg / RPE 轻松'+st.rpe.easy+' 适中'+st.rpe.ok+' 吃力'+st.rpe.hard);
+    const gaps=Object.keys(st.gaps);
+    if(gaps.length) lines.push('各部位距今天数：'+gaps.map(p=>p+' '+st.gaps[p]+' 天').join(' / '));
+    lines.push('近 4 周（旧→新）动作数/容量：'+st.weeks.map(w=>w.w+': '+w.n+' / '+w.v+'kg').join(' | '));
+    const now=Date.now();
+    const recent=st.lg.filter(l=>{ const t=new Date(l.time||'');
+      return now-t.getTime()<=14*864e5; }).slice(-40);
+    if(recent.length){
+      lines.push(''); lines.push('【近 14 天记录原文】');
+      recent.forEach(l=>{
+        lines.push((l.date||aiDayStr(l.time||''))+' 精力'+(l.score||0)+' 情绪'+(l.mood||0)+
+          (l.tags?' ['+l.tags+']':'')+'｜'+((c.anon!==false)?aiMask(String(l.content||'').slice(0,70)):String(l.content||'').slice(0,70)));
+      });
+    }
+    const older=st.lg.filter(l=>{ const t=new Date(l.time||''); return now-t.getTime()>14*864e5; });
+    if(older.length && !slim){
+      const mm={}; older.forEach(l=>{ const k=String(l.date||'').slice(0,7); mm[k]=(mm[k]||0)+1; });
+      const kws={};
+      older.forEach(l=>{ String(l.content||'').replace(/[，,。、\s]+/g,' ').split(' ').filter(w=>w.length>=2).slice(0,6).forEach(w=>kws[w]=(kws[w]||0)+1); });
+      lines.push(''); lines.push('【更早记录（仅摘要）】');
+      lines.push('按月份：'+Object.keys(mm).sort().map(k=>k+' '+mm[k]+' 条').join(' · '));
+      lines.push('关键词：'+Object.keys(kws).sort((a,b)=>kws[b]-kws[a]).slice(0,10).join(' · '));
+    }
+    const p=(typeof profile!=='undefined'?profile:{})||{};
+    const ptxt=[p.gender,p.age,p.job,p.height,p.weight].filter(Boolean).join(' / ');
+    if(ptxt){ lines.push(''); lines.push('【人物档案】'+ptxt); }
+    const text=lines.join('\n');
+    return {text:text, tokens:Math.ceil(text.length/1.6), anon:anon, st:st};
+  }
+  function aiFingerprint(){
+    const lg=((typeof logs!=='undefined'?(logs||[]):[])); const recs=((typeof train!=='undefined'&&train&&train.records)||[]);
+    const s=[lg.length, recs.length, (lg[lg.length-1]||{}).id||'', (recs[recs.length-1]||{}).date||'',
+      JSON.stringify((typeof profile!=='undefined'?profile:{})||{}).length, aiCfg().model].join('|');
+    let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
+    return h.toString(36);
+  }
+
+  /* ---------- 报告 / 问答的 LLM 实现 ---------- */
+  function aiCacheAll(){ try{ return JSON.parse(localStorage.getItem(AIC_KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function aiCacheGet(tab, fp, ttl){
+    /* 命中也必须带 data，否则视为未命中 */
+    const all=aiCacheAll(); const it=all[tab];
+    if(!it || it.fp!==fp) return null;
+    if(ttl && (Date.now()-it.ts)>ttl) return null;
+    return it;
+  }
+  function aiCacheDel(tab){
+    const all=aiCacheAll(); if(all[tab]){ delete all[tab]; try{ localStorage.setItem(AIC_KEY, JSON.stringify(all)); }catch(e){} }
+  }
+  function aiCacheSet(tab, fp, data){
+    const all=aiCacheAll(); all[tab]={fp:fp, ts:Date.now(), data:data};
+    const keys=Object.keys(all).filter(k=>k.indexOf('ins:')!==0);
+    if(keys.length>8) keys.slice(0,keys.length-8).forEach(k=>{ delete all[k]; });
+    try{ localStorage.setItem(AIC_KEY, JSON.stringify(all)); }catch(e){}
+  }
+  function aiSecHtml(o){
+    const ps=(Array.isArray(o.p)?o.p:[String(o.p||'')]).map(x=>'<p>'+ENGINE.esc(String(x))+'</p>').join('');
+    return '<div class="ai-sec"><div class="ai-sec-t">'+ENGINE.esc(String(o.t||''))+'</div>'+ps+
+      '<div class="ai-sec-src">AI · '+ENGINE.esc(aiCfg().model)+'</div></div>';
+  }
+  const AI_SYS='你是 SelfAgent 的自我认知教练，只依据用户给出的记录做归纳，不编造数字、不做医疗诊断。'+
+    '输出必须是纯 NDJSON（每行一个 JSON 对象），不要代码块、不要解释、不要多余文字，字段严格按用户要求。';
+  function aiReport(tab, box, onState){
+    const d=aiDigest(tab==='persona'?false:true);
+    const spec=AI_CONTRACT[tab];
+    const askSection={persona:'8-12 节：精力节律、情绪与触发源、工作模式、训练执行、恢复、价值观与动力、风险点、可执行建议',
+      plan:'5-8 节：本周重点、每次训练的动作与组数建议（含重量建议）、负荷安排、恢复与睡眠安排、卡点与替代方案',
+      trend:'5-7 节：当前基线、三种情景（维持/加强/过载）各自 2-4 周后的样子、早期预警信号、干预点'}[tab];
+    const usr=[
+      '契约字段：'+spec.join(', '),
+      '输出格式：第 1 行 {"oneline":"一句 20 字内的总判断"}；之后每行 {"t":"节标题","p":["段落1","段落2"]}。',
+      '要求：'+askSection+'。每节 1-3 段，每段不超过 60 字，必须有数字或引用具体记录，禁止空话。',
+      '', '【用户数据】', d.text
+    ].join('\n');
+    const out={oneline:'',sections:[]};
+    let shown=0;
+    return aiChat({system:AI_SYS, user:usr, stream:!!box, temp:0.35, onLine:line=>{
+      let o; try{ o=JSON.parse(line); }catch(e){ return; }
+      if(o.oneline && !out.oneline){ out.oneline=String(o.oneline); }
+      if(o.t && (o.p||o.para)){
+        const sec={t:String(o.t), p:(Array.isArray(o.p)?o.p:[o.p||o.para]).map(String)};
+        out.sections.push(sec);
+        if(box){ const el=document.createElement('div'); el.innerHTML=aiSecHtml(sec); box.appendChild(el.firstChild); shown++; if(onState) onState(shown); }
+      }
+    }}).then(()=>{
+      if(!out.sections.length) throw new Error('输出格式不符');
+      return out;
+    });
+  }
+  function aiRenderReport(tab, data){
+    const secs=(data.sections||[]).map(aiSecHtml).join('');
+    const one=data.oneline?'<div class="ai-one">'+ENGINE.esc(data.oneline)+'</div>':'';
+    return '<div class="ai-report" data-ai="'+tab+'">'+one+secs+'</div>';
+  }
+  function aiReportBar(msg, off){
+    return '<div class="ai-bar'+(off?' off':'')+'" id="aiBar"><i class="ai-dot"></i><span>'+ENGINE.esc(msg)+'</span></div>';
+  }
+
+  /* ---------- 问答 ---------- */
+  function aiAskCtx(q){
+    const st=aiStat();
+    const hist=(window.__askHist||[]).slice(-3);
+    const related=[];
+    const kw=String(q||'').replace(/[？?。，,\s]/g,'').slice(0,8);
+    (st.lg||[]).slice(-60).forEach(l=>{
+      if(kw && (String(l.content||'').indexOf(kw.slice(0,2))>=0 || (l.tags||'').indexOf(kw.slice(0,2))>=0)) related.push(l);
+    });
+    return {hist:hist, related:related.slice(0,6)};
+  }
+  function aiAsk(q, ruleAns, box){
+    const c=aiAskCtx(q);
+    const d=aiDigest(true);
+    const refs=(ruleAns&&ruleAns.refs)||[];
+    const usr=[
+      '输出：第 1 行 {"answer":"2-3 句中文回答，先给结论再给依据"}；第 2 行 {"evidence":["记录id",...],"confidence":0-1}。',
+      '可引用的记录 id：'+refs.map(r=>r.id).join(', '),
+      (c.hist.length?('\n【对话历史】'+c.hist.map(h=>'问：'+h.q+'\n答：'+String(h.a||'').slice(0,120)).join('\n')):''),
+      '\n【用户问题】'+q,
+      '\n【数据】'+d.text
+    ].join('\n');
+    const out={answer:'', evidence:[], confidence:null};
+    return aiChat({system:AI_SYS, user:usr, stream:false, temp:0.3, onLine:line=>{
+      let o; try{ o=JSON.parse(line); }catch(e){ return; }
+      if(o.answer) out.answer=String(o.answer);
+      if(Array.isArray(o.evidence)) out.evidence=o.evidence.map(String);
+      if(o.confidence!=null) out.confidence=+o.confidence;
+    }}).then(()=>{
+      if(!out.answer) throw new Error('空回答');
+      return out;
+    });
+  }
+
+  /* 把模型输出收敛成一句可直接显示的话（防 JSON、防长句、防引号） */
+  function aiOneLine(t, max){
+    let s=String(t==null?'':t).split(/\r?\n/).map(x=>x.trim()).filter(Boolean)[0]||'';
+    if(s.charAt(0)==='{' || s.charAt(0)==='['){
+      try{
+        let o=JSON.parse(String(t).trim());
+        if(Array.isArray(o)) o=o[0]||{};
+        s=o.answer||o.insight||o.rationale||o.oneline||o.text||'';
+        s=String(s);
+      }catch(e){}
+    }
+    s=s.replace(/^["'「『]+|["'」』]+$/g,'').replace(/\s+/g,' ').trim();
+    const n=max||60;
+    return s.length>n ? s.slice(0,n)+'…' : s;
+  }
+
+  /* ---------- 首页主动洞察 ---------- */
+  function aiHomeInsight(){
+    if(!aiReady()) return;
+    const box=document.getElementById('homeSignals'); if(!box) return;
+    if(((typeof logs!=='undefined'?(logs||[]):[])).length<3) return;
+    const fp=aiFingerprint();
+    const hit=aiCacheGet('ins:'+fp, fp, 6*3600e3);
+    if(hit && hit.data){ aiSigShow(hit.data); return; }
+    const d=aiDigest(true);
+    aiChat({system:'你是自我认知教练。只输出一句 30 字内的中文观察，针对用户最近的行为模式，含具体数字，不要引号、不要解释。',
+      user:'最近数据：\n'+d.text, stream:false, temp:0.4}).then(t=>{
+      const line=aiOneLine(t, 54);
+      if(!line) return;
+      aiCacheSet('ins:'+fp, fp, line);
+      aiSigShow(line);
+    }).catch(()=>{});
+  }
+  function aiSigShow(text){
+    const box=document.getElementById('homeSignals'); if(!box) return;
+    if(box.querySelector('.sig.ai')) return;
+    const el=document.createElement('div'); el.className='sig ai';
+    el.innerHTML='<b style="font-weight:600">AI 观察：</b>'+ENGINE.esc(String(text));
+    box.appendChild(el);
+  }
+
+  /* ---------- 训练计划理由 ---------- */
+  function aiPlanWhy(part){
+    const box=document.getElementById('plOut'); if(!box) return;
+    let days=null;
+    try{ const rv=partRecovery(part)||{}; days=(rv.h!=null?rv.h:null); }catch(e){}
+    const st=aiStat();
+    const hardN=st.rpe.hard, okN=st.rpe.ok;
+    let lines=[];
+    lines.push(days!=null?('上次练'+part+'是 '+days+' 天前'):('最近没有'+part+'训练记录'));
+    if(st.vol) lines.push('近 4 周容量 '+st.weeks.map(w=>w.v).join(' → ')+' kg');
+    if(hardN+okN) lines.push('RPE 吃力 '+hardN+' 组 / 适中 '+okN+' 组');
+    const rule='理由：'+lines.join(' · ')+(hardN>okN&&hardN>0?'，本次组数略降、重量维持':'，按恢复节奏推进');
+    let el=box.querySelector('#planWhy');
+    if(!el){ el=document.createElement('div'); el.id='planWhy'; el.className='plan-why'; box.insertBefore(el, box.firstChild); }
+    el.textContent=rule;
+    if(!aiReady()) return;
+    const d=aiDigest(true);
+    aiChat({system:'你是训练教练。只输出一句 40 字内的中文，说明这次为什么这样安排，含具体数字，不要引号。',
+      user:'今天练：'+part+'。数据：\n'+d.text, stream:false, temp:0.45}).then(t=>{
+      const s=aiOneLine(t, 64);
+      if(!s) return;
+      const cur=document.getElementById('planWhy'); if(cur) cur.textContent='AI 教练：'+s;
+    }).catch(()=>{});
   }
 
   /* ---------- 快记输入联想 ---------- */
@@ -8621,6 +9151,53 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     document.querySelectorAll('#askChips [data-q]').forEach(b=>b.addEventListener('click',()=>{ inp.value=b.dataset.q; renderAsk(b.dataset.q); }));
   }
 
+  /* ---------- 报告页：先出规则版，AI 就绪时用同一契约覆盖 ---------- */
+  let __aiJob=0;
+  function aiFillReport(tab){
+    const box=document.getElementById('aiBox'); if(!box) return;
+    if(!aiReady()) return;
+    const job=++__aiJob;
+    const fp=aiFingerprint();
+    let st0={logsN:0};
+    try{ const d0=aiStat(); st0={logsN:d0.logsN}; }catch(e){}
+    const hit=aiCacheGet(tab, fp, 30*60e3);
+    const stripCache=()=>{
+      box.innerHTML='<div class="ai-bar"><i class="ai-dot"></i><span>AI · '+ENGINE.esc(aiCfg().model)+' · 上次结果命中缓存</span></div>'+
+        aiRenderReport(tab, hit.data)+
+        '<div class="ai-fold"><details><summary>上次 AI 结果生成于 '+new Date(hit.ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' · 点此用最新数据重算</summary><button class="btn ghost sm" type="button" id="aiRegen">重新生成</button></details></div>';
+      const rb=box.querySelector('#aiRegen');
+      if(rb) rb.onclick=()=>{ aiCacheDel(tab); try{ renderReport(); }catch(e){} };
+    };
+    if(hit && hit.data){ stripCache(); return; }
+    box.innerHTML=aiReportBar('AI 正在按契约生成 · 逐节输出…');
+    const stage=document.createElement('div'); stage.className='ai-stage';
+    box.appendChild(stage);
+    aiReport(tab, stage, n=>{
+      const bar=document.getElementById('aiBar');
+      if(bar && bar.querySelector('span')) bar.querySelector('span').textContent='AI 正在生成 · 已出 '+n+' 节';
+    }).then(data=>{
+      if(job!==__aiJob) return;
+      aiCacheSet(tab, fp, data);
+      box.innerHTML='<div class="ai-bar"><i class="ai-dot"></i><span>AI · '+ENGINE.esc(aiCfg().model)+' · 依据 '+((st0.logsN||0))+' 条记录生成</span></div>'+
+        (data.oneline?'<div class="ai-one">'+ENGINE.esc(data.oneline)+'</div>':'')+
+        (data.sections||[]).map(aiSecHtml).join('')+
+        '<div class="ai-src" style="border:0;background:none;padding:2px 2px 6px">AI 生成内容仅供参考，不构成医疗或投资建议 · 下方为内置规则版，可对照阅读</div>';
+      if($('aiLast')) $('aiLast').textContent=aiLastText();
+      if($('aiUsage')) $('aiUsage').textContent=aiUsageText();
+      if($('aiSum')) $('aiSum').textContent=aiSummary();
+    }).catch(e=>{
+      if(job!==__aiJob) return;
+      const msg=String(e&&e.message||'');
+      if(!box.dataset.retried && !/网络不可达|请求超时|未配置/.test(msg)){
+        box.dataset.retried='1';
+        try{ box.innerHTML=''; }catch(e2){}
+        setTimeout(()=>{ try{ aiFillReport(tab); }catch(e3){} }, 260);
+        return;
+      }
+      box.innerHTML=aiReportBar('AI 不可用 · 已用内置规则（'+msg+'）', true);
+      try{ trToast('离线模式 · 已用内置规则'); }catch(e2){}
+    });
+  }
   /* ---------- 报告渲染 ---------- */
   function renderReport(){
     disposeCharts();
@@ -8639,9 +9216,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       plan:`<h1>个性化适配规划 · Plan</h1><div class="kicker">ALIGNED WITH PERSONA</div>${ENGINE.genPlan(logs,d)}`,
       trend:`<h1>趋势推演报告 · Scenario</h1><div class="kicker">BEHAVIOR EXTRAPOLATION · NOT PROPHECY</div>${ENGINE.genTrend(logs,d)}`
     };
-    body.innerHTML=out[currentTab];
+    body.innerHTML=(['persona','plan','trend'].includes(currentTab)?'<div id="aiBox"></div>':'')+out[currentTab];
     if(currentTab==='persona') drawRptCharts();
     try{ initAsk(); }catch(e){}
+    if(['persona','plan','trend'].includes(currentTab)){ try{ aiFillReport(currentTab); }catch(e){} }
     if(btn) btn.textContent = '已自动同步 · '+logs.length+' 条记录';
     document.querySelectorAll('details.report-fold').forEach(dt=>{
       if(dt.__bound) return; dt.__bound=true;
