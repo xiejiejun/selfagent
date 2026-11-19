@@ -6098,8 +6098,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       ${hist}
       ${e.img?`<div class="ex-photo-wrap"><img class="ex-photo" src="${e.img}" alt="${ENGINE.esc(e.n)}" data-shot="${e.id}"></div>${e.imgCap?`<div class="ex-photo-cap">${ENGINE.esc(e.imgCap)}</div>`:''}`:''}
       ${e.en?`<div class="ex-en">${ENGINE.esc(e.en)}</div>`:''}
-      ${e.g?`<div class="ex-media"><div class="gif-ph">动画加载中…</div><img class="ex-gif" alt="${ENGINE.esc(e.n)} 动画"></div>`
-        :`<div class="ex-media-empty"><button class="btn ghost sm" data-giffind="${e.id}" type="button">联网找演示动图</button><span>按动作名与器械在图库里匹配</span></div>`}
+      ${e.g?`<div class="ex-media"><div class="gif-ph">动画加载中…</div><img class="ex-gif" alt="${ENGINE.esc(e.n)} 动画"></div>`:''}
       <h4>动作要领</h4><ol>${(e.s||[]).map(x=>`<li>${ENGINE.esc(x)}</li>`).join('')}</ol>
       ${e.t?`<h4>目标肌群</h4><div class="tip">${ENGINE.esc(e.t)}</div>`:''}
     </div>`;
@@ -6208,21 +6207,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     root.querySelectorAll('[data-sheet-more]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); openExMore(b.dataset.sheetMore, b); });
     root.querySelectorAll('[data-shot]').forEach(im=>im.onclick=ev=>{ ev.stopPropagation(); showPhoto(im.src); });
-    root.querySelectorAll('[data-giffind]').forEach(b=>b.onclick=()=>{
-      const id=b.dataset.giffind, ex=findEx(id); if(!ex) return;
-      const reset=()=>{ b.disabled=false; b.textContent='联网找演示动图'; };
-      const apply=file=>{
-        ex.g=file;
-        try{ const c=(train.custom||[]).find(x=>x.id===id); if(c){ c.g=file; saveTrain(); } }catch(err){}
-        root.innerHTML=detailBodyHtml(ex); bindDetail(root, ex);
-      };
-      b.disabled=true; b.textContent='查找中…';
-      const localTry=()=>{ const l=gifFindLocal(ex.n, ex.p, ex.e); if(l){ apply(l.ex.g); trToast('已匹配动图：'+l.ex.n); } else { reset(); trToast('没找到合适的动图'); } };
-      AG.gifPick(ex.n, ex.p, ex.e, ex.s).then(g=>{
-        if(g && g.ex && g.ex.g){ apply(g.ex.g); trToast('已匹配动图：'+g.ex.n); }
-        else localTry();
-      }).catch(()=>localTry());
-    });
   }
   function showPhoto(src){
     document.querySelectorAll('.photo-view').forEach(x=>x.remove());
