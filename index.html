@@ -1536,6 +1536,17 @@ html[data-theme="light"] .ins-cell{background:#fff}
 button,a,.ins-card,.ins-filter button,.toast{transition-timing-function:var(--ease)}
 :focus-visible{outline:2px solid #2FD1C5;outline-offset:2px}
 html[data-theme="light"] .ins-ev .ev-chip{border-color:#E3E8F0;background:#F7F9FC}
+/* sheet 拖拽手柄 + 空态组件 + 计数动画 */
+.sheet-grab{width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.22);margin:2px auto 10px;flex:0 0 auto}
+html[data-theme="light"] .sheet-grab{background:#D7DDE6}
+#planSheet .ex-sheet-inner,.msheet-box,#logSheet .ls-card{touch-action:pan-y}
+.dragging{transition:none!important;cursor:grabbing}
+.ins-bar .v .cnt{font-style:normal}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:34px 18px;text-align:center}
+.empty-state .es-ic{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:rgba(47,209,197,.1);color:var(--ac, #2FD1C5)}
+.empty-state .es-ic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
+.empty-state .es-tx{font-size:12.5px;color:var(--tx3);line-height:1.6;max-width:260px}
+.empty-state .es-cta{margin-top:2px}
 html[data-theme="light"] .ins-filter button{border-color:#E3E8F0}
 html[data-theme="light"] .ins-filter button.on{border-color:rgba(20,170,160,.5);background:rgba(20,170,160,.1)}
 .ask-card{animation:none}
@@ -3089,7 +3100,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   /* ---------- 左侧列表 ---------- */
   function renderLogs(){
     const box=$('logList'); if(!box) return;
-    if(!logs.length){ box.innerHTML=`<div class="empty">还没有记录。写下第一条，开始认识自己。</div>`; return; }
+    if(!logs.length){ box.innerHTML=emptyState('note','还没有记录。写下第一条，开始认识自己。','去写一条','emptywrite'); setTimeout(()=>{ const b=box.querySelector('[data-emptywrite]'); if(b) b.onclick=()=>{ try{ openPage('record'); }catch(e){} }; },0); return; }
     box.innerHTML=[...logs].reverse().map(l=>{
       if(l.kind==='train'){
         const m=l.meta||{}; const names=(m.items||[]).slice(0,3).map(i=>i.name).join('、');
@@ -3119,7 +3130,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.querySelectorAll('.log-del').forEach(btn=>{
       btn.addEventListener('click',()=>{
         if(!confirm('删除这条记录？删掉后不能恢复。')) return;
-        logs=logs.filter(x=>String(x.id)!==String(btn.dataset.id)); save(); renderLogs(); if(!logs.length) renderReport();
+        const row=btn.closest('.log-item');
+        collapseRemove(row,()=>{ logs=logs.filter(x=>String(x.id)!==String(btn.dataset.id)); save(); renderLogs(); if(!logs.length) renderReport(); });
       });
     });
   }
@@ -3385,7 +3397,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       else if(fm){ e.preventDefault(); const x=fm.querySelector('[data-fmexit]'); if(x) x.click(); }
     }
   });
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', ()=>{ initFab(); fillAllRanges(); }); else { initFab(); fillAllRanges(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', ()=>{ initFab(); fillAllRanges(); try{ initSheetGestures(); }catch(e){} }); else { initFab(); fillAllRanges(); try{ initSheetGestures(); }catch(e){} }
   (function bindSuggest(){ try{ attachSuggest($('fastInput')); attachSuggest($('fabInput')); }catch(e){} })();
   /* 画像更新提示：数据指纹变化后，分析按钮亮一次蓝点，进入分析页即熄 */
   (function ctaDot(){
@@ -5876,7 +5888,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const secFav = favs.length ? `<div class="lib-sec-h">我的收藏 <span class="lib-sec-n">${favs.length}</span></div>`+favs.map(e=>libRowHtml(e,lastMap)).join('') : '';
     if(!secCu && !secFav){
       const filtering=(q||trState.part||(trState.eqs||[]).length);
-      rows.innerHTML='<div class="lib-sec-empty">'+(filtering?'没有匹配的动作，换个关键词或重置筛选。':'还没有自定义动作，也没有收藏。去「动作库 → ＋ 添加动作」建一个，或给常用动作点 ☆。')+'</div>';
+      rows.innerHTML=emptyState('search',(filtering?'没有匹配的动作，换个关键词或重置筛选。':'还没有自定义动作，也没有收藏。去「动作库 → ＋ 添加动作」建一个，或给常用动作点 ☆。'),(filtering?'清除筛选':'去挑动作'),(filtering?'emptyclr':'emptypick'));
+      setTimeout(()=>{
+        const c=rows.querySelector('[data-emptyclr]'); if(c) c.onclick=()=>{ try{ const inp=document.getElementById('mineSearch')||document.getElementById('libSearch'); if(inp){ inp.value=''; inp.dispatchEvent(new Event('input',{bubbles:true})); } }catch(e){} };
+        const p=rows.querySelector('[data-emptypick]'); if(p) p.onclick=()=>{ try{ openPage('record'); trSetSeg('lib'); }catch(e){} };
+      },0);
       return;
     }
     rows.innerHTML=secCu+secFav;
@@ -7414,7 +7430,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const vol=allG.reduce((a,g)=>a+(g.warmup?0:(g.reps||0)*(g.weight||0)),0);
     if($('todayBadge')) $('todayBadge').textContent = sets ? ('今日 '+sets+' 组') : '';
     try{ trSyncStrips(); }catch(e){}
-    if($('trSum')) $('trSum').innerHTML=`<span><b>${items.length}</b>动作</span><span><b>${sets}</b>总组数</span><span><b>${reps}</b>总次数</span><span><b>${Math.round(vol)}</b>容量kg</span>`;
+    if($('trSum')){ const sm=$('trSum'); sm.innerHTML=`<span><b data-cnt="${items.length}">0</b>动作</span><span><b data-cnt="${sets}">0</b>总组数</span><span><b data-cnt="${reps}">0</b>总次数</span><span><b data-cnt="${Math.round(vol)}">0</b>容量kg</span>`; try{ bindCountUp(sm); }catch(e){} }
 
     // 展开 / 收起：同一时刻只开一张卡
     box.querySelectorAll('[data-topen]').forEach(el=>el.onclick=()=>{
@@ -7974,7 +7990,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.querySelector('[data-mact="del"]').onclick=()=>{
       el.remove();
       if(!confirm('删除这条记录？删掉后不能恢复。')) return;
-      logs=logs.filter(x=>String(x.id)!==String(id)); save(); renderLogs(); renderLogsPanel();
+      const rowEl=anchor.closest('.log-item');
+      collapseRemove(rowEl,()=>{ logs=logs.filter(x=>String(x.id)!==String(id)); save(); renderLogs(); renderLogsPanel(); });
     };
     setTimeout(()=>{
       const h=e=>{ if(!el.contains(e.target)){ el.remove(); document.removeEventListener('click',h); } };
@@ -7995,7 +8012,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     document.querySelectorAll('#reportBody [data-del]').forEach(b=>{
       b.addEventListener('click',()=>{
         if(!confirm('删除这条记录？删掉后不能恢复。')) return;
-        logs=logs.filter(x=>String(x.id)!==String(b.dataset.del)); save(); renderLogs(); renderLogsPanel();
+        collapseRemove(b.closest('.lg-item,.day-row,.log-item')||b.parentElement,()=>{
+          logs=logs.filter(x=>String(x.id)!==String(b.dataset.del)); save(); renderLogs(); renderLogsPanel();
+        });
       });
     });
     document.querySelectorAll('#reportBody [data-edit]').forEach(b=>{
@@ -10067,9 +10086,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const md=g.rMood==null?null:(g.rMood<=1.5?'很糟':g.rMood<=2.5?'低落':g.rMood<=3.5?'一般':g.rMood<=4.5?'不错':'很好');
     const dir=(g.rAvg!=null&&g.pAvg!=null)?(g.rAvg-g.pAvg>0.5?'↑ 回升':(g.rAvg-g.pAvg<-0.5?'↓ 下滑':'→ 持平')):'→ 样本少';
     return `<div class="ins-bar">
-      <div class="ins-cell"><span class="k">精力</span><span class="v">${f1(g.rAvg)}<em>/5</em></span><span class="s">${dir}（上周 ${f1(g.pAvg)}）</span></div>
+      <div class="ins-cell"><span class="k">精力</span><span class="v"><i class="cnt" data-cnt="${g.rAvg==null?0:Math.round(g.rAvg*10)/10}" data-dec="1">${f1(g.rAvg)}</i><em>/5</em></span><span class="s">${dir}（上周 ${f1(g.pAvg)}）</span></div>
       <div class="ins-cell"><span class="k">情绪</span><span class="v">${md||'—'}</span><span class="s">上周 ${g.pMood==null?'—':f1(g.pMood)+'/5'}</span></div>
-      <div class="ins-cell"><span class="k">本周训练</span><span class="v">${g.sets7}<em>组</em></span><span class="s">${g.days7} 个训练日</span></div>
+      <div class="ins-cell"><span class="k">本周训练</span><span class="v"><i class="cnt" data-cnt="${g.sets7}">${g.sets7}</i><em>组</em></span><span class="s">${g.days7} 个训练日</span></div>
     </div>${insSparkHtml()}`;
   }
   function insSparkHtml(){
@@ -10102,6 +10121,87 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const lbl={persona:'历史报告归档',plan:'规划报告归档',trend:'推演报告归档'}[tab]||'报告归档';
     return `<div class="ins-foot"><button class="btn ghost sm" type="button" data-arch="${tab}">${lbl} ▸</button></div>`;
   }
+  function emptyState(icon,text,cta,actId){
+    const ic={note:'<path d="M5 4h9l3 3v13H5z"/><path d="M14 4v3h3"/>',train:'<path d="M4 9h16M4 15h16M7 6v12M17 6v12"/>',search:'<circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/>'}[icon]||'<circle cx="12" cy="12" r="7"/>';
+    return '<div class="empty-state"><div class="es-ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+ic+'</svg></div>'+
+      '<div class="es-tx">'+text+'</div>'+(cta?'<button class="btn ghost sm es-cta" type="button" '+(actId?('data-'+actId):'')+'>'+cta+'</button>':'')+'</div>';
+  }
+  function collapseRemove(el,after){
+    if(!el){ setTimeout(()=>{ try{ after&&after(); }catch(e){} },0); return; }
+    const h=el.getBoundingClientRect().height;
+    el.style.overflow='hidden'; el.style.maxHeight=h+'px';
+    requestAnimationFrame(()=>{
+      el.style.transition='max-height .2s var(--ease),opacity .2s var(--ease),margin .2s var(--ease),padding .2s var(--ease)';
+      el.style.maxHeight='0px'; el.style.opacity='0'; el.style.marginTop='0'; el.style.marginBottom='0'; el.style.paddingTop='0'; el.style.paddingBottom='0';
+    });
+    setTimeout(()=>{ try{ el.remove(); }catch(e){} try{ after&&after(); }catch(e){} }, 210);
+  }
+  function countUpEl(el,to,dec){
+    if(!el) return; const v=Number(to)||0, t0=performance.now(), dur=260;
+    const tick=t=>{
+      const p=Math.min(1,(t-t0)/dur), v2=v*(1-Math.pow(1-p,3));
+      el.textContent=dec?v2.toFixed(1):String(Math.round(v2));
+      if(p<1) requestAnimationFrame(tick); else el.textContent=dec?(Math.round(v*10)/10).toFixed(1):String(Math.round(v));
+    };
+    requestAnimationFrame(tick);
+  }
+  function bindCountUp(scope){
+    (scope||document).querySelectorAll('[data-cnt]').forEach(el=>countUpEl(el, +el.dataset.cnt, el.dataset.dec==='1'));
+  }
+  function initSheetGestures(){
+    const CLOSE={
+      close:host=>{ try{
+        if(host.classList.contains('msheet')) host.remove();
+        else if(host.id==='logSheet') host.hidden=true;
+        else host.classList.remove('on');
+      }catch(e){} }
+    };
+    document.addEventListener('touchstart',e=>{
+      const panel=e.target.closest('#planSheet .ex-sheet-inner, .msheet-box, #logSheet .ls-card');
+      if(!panel) return;
+      if(panel.scrollTop>0) return;
+      const host=panel.closest('#planSheet,.msheet,.log-sheet'); if(!host) return;
+      const y0=e.touches[0].clientY, x0=e.touches[0].clientX;
+      let dy=0, dragging=false;
+      const move=ev=>{
+        const y=ev.touches[0].clientY, x=ev.touches[0].clientX;
+        if(!dragging){
+          if(y-y0>9 && Math.abs(y-y0)>Math.abs(x-x0)+4){ dragging=true; panel.classList.add('dragging'); }
+          else if(Math.abs(x-x0)>12){ cleanup(); return; }
+        }
+        if(dragging){ dy=Math.max(0,y-y0); panel.style.transform='translateY('+dy+'px)'; ev.preventDefault(); }
+      };
+      const up=()=>{
+        cleanup();
+        if(!dragging) return;
+        panel.style.transition='transform .2s var(--ease)';
+        if(dy>86){
+          panel.style.transform='translateY(105%)';
+          setTimeout(()=>{ CLOSE.close(host); panel.style.transition=''; panel.style.transform=''; panel.classList.remove('dragging'); }, 200);
+        }else{
+          panel.style.transform='';
+          setTimeout(()=>{ panel.style.transition=''; panel.classList.remove('dragging'); }, 220);
+        }
+      };
+      const cleanup=()=>{ document.removeEventListener('touchmove',move); document.removeEventListener('touchend',up); document.removeEventListener('touchcancel',up); };
+      document.addEventListener('touchmove',move,{passive:false});
+      document.addEventListener('touchend',up);
+      document.addEventListener('touchcancel',up);
+    },{passive:true});
+    // 手柄（仅底部 sheet）
+    const addGrab=()=>{
+      ['#planSheet .ex-sheet-inner'].forEach(sel=>{
+        const p=document.querySelector(sel); if(p && !p.querySelector('.sheet-grab')){ const g=document.createElement('div'); g.className='sheet-grab'; p.insertBefore(g,p.firstChild); }
+      });
+    };
+    addGrab();
+    setTimeout(addGrab, 400);
+    const mo=new MutationObserver(()=>addGrab());
+    mo.observe(document.body,{childList:true,subtree:true});
+    // msheet 圆角 + 手柄
+    try{ if(!document.getElementById('_grabCss')){ const st=document.createElement('style'); st.id='_grabCss';
+      st.textContent='.msheet-box::before{content:"";display:block;width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.22);margin:8px auto 6px}html[data-theme="light"] .msheet-box::before{background:#D7DDE6}'; document.head.appendChild(st); } }catch(e){}
+  }
   function insFilterHtml(items){
     const cats=[['','全部'],['energy','精力'],['mood','情绪'],['fit','健身'],['rest','作息']];
     return '<div class="ins-filter">'+cats.map(c=>{
@@ -10112,7 +10212,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function feedPersonaHtml(){
     const items=genInsights();
     __feed={items:items, tab:'persona'};
-    return insBarHtml()+insFilterHtml(items)+'<div class="ins-feed">'+(items.length?items.map(insCardHtml).join(''):'<div class="lib-sec-empty">记录还不够，先写 3 条就能生成第一条洞察。</div>')+'</div>'+insWeekHtml()+insFootHtml('persona');
+    return insBarHtml()+insFilterHtml(items)+'<div class="ins-feed">'+(items.length?items.map(insCardHtml).join(''):emptyState('note','记录还不够，先写 3 条就能生成第一条洞察。','现在写一条','emptywrite2'))+'</div>'+insWeekHtml()+insFootHtml('persona');
   }
   function feedPlanHtml(){
     const g=insAgg(), out=[];
@@ -10153,6 +10253,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     };
     fbtns.forEach(b=>{ b.onclick=()=>{ __feedFilter=b.dataset.fcat||''; applyFilter(); }; });
     if(__feedFilter && box.querySelectorAll('.ins-card').length) applyFilter();
+    try{ bindCountUp(box.querySelector('.ins-bar')||box); }catch(e){}
     const cards=box.querySelectorAll('.ins-card[data-key]');
     setTimeout(()=>{ try{ feedSeenMark([].slice.call(cards).map(c=>c.dataset.key)); }catch(e){} }, 900);
     box.querySelectorAll('[data-insmore]').forEach(b=>{
@@ -10214,6 +10315,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     out[currentTab] = currentTab==='plan' ? feedPlanHtml() : currentTab==='trend' ? feedTrendHtml() : feedPersonaHtml();
     body.innerHTML=(['persona','plan','trend'].includes(currentTab)?'<div id="aiBox"></div>':'')+out[currentTab];
     try{ bindFeed(body); }catch(e){}
+    setTimeout(()=>{ const b=body.querySelector('[data-emptywrite2]'); if(b) b.onclick=()=>{ try{ openPage('record'); }catch(e){} }; },0);
     try{ initAsk(); }catch(e){}
     if(['persona','plan','trend'].includes(currentTab)){ try{ aiFillReport(currentTab); }catch(e){} }
     if(btn) btn.textContent = '已自动同步 · '+logs.length+' 条记录';
