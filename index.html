@@ -1466,6 +1466,14 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .ex-fav{border:0;background:none;font-size:17px;line-height:1;padding:2px 4px;cursor:pointer;color:var(--tx3);margin-left:auto}
 .ex-fav.on{color:#e7c56a}
 .ex-more{border:0;background:none;color:var(--tx3);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer}
+/* p236 动作照片 */
+.ex-photo-wrap{margin:10px 0 2px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0b0f13}
+.ex-photo{display:block;width:100%;max-height:220px;object-fit:cover;cursor:zoom-in}
+.ex-photo-cap{font-size:11px;color:var(--tx3);padding:6px 2px 0}
+.photo-view{position:fixed;inset:0;z-index:10080;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:20px}
+.photo-view img{max-width:100%;max-height:88dvh;object-fit:contain;border-radius:10px}
+.cu-thumb{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:11.5px;color:var(--tx3)}
+.cu-thumb img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
 .lib-segrow{margin:0 0 8px}
 .lib-seg{display:inline-flex;padding:2px;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}
 .lib-seg button{border:0;background:none;font:inherit;font-size:12.5px;color:var(--tx3);padding:6px 14px;border-radius:8px;cursor:pointer}
@@ -4747,7 +4755,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }catch(e){}
   }
   function allExercises(){
-    const arr=(train.custom||[]).map(c=>({id:c.id, n:c.n, en:c.en||'', p:c.p||c.part||'其他', e:c.e||c.eq||'自重', t:c.t||'', g:c.g||'', s:c.s||c.steps||[], custom:true})).concat(TRAIN_LIB.filter(e=>!EX_IS_DUP(e.id)));
+    const arr=(train.custom||[]).map(c=>({id:c.id, n:c.n, en:c.en||'', p:c.p||c.part||'其他', e:c.e||c.eq||'自重', t:c.t||'', g:c.g||'', s:c.s||c.steps||[], img:c.img||'', imgCap:c.imgCap||'', custom:true})).concat(TRAIN_LIB.filter(e=>!EX_IS_DUP(e.id)));
     const rn=train.renames||{};
     if(!Object.keys(rn).length) return arr;
     return arr.map(e=> rn[e.id] ? Object.assign({}, e, {n:rn[e.id]}) : e);
@@ -6033,6 +6041,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return `<div class="ex-detail">
       <div class="ex-dt-head"><span class="ex-dt-name">${ENGINE.esc(e.n)}</span><span class="ex-dt-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}</span><button class="ex-fav${fav?' on':''}" data-sheet-fav="${e.id}" type="button" aria-label="收藏">${fav?'★':'☆'}</button><button class="ex-more" data-sheet-more="${e.id}" type="button" aria-label="更多">⋯</button></div>
       ${hist}
+      ${e.img?`<div class="ex-photo-wrap"><img class="ex-photo" src="${e.img}" alt="${ENGINE.esc(e.n)}" data-shot="${e.id}"></div>${e.imgCap?`<div class="ex-photo-cap">${ENGINE.esc(e.imgCap)}</div>`:''}`:''}
       ${e.en?`<div class="ex-en">${ENGINE.esc(e.en)}</div>`:''}
       ${e.g?`<div class="ex-media"><div class="gif-ph">动画加载中…</div><img class="ex-gif" alt="${ENGINE.esc(e.n)} 动画"></div>`
         :`<div class="ex-media-empty"><button class="btn ghost sm" data-giffind="${e.id}" type="button">联网找演示动图</button><span>按动作名与器械在图库里匹配</span></div>`}
@@ -6143,6 +6152,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       b.textContent=on?'★':'☆'; b.classList.toggle('on',on);
     });
     root.querySelectorAll('[data-sheet-more]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); openExMore(b.dataset.sheetMore, b); });
+    root.querySelectorAll('[data-shot]').forEach(im=>im.onclick=ev=>{ ev.stopPropagation(); showPhoto(im.src); });
     root.querySelectorAll('[data-giffind]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.giffind, ex=findEx(id); if(!ex) return;
       const reset=()=>{ b.disabled=false; b.textContent='联网找演示动图'; };
@@ -6159,17 +6169,60 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       }).catch(()=>localTry());
     });
   }
+  function showPhoto(src){
+    document.querySelectorAll('.photo-view').forEach(x=>x.remove());
+    const el=document.createElement('div'); el.className='photo-view';
+    el.innerHTML='<img src="'+src+'" alt="">';
+    el.onclick=()=>el.remove();
+    document.body.appendChild(el);
+  }
+  function camThumb(dataUrl, cb){
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const max=420, sc=Math.min(1, max/Math.max(img.width,img.height));
+        const w=Math.round(img.width*sc), h=Math.round(img.height*sc);
+        const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        cb(cv.toDataURL('image/jpeg',0.62));
+      }catch(e){ cb(null); }
+    };
+    img.onerror=()=>cb(null);
+    img.src=dataUrl;
+  }
   function openExMore(id, anchor){
     document.querySelectorAll('.lg-menu').forEach(x=>x.remove());
     const r=anchor.getBoundingClientRect();
     const el=document.createElement('div'); el.className='lg-menu';
     el.style.zIndex='10060';
     const hasFav=(train.favs||[]).includes(id);
-    el.innerHTML='<button type="button" data-mact="name">重命名</button>'+(hasFav?'<button type="button" data-mact="unfav">取消收藏</button>':'');
+    const ex0=findEx(id);
+    el.innerHTML='<button type="button" data-mact="name">重命名</button>'+(ex0&&ex0.custom?'<button type="button" data-mact="photo">'+(ex0.img?'换张照片':'加张照片')+'</button>':'')+(hasFav?'<button type="button" data-mact="unfav">取消收藏</button>':'');
     document.body.appendChild(el);
     el.style.top=Math.round(Math.max(8,Math.min(r.bottom+6,window.innerHeight-110)))+'px';
     el.style.left=Math.max(12,Math.round(Math.min(r.right-120, window.innerWidth-132)))+'px';
     el.querySelector('[data-mact="name"]').onclick=()=>{ el.remove(); trEditName(id); };
+    const ph=el.querySelector('[data-mact="photo"]');
+    if(ph) ph.onclick=()=>{
+      el.remove();
+      const inp=document.createElement('input');
+      inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
+      inp.style.display='none'; document.body.appendChild(inp);
+      inp.onchange=()=>{
+        const f=(inp.files||[])[0]; try{ inp.remove(); }catch(e){}
+        if(!f) return;
+        camCompress(f, url=>{
+          if(!url){ try{ trToast('图片读取失败'); }catch(e){} return; }
+          camThumb(url, th=>{
+            if(!th){ try{ trToast('图片处理失败'); }catch(e){} return; }
+            const e2=findEx(id); if(!e2) return;
+            e2.img=th; e2.imgCap='我的器械照片';
+            saveTrain(); try{ openExSheet(e2); trToast('已保存照片'); }catch(e){}
+          });
+        });
+      };
+      inp.click();
+    };
     const uf=el.querySelector('[data-mact="unfav"]');
     if(uf) uf.onclick=()=>{ el.remove(); trToggleFav(id); const e=findEx(id); if(e) openExSheet(e); };
     setTimeout(()=>{ const h=ev=>{ if(!el.contains(ev.target)){ el.remove(); document.removeEventListener('click',h); } }; document.addEventListener('click',h); },0);
@@ -6414,6 +6467,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     document.body.appendChild(el);
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
     el.querySelectorAll('[data-cux]').forEach(b=>b.onclick=()=>el.remove());
+    let preThumb=null;
+    if(pre.img){
+      const th=document.createElement('div'); th.className='cu-thumb';
+      th.innerHTML='<img src="'+pre.img+'" alt=""><span>这张照片会存进动作详情（只在本机）</span>';
+      const sheet=el.querySelector('.cu-sheet');
+      const btns=sheet.querySelector('.cu-btns');
+      if(btns) sheet.insertBefore(th, btns); else sheet.appendChild(th);
+      camThumb(pre.img, t=>{ preThumb=t; });
+    }
     if(pre.name) el.querySelector('#cuName').value=pre.name;
     if(pre.equip) el.querySelector('#cuEquip').value=pre.equip;
     if(pre.part){
@@ -6429,7 +6491,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const doSave=(name, stp)=>{
       const part=el.querySelector('#cuPart').value||'其他';
       const equip=(el.querySelector('#cuEquip').value||'自重').trim();
-      train.custom.push({id:'cu'+Date.now().toString(36), n:name, p:part, e:equip, t:'', g:(checked&&checked.gif)||'', s:(stp&&stp.length)?stp:['自定义动作，按个人经验执行'], custom:true});
+      const itm={id:'cu'+Date.now().toString(36), n:name, p:part, e:equip, t:'', g:(checked&&checked.gif)||'', s:(stp&&stp.length)?stp:['自定义动作，按个人经验执行'], custom:true};
+      if(preThumb){ itm.img=preThumb; itm.imgCap='我拍的器械：'+equip; }
+      train.custom.push(itm);
       saveTrain(); el.remove(); trRenderList(); trToast('已加入动作库');
     };
     cuBtn.onclick=()=>{
@@ -6597,7 +6661,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       try{ openPlanSheet(id); }catch(e){}
     });
     const nb=el.querySelector('[data-camnew]');
-    if(nb) nb.onclick=()=>{ el.remove(); try{ openCuSheet({name:equip, equip:equip, part:part}); }catch(e){} };
+    if(nb) nb.onclick=()=>{ el.remove(); try{ openCuSheet({name:equip, equip:equip, part:part, img:url}); }catch(e){} };
   }
 
   let trPlan=null, trPlanOrig=null;
