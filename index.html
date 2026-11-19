@@ -5356,7 +5356,68 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return {r,g};
   }
   let __focusUids=[], __focusIdx=0, __wl=null;
-  function focusList(){ const d=trDateVal(); return train.records.filter(r=>r.date===d); }
+  function focusList(){
+    const d=trDateVal(), arr=train.records.filter(r=>r.date===d);
+    arr.forEach(trUid);
+    const ord=(train.order&&train.order[d])||[], pos={};
+    ord.forEach((k,i)=>{ pos[k]=i; });
+    return arr.slice().sort((a,b)=>{
+      const pa=pos['r:'+a.uid], pb=pos['r:'+b.uid];
+      if(pa==null && pb==null) return 0;
+      if(pa==null) return 1;
+      if(pb==null) return -1;
+      return pa-pb;
+    });
+  }
+  // 今日安排序列：力量 + 有氧，完全按今日训练页的顺序
+  function fmSeq(){
+    const d=trDateVal();
+    const rs=focusList();
+    const cds=(train.cardio||[]).filter(c=>c.date===d && !c.done && !c.skipped);
+    const ord=(train.order&&train.order[d])||[], seen={}, out=[];
+    ord.forEach(k=>{
+      if(k.slice(0,2)==='r:'){ if(rs.some(x=>x.uid===k.slice(2)) && !seen[k]){ seen[k]=1; out.push(k); } }
+      else if(k.slice(0,2)==='c:'){ if(cds.some(x=>x.uid===k.slice(2)) && !seen[k]){ seen[k]=1; out.push(k); } }
+    });
+    rs.forEach(x=>{ const k='r:'+x.uid; if(!seen[k]) out.push(k); });
+    cds.forEach(x=>{ const k='c:'+x.uid; if(!seen[k]) out.push(k); });
+    return out;
+  }
+  function fmCurKey(){
+    if(window.__fmPhase==='cardio' && window.__fmCdAdhoc) return 'c:'+window.__fmCdAdhoc;
+    const u=__focusUids[__focusIdx]; return u?('r:'+u):null;
+  }
+  function fmGo(key){
+    if(!key) return false;
+    const kind=key.slice(0,2), uid=key.slice(2);
+    if(kind==='r:'){
+      const rs=focusList();
+      if(!__focusUids.some(u=>rs.some(r=>r.uid===u))) __focusUids=rs.map(r=>r.uid);
+      __focusUids=__focusUids.filter(u=>rs.some(r=>r.uid===u));
+      const i=__focusUids.indexOf(uid); if(i<0) return false;
+      __focusIdx=i; window.__fmPhase='strength'; window.__fmCdAdhoc=null; renderFocus(); return true;
+    }
+    const c=(train.cardio||[]).find(x=>x.uid===uid && x.date===trDateVal());
+    if(!c || c.done || c.skipped) return false;
+    window.__fmCdAdhoc=uid; window.__fmPhase='cardio'; renderFocus(); return true;
+  }
+  function fmStep(dir){
+    const seq=fmSeq(), i=seq.indexOf(fmCurKey());
+    const n=(i<0?0:i)+dir;
+    if(n<0 || n>=seq.length) return false;
+    return fmGo(seq[n]);
+  }
+  function fmChips(rs,cds,curKey){
+    return fmSeq().map(k=>{
+      if(k.slice(0,2)==='r:'){
+        const x=rs.find(v=>v.uid===k.slice(2)); if(!x) return '';
+        const q=ensureGroups(x), d=q.filter(g=>g.done).length;
+        return `<button class="fm-chip ${k===curKey?'on':''} ${d===q.length?'done':''}" data-fmgo="${x.uid}" type="button" aria-label="${ENGINE.esc(x.name)} ${d}/${q.length} 组"><span>${ENGINE.esc(x.name)}</span><em>${d}/${q.length}</em></button>`;
+      }
+      const c=cds.find(v=>v.uid===k.slice(2)); if(!c) return '';
+      return `<button class="fm-chip cd ${k===curKey?'on':''}" data-fmcdjump="${c.uid}" type="button"><span>${CARDIO_ICON[c.modal]||'🏃'} ${ENGINE.esc(c.modal)}</span><em>${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'}</em></button>`;
+    }).join('');
+  }
 
   function focusOrbData(){
     let done=0,total=0;
@@ -5589,7 +5650,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       return;
     }
     if(window.__fmPhase==='cardio'){
-      const c=adhoc[0]||cds.find(x=>!x.done&&!x.skipped);
+      const picked=(window.__fmCdAdhoc && cds.find(x=>x.uid===window.__fmCdAdhoc && !x.done && !x.skipped));
+      const c=picked||adhoc[0]||cds.find(x=>!x.done&&!x.skipped);
       if(c){ renderFocusCd(c, 'cardio', rs, cds); return; }
       window.__fmPhase = rs.length?'strength':'done';
     }
@@ -5618,12 +5680,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const pct = tAll? Math.round(dAll/tAll*100) : 0;
     const isTimed=/静力|平板|有氧|心肺|核心|全身|绳子|战绳|跳|跑|登山|波比|开合|支撑/.test((r.part||'')+(r.name||''));
     const step=weightStep(r);
-    const strip=rs.map((x,i)=>{
-      const q=ensureGroups(x); const d=q.filter(g=>g.done).length;
-      const on = i===__focusIdx;
-      return `<button class="fm-chip ${on?'on':''} ${d===q.length?'done':''}" data-fmgo="${x.uid}" type="button" aria-label="${ENGINE.esc(x.name)} ${d}/${q.length} 组">
-        <span>${ENGINE.esc(x.name)}</span><em>${d}/${q.length}</em></button>`;
-    }).join('') + cds.filter(c=>!c.skipped && !c.done).map(c=>`<button class="fm-chip cd" data-fmcdjump="${c.uid}" type="button"><span>${CARDIO_ICON[c.modal]||'🏃'} ${ENGINE.esc(c.modal)}</span><em>${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'}</em></button>`).join('');
+    const strip=fmChips(rs,cds,'r:'+r.uid);
+    const seq=fmSeq(), curKey='r:'+r.uid, seqPos=seq.indexOf(curKey);
     const hintOn=(window.__hintUid!==r.uid);
     el.innerHTML=`<div class="fm-progress"><i style="width:${pct}%"></i></div>
       <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span role="timer" aria-label="训练进度">${dAll}/${tAll} 组 · ${__focusIdx+1}/${__focusUids.length} 动作</span></div>
@@ -5647,8 +5705,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         </div>`;}).join('')}</div>
       <div class="fm-setadd"><button class="fm-step minus" data-fmdelset="1" type="button" aria-label="减少一组">−1</button><button class="fm-step plus" data-fmaddset="1" type="button" aria-label="增加一组（沿用上一组参数）">+1</button></div>
       <div class="fm-foot">
-        <button class="fm-nav prev" data-fmprev type="button" ${__focusIdx<=0?'disabled':''}>← 上一个</button>
-        <button class="fm-nav next" data-fmnext type="button" ${__focusIdx>=__focusUids.length-1?'disabled':''}>下一个 →</button>
+        <button class="fm-nav prev" data-fmprev type="button" ${seqPos<=0?'disabled':''}>← 上一个</button>
+        <button class="fm-nav next" data-fmnext type="button" ${seqPos<0||seqPos>=seq.length-1?'disabled':''}>下一个 →</button>
       </div>
       <div class="fm-more">
         <button class="fm-mini toggle ${train.autoNext?'on':''}" data-fmauto type="button">自动下一组 · ${train.autoNext?'开':'关'}</button>
@@ -5670,8 +5728,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.querySelectorAll('[data-fmcdjump]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
       const c=(train.cardio||[]).find(x=>x.uid===b.dataset.fmcdjump); if(!c) return;
-      window.__fmPhase = c.role==='pre'?'warmup':c.role==='post'?'cooldown':'warmup';
-      if(window.__fmPhase==='warmup' && c.role!=='pre'){ window.__fmCdAdhoc=c.uid; }
+      if(c.role==='pre'){ window.__fmPhase='warmup'; window.__fmCdAdhoc=null; }
+      else if(c.role==='post'){ window.__fmPhase='cooldown'; window.__fmCdAdhoc=null; }
+      else { window.__fmCdAdhoc=c.uid; window.__fmPhase='cardio'; }
       renderFocus();
     });
     el.querySelectorAll('[data-fmcdrun]').forEach(b=>b.onclick=ev=>{
@@ -5822,8 +5881,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       trToast('已减为 '+q.length+' 组');
     };
     const pv=el.querySelector('[data-fmprev]'), nx=el.querySelector('[data-fmnext]');
-    if(pv) pv.onclick=()=>{ __focusIdx=Math.max(0,__focusIdx-1); renderFocus(); };
-    if(nx) nx.onclick=()=>{ __focusIdx=Math.min(__focusUids.length-1,__focusIdx+1); renderFocus(); };
+    if(pv) pv.onclick=()=>{ fmStep(-1); };
+    if(nx) nx.onclick=()=>{ fmStep(1); };
     const fin=el.querySelector('[data-fmfin]'); if(fin) fin.onclick=()=>{ closeFocus(); showTrainSummary(); };
     const au=el.querySelector('[data-fmauto]');
     if(au) au.onclick=()=>{ train.autoNext=!train.autoNext; saveTrain();
@@ -5897,10 +5956,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     let tAll=0,dAll=0;
     rs.forEach(x=>{ const q=ensureGroups(x); tAll+=q.length; dAll+=q.filter(g=>g.done).length; });
     const gp = tAll? Math.round(dAll/tAll*100) : 0;
-    const chips = rs.map((x,i)=>{
-      const q=ensureGroups(x); const d=q.filter(g=>g.done).length;
-      return `<button class="fm-chip ghost" data-fmcdstrength type="button"><span>${ENGINE.esc(x.name)}</span><em>${d}/${q.length}</em></button>`;
-    }).join('') + cds.filter(x=>!x.done&&!x.skipped).map(x=>`<button class="fm-chip cd ${x.uid===c.uid?'on':''}" data-fmcdjump2="${x.uid}" type="button"><span>${CARDIO_ICON[x.modal]||'🏃'} ${ENGINE.esc(x.modal)}</span><em>${x.role==='pre'?'热身':x.role==='post'?'收尾':'有氧'}</em></button>`).join('');
+    const chips = fmChips(rs,cds,'c:'+c.uid);
+    const seq=fmSeq(), curKey='c:'+c.uid, seqPos=seq.indexOf(curKey);
     const distLabel = CD_DIST.includes(c.modal)?'+0.5 km':'+5 层';
     el.innerHTML=`<div class="fm-progress"><i style="width:${gp}%"></i></div>
       <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span>${tag}${tAll?(' · '+dAll+'/'+tAll+' 组已完成'):''}</span></div>
@@ -5919,6 +5976,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <span class="fmc-lv">${['轻松','中等','强度'].map(x=>`<button class="${(c.lv||'中等')===x?'on':''}" data-fmcdlv2="${c.uid}:${x}" type="button">${x}</button>`).join('')}</span>
         </div>
         <button class="fmc-skip" data-fmcdskip2="${c.uid}" type="button">今天不练，跳过这一步</button>
+        <div class="fm-foot">
+          <button class="fm-nav prev" data-fmcdprev type="button" ${seqPos<=0?'disabled':''}>← 上一个</button>
+          <button class="fm-nav next" data-fmcdnext type="button" ${seqPos<0||seqPos>=seq.length-1?'disabled':''}>下一个 →</button>
+        </div>
       </div>`;
     // 退出
     const x=el.querySelector('[data-fmexit]');
@@ -5930,7 +5991,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       setTimeout(()=>{ armed=false; x.textContent='×'; x.classList.remove('armed'); x.style.maxWidth=''; },3000);
     };
     // 返回力量
-    el.querySelectorAll('[data-fmcdstrength]').forEach(b=>b.onclick=()=>{ window.__fmPhase='strength'; renderFocus(); });
+    el.querySelectorAll('[data-fmgo]').forEach(b=>b.onclick=()=>{ fmGo('r:'+b.dataset.fmgo); });
+    const cdpv=el.querySelector('[data-fmcdprev]'); if(cdpv) cdpv.onclick=()=>{ fmStep(-1); };
+    const cdnx=el.querySelector('[data-fmcdnext]'); if(cdnx) cdnx.onclick=()=>{ fmStep(1); };
     el.querySelectorAll('[data-fmcdjump2]').forEach(b=>b.onclick=()=>{
       const c2=(train.cardio||[]).find(v=>v.uid===b.dataset.fmcdjump2); if(!c2) return;
       window.__fmPhase = c2.role==='post'?'cooldown':'warmup'; renderFocus();
@@ -5950,17 +6013,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       try{ haptic('core'); }catch(e){}
       trToast('有氧完成：'+c.modal+' '+(c.dur||1)+' 分钟，已记录');
       cdAskLv(c);
-      window.__fmPhase = nextPhase();
-      if(window.__fmPhase==='done'){ closeFocus(); showTrainSummary(); return; }
-      renderFocus();
+      if(!fmStep(1)){
+        const left=focusList().some(x=>ensureGroups(x).some(g=>!g.done));
+        if(left){ window.__fmPhase='strength'; window.__fmCdAdhoc=null; renderFocus(); }
+        else { closeFocus(); showTrainSummary(); }
+      }
     });
     el.querySelectorAll('[data-fmcdskip2]').forEach(b=>b.onclick=()=>{
       c.skipped=true; saveTrain(); trRenderToday();
       trToast('已跳过这次有氧');
-      window.__fmPhase = (()=>{ if(c.role==='post') return 'done'; if(rs.length) return 'strength';
-        return (train.cardio||[]).some(x=>x.date===trDateVal() && x.uid!==c.uid && !x.done && !x.skipped) ? 'cardio' : 'done'; })();
-      if(window.__fmPhase==='done'){ closeFocus(); showTrainSummary(); return; }
-      renderFocus();
+      window.__fmCdAdhoc=null;
+      if(!fmStep(1)){
+        const left=focusList().some(x=>ensureGroups(x).some(g=>!g.done));
+        if(left){ window.__fmPhase='strength'; renderFocus(); }
+        else { closeFocus(); showTrainSummary(); }
+      }
     });
     el.querySelectorAll('[data-fmcddist2]').forEach(b=>b.onclick=()=>{
       if(CD_DIST.includes(c.modal)) c.dist=Math.round(((c.dist||0)+0.5)*10)/10; else c.dist=(c.dist||0)+5;
