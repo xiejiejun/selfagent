@@ -8051,7 +8051,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <div class="setting-sec">
               <h2 style="font-size:14px">新手引导</h2>
               <div class="hint">忘了某个地方怎么用？重放一遍教练提示，跟着做比看说明快。</div>
-              <div class="backup-row"><button class="btn ghost sm" id="coachReplayBtn" type="button">重放引导</button></div>
+              <div class="backup-row"><button class="btn ghost sm" id="coachReplayBtn" type="button">重放引导</button><button class="btn ghost sm" id="coachAutoBtn" type="button">关闭自动提示</button></div>
               <details class="about-more">
                 <summary>功能速查</summary>
                 <div class="hint">悬浮球：点一下＝随手记；长按＝切换记录/训练模式；拖拽可吸附屏幕左右边缘。</div>
@@ -8136,6 +8136,16 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     bindBackup();
     try{ bindAISettings(); }catch(e){}
     const crb=$('coachReplayBtn'); if(crb) crb.onclick=()=>{ try{ coachReplay(); }catch(e){} };
+    const cab=$('coachAutoBtn');
+    if(cab){
+      const syncAuto=()=>{ cab.textContent = coachAuto() ? '关闭自动提示' : '开启自动提示'; };
+      syncAuto();
+      cab.onclick=()=>{
+        try{ localStorage.setItem('selfagent_coach_auto', coachAuto()?'0':'1'); }catch(e){}
+        syncAuto();
+        try{ trToast(coachAuto()?'已关闭自动提示':'已开启自动提示'); }catch(e){}
+      };
+    }
     if(window.__cloudFill) window.__cloudFill();
     const onTypeChange = ()=>{ saveSettings(); renderSettingsPanel(); refreshLogForm(); renderLogs(); };
     $('addType').addEventListener('click',()=>{
@@ -9416,15 +9426,30 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(document.getElementById('coach')) return;
     if(document.getElementById('onboard')){ setTimeout(()=>{ try{ coachOrbIntro(); }catch(e){} }, 1200); return; }
     if(window.__coachReplaying) return;
-    coach('orb','悬浮球：点一下随手记，长按换挡到训练模式','#modeOrb');
+    if(!coachAuto() || coachAutoUsed()) return;
+    if(coach('orb','悬浮球：点一下随手记，长按换挡到训练模式','#modeOrb')) coachAutoCap();
+  }
+  function coachAuto(){ try{ return localStorage.getItem('selfagent_coach_auto')!=='0'; }catch(e){ return true; } }
+  function coachAutoUsed(){ try{ return sessionStorage.getItem('__coach_auto')==='1'; }catch(e){ return false; } }
+  function coachAutoCap(){ try{ sessionStorage.setItem('__coach_auto','1'); }catch(e){} }
+  function hasDoneSet(){
+    try{
+      if(typeof train==='undefined' || !train) return false;
+      return (train.records||[]).some(r=>Array.isArray(r.groups) ? r.groups.some(g=>g.done) : (r.sets||0)>0);
+    }catch(e){ return false; }
   }
   function coachOnPage(p){
     if(window.__coachReplaying) return;
     if(document.getElementById('onboard')) return;
-    if(p==='record') setTimeout(()=>{ coach('train','每组做完点一下勾，会自动开始休息倒计时','#trStart'); }, 420);
+    if(!coachAuto()) return;
+    if(p==='record') setTimeout(()=>{
+      if(coachAutoUsed() || hasDoneSet()) return;
+      if(coach('train','每组做完点一下勾，会自动开始休息倒计时','#trStart')) coachAutoCap();
+    }, 420);
     else if(p==='agent') setTimeout(()=>{
-      try{ const st=mileState(); if(st.log && st.trained) return; }catch(e){}
-      coach('insight','记录满 3 条就能生成第一版画像，去试试？','#btnGen');
+      let n=0; try{ n=(typeof logs!=='undefined'?logs.length:0); }catch(e){}
+      if(coachAutoUsed() || n>=3) return;
+      if(coach('insight','记录满 3 条就能生成第一版画像，去试试？','#btnGen')) coachAutoCap();
     }, 420);
   }
   function coachReplay(){
