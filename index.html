@@ -1515,7 +1515,9 @@ html[data-theme="light"] .cu-act.del{background:rgba(224,90,90,.12)}
 .ins-week{margin-top:14px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;background:linear-gradient(180deg,rgba(47,209,197,.07),rgba(255,255,255,.02))}
 .ins-week .h{font-size:12px;color:var(--tx2);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
 .ins-week .h b{font-size:13px;color:var(--tx);font-weight:600}
-.ins-week .row{display:flex;gap:8px;flex-wrap:wrap}
+.ins-week .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 12px}
+.ins-week .kv{display:flex;align-items:baseline;gap:2px;white-space:nowrap}
+@media(min-width:420px){.ins-week .row{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .ins-week .kv{font-size:11.5px;color:var(--tx3)}
 .ins-week .kv b{color:var(--tx);font-weight:600;font-size:12.5px}
 .ins-foot{display:flex;gap:8px;margin-top:14px}
@@ -1530,7 +1532,48 @@ html[data-theme="light"] .cu-act.del{background:rgba(224,90,90,.12)}
 .arch-t:first-child{margin-top:2px}
 html[data-theme="light"] .ins-card{background:#fff}
 html[data-theme="light"] .ins-cell{background:#fff}
+:root{--t-fast:.15s;--t-base:.2s;--t-slow:.35s;--ease:cubic-bezier(.2,.8,.2,1)}
+button,a,.ins-card,.ins-filter button,.toast{transition-timing-function:var(--ease)}
+:focus-visible{outline:2px solid #2FD1C5;outline-offset:2px}
 html[data-theme="light"] .ins-ev .ev-chip{border-color:#E3E8F0;background:#F7F9FC}
+html[data-theme="light"] .ins-filter button{border-color:#E3E8F0}
+html[data-theme="light"] .ins-filter button.on{border-color:rgba(20,170,160,.5);background:rgba(20,170,160,.1)}
+.ask-card{animation:none}
+.ins-follow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.ins-follow button{border:1px solid var(--line);background:none;color:var(--tx3);border-radius:999px;padding:4px 10px;font:inherit;font-size:11px;min-height:26px;transition:all var(--t-fast) var(--ease)}
+.ins-follow button:hover{border-color:rgba(47,209,197,.5);color:var(--tx2)}
+.toast{left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);bottom:auto;transform:translate(-50%,-6px);animation:toastIn .22s var(--ease) both;max-width:82vw;text-align:center;font-size:12.5px;z-index:999}
+.toast.warn{border-color:rgba(232,178,58,.55);color:#F2D08A}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
+/* NEW 角标 / 筛选 / 置信点 / 迷你走势 */
+.ins-new{position:absolute;top:10px;right:10px;width:6px;height:6px;border-radius:50%;background:#3E8BFF;box-shadow:0 0 0 3px rgba(62,139,255,.14);animation:insPop .3s var(--ease) both}
+@keyframes insPop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.ins-filter{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 0 10px;scrollbar-width:none}
+.ins-filter::-webkit-scrollbar{display:none}
+.ins-filter button{flex:0 0 auto;border:1px solid var(--line);background:none;color:var(--tx3);border-radius:999px;padding:5px 11px;font:inherit;font-size:11.5px;min-height:28px;transition:all var(--t-fast) var(--ease)}
+.ins-filter button.on{border-color:rgba(47,209,197,.55);color:var(--tx);background:rgba(47,209,197,.12)}
+.ins-dots{display:inline-flex;gap:3px;align-items:center;margin-left:auto}
+.ins-dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.16)}
+.ins-dots i.on{background:rgba(255,255,255,.72)}
+html[data-theme="light"] .ins-dots i{background:#DCE2EA}
+html[data-theme="light"] .ins-dots i.on{background:#8A94A6}
+.ins-spark{display:flex;align-items:flex-end;gap:3px;height:18px;margin:8px 0 2px;padding:0 2px}
+.ins-spark i{flex:1 1 0;background:rgba(47,209,197,.35);border-radius:2px;min-height:3px;position:relative}
+.ins-spark i.today{background:#2FD1C5}
+.ins-week .kv em{font-style:normal;font-size:10px;margin-left:3px}
+.ins-week .kv em.up{color:#3EC478}
+.ins-week .kv em.down{color:#F0715C}
+.ins-week .kv em.flat{color:var(--tx3)}
+.ins-act[disabled]{opacity:.55}
+@keyframes flashRing{0%{box-shadow:0 0 0 0 rgba(47,209,197,.55),inset 0 0 0 0 rgba(47,209,197,.4)}35%{box-shadow:0 0 0 6px rgba(47,209,197,.18),inset 0 0 0 2px rgba(47,209,197,.55)}100%{box-shadow:0 0 0 0 rgba(47,209,197,0),inset 0 0 0 0 rgba(47,209,197,0)}}
+.flash{animation:flashRing 1.5s var(--ease) 2 both}
+.ai-skel{display:flex;flex-direction:column;gap:9px;margin:6px 0 12px}
+.ai-skel>div{height:64px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(100deg,rgba(255,255,255,.04) 20%,rgba(255,255,255,.1) 40%,rgba(255,255,255,.04) 60%);background-size:220% 100%;animation:skel 1.15s linear infinite}
+.ai-skel>div:nth-child(2){animation-delay:.12s;height:52px}
+.ai-skel>div:nth-child(3){animation-delay:.24s}
+@keyframes skel{from{background-position:120% 0}to{background-position:-40% 0}}
+.ins-card{animation:insIn .22s var(--ease) both}
+@keyframes insIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .ex-item.cu-item .ex-head{flex-wrap:wrap;gap:2px 8px}
 .ex-item.cu-item .ex-name{white-space:normal;word-break:break-word;max-width:100%}
 .ex-item.cu-item .ex-meta{white-space:normal;font-size:11px}
@@ -5196,7 +5239,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       let wasMenu=false;
       const openOrbMenu=()=>{
         el.classList.add('menu-on'); el.classList.remove('pressing');
-        try{ if(navigator.vibrate) navigator.vibrate(16); }catch(e){}
+        try{ haptic('core'); }catch(e){}
       };
       let bound = false;
       const onMove=ev=>{
@@ -5206,7 +5249,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           clearT(); el.classList.remove('pressing');
           if(el.classList.contains('menu-on')) el.classList.remove('menu-on');
           st.phase='dragging'; el.classList.add('dragging');
-          try{ if(navigator.vibrate) navigator.vibrate(8); }catch(e){}
+          try{ haptic('tap'); }catch(e){}
         }
         if(st.phase==='dragging'){
           if(ev.cancelable) ev.preventDefault();
@@ -5632,7 +5675,26 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       });
     });
   }
-  function trToast(t){ const el=document.createElement('div'); el.className='toast'; el.textContent=t; document.body.appendChild(el); setTimeout(()=>{ try{el.remove();}catch(e){} },2200); }
+  function haptic(level){
+    try{
+      if(!navigator.vibrate) return;
+      if(level==='core') navigator.vibrate(20);
+      else if(level==='warn') navigator.vibrate([10,30,10]);
+      else navigator.vibrate(10);
+    }catch(e){}
+  }
+  let __toastEl=null, __toastT=0;
+  function toast(msg, type){
+    try{
+      if(__toastEl){ try{ __toastEl.remove(); }catch(e){} __toastEl=null; }
+      const el=document.createElement('div');
+      el.className='toast'+(type==='warn'?' warn':''); el.textContent=msg;
+      document.body.appendChild(el); __toastEl=el;
+      clearTimeout(__toastT);
+      __toastT=setTimeout(()=>{ try{ el.remove(); }catch(e){} if(__toastEl===el) __toastEl=null; }, 2500);
+    }catch(e){}
+  }
+  function trToast(t){ toast(t); }
   function confirmPlain(msg, onOk, okTxt){
     try{
       const el=document.createElement('div'); el.className='toast undo confirm';
@@ -6281,6 +6343,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     sh.classList.add('on');
   }
   function trAddPlanned(id, sets, reps, weight, silent){
+    try{ if(__planAddKey){ feedActMark(__planAddKey); __planAddKey=''; } }catch(e){}
     try{ libClose(); }catch(err){}
     const e=findEx(id); if(!e) return;
     const day=trDateVal();
@@ -9208,6 +9271,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         if(!l) return;
         openPage('log');
         if(l.kind==='train') openTrainSheet(id); else openLogSheet(id);
+        setTimeout(()=>{
+          try{
+            const sh=document.querySelector('.ex-sheet.on .ex-sheet-inner, #planSheet.on .ex-sheet-inner, .msheet.on .msheet-box');
+            if(sh){ sh.classList.remove('flash'); void sh.offsetWidth; sh.classList.add('flash'); setTimeout(()=>{ try{ sh.classList.remove('flash'); }catch(e){} }, 3200); }
+          }catch(e){}
+        }, 160);
       });
     });
   }
@@ -9216,10 +9285,27 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const r=answerAsk(q);
     if(!r){ box.hidden=true; return; }
     box.hidden=false;
-    box.innerHTML=`<div class="ask-q">${ENGINE.esc(q)}<em>${ENGINE.esc(r.range||'')}</em></div>
-      <div class="ask-a"><b>${ENGINE.esc(r.title)}</b><p>${r.main}</p>${r.sub?`<div class="ask-sub">${r.sub}</div>`:''}</div>
-      ${evRefHtml(r.refs||[])}`;
+    const refs=(r.refs||[]);
+    box.innerHTML=`<div class="ins-card ask-card" data-cat="energy" data-q="${ENGINE.esc(q)}">
+      <div class="ins-top"><span class="ins-cat">你的数据${r.range?' · '+ENGINE.esc(r.range):''}</span><button class="ins-more" type="button" aria-label="依据">⋯</button></div>
+      <div class="ins-head">${ENGINE.esc(r.title)}</div>
+      <div class="ins-why">${r.main}</div>
+      ${r.sub?'<div class="ins-why" style="opacity:.78">'+r.sub+'</div>':''}
+      <div class="ins-ev" hidden>${refs.length?('<span class="ins-ev-t">依据 '+refs.length+' 条记录</span>'+refs.slice(0,8).map(o=>`<button type="button" class="ev-chip" data-ev="${o.id}">${ENGINE.esc(o.label||'')}</button>`).join('')):'<span class="ins-ev-t">该答案由训练/部位记录统计得出</span>'}</div>
+      <div class="ins-follow"><button type="button" data-fq="本周">换成本周</button><button type="button" data-fq="近14天">近 14 天</button><button type="button" data-fq="全部记录">全部记录</button><button type="button" data-fq="why">为什么？</button></div>
+    </div>`;
     try{ bindEvChips(box); }catch(e){}
+    const card=box.querySelector('.ask-card');
+    const more=card.querySelector('.ins-more'), ev=card.querySelector('.ins-ev');
+    more.onclick=()=>{ ev.hidden=!ev.hidden; more.textContent=ev.hidden?'⋯':'×'; };
+    card.querySelectorAll('[data-fq]').forEach(b=>{
+      b.onclick=()=>{
+        const k=b.dataset.fq;
+        if(k==='why'){ const w=card.querySelector('.ins-why'); if(w){ w.style.opacity=.78; } toast('依据已在 ⋯ 里列出，可点记录跳转'); return; }
+        const base=String(q).replace(/(今天|今日|昨天|本周|这周|这星期|这一周|上周|本月|这个月|上月|上个月|近30天|近14天|近30|近14|两周|全部记录|全部)/g,' ');
+        renderAsk((base+' '+k).trim());
+      };
+    });
     try{ aiAskEnhance(q, r, box); }catch(e){}
   }
 
@@ -9805,10 +9891,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!aiReady()){ box.innerHTML=aiReportBar('未配置 AI · 已用内置规则', true); return; }
     const job=++__aiJob;
     let st0={logsN:0}; try{ st0={logsN:aiStat().logsN||0}; }catch(e){}
-    box.innerHTML=aiHeadHtml('AI 正在生成 · 逐节输出…', true, '生成中…');
+    box.innerHTML=aiHeadHtml('AI 正在生成 · 逐节输出…', true, '生成中…')+
+      '<div class="ai-skel"><div></div><div></div><div></div></div>';
     const stage=document.createElement('div'); stage.className='ai-stage';
     box.appendChild(stage);
     aiReport(tab, stage, n=>{
+      const sk=box.querySelector('.ai-skel'); if(sk && n>=1){ sk.style.display='none'; }
       const sp=box.querySelector('#aiBar span');
       if(sp) sp.textContent='AI 正在生成 · 已出 '+n+' 节';
     }).then(data=>{
@@ -9945,15 +10033,32 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     out.sort((a,b)=>(wmap[a.lv]||2)-(wmap[b.lv]||2));
     return out;
   }
+  const FEED_ACT_KEY='selfagent_feed_act_v1', FEED_SEEN_KEY='selfagent_feed_seen_v1';
+  let __feedFilter='', __planAddKey='';
+  function feedToday(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function feedItemKey(it){ return (it.cat||'')+'|'+String(it.head||'').slice(0,26); }
+  function feedActLoad(){ try{ const o=JSON.parse(localStorage.getItem(FEED_ACT_KEY)||'{}'); if(o.date!==feedToday()) return {}; return o.keys||{}; }catch(e){ return {}; } }
+  function feedActMark(k){ if(!k) return; try{ const o=JSON.parse(localStorage.getItem(FEED_ACT_KEY)||'{}'); const keys=(o.date===feedToday()?(o.keys||{}):{}); keys[k]=Date.now(); localStorage.setItem(FEED_ACT_KEY, JSON.stringify({date:feedToday(), keys:keys})); }catch(e){} }
+  function feedSeenLoad(){ try{ const o=JSON.parse(localStorage.getItem(FEED_SEEN_KEY)||'{}'); const km=o.keys||{}; const now=Date.now(); Object.keys(km).forEach(k=>{ if(now-(km[k]||0)>24*36e5) delete km[k]; }); return km; }catch(e){ return {}; } }
+  function feedSeenMark(keys){ try{ const km=feedSeenLoad(); const now=Date.now(); keys.forEach(k=>{ km[k]=now; }); localStorage.setItem(FEED_SEEN_KEY, JSON.stringify({ts:now, keys:km})); }catch(e){} }
+  function feedAppliedLabel(it){ return it.act.kind==='planAdd' ? '已加入今日' : '已打开计划'; }
+  function insConfDots(it,refs){
+    let n=refs.length;
+    const m=String(it.conf||'').match(/(\d+)/); if(m) n=Math.max(n, +m[1]);
+    const dots=n>=5?3:n>=2?2:1;
+    return '<span class="ins-dots" title="'+ENGINE.esc(it.conf||('依据 '+refs.length+' 条'))+'" aria-label="置信度 '+dots+' 档">'+
+      [0,1,2].map(i=>'<i class="'+(i<dots?'on':'')+'"></i>').join('')+'</span>';
+  }
   function insCardHtml(it,i){
     const refs=(it.refs||[]).filter(r=>r&&r.id);
-    return `<div class="ins-card" data-cat="${it.cat}">
-      <div class="ins-top"><span class="ins-cat">${ENGINE.esc(it.catLabel||'')}</span><span class="ins-lv ${it.lv||''}">${it.lv==='warn'?'需留意':it.lv==='up'?'在变好':'状态'}</span><button class="ins-more" type="button" data-insmore="${i}" aria-label="依据">⋯</button></div>
+    const key=feedItemKey(it), applied=!!feedActLoad()[key], isNew=!feedSeenLoad()[key];
+    return `<div class="ins-card" data-cat="${it.cat}" data-key="${ENGINE.esc(key)}" style="animation-delay:${Math.min(i,6)*40}ms">
+      <div class="ins-top"><span class="ins-cat">${ENGINE.esc(it.catLabel||'')}</span><span class="ins-lv ${it.lv||''}" aria-label="${it.lv==='warn'?'需留意':it.lv==='up'?'在变好':'状态'}">${it.lv==='warn'?'需留意':it.lv==='up'?'在变好':'状态'}</span>${insConfDots(it,refs)}<button class="ins-more" type="button" data-insmore="${i}" aria-label="展开依据">⋯</button>${isNew?'<i class="ins-new" aria-label="新洞察"></i>':''}</div>
       <div class="ins-head">${ENGINE.esc(it.head)}</div>
       ${it.assume?`<div class="ins-two"><div><span>假设</span><b>${ENGINE.esc(it.assume)}</b></div><div><span>预期</span><b>${ENGINE.esc(it.expect||'')}</b></div></div>`:''}
       ${it.why?'<div class="ins-why">'+ENGINE.esc(it.why)+'</div>':''}
       ${(refs.length||it.conf)?`<div class="ins-ev" id="insEv${i}" hidden>${it.conf?'<span class="ins-ev-t">'+ENGINE.esc(it.conf)+'</span>':''}${refs.map(r=>`<button type="button" class="ev-chip" data-ev="${r.id}">${ENGINE.esc(r.label||'')}</button>`).join('')}</div>`:''}
-      ${it.act?`<div class="ins-acts"><button class="btn ghost sm" type="button" data-insact="${i}" data-act="${it.act.kind}" data-ex="${ENGINE.esc(it.act.exId||'')}">${ENGINE.esc(it.act.label)}</button></div>`:''}
+      ${it.act?`<div class="ins-acts"><button class="btn ghost sm ins-act" type="button" data-insact="${i}" data-act="${it.act.kind}" data-ex="${ENGINE.esc(it.act.exId||'')}" data-key="${ENGINE.esc(key)}"${applied?' disabled aria-disabled="true"':''}>${applied?'✓ '+ENGINE.esc(feedAppliedLabel(it)):ENGINE.esc(it.act.label)}</button></div>`:''}
     </div>`;
   }
   function insBarHtml(){
@@ -9965,22 +10070,49 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="ins-cell"><span class="k">精力</span><span class="v">${f1(g.rAvg)}<em>/5</em></span><span class="s">${dir}（上周 ${f1(g.pAvg)}）</span></div>
       <div class="ins-cell"><span class="k">情绪</span><span class="v">${md||'—'}</span><span class="s">上周 ${g.pMood==null?'—':f1(g.pMood)+'/5'}</span></div>
       <div class="ins-cell"><span class="k">本周训练</span><span class="v">${g.sets7}<em>组</em></span><span class="s">${g.days7} 个训练日</span></div>
-    </div>`;
+    </div>${insSparkHtml()}`;
+  }
+  function insSparkHtml(){
+    const now=new Date(), out=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date(); d.setDate(d.getDate()-i);
+      const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const v=(logs||[]).filter(l=>l.kind!=='train' && String(l.date||'')===k).map(l=>l.score).filter(x=>typeof x==='number'&&x>0);
+      const avg=v.length?(v.reduce((a,b)=>a+b,0)/v.length):null;
+      const h=avg==null?3:Math.max(3,Math.round(avg/5*18));
+      out.push('<i class="'+(i===0?'today':'')+'" style="height:'+h+'px" title="'+k+(avg==null?' · 无记录':' · 精力 '+avg.toFixed(1))+'"></i>');
+    }
+    return '<div class="ins-spark" aria-label="近 7 天精力走势">'+out.join('')+'</div>';
+  }
+  function insDelta(cur,prev){
+    if(prev==null||cur==null) return '';
+    if(prev===0) return cur>0?'<em class="up">新增</em>':'';
+    const p=Math.round((cur-prev)/prev*100);
+    if(Math.abs(p)<2) return '<em class="flat">持平</em>';
+    return '<em class="'+(p>0?'up':'down')+'">'+(p>0?'+':'')+p+'%</em>';
   }
   function insWeekHtml(){
     const g=insAgg();
     const f1=v=>v==null?'—':(Math.round(v*10)/10).toFixed(1);
+    const recP=g.P.length, dSets=insDelta(g.sets7,g.setsP), dRec=insDelta(g.R.length,recP), dSc=insDelta(g.rAvg,g.pAvg), dMd=insDelta(g.rMood,g.pMood);
     return `<div class="ins-week"><div class="h"><b>本周回顾</b><span style="color:var(--tx3);font-size:11px">自动汇总 · 共 ${g.R.length} 条记录</span></div>
-      <div class="row"><span class="kv">记录 <b>${g.R.length}</b> 条</span><span class="kv">训练 <b>${g.sets7}</b> 组</span><span class="kv">精力 <b>${f1(g.rAvg)}</b></span><span class="kv">情绪 <b>${f1(g.rMood)}</b></span></div></div>`;
+      <div class="row"><span class="kv">记录 <b>${g.R.length}</b> 条${dRec}</span><span class="kv">训练 <b>${g.sets7}</b> 组${dSets}</span><span class="kv">精力 <b>${f1(g.rAvg)}</b>${dSc}</span><span class="kv">情绪 <b>${f1(g.rMood)}</b>${dMd}</span></div></div>`;
   }
   function insFootHtml(tab){
     const lbl={persona:'历史报告归档',plan:'规划报告归档',trend:'推演报告归档'}[tab]||'报告归档';
     return `<div class="ins-foot"><button class="btn ghost sm" type="button" data-arch="${tab}">${lbl} ▸</button></div>`;
   }
+  function insFilterHtml(items){
+    const cats=[['','全部'],['energy','精力'],['mood','情绪'],['fit','健身'],['rest','作息']];
+    return '<div class="ins-filter">'+cats.map(c=>{
+      const n=c[0]?(items||[]).filter(x=>x.cat===c[0]).length:(items||[]).length;
+      return '<button type="button" data-fcat="'+c[0]+'" class="'+(__feedFilter===c[0]?'on':'')+'">'+c[1]+(n?' '+n:'')+'</button>';
+    }).join('')+'</div>';
+  }
   function feedPersonaHtml(){
     const items=genInsights();
     __feed={items:items, tab:'persona'};
-    return insBarHtml()+'<div class="ins-feed">'+(items.length?items.map(insCardHtml).join(''):'<div class="lib-sec-empty">记录还不够，先写 3 条就能生成第一条洞察。</div>')+'</div>'+insWeekHtml()+insFootHtml('persona');
+    return insBarHtml()+insFilterHtml(items)+'<div class="ins-feed">'+(items.length?items.map(insCardHtml).join(''):'<div class="lib-sec-empty">记录还不够，先写 3 条就能生成第一条洞察。</div>')+'</div>'+insWeekHtml()+insFootHtml('persona');
   }
   function feedPlanHtml(){
     const g=insAgg(), out=[];
@@ -9992,7 +10124,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(g.rAvg!=null&&g.rAvg<=3) out.push({cat:'energy',catLabel:'降负荷',lv:'warn',head:'精力均值 '+f1num(g.rAvg)+'，单次组数砍 10–20%',why:'精力连续偏低时堆量只会拖长恢复',conf:'基于 '+g.R.length+' 条记录',refs:g.R.slice(-3).map(g.evOf),act:{kind:'gotoPlan',label:'按轻量排'}});
     if(g.nightDiff!=null&&g.nightDiff<0) out.push({cat:'rest',catLabel:'作息',lv:'warn',head:'把训练放到 21:00 前，深夜记录后次日精力更低',why:'深夜记录 '+g.night.length+' 次，次日精力低 '+f1num(Math.abs(g.nightDiff))+' 分',conf:'',refs:g.night.slice(-3).map(g.evOf)});
     __feed={items:out, tab:'plan'};
-    return '<div class="ins-feed">'+out.map(insCardHtml).join('')+'</div>'+insFootHtml('plan');
+    return insFilterHtml(out)+'<div class="ins-feed">'+out.map(insCardHtml).join('')+'</div>'+insFootHtml('plan');
   }
   function f1num(v){ return v==null?'—':(Math.round(v*10)/10).toFixed(1); }
   function feedTrendHtml(){
@@ -10008,18 +10140,32 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       assume:'容量 ×1.4 且仍然深夜记录',expect:'恢复跟不上，先出现精力下滑（预计 '+f1num(Math.max(1,en-1.2))+'）而不是力量下降',conf:'按当前两周趋势外推',refs:g.night.slice(-3).map(g.evOf)});
     out.push({cat:'mood',catLabel:'预警信号',lv:'warn',head:'连续 2 天精力 ≤2 或睡不满 6 小时 → 减一档',why:'出现即先砍 20% 容量，别硬顶',conf:'',refs:[],act:{kind:'gotoPlan',label:'改轻量计划'}});
     __feed={items:out, tab:'trend'};
-    return '<div class="ins-feed">'+out.map(insCardHtml).join('')+'</div>'+insFootHtml('trend');
+    return insFilterHtml(out)+'<div class="ins-feed">'+out.map(insCardHtml).join('')+'</div>'+insFootHtml('trend');
   }
   function bindFeed(box){
     if(!box) return;
+    const fbtns=box.querySelectorAll('[data-fcat]');
+    const applyFilter=()=>{
+      box.querySelectorAll('.ins-card').forEach(c=>{
+        c.hidden = !!__feedFilter && c.dataset.cat!==__feedFilter;
+      });
+      fbtns.forEach(x=>x.classList.toggle('on', x.dataset.fcat===__feedFilter));
+    };
+    fbtns.forEach(b=>{ b.onclick=()=>{ __feedFilter=b.dataset.fcat||''; applyFilter(); }; });
+    if(__feedFilter && box.querySelectorAll('.ins-card').length) applyFilter();
+    const cards=box.querySelectorAll('.ins-card[data-key]');
+    setTimeout(()=>{ try{ feedSeenMark([].slice.call(cards).map(c=>c.dataset.key)); }catch(e){} }, 900);
     box.querySelectorAll('[data-insmore]').forEach(b=>{
       b.onclick=()=>{ const ev=box.querySelector('#insEv'+b.dataset.insmore); if(ev){ ev.hidden=!ev.hidden; b.textContent=ev.hidden?'⋯':'×'; } };
     });
     box.querySelectorAll('[data-insact]').forEach(b=>{
       b.onclick=()=>{ try{
-        const k=b.dataset.act, ex=b.dataset.ex||'';
-        if(k==='planAdd'){ try{ openPage('record'); trSetSeg('plan'); setTimeout(()=>{ try{ openPlanSheet(ex); }catch(e){} }, 240); }catch(e){} }
-        else if(k==='gotoPlan'){ try{ openPage('record'); trSetSeg('plan'); }catch(e){} }
+        const k=b.dataset.act, ex=b.dataset.ex||'', ck=b.dataset.key||'';
+        try{ haptic('tap'); }catch(e){}
+        if(k==='planAdd'){ __planAddKey=ck; try{ openPage('record'); trSetSeg('plan'); setTimeout(()=>{ try{ openPlanSheet(ex); }catch(e){} }, 240); }catch(e){} }
+        else if(k==='gotoPlan'){ try{ openPage('record'); trSetSeg('plan'); }catch(e){}
+          if(ck){ feedActMark(ck); b.disabled=true; b.textContent='✓ 已打开计划'; }
+        }
         else if(k==='gotoTrain'){ try{ openPage('record'); }catch(e){} }
       }catch(e){} };
     });
