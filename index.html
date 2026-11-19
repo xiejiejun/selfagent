@@ -8403,9 +8403,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       b.onclick=()=>{
         aiSave({engine:b.dataset.aie});
         seg.querySelectorAll('[data-aie]').forEach(x=>x.classList.toggle('on', x.dataset.aie===b.dataset.aie));
+        try{ const f=$('aiFields'); if(f) f.hidden = b.dataset.aie!=='api'; }catch(e){}
         if($('aiSum')) $('aiSum').textContent=aiSummary();
-        if(msg) msg.textContent = b.dataset.aie==='api' ? '已切到自定义 API（填好 Base/Key 才会真正调用）' : '已切回内置规则引擎（完全离线）';
-        try{ trToast(b.dataset.aie==='api' ? '自定义 API 已启用' : '已切回内置规则'); }catch(e){}
+        if(msg) msg.textContent = b.dataset.aie==='api' ? '已切到 API-KEY（填好 Base/Key 才会真正调用）' : '已切回内置规则引擎（完全离线）';
+        try{ trToast(b.dataset.aie==='api' ? 'API-KEY 已启用' : '已切回内置规则'); }catch(e){}
         try{ renderReport(); }catch(e){}
       };
     });
@@ -8416,11 +8417,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       aiSave(patch);
       if(patch.engine==='api' && seg){
         seg.querySelectorAll('[data-aie]').forEach(x=>x.classList.toggle('on', x.dataset.aie==='api'));
+        try{ const f=$('aiFields'); if(f) f.hidden=false; }catch(e){}
       }
       if($('aiSum')) $('aiSum').textContent=aiSummary();
       if($('aiUsage')) $('aiUsage').textContent=aiUsageText();
-      if(msg) msg.textContent='已保存到本机（不进备份）'+(patch.engine==='api'?' · 已启用自定义 API':'');
-      if(patch.engine==='api'){ try{ trToast('已启用自定义 API'); }catch(e){} try{ renderReport(); }catch(e){} }
+      if(msg) msg.textContent='已保存到本机（不进备份）'+(patch.engine==='api'?' · 已启用 API-KEY':'');
+      if(patch.engine==='api'){ try{ trToast('已启用 API-KEY'); }catch(e){} try{ renderReport(); }catch(e){} }
       return patch;
     };
     if($('aiSaveCfg')) $('aiSaveCfg').onclick=save;
@@ -8495,7 +8497,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           </div>
           <button class="set-row" data-panel="ai" type="button">
             <span class="sr-ico">${setRowIco('ai')}</span>
-            <span class="sr-main"><b>AI 服务</b><small id="aiSum">${ENGINE.esc(sum.ai)}</small></span>
+            <span class="sr-main"><b>Agent</b><small id="aiSum">${ENGINE.esc(sum.ai)}</small></span>
             <span class="sr-arrow">›</span>
           </button>
           <button class="set-row" data-panel="data" type="button">
@@ -8541,14 +8543,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           </section>
 
           <section class="set-panel" data-p="ai" hidden>
-            <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>AI 服务</h2></div>
+            <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>Agent</h2></div>
             <div class="setting-sec">
               <h2 style="font-size:14px">引擎</h2>
-              <div class="hint">内置规则完全离线、零费用；自定义 API 走 OpenAI 兼容接口（DeepSeek / Moonshot / OpenAI 均可）。Key 只存在这台设备，不进备份导出。</div>
+              <div class="hint">内置规则完全离线、零费用；API-KEY 走 OpenAI 兼容接口（DeepSeek / Moonshot / OpenAI 均可）。Key 只存在这台设备，不进备份导出。</div>
               <div class="ai-eng" id="aiEngineSeg">
                 <button type="button" data-aie="rule" class="${aiCfg().engine==='api'?'':'on'}">内置规则</button>
-                <button type="button" data-aie="api" class="${aiCfg().engine==='api'?'on':''}">自定义 API</button>
+                <button type="button" data-aie="api" class="${aiCfg().engine==='api'?'on':''}">API-KEY</button>
               </div>
+              <div id="aiFields" ${aiCfg().engine==='api'?'':'hidden'}>
               <div class="ai-grid" style="margin-top:10px">
                 <input id="aiBase" type="text" autocomplete="off" spellcheck="false" placeholder="Base URL，如 https://api.deepseek.com/v1">
                 <input id="aiKey" type="password" autocomplete="off" spellcheck="false" placeholder="API Key（仅本机保存）">
@@ -8558,6 +8561,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
                 <button class="btn ghost sm" id="aiTest" type="button">测试连接</button>
                 <button class="btn ghost sm" id="aiSaveCfg" type="button">保存</button>
                 <button class="btn ghost sm" id="aiClearKey" type="button">清除 Key</button>
+              </div>
               </div>
               <div class="backup-msg" id="aiMsg"></div>
             </div>
@@ -8581,7 +8585,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>数据与同步</h2></div>
             <div class="setting-sec">
               <h2 style="font-size:14px">本地备份</h2>
-              <div class="hint">备份不含 AI 服务的 Key（它单独存本机，不随导出流转）。</div>
+              <div class="hint">备份不含 Agent 的 Key（它单独存本机，不随导出流转）。</div>
               <div class="hint">数据只存在这台设备的浏览器里。换机、清理浏览数据前先导出；iPhone 建议按 Safari「分享 → 添加到主屏幕」长期使用，数据更不易被清理。</div>
               <div class="backup-row">
                 <button class="btn ghost sm" id="expBtn">导出备份</button>
@@ -8619,7 +8623,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <section class="set-panel" data-p="about" hidden>
             <div class="sp-top"><button class="sp-back" type="button" data-spback>‹ 设置</button><h2>关于</h2></div>
             <div class="setting-sec">
-              <div class="hint">SelfAgent · 自我认知 v0.9 体验版。默认用内置规则引擎（完全离线），可在「AI 服务」里接自己的 OpenAI 兼容 API：同一份数据契约，规则与模型可随时切换。</div>
+              <div class="hint">SelfAgent · 自我认知 v0.9 体验版。默认用内置规则引擎（完全离线），可在「Agent」里接自己的 OpenAI 兼容 API：同一份数据契约，规则与模型可随时切换。</div>
               <div class="hint">数据仅保存在你本地浏览器（localStorage）。只有在你自行配置 API 后，压缩后的记录摘要才会发送给你填的服务商；内置规则永远不上传。</div>
               <div class="hint">趋势推演仅为基于行为记录的可能性参考，不构成对未来结果的确定性预言。</div>
               <div class="hint" style="margin-top:10px">快捷键：空格＝随手记，T＝专注训练。悬浮球可拖拽吸附屏幕左右边缘，长按切换默认模式。</div>
@@ -9880,7 +9884,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const box=document.getElementById('aiBox'); if(!box) return;
     if(!aiReady()){
       let hasKey=false; try{ hasKey=!!(aiCfgSecond()&&aiCfgSecond().key); }catch(e){}
-      box.innerHTML='<div class="ai-bar off"><i class="ai-dot"></i><span>'+(hasKey?'当前是内置规则版 · 去「设置 → AI 服务」把引擎切到 API，就能生成 AI 洞察':'未配置 AI · 当前为内置规则版，去「设置 → AI 服务」填入 API Key 后可生成')+'</span></div>';
+      box.innerHTML='<div class="ai-bar off"><i class="ai-dot"></i><span>'+(hasKey?'当前是内置规则版 · 去「设置 → Agent」把引擎切到 API，就能生成 AI 洞察':'未配置 AI · 当前为内置规则版，去「设置 → Agent」填入 API Key 后可生成')+'</span></div>';
       return;
     }
     let hit=null; try{ hit=aiCacheGet(tab, aiFingerprint()); }catch(e){}
@@ -9936,7 +9940,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(job!==__aiJob) return;
       const msg=String(e&&e.message||'');
       box.innerHTML=aiHeadHtml('AI 不可用 · 已用内置规则（'+msg+'）', false, '重试')+
-        '<div class="ai-empty">可检查网络，或在「设置 → AI 服务」里点「测试连接」。</div>';
+        '<div class="ai-empty">可检查网络，或在「设置 → Agent → API-KEY」里点「测试连接」。</div>';
       aiRunBind(tab, box);
       try{ trToast('离线模式 · 已用内置规则'); }catch(e2){}
     });
