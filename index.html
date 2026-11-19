@@ -2211,14 +2211,31 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media(min-width:900px){.tr-seg,.tr-panel{max-width:840px}}
 .pl-tools{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
 .pl-tools .plan-reset{margin-left:auto}
-/* 专注模式：有氧条 */
-.fm-cd{margin:0 0 10px;border:1px solid var(--line);border-left:3px solid #5B9CFF;border-radius:10px;background:var(--panel2);padding:8px 10px}
-.fm-cd-row{display:flex;align-items:center;gap:8px;font-size:12px;min-height:30px}
-.fm-cd-k{font-size:10px;color:var(--tx3);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
-.fm-cd-t{flex:1;color:var(--tx)}
-.fm-cd-run{border:1px solid rgba(91,156,255,.5);background:rgba(91,156,255,.12);color:var(--tx);border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer;font-variant-numeric:tabular-nums}
-.fm-cd-fin{border:1px solid var(--line2);background:var(--panel);color:var(--tx2);border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer}
-.fm-cd-done{color:var(--accent);font-size:11.5px}
+/* 专注模式：有氧大卡 */
+.fm-cdbc{margin:0 0 12px;border:1px solid var(--line);border-left:3px solid #5B9CFF;border-radius:14px;background:var(--panel2);padding:12px 14px}
+.fm-cdbc.done{border-left-color:#3EC478;opacity:.9}
+.fm-cdbc-h{display:flex;align-items:center;gap:8px}
+.fm-cdbc-nm{flex:1;font-size:14px;font-weight:650}
+.fm-cdbc-k{font-style:normal;font-size:10px;font-weight:400;color:#5B9CFF;border:1px solid rgba(91,156,255,.45);border-radius:5px;padding:1px 6px;margin-left:6px}
+.fm-cdbc-skip{border:0;background:none;color:var(--tx3);font-size:11.5px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.fm-cdbc-ok{color:#3EC478;font-size:12px}
+.fm-cdbc-done{font-size:13px;color:var(--tx2);margin-top:8px}
+.fm-cdbc-mid{display:flex;justify-content:center;margin:10px 0 4px}
+.fm-cdbc-ring{--p:0;width:132px;height:132px;border-radius:50%;background:conic-gradient(#5B9CFF calc(var(--p)*1%),rgba(255,255,255,.08) 0);display:grid;place-items:center;transition:background .3s}
+.fm-cdbc-ring::after{content:'';position:absolute}
+.fm-cdbc-ct{width:112px;height:112px;border-radius:50%;background:var(--panel2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.fm-cdbc-t{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.fm-cdbc-ct em{font-style:normal;font-size:10.5px;color:var(--tx3)}
+.fm-cdbc-acts{display:flex;gap:10px;margin-top:10px}
+.fm-cdbc-pause,.fm-cdbc-fin{flex:1;min-height:48px;border-radius:12px;font:inherit;font-size:14px;cursor:pointer}
+.fm-cdbc-pause{border:1px solid var(--line2);background:var(--panel);color:var(--tx)}
+.fm-cdbc-pause.on{border-color:rgba(91,156,255,.5);background:rgba(91,156,255,.12)}
+.fm-cdbc-fin{border:0;background:var(--accent);color:#04211c;font-weight:650}
+.fm-cdbc-sub{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px}
+.fm-cdbc-chip{border:1px solid var(--line2);background:none;color:var(--tx2);border-radius:8px;padding:5px 9px;font-size:11.5px;cursor:pointer}
+.fm-cdbc-lv{display:flex;gap:4px}
+.fm-cdbc-lv button{border:1px solid var(--line);background:none;color:var(--tx3);border-radius:7px;padding:4px 8px;font-size:11px;cursor:pointer}
+.fm-cdbc-lv button.on{border-color:rgba(91,156,255,.55);color:#5B9CFF}
 /* 有氧：独立记录类型 */
 .cd-card{border:1px solid var(--line);border-left:3px solid #5B9CFF;border-radius:12px;padding:11px 12px;background:var(--panel2);margin-top:8px}
 .cd-top{display:flex;align-items:center;gap:8px}
@@ -2233,6 +2250,35 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .cd-run{color:var(--tx);border-color:rgba(91,156,255,.5);background:rgba(91,156,255,.12)}
 .cd-timer{font-variant-numeric:tabular-nums;font-size:13px;color:var(--tx);letter-spacing:.5px}
 .cd-x{margin-left:auto;border:0;background:none;color:var(--tx3);font-size:15px;cursor:pointer}
+.cd-bd{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--tx3);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+.cd-bd i{width:6px;height:6px;border-radius:50%;background:var(--tx3);display:block}
+.cd-card.run{border-left-color:#3EC478}
+.cd-card.run .cd-bd{color:#3EC478;border-color:rgba(62,196,120,.4)}
+.cd-card.run .cd-bd i{background:#3EC478;animation:cdPulse 1.4s ease-in-out infinite}
+.cd-card.done .cd-bd{color:#3EC478;border-color:rgba(62,196,120,.35)}
+@keyframes cdPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+.cd-chip{font-size:11.5px;padding:0 9px;border-color:var(--line2);color:var(--tx2);background:var(--panel);min-height:30px}
+.cd-week{display:block;font-style:normal;font-size:11px;color:var(--tx3);margin-top:2px}
+.cd-rpe-box{padding:16px}
+.cd-rpe-t{font-size:13.5px;margin-bottom:10px}
+/* 今日头部四格 */
+.tr-tc-stat{display:grid;grid-template-columns:repeat(4,auto);gap:2px 9px;justify-content:start}
+.tr-tc-stat .tc-cell{display:inline-flex;align-items:baseline;gap:2px;font-size:10.5px;color:var(--tx3);white-space:nowrap}
+.tr-tc-stat .tc-cell b{font-size:12.5px;font-weight:650;color:var(--tx);font-variant-numeric:tabular-nums}
+.set-head .nm{flex:0 0 auto;min-width:0;max-width:62%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.set-head .meta{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.set-head .set-more{flex:0 0 auto}
+.tr-tc-stat .tc-cell.cd b{color:#5B9CFF}
+/* 卡片状态色条 + 进场 */
+.set-card.open.st-run{box-shadow:inset 3px 0 0 -1px rgba(62,196,120,.9)}
+.set-card.open.st-done{box-shadow:inset 3px 0 0 -1px rgba(62,196,120,.35)}
+.tr-fade{animation:trFade .3s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*40ms)}
+@keyframes trFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.set-more{border:0;background:none;color:var(--tx3);font-size:16px;line-height:1;padding:0 6px;cursor:pointer}
+.rm-t{font-size:12px;color:var(--tx3);padding:6px 10px 8px}
+.rm-i{display:block;width:100%;text-align:left;border:0;background:none;color:var(--tx);font:inherit;font-size:14px;padding:12px 10px;border-radius:8px;cursor:pointer}
+.rm-i:active{background:var(--panel2)}
+.rm-i.del{color:#E0574F}
 .cd-sheet-inner{padding:4px 2px 10px}
 .ex-sheet.cd-sheet{align-items:flex-end;justify-content:center}
 .ex-sheet.cd-sheet .ex-sheet-inner{border-radius:16px 16px 0 0;padding-bottom:24px}
@@ -5509,34 +5555,52 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     let armed=false, armT=null;
     x.onclick=()=>{
       if(dAll===0 || armed){ closeFocus(); return; }
-      armed=true; x.textContent='确认退出？'; x.classList.add('armed');
+      let cdRun=null; try{ cdRun=(train.cardio||[]).find(c=>c.date===trDateVal()&&c.run); }catch(e){}
+      armed=true; x.textContent=cdRun?(cdRun.modal+'还在计时，确认退出？'):'确认退出？'; x.classList.add('armed');
+      x.style.maxWidth='none';
       clearTimeout(armT); armT=setTimeout(()=>{ armed=false; x.textContent='×'; x.classList.remove('armed'); },3000);
     };
     el.querySelectorAll('[data-fmcdrun]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
       const uid=b.dataset.fmcdrun, r2=(train.cardio||[]).find(x=>x.uid===uid); if(!r2) return;
-      window.__cdT0=window.__cdT0||{};
-      if(window.__cdT0[uid]){ r2.dur=Math.max(1,Math.round((Date.now()-window.__cdT0[uid])/60000)); delete window.__cdT0[uid]; }
-      else window.__cdT0[uid]=Date.now();
+      if(r2.run) cdPause(r2); else { cdStart(r2); try{ haptic('core'); }catch(e){} }
       saveTrain(); renderFocus();
     });
     el.querySelectorAll('[data-fmcdone]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
       const uid=b.dataset.fmcdone, r2=(train.cardio||[]).find(x=>x.uid===uid); if(!r2) return;
-      const t0=window.__cdT0&&window.__cdT0[uid];
-      if(t0){ r2.dur=Math.max(1,Math.round((Date.now()-t0)/60000)); delete window.__cdT0[uid]; }
-      r2.done=true; saveTrain(); renderFocus();
+      cdFinish(r2); saveTrain(); renderFocus(); refreshHome();
+      try{ haptic('core'); }catch(e){}
       trToast('有氧完成：'+r2.modal+' '+r2.dur+' 分钟');
+    });
+    el.querySelectorAll('[data-fmcdskip]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.fmcdskip;
+      train.cardio=(train.cardio||[]).filter(x=>x.uid!==uid);
+      saveTrain(); renderFocus(); trRenderToday(); trToast('今天跳过这次有氧');
+    });
+    el.querySelectorAll('[data-fmcddist]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.fmcddist, r2=(train.cardio||[]).find(x=>x.uid===uid); if(!r2) return;
+      if(CD_DIST.includes(r2.modal)) r2.dist=Math.round(((r2.dist||0)+0.5)*10)/10; else r2.dist=(r2.dist||0)+5;
+      saveTrain(); renderFocus();
+    });
+    el.querySelectorAll('[data-fmcdlv]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.fmcdlv.split(':')[0], v=b.dataset.fmcdlv.split(':')[1];
+      const r2=(train.cardio||[]).find(x=>x.uid===uid); if(!r2) return;
+      r2.lv=v; saveTrain(); renderFocus();
     });
     if(window.__fmCdTick) clearInterval(window.__fmCdTick);
     window.__fmCdTick=setInterval(()=>{
       const el2=document.getElementById('focusMode');
       if(!el2){ clearInterval(window.__fmCdTick); window.__fmCdTick=null; return; }
-      el2.querySelectorAll('[data-fmcdrun]').forEach(b=>{
-        const t0=window.__cdT0&&window.__cdT0[b.dataset.fmcdrun];
-        if(!t0) return;
-        const sec=Math.floor((Date.now()-t0)/1000);
-        b.textContent='计时 '+String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')+' · 暂停';
+      el2.querySelectorAll('[data-fmcdt]').forEach(t=>{
+        const r0=(train.cardio||[]).find(x=>x.uid===t.dataset.fmcdt);
+        if(!r0) return;
+        const sec=cdSec(r0); t.textContent=cdFmt(sec);
+        const ring=el2.querySelector('[data-fmcdring="'+r0.uid+'"]');
+        if(ring){ const tg=Math.max(1,(r0.dur||20))*60; ring.style.setProperty('--p',Math.min(100,Math.round(sec/tg*100))); }
       });
     },1000);
     el.querySelectorAll('[data-fmgo]').forEach(b=>b.onclick=()=>{
@@ -5707,18 +5771,33 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function cdFocusHtml(){
     const d=trDateVal();
-    const cds=(train.cardio||[]).filter(c=>c.date===d && (c.role==='pre'||c.role==='post'));
+    const cds=(train.cardio||[]).filter(c=>c.date===d);
     if(!cds.length) return '';
-    window.__cdT0=window.__cdT0||{};
-    return '<div class="fm-cd">'+cds.map(c=>{
-      const run=!!window.__cdT0[c.uid];
-      const sec=run?Math.floor((Date.now()-window.__cdT0[c.uid])/1000):0;
-      return `<div class="fm-cd-row">
-        <span class="fm-cd-k">${c.role==='pre'?'热身':'收尾'}</span>
-        <span class="fm-cd-t">${ENGINE.esc(c.modal)} ${c.dur||0}′</span>
-        ${c.done?'<span class="fm-cd-done">✓ 已完成</span>':`<span class="fm-cd-run" data-fmcdrun="${c.uid}">${run?('计时 '+String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')+' · 暂停'):'开始计时'}</span><button class="fm-cd-fin" data-fmcdone="${c.uid}" type="button">完成</button>`}
+    return cds.map(c=>{
+      const icon=CARDIO_ICON[c.modal]||'🏃';
+      const sec=cdSec(c), run=!!c.run;
+      const target=Math.max(1,(c.dur||20))*60;
+      const pct=Math.min(100,Math.round(sec/target*100));
+      const distTxt=[c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):'', '目标 '+(c.dur||20)+'′'].filter(Boolean).join(' · ');
+      return `<div class="fm-cdbc ${c.done?'done':''}" data-fmcd="${c.uid}">
+        <div class="fm-cdbc-h"><span class="fm-cdbc-nm">${icon} ${ENGINE.esc(c.modal)}<em class="fm-cdbc-k">${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'}</em></span>
+          ${c.done?'<span class="fm-cdbc-ok">✓ 已完成</span>':`<button class="fm-cdbc-skip" data-fmcdskip="${c.uid}" type="button">今天不练</button>`}</div>
+        ${c.done?`<div class="fm-cdbc-done">${sec?cdFmt(sec):(c.dur||0)+':00'} · ${ENGINE.esc(c.lv||'中等')}</div>`:`
+        <div class="fm-cdbc-mid">
+          <div class="fm-cdbc-ring" data-fmcdring="${c.uid}" style="--p:${pct}">
+            <div class="fm-cdbc-ct"><span class="fm-cdbc-t" data-fmcdt="${c.uid}">${cdFmt(sec)}</span><em>${distTxt}</em></div>
+          </div>
+        </div>
+        <div class="fm-cdbc-acts">
+          <button class="fm-cdbc-pause ${run?'on':''}" data-fmcdrun="${c.uid}" type="button">${run?'暂停':(sec>0?'继续':'开始')}</button>
+          <button class="fm-cdbc-fin" data-fmcdone="${c.uid}" type="button">完成 ✓</button>
+        </div>
+        <div class="fm-cdbc-sub">
+          <button class="fm-cdbc-chip" data-fmcddist="${c.uid}" type="button">${CD_DIST.includes(c.modal)?'+0.5 km':'+5 层'}</button>
+          <span class="fm-cdbc-lv">${['轻松','中等','强度'].map(x=>`<button class="${(c.lv||'中等')===x?'on':''}" data-fmcdlv="${c.uid}:${x}" type="button">${x}</button>`).join('')}</span>
+        </div>`}
       </div>`;
-    }).join('')+'</div>';
+    }).join('');
   }
   function openFocus(){
     const rs=focusList();
@@ -5866,7 +5945,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           </div>
         </div>
         <div class="tr-strip" id="weekStrip">
-          <button class="tr-strip-h" id="weekStripHead" type="button"><span id="weekSum">本周 · —</span><i>▸</i></button>
+          <button class="tr-strip-h" id="weekStripHead" type="button"><span><span id="weekSum">本周 · —</span><em class="cd-week" id="cdWeekDist"></em></span><i>▸</i></button>
           <div class="tr-strip-b" id="weekBody" hidden>
             <div id="trChart" class="chart-sm"></div>
             <div id="trDayDetail" class="day-detail"></div>
@@ -6140,9 +6219,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const cds=trCardioFor(day);
     const cdDone=cds.filter(c=>c.done).reduce((a,c)=>a+(c.dur||0),0);
     const cdPlan=cds.reduce((a,c)=>a+(c.dur||0),0);
-    if($('todayStat')) $('todayStat').innerHTML = (items.length||cds.length)
-      ? ('<span>'+items.length+' 动作</span><span>'+done+'/'+total+' 组</span>'+(cds.length?('<span>有氧 '+(cdDone||cdPlan)+' 分钟</span>'):''))
-      : '还没有排动作';
+    if($('todayStat')){
+      const vol=items.flatMap(r=>ensureGroups(r)).reduce((a,g)=>a+(g.warmup?0:(g.reps||0)*(g.weight||0)),0);
+      $('todayStat').innerHTML = (items.length||cds.length)
+        ? `<span class="tc-cell"><b>${items.length}</b>动作</span><span class="tc-cell"><b>${done}/${total}</b>组</span><span class="tc-cell"><b>${Math.round(vol)}</b>kg</span><span class="tc-cell cd"><b>${cdDone||cdPlan}</b>′有氧</span>`
+        : '还没有排动作';
+    }
     if($('trEmpty')) $('trEmpty').hidden = !!(items.length||cds.length);
     const go=$('trStart');
     if(go){
@@ -6164,6 +6246,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     let wk='本周 '+thisW+' 组'+(cdW?(' · 有氧 '+cdW+' 分钟'):'');
     if(lastW>0){ const dd=Math.round((thisW-lastW)/lastW*100); wk+=' · 比上周 '+(dd>0?'+':'')+dd+'%'; }
     if($('weekSum')) $('weekSum').textContent=wk;
+    try{
+      const wkCd=(train.cardio||[]).filter(c=>c.date>=kMon&&c.date<=kNow&&c.done);
+      const by={};
+      wkCd.forEach(c=>{ const m=c.modal||'有氧'; (by[m]=by[m]||{n:0,d:0}); by[m].n++; by[m].d+=c.dur||0; });
+      const txt=Object.keys(by).slice(0,3).map(m=>m+' '+by[m].n+' 次 · '+by[m].d+'′').join(' / ');
+      if($('cdWeekDist')) $('cdWeekDist').textContent=txt;
+    }catch(e){}
     let pl='AI 计划 · 点此生成';
     try{
       if(trPlan && trPlan.length){
@@ -6192,6 +6281,27 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       try{ pend=(trPlan||[]).filter(i=>!trPlanJoined(i.exId)).length; }catch(e){}
       pb2.textContent=pend?String(pend):''; pb2.classList.toggle('on', !!pend);
     }
+  }
+  function openRowMenu(r){
+    document.querySelectorAll('.tr-rowmenu').forEach(x=>x.remove());
+    const e=findEx(r.exId);
+    const el=document.createElement('div'); el.className='msheet tr-rowmenu';
+    el.innerHTML=`<div class="msheet-box" style="padding:8px">
+      <div class="rm-t">${ENGINE.esc(r.name)}</div>
+      <button class="rm-i" data-rm1 type="button">看动作详情</button>
+      <button class="rm-i" data-rm2 type="button">重命名</button>
+      <button class="rm-i del" data-rm3 type="button">从今日移除</button>
+    </div>`;
+    document.body.appendChild(el);
+    const close=()=>el.remove();
+    el.onclick=ev=>{ if(ev.target===el) close(); };
+    el.querySelector('[data-rm1]').onclick=()=>{ close(); if(e) openExSheet(e); else trToast('未找到动作详情'); };
+    el.querySelector('[data-rm2]').onclick=()=>{ close(); if(e) { openExSheet(e); setTimeout(()=>{ const b=document.querySelector('[data-exnamesave]')||document.querySelector('[data-exeditname]'); if(!b) trToast('请在详情里点“重命名”'); },120); } };
+    el.querySelector('[data-rm3]').onclick=()=>{
+      close();
+      train.records=(train.records||[]).filter(x=>x.uid!==r.uid);
+      saveTrain(); trRenderToday(); refreshHome(); trToast('已移除 '+r.name);
+    };
   }
   function bindDrawer(){
     const seg=$('trSeg');
@@ -7600,18 +7710,42 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function trCardioFor(d){
     return (train.cardio||[]).filter(c=>c.date===d).sort((a,b)=>(a.ts||0)-(b.ts||0));
   }
+  function cdSec(r){
+    if(!r) return 0;
+    return (r.sec||0) + (r.run&&r.t0 ? Math.floor((Date.now()-r.t0)/1000) : 0);
+  }
+  function cdFmt(sec){
+    const s2=Math.max(0,Math.floor(sec||0));
+    return String(Math.floor(s2/60)).padStart(2,'0')+':'+String(s2%60).padStart(2,'0');
+  }
+  function cdStart(r){ if(!r||r.done) return; r.run=true; r.t0=Date.now(); }
+  function cdPause(r){ if(!r||!r.run) return; r.sec=cdSec(r); r.run=false; r.t0=0; }
+  function cdFinish(r){
+    if(!r) return;
+    if(r.run||r.t0) r.sec=cdSec(r);
+    r.run=false; r.t0=0;
+    if((r.sec||0)>0) r.dur=Math.max(1,Math.round(r.sec/60));
+    r.done=true;
+  }
+  const CD_DIST=['跑步','骑行','快走','游泳','椭圆机','划船机'];
   function cdCardHtml(r){
     const icon=CARDIO_ICON[r.modal]||'🏃';
-    const running=!!(window.__cdT0&&window.__cdT0[r.uid]);
-    const done=!!r.done;
-    return `<div class="cd-card${done?' done':''}" data-cduid="${r.uid}">
+    const done=!!r.done, running=!!r.run;
+    const sec=cdSec(r);
+    const st=done?'done':running?'run':'plan';
+    const badge=done?'✓ 已完成':running?'进行中':'计划';
+    const extra=[r.dist?(CD_DIST.includes(r.modal)?(r.dist+' km'):(r.dist+' 层')):'', (r.dur||0)+'′ 目标'].filter(Boolean).join(' · ');
+    const distChip=(!done&&!running&&CD_DIST.includes(r.modal))?'<button type="button" class="cd-chip" data-cddist2="'+r.uid+'">+0.5 km</button>':'';
+    const floorChip=(!done&&!running&&r.modal==='爬楼')?'<button type="button" class="cd-chip" data-cddist3="'+r.uid+'">+5 层</button>':'';
+    return `<div class="cd-card ${st}" data-cduid="${r.uid}">
       <div class="cd-top"><span class="cd-ic">${icon}</span><span class="cd-nm">${ENGINE.esc(r.modal)}${r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':''}</span>
-        <span class="cd-lv">${ENGINE.esc(r.lv||'中等')}</span>
+        <span class="cd-bd"><i></i>${badge}</span>
         <button class="cd-x" type="button" data-cddel="${r.uid}" aria-label="移除">×</button></div>
-      <div class="cd-meta">${done?'已完成':running?'计时中':'计划'} · ${r.dur||0} 分钟${r.dist?(' · '+r.dist+' km'):''}${running?'<span class="cd-timer" data-cdtimer="'+r.uid+'"></span>':''}</div>
+      <div class="cd-meta">${extra}${(running||sec>0)?(' · <span class="cd-timer" data-cdtimer="'+r.uid+'">'+cdFmt(sec)+'</span>'):''}</div>
       ${done?'':`<div class="cd-acts">
         <button type="button" class="cd-run" data-cdrun="${r.uid}">${running?'暂停':'开始计时'}</button>
         <button type="button" data-cdfin="${r.uid}">完成</button>
+        ${distChip}${floorChip}
       </div>`}
     </div>`;
   }
@@ -7683,6 +7817,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       }
     });
   }
+  function cdAskLv(r){
+    document.querySelectorAll('.cd-rpe').forEach(x=>x.remove());
+    const el=document.createElement('div'); el.className='msheet cd-rpe';
+    el.innerHTML=`<div class="msheet-box cd-rpe-box">
+      <div class="cd-rpe-t">${ENGINE.esc(r.modal)} ${r.dur||0} 分钟 · 强度感觉？</div>
+      <div class="cd-lv3">${['轻松','中等','强度'].map(x=>`<button type="button" data-cdrpe="${x}" class="${x===(r.lv||'中等')?'on':''}">${x}</button>`).join('')}</div>
+      <div class="hint" style="margin-top:8px">用来校正你练完的真实强度</div>
+    </div>`;
+    document.body.appendChild(el);
+    let tm=setTimeout(()=>{ try{ el.remove(); }catch(e){} },6000);
+    const pick=v=>{ r.lv=v; r.rpe=v; saveTrain(); trRenderToday(); refreshHome(); clearTimeout(tm); el.remove(); trToast('强度已记为 '+v); };
+    el.querySelectorAll('[data-cdrpe]').forEach(b=>b.onclick=()=>pick(b.dataset.cdrpe));
+    el.onclick=ev=>{ if(ev.target===el){ clearTimeout(tm); el.remove(); } };
+  }
   function bindCardioEntry(){
     const b=$('cdOpen'); if(b) b.onclick=()=>openCardioSheet();
   }
@@ -7731,13 +7879,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 
       if(r.uid!==activeUid){
         if(allDone){
-          return `<div class="tcf-done" data-topen="${r.uid}">
+          return `<div class="tcf-done tr-fade" style="--i:${items.indexOf(r)}" data-topen="${r.uid}">
             <span class="tc-ok">✓</span>
             <span class="tc-nm">${ENGINE.esc(r.name)}</span>
             <span class="tc-sx">${doneN}/${gs.length} · ${groupsDigest(gs,{bare:true})}</span>
           </div>`;
         }
-        return `<div class="tc-fold" data-topen="${r.uid}">
+        return `<div class="tc-fold tr-fade" style="--i:${items.indexOf(r)}" data-topen="${r.uid}">
           <span class="tc-nm">${ENGINE.esc(r.name)}</span>
           <span class="tc-sx">${sxTxt}</span>
           <span class="tc-pr">${doneN}/${gs.length}</span>
@@ -7757,11 +7905,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         </div>`).join('');
       const hist=(train.records||[]).filter(x=>x.exId===r.exId).map(x=>x.weight||0);
       const wchips=[...new Set(gs.map(g=>g.weight).concat(hist))].filter(w=>w>0).sort((a,b)=>b-a).slice(0,4);
-      return `<div class="set-card open">
+      const stCls = allDone?'st-done':(doneN>0?'st-run':'');
+      return `<div class="set-card open tr-fade ${stCls}" style="--i:${items.indexOf(r)}">
         <div class="set-head" data-tclose="${r.uid}">
-          <button class="set-x" data-rmu="${r.uid}" type="button" title="删除该动作今日记录" aria-label="删除">×</button>
           <span class="nm">${ENGINE.esc(r.name)}</span>
           <span class="meta">${lastTxt}${doneN?(' · '+doneN+'/'+gs.length):''}${sug?(' · 建议 '+sug+'kg'):''}</span>
+          <button class="set-more" data-rmore="${r.uid}" type="button" aria-label="更多操作">⋯</button>
         </div>
         ${(r.dur && !(r.groups && r.groups.length))?`<div class="set-row"><span class="set-val">${r.dur} 分钟</span></div>`:rows}
         <div class="set-foot">
@@ -7777,7 +7926,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 
     if($('trNext')){
       const nxt=items.filter(r=>r.uid!==activeUid && pendOf(r));
-      const txt=nxt.length ? ('接下来：'+nxt.slice(0,3).map(r=>r.name+' '+ensureGroups(r).filter(g=>!g.done).length+' 组').join(' · ')) : '';
+      let txt = nxt.length ? ('接下来：'+nxt.slice(0,3).map(r=>r.name+' '+ensureGroups(r).filter(g=>!g.done).length+' 组').join(' · ')) : '';
+      if(!nxt.length){
+        const pc=cds.filter(c=>!c.done);
+        if(pc.length) txt='接下来：'+pc.slice(0,2).map(c=>c.modal+(c.role==='pre'?' · 热身':c.role==='post'?' · 收尾':'')+' '+(c.dur||0)+' 分钟').join(' · ');
+      }
       $('trNext').textContent=txt;
       $('trNext').hidden = !txt;
     }
@@ -7790,23 +7943,31 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     try{ trSyncStrips(); }catch(e){}
     if($('trSum')){ const sm=$('trSum'); sm.innerHTML=`<span><b data-cnt="${items.length}">0</b>动作</span><span><b data-cnt="${sets}">0</b>总组数</span><span><b data-cnt="${reps}">0</b>总次数</span><span><b data-cnt="${Math.round(vol)}">0</b>容量kg</span>`; try{ bindCountUp(sm); }catch(e){} }
 
-    // 有氧：开始 / 暂停 / 完成 / 移除
-    window.__cdT0=window.__cdT0||{};
+    // 有氧：开始 / 暂停 / 完成 / 移除 / 快速补录
     box.querySelectorAll('[data-cdrun]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
       const uid=b.dataset.cdrun, r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
-      const t0=window.__cdT0[uid];
-      if(t0){ r.dur=Math.max(1,Math.round((Date.now()-t0)/60000)); delete window.__cdT0[uid]; }
-      else { window.__cdT0[uid]=Date.now(); try{ haptic('core'); }catch(e){} }
+      if(r.run) cdPause(r); else { cdStart(r); try{ haptic('core'); }catch(e){} }
       saveTrain(); trRenderToday();
     });
     box.querySelectorAll('[data-cdfin]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
       const uid=b.dataset.cdfin, r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
-      const t0=window.__cdT0[uid];
-      if(t0){ const m=Math.max(1,Math.round((Date.now()-t0)/60000)); r.dur=m; delete window.__cdT0[uid]; }
-      r.done=true; saveTrain(); trRenderToday(); refreshHome();
-      trToast('有氧完成：'+r.modal+' '+r.dur+' 分钟');
+      cdFinish(r); saveTrain(); trRenderToday(); refreshHome();
+      try{ haptic('core'); }catch(e){}
+      cdAskLv(r);
+    });
+    box.querySelectorAll('[data-cddist2]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.cddist2, r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
+      r.dist=Math.round(((r.dist||0)+0.5)*10)/10; saveTrain(); trRenderToday();
+      trToast('距离 +0.5 km，共 '+r.dist+' km');
+    });
+    box.querySelectorAll('[data-cddist3]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.cddist3, r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
+      r.dist=(r.dist||0)+5; saveTrain(); trRenderToday();
+      trToast('层数 +5，共 '+r.dist+' 层');
     });
     box.querySelectorAll('[data-cddel]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
@@ -7824,13 +7985,16 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const els=document.querySelectorAll('[data-cdtimer]');
       if(!els.length){ clearInterval(window.__cdTick); window.__cdTick=null; return; }
       els.forEach(el=>{
-        const uid=el.dataset.cdtimer, t0=window.__cdT0[uid];
-        if(!t0){ el.textContent=''; return; }
-        const sec=Math.floor((Date.now()-t0)/1000);
-        el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+        const r0=(train.cardio||[]).find(x=>x.uid===el.dataset.cdtimer);
+        el.textContent=r0?cdFmt(cdSec(r0)):'';
       });
     },1000);
 
+    box.querySelectorAll('[data-rmore]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.rmore, r=items.find(x=>x.uid===uid); if(!r) return;
+      openRowMenu(r);
+    });
     // 展开 / 收起：同一时刻只开一张卡
     box.querySelectorAll('[data-topen]').forEach(el=>el.onclick=()=>{
       trOpenUid = (el.dataset.topen===activeUid) ? '' : el.dataset.topen;
