@@ -6603,7 +6603,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           ${m.why?`<div class="why">${ENGINE.esc(m.why)}</div>`:''}</div>
           <span class="go">查看 ›</span></div>`).join(''));
       } else {
-        blocks.push(`<div class="aif-empty">${note==='AI 未配置，先用本地关键词匹配'?'本地没找到匹配':'库里没有合适的动作'}，可以在下面新建一个</div>`);
+        blocks.push(`<div class="aif-empty">${note?note+' · ':''}${note==='AI 未配置，先用本地关键词匹配'?'本地没找到匹配':'库里没有合适的动作'}，可以在下面新建一个</div>`);
       }
       const newName=((create&&create.name)||(qEl.value||'')).trim();
       const steps=(create&&create.steps)?create.steps:[];
@@ -6612,6 +6612,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         ${steps.length?`<div class="aif-steps">${steps.map((x,i)=>`<div>${i+1}. ${ENGINE.esc(x)}</div>`).join('')}</div>`:''}
       </div>`);
       resEl.innerHTML=blocks.join('');
+      try{
+        localStorage.setItem('selfagent_ai_find_v1', JSON.stringify({
+          q:(qEl.value||'').trim(),
+          matches:matches.map(m=>({name:m.name,why:m.why||''})),
+          create:create?{name:create.name||'',part:create.part||'',equip:create.equip||'',steps:create.steps||[]}:null,
+          ts:Date.now()
+        }));
+      }catch(e){}
       resEl.querySelectorAll('[data-aifid]').forEach(r=>{
         const id=r.dataset.aifid; if(!id) return;
         r.onclick=()=>{
@@ -6663,6 +6671,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         trToast('AI 调用失败，已用本地匹配');
       });
     };
+    try{
+      const c=JSON.parse(localStorage.getItem('selfagent_ai_find_v1')||'null');
+      if(c && c.q){
+        qEl.value=c.q;
+        const ms=(c.matches||[]).map(m=>{ const ex=aiFindEx(m.name); return ex?{ex:ex,name:ex.n,why:m.why||''}:null; }).filter(Boolean);
+        const cr=c.create?{name:c.create.name||'',part:c.create.part||'',equip:c.create.equip||'',steps:Array.isArray(c.create.steps)?c.create.steps:[]}:null;
+        if(ms.length || cr){
+          const t=new Date(c.ts||Date.now());
+          const hh=('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2);
+          render(ms, cr, '上次搜索 '+hh+' 的结果');
+          goEl.textContent='重新找一次';
+        }
+      }
+    }catch(e){}
   }
   function trRenderHot(){
     const box=$('trHotList'); if(!box) return;
