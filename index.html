@@ -2211,13 +2211,36 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media(min-width:900px){.tr-seg,.tr-panel{max-width:840px}}
 .pl-tools{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
 .pl-tools .plan-reset{margin-left:auto}
-.pl-table{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel2)}
-.pl-th{display:grid;grid-template-columns:1fr 62px 62px;gap:6px;align-items:center;padding:7px 10px;font-size:10.5px;color:var(--tx3);border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
-.pl-row{display:grid;grid-template-columns:1fr 62px 62px;gap:6px;align-items:center;padding:0 10px;min-height:44px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .16s}
-.pl-row.on{background:rgba(61,220,191,.07)}
+/* 计划页：Feed 语言的卡片化 */
+.plan-hero{margin:2px 0 12px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;background:linear-gradient(180deg,rgba(47,209,197,.07),rgba(255,255,255,.02));position:relative}
+.plan-hero .ph-t{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+.plan-hero .ph-t b{font-size:15px;letter-spacing:.2px}
+.plan-hero .ph-t em{font-style:normal;font-size:11px;color:var(--tx3)}
+.plan-hero .ph-m{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.plan-hero .ph-m span{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--tx3)}
+.plan-hero .ph-m b{font-size:14px;color:var(--tx);font-weight:600;font-variant-numeric:tabular-nums}
+.pl-eff{display:flex;gap:5px;margin-top:11px;padding-top:10px;border-top:1px dashed var(--line)}
+.pl-eff button{flex:1;min-height:32px;border:1px solid var(--line);background:none;color:var(--tx3);border-radius:9px;font:inherit;font-size:12px;transition:all var(--t-fast) var(--ease)}
+.pl-eff button.on{border-color:rgba(47,209,197,.55);color:var(--tx);background:rgba(47,209,197,.12)}
+.pl-eff-note{font-size:10.5px;color:var(--tx3);margin-top:7px}
+.pl-table{border:0;border-radius:0;overflow:visible;background:none;display:flex;flex-direction:column;gap:8px}
+.pl-th{display:none}
+.pl-row{display:grid;grid-template-columns:18px 1fr 74px 56px 22px;gap:6px;align-items:center;padding:0 10px 0 12px;min-height:52px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);cursor:pointer;position:relative;overflow:hidden;transition:background .16s,transform .16s,box-shadow .16s}
+.pl-row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#3EC478}
+.pl-row.on{background:rgba(61,220,191,.07);border-color:rgba(61,220,191,.35)}
 .pl-row.joined{opacity:.55;cursor:default}
+.pl-row.swipe{transition:none}
+.pl-row.rm{animation:plOut .22s var(--ease) both}
+@keyframes plOut{to{opacity:0;transform:translateX(-40px)}}
+.pl-drag{font-size:13px;color:var(--tx3);text-align:center;cursor:grab;touch-action:none;user-select:none}
+.pl-rowmore{width:22px;height:28px;border:0;background:none;color:var(--tx3);font-size:15px;line-height:1;cursor:pointer}
+.pl-swipe-hint{position:absolute;top:0;bottom:0;display:flex;align-items:center;font-size:11px;color:#fff;opacity:0;pointer-events:none;padding:0 12px}
+.pl-swipe-l{right:0;background:rgba(240,113,92,.9);border-radius:0 12px 12px 0}
+.pl-swipe-r{left:0;background:rgba(62,196,120,.9);border-radius:12px 0 0 12px}
+.pl-th{display:grid;grid-template-columns:1fr 62px 62px;gap:6px;align-items:center;padding:7px 10px;font-size:10.5px;color:var(--tx3);border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+/* 旧表格式行规则已由上方卡片规则取代（保留选择器以防回退） */
 .pl-idx{font-size:11px;color:var(--tx3)}
-.pl-nm{font-size:13.5px;min-width:0;display:flex;align-items:baseline;gap:5px;overflow:hidden}
+.pl-nm{font-size:13.5px;min-width:0;display:flex;align-items:center;gap:6px;overflow:hidden;line-height:1.25}
 .pl-no{font-style:normal;font-size:10.5px;color:var(--tx3);flex:0 0 auto}
 .pl-tag{font-style:normal;font-size:9.5px;color:#a8792d;background:rgba(201,150,60,.14);border-radius:4px;padding:1px 4px;margin-left:4px}
 .pl-warn{font:inherit;font-size:10.5px;color:#a8792d;background:rgba(201,150,60,.14);border:1px solid rgba(201,150,60,.45);border-radius:6px;padding:2px 6px;cursor:pointer}
@@ -2230,7 +2253,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .plan-more{position:absolute;right:0;top:-4px;width:28px;height:28px;border:0;background:none;color:var(--tx3);font-size:16px;cursor:pointer}
 .plan-menu{position:absolute;right:0;top:26px;z-index:25;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,.25);padding:4px;min-width:132px}
 .plan-menu button{display:block;width:100%;background:none;border:0;font:inherit;font-size:12px;color:var(--tx2);padding:9px 12px;text-align:left;cursor:pointer;border-radius:7px}
-.plan-empty{padding:16px 4px}
+.plan-empty{padding:6px 0 10px}
 .plan-empty-t{font-size:12px;color:var(--tx2);line-height:1.7;margin-bottom:10px}
 .pl-nm b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .pl-st{font-size:10px}
@@ -2247,7 +2270,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .pl-edit .plan-gear{margin-top:0}
 .pl-edit .plan-note{margin-top:8px}
 .pl-edit-act{display:flex;gap:8px;margin-top:8px}
-.plan-detail,.plan-del{min-height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--tx2);font-size:12px;cursor:pointer}
+.plan-detail,.plan-del,.plan-swap{min-height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--tx2);font-size:12px;cursor:pointer}
 .plan-del{color:var(--risk);border-color:rgba(230,120,120,.35)}
 @media(prefers-reduced-motion:reduce){.pl-edit{animation:none}}
 /* 今日卡：状态驱动手风琴 */
@@ -7083,10 +7106,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       else {
         const rec=planRecommend();
         const rv=(()=>{ try{ return partRecovery(rec.part)||{}; }catch(e){ return {}; } })();
-        box.innerHTML=`<div class="plan-empty">
-          <div class="plan-empty-t">${(rv.h && rv.h<900)?('上次练'+rec.view+'是 '+rv.h+' 天前'):('最近没练过'+rec.view)} · 今天推荐练【${rec.view}】</div>
-          <button class="btn sm btn-block" id="plReco" type="button">一键生成${rec.view}日计划</button>
-        </div>`;
+        box.innerHTML='<div class="plan-empty">'+emptyState('train',
+          ((rv.h && rv.h<900)?('上次练'+rec.view+'是 '+rv.h+' 天前'):('最近没练过'+rec.view))+' · 今天推荐练【'+rec.view+'】',
+          '一键生成'+rec.view+'日计划','plreco2')+'</div>';
+        setTimeout(()=>{ const b2=box.querySelector('[data-plreco2]'); if(b2) b2.id='plReco'; },0);
         const rb=$('plReco');
         if(rb) rb.onclick=()=>{ window.planPart=rec.part; planGenerate(rec.part); };
         return;
@@ -7105,7 +7128,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const amount=[sum.sets?(sum.sets+' 组'):'', sum.reps?(sum.reps+' 次'):'', sum.vol?((Math.round(sum.vol)).toLocaleString()+'kg'):'', sum.min?(sum.min+' 分钟'):''].filter(Boolean).join(' · ');
     const mkRow=(i,idx)=>{
       const jn=trPlanJoined(i.exId);
-      const adj=i.orig && ((i.sets||0)!==(i.orig.sets||0) || (i.reps||0)!==(i.orig.reps||0) || (i.weight||0)!==(i.orig.weight||0) || (i.dur||0)!==(i.orig.dur||0));
+      const adj=!!i.adjUser;
       const exE=(findEx(i.exId)||{}).e||'';
       const selfW=(i.weight||0)===0 && !i.dur && exE!=='自重';
       const open=plOpen===idx && !jn;
@@ -7126,25 +7149,38 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <div class="plan-note">${last?ENGINE.esc(last)+' · ':''}${ENGINE.esc(i.note||'')}</div>
           <div class="pl-edit-act">
             <button class="plan-detail" data-ex="${i.exId}" type="button">查看动作</button>
+            <button class="plan-swap" data-plswap="${idx}" type="button">换个类似动作</button>
             <button class="plan-del" data-pldel="${idx}" type="button">移除</button>
           </div>
         </div>`;
       const wtCell = selfW
         ? `<button class="pl-warn" data-plwarn="${idx}" type="button">⚠自选</button>`
         : (i.weight>0?(i.weight+'kg'):'自重');
-      return `<div class="pl-row${jn?' joined':''}${open?' on':''}" data-plrow="${idx}">
+      return `<div class="pl-row${jn?' joined':''}${open?' on':''}" data-plrow="${idx}" data-cardio="${i.dur?1:0}">
+          <span class="pl-drag" data-pldrag="${idx}" role="button" aria-label="拖动排序">≡</span>
           <span class="pl-nm"><i class="pl-no">${idx+1}</i><b>${ENGINE.esc(i.name)}</b></span>
           <span class="pl-sx">${i.dur?(i.dur+'′'):(i.sets+' × '+i.reps)}${adj?'<em class="pl-tag">已调</em>':''}</span>
           <span class="pl-wt">${wtCell}</span>
+          <button class="pl-rowmore" data-plrowmore="${idx}" type="button" aria-label="更多操作">⋯</button>
+          <span class="pl-swipe-hint pl-swipe-l">松开移除</span>
+          <span class="pl-swipe-hint pl-swipe-r">松开加入</span>
         </div>${edit}`;
     };
     const pendRows=[], joinedRows=[];
     trPlan.forEach((i,idx)=>{ (trPlanJoined(i.exId)?joinedRows:pendRows).push(mkRow(i,idx)); });
     const rv=(()=>{ try{ return partRecovery(label)||{}; }catch(e){ return {}; } })();
+    let eff='std'; try{ eff=localStorage.getItem('selfagent_plan_eff_v1')||'std'; }catch(e){}
     box.innerHTML=`
       <div class="plan-wrap">
-        <div class="plan-head">
-          <b>${ENGINE.esc(label)}日计划</b><span class="pl-sum">${trPlan.length} 动作 · ${amount}</span>
+        <div class="plan-hero">
+          <div class="ph-t"><b>${ENGINE.esc(label)}日计划</b><em>${trPlan.length} 个动作 · ${amount}</em></div>
+          <div class="ph-m"><span><b>${trPlan.filter(i=>!i.dur).length}</b>动作</span><span><b>${sum.sets}</b>组</span><span><b>${Math.round(sum.vol).toLocaleString()}</b>容量kg</span><span><b>${sum.min||0}</b>分钟</span></div>
+          <div class="pl-eff" id="plEff">
+            <button type="button" data-eff="light" class="${eff==='light'?'on':''}">轻松</button>
+            <button type="button" data-eff="std" class="${eff==='std'?'on':''}">标准</button>
+            <button type="button" data-eff="hard" class="${eff==='hard'?'on':''}">强化</button>
+          </div>
+          <div class="pl-eff-note">切换档位按 ±20% 重算组数，手改过的行保持不动</div>
           <button class="plan-more" id="plMore" type="button" aria-label="更多">⋯</button>
           <div class="plan-menu" id="plMenu" hidden>
             <button type="button" data-plm="reset">恢复默认</button>
@@ -7152,15 +7188,99 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           </div>
         </div>
         <div class="pl-tools">
-          <button class="btn sm btn-block" id="plImport" type="button" ${pending?'':'disabled'}>${pending?('全部加入 · '+pending):'已全部加入'}</button>
+          <button class="btn sm btn-block" id="plImport" type="button">${pending?('全部加入 · '+pending):'去开始训练 ▸'}</button>
         </div>
-        <div class="pl-table"><div class="pl-th"><span>动作</span><span>组 × 次</span><span>重量</span></div>
+        <div class="pl-table">
           ${pendRows.length?pendRows.join(''):'<div class="pl-empty">待加入的动作都处理完了</div>'}
           ${joinedRows.length?`<button class="pl-jjoined" id="plJoined" type="button">已加入 ${joinedRows.length} ${plJoinedOpen?'▾':'▸'}</button>${plJoinedOpen?joinedRows.join(''):''}`:''}
         </div>
         ${rv.text?`<div class="plan-recovery ${rv.warn?'warn':''}">${ENGINE.esc(rv.text)}</div>`:''}
         <div class="pl-go"><button class="btn sm" id="plGoToday" type="button">${pending?('加入剩余 '+pending+' 个 · 去训练 ▸'):'去今日训练 ▸'}</button></div>
       </div>`;
+
+    // 强度档位
+    box.querySelectorAll('[data-eff]').forEach(b=>b.onclick=(ev)=>{
+      ev.stopPropagation();
+      const lv=b.dataset.eff, f=lv==='light'?0.8:lv==='hard'?1.2:1;
+      trPlan.forEach(i=>{ if(i.adjUser||i.dur) return; const o=(i.orig&&i.orig.sets)||i.sets||1; i.sets=Math.max(1,Math.min(20,Math.round(o*f))); });
+      try{ localStorage.setItem('selfagent_plan_eff_v1', lv); }catch(e){}
+      trPlanSave(); trRenderPlan();
+      trToast(lv==='light'?'已切轻松档 · 组数 −20%':lv==='hard'?'已切强化档 · 组数 +20%':'已回标准档');
+    });
+    // 行内 ⋯ = 打开编辑面板
+    box.querySelectorAll('[data-plrowmore]').forEach(b=>b.onclick=(ev)=>{
+      ev.stopPropagation();
+      plOpen=+b.dataset.plrowmore; trRenderPlan();
+    });
+    // 换一个类似动作
+    box.querySelectorAll('[data-plswap]').forEach(b=>b.onclick=(ev)=>{
+      ev.stopPropagation();
+      const idx=+b.dataset.plswap, cur=trPlan[idx]; if(!cur) return;
+      const pool=(typeof allExercises==='function'?allExercises():[]).filter(e=>e.p===cur.part && e.id!==cur.exId && !trPlanJoined(e.id));
+      const used=trPlan.map(i=>i.exId);
+      let cand=pool.filter(e=>!used.includes(e.id) && (e.e||'')===(findEx(cur.exId)||{}).e);
+      if(!cand.length) cand=pool.filter(e=>!used.includes(e.id));
+      if(!cand.length){ trToast('同部位没有可换的动作了'); return; }
+      const pick=cand[Math.floor(Math.random()*cand.length)];
+      cur.exId=pick.id; cur.name=pick.n||pick.name||cur.name;
+      trPlanSave(); plOpen=-1; trRenderPlan(); trToast('已换成「'+cur.name+'」');
+    });
+    // 左滑移除 / 右滑加入
+    box.querySelectorAll('[data-plrow]').forEach(r=>{
+      const idx=+r.dataset.plrow;
+      let x0=0,y0=0,dx=0,swiping=false,lock=false;
+      const lHint=r.querySelector('.pl-swipe-l'), rHint=r.querySelector('.pl-swipe-r');
+      const reset=()=>{ r.classList.remove('swipe'); r.style.transform=''; if(lHint) lHint.style.opacity=0; if(rHint) rHint.style.opacity=0; dx=0; };
+      r.addEventListener('touchstart',e=>{
+        if(e.target.closest('[data-pldrag],button')) return;
+        x0=e.touches[0].clientX; y0=e.touches[0].clientY; swiping=false; lock=false;
+      },{passive:true});
+      r.addEventListener('touchmove',e=>{
+        if(lock) return;
+        const x=e.touches[0].clientX, y=e.touches[0].clientY;
+        const ax=x-x0, ay=y-y0;
+        if(!swiping){ if(Math.abs(ax)>12 && Math.abs(ax)>Math.abs(ay)+6){ swiping=true; r.classList.add('swipe'); } else if(Math.abs(ay)>10){ lock=true; return; } }
+        if(!swiping) return;
+        dx=Math.max(-96,Math.min(96,ax));
+        r.style.transform='translateX('+dx+'px)';
+        if(dx<-24 && lHint) lHint.style.opacity=Math.min(1,(-dx)/80);
+        if(dx>24 && rHint) rHint.style.opacity=Math.min(1,dx/80);
+      },{passive:true});
+      r.addEventListener('touchend',()=>{
+        if(!swiping){ reset(); return; }
+        if(dx<-70){ trPlanRemoveAt(idx); }
+        else if(dx>70){ try{ trPlanJoinOne(idx); }catch(e){} reset(); }
+        else reset();
+      });
+    });
+    // ≡ 拖动排序
+    box.querySelectorAll('[data-pldrag]').forEach(h=>{
+      h.addEventListener('pointerdown',e=>{
+        e.preventDefault(); e.stopPropagation();
+        const idx=+h.dataset.pldrag, row=h.closest('.pl-row');
+        if(!row) return;
+        const rows=[...box.querySelectorAll('.pl-row')];
+        const h0=row.getBoundingClientRect().height+8;
+        let pos=0;
+        row.style.zIndex=5; row.style.boxShadow='0 10px 24px rgba(0,0,0,.28)'; row.classList.add('swipe');
+        const move=ev=>{
+          pos=ev.clientY-e0y;
+          row.style.transform='translateY('+pos+'px)';
+          const shift=Math.round(pos/h0);
+          rows.forEach((o,i2)=>{ if(o===row) return; o.style.transform = (i2>=idx && i2<idx+shift+1) || (i2<=idx && i2>idx+shift) ? 'translateY('+(shift>0?-h0:h0)+'px)' : ''; });
+        };
+        let e0y=e.clientY;
+        const up=()=>{
+          document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); document.removeEventListener('pointercancel',up);
+          const shift=Math.round(pos/h0); const to=Math.max(0,Math.min(trPlan.length-1,idx+shift));
+          row.style.transform=''; row.style.boxShadow=''; row.style.zIndex=''; row.classList.remove('swipe');
+          rows.forEach(o=>{ o.style.transform=''; });
+          if(to!==idx){ const it=trPlan.splice(idx,1)[0]; trPlan.splice(to,0,it); trPlanSave(); trRenderPlan(); trToast('顺序已更新'); }
+        };
+        document.addEventListener('pointermove',move);
+        document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up);
+      });
+    });
 
     // 行手风琴
     box.querySelectorAll('[data-plrow]').forEach(r=>r.onclick=()=>{
@@ -7205,6 +7325,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       else if(field==='weight') i.weight=Math.max(0,Math.round(((i.weight||0)+d)*10)/10);
       else if(field==='dur') i.dur=clamp((i.dur||0)+d,5,90);
       else return false;
+      i.adjUser=true;
       return true;
     };
     box.querySelectorAll('[data-pl]').forEach(b=>{
@@ -7223,7 +7344,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     box.querySelectorAll('[data-plw]').forEach(b=>b.onclick=(ev)=>{ ev.stopPropagation();
       const p=b.dataset.plw.split(':'); const i=trPlan[+p[0]]; if(!i || trPlanJoined(i.exId)) return;
-      i.weight=parseFloat(p[1]); trPlanSave(); trRenderPlan();
+      i.weight=parseFloat(p[1]); i.adjUser=true; trPlanSave(); trRenderPlan();
     });
     box.querySelectorAll('[data-pldel]').forEach(b=>b.onclick=(ev)=>{
       ev.stopPropagation();
@@ -7236,14 +7357,39 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       setTimeout(()=>{ try{t.remove();}catch(e){} },5000);
     });
     if($('plImport')) $('plImport').onclick=()=>{
+      const pend=trPlan.filter(i=>!trPlanJoined(i.exId)).length;
+      if(!pend){ plOpen=-1; trSetSeg('today'); try{ trRenderToday(); }catch(e){}
+        setTimeout(()=>{ try{ const b=$('trStart'); if(b){ b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),1600); } }catch(e){} },200);
+        return; }
       const r=planImportAll();
       trToast('已加入 '+r.added+' 个动作'+(r.updated?('，更新 '+r.updated+' 个'):''));
+      trRenderPlan();
     };
     if($('plGoToday')) $('plGoToday').onclick=()=>{
       const pend=trPlan.filter(i=>!trPlanJoined(i.exId)).length;
       if(pend){ const r=planImportAll(); trToast('已加入 '+r.added+' 个动作'); }
       plOpen=-1; trSetSeg('today'); try{ trRenderToday(); }catch(e){}
     };
+  }
+  function trPlanJoinOne(idx){
+    const i=trPlan[idx]; if(!i) return;
+    if(trPlanJoined(i.exId)){ trToast('这个动作已在今日'); return; }
+    trAddPlanned(i.exId, i.sets||3, i.reps||10, i.weight||0, true);
+    trRenderPlan(); trToast('已加入今日：'+i.name);
+  }
+  function trPlanRemoveAt(idx){
+    const item=trPlan[idx]; if(!item) return;
+    const row=(document.querySelector('.pl-row[data-plrow="'+idx+'"]'));
+    const done=()=>{
+      trPlan.splice(idx,1); plOpen=-1; trPlanSave(); trRenderPlan();
+      const t=document.createElement('div'); t.className='toast undo';
+      t.innerHTML='已移除 '+ENGINE.esc(item.name)+' <button type="button">撤销</button>';
+      document.body.appendChild(t);
+      t.querySelector('button').onclick=()=>{ trPlan.splice(Math.min(idx,trPlan.length),0,item); trPlanSave(); trRenderPlan(); t.remove(); };
+      setTimeout(()=>{ try{t.remove();}catch(e){} },5000);
+    };
+    if(row){ row.classList.add('rm'); setTimeout(done,180); } else done();
+    try{ haptic('warn'); }catch(e){}
   }
   function showTrainSummary(){
     const d=trDateVal();
