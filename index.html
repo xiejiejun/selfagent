@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SelfAgent">
 <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU2VsZkFnZW50IMK3IOiHquaIkeiupOefpSIsInNob3J0X25hbWUiOiJTZWxmQWdlbnQiLCJzdGFydF91cmwiOiIuL2luZGV4Lmh0bWwiLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMDgwYjBlIiwidGhlbWVfY29sb3IiOiIjMEIwRjE0IiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjRiV3h1Y3owaWFIUjBjRG92TDNkM2R5NTNNeTV2Y21jdk1qQXdNQzl6ZG1jaUlIWnBaWGRDYjNnOUlqQWdNQ0EyTkNBMk5DSStQSEpsWTNRZ2QybGtkR2c5SWpZMElpQm9aV2xuYUhROUlqWTBJaUJ5ZUQwaU1UUWlJR1pwYkd3OUlpTXdRakJHTVRRaUx6NDhZMmx5WTJ4bElHTjRQU0l6TWlJZ1kzazlJak15SWlCeVBTSXhOeUlnWm1sc2JEMGlibTl1WlNJZ2MzUnliMnRsUFNJak0wUkVRMEpHSWlCemRISnZhMlV0ZDJsa2RHZzlJak1pTHo0OFkybHlZMnhsSUdONFBTSXpNaUlnWTNrOUlqTXlJaUJ5UFNJMUlpQm1hV3hzUFNJak0wUkVRMEpHSWk4K1BDOXpkbWMrIiwic2l6ZXMiOiI2NHg2NCIsInR5cGUiOiJpbWFnZS9zdmcreG1sIiwicHVycG9zZSI6ImFueSJ9XX0=">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>SelfAgent · 自我认知</title>
 <meta name="theme-color" content="#07090E">
 <script>(function(){var t="dark";try{t=localStorage.getItem("selfagent_theme_v1")||((window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark");}catch(e){}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="light"?"#F3F6FA":"#07090E");})();</script>
@@ -2405,6 +2405,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* 今日卡：状态驱动手风琴 */
 .tr-next{font-size:11.5px;color:var(--tx3);padding:2px 2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tc-row{margin-bottom:8px}
+html,body{touch-action:manipulation}
+.tc-row,.set-card,.set-head,.tc-row .pl-drag,.set-head .pl-drag{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.set-card{max-width:100%;overflow:hidden}
 .tc-fold:active{border-color:var(--line2)}
 .tc-nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}
 .tc-fold .tc-sx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -8193,7 +8196,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       openRowMenu(r);
     });
     // 展开 / 收起：同一时刻只开一张卡
-    box.querySelectorAll('[data-topen]').forEach(el=>el.onclick=()=>{
+    box.querySelectorAll('[data-topen]').forEach(el=>el.onclick=ev=>{
+      if(ev.target.closest('[data-rmore]')||ev.target.closest('[data-drag]')) return;
+      const now=Date.now();
+      if(el.__t && now-el.__t<260) return;
+      el.__t=now;
       trOpenUid = (el.dataset.topen===activeUid) ? '' : el.dataset.topen;
       trFollowTick=false;
       trRenderToday();
@@ -8201,6 +8208,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.querySelectorAll('[data-tclose]').forEach(el=>{
       el.onclick=ev=>{
         if(ev.target.closest('[data-rmore]')||ev.target.closest('[data-drag]')) return;
+        const now=Date.now();
+        if(el.__t && now-el.__t<260) return;
+        el.__t=now;
         trOpenUid=''; trFollowTick=false; trRenderToday();
       };
     });
