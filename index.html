@@ -1468,6 +1468,22 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .ex-more{border:0;background:none;color:var(--tx3);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer}
 /* p236 动作照片 */
 .ex-item.cu-item{padding-right:14px}
+.cu-row{position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:var(--panel);transition:background .18s}
+.cu-row .cu-main{padding:11px 14px}
+.cu-side{position:absolute;top:0;right:0;bottom:0;width:140px;display:flex;padding-left:26px;
+  transform:translateX(104%);transition:transform .2s cubic-bezier(.22,.61,.36,1);
+  background:linear-gradient(90deg,rgba(0,0,0,0),var(--panel) 26%)}
+html[data-theme="light"] .cu-side{background:linear-gradient(90deg,rgba(255,255,255,0),var(--panel) 26%)}
+.cu-row.open .cu-side{transform:none}
+.cu-act{flex:1 1 0;border:0;border-left:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--tx2);font:inherit;font-size:12.5px}
+.cu-act.del{background:rgba(224,90,90,.18);color:#e05a5a;font-weight:600}
+.cu-act:active{filter:brightness(.9)}
+html[data-theme="light"] .cu-act{background:#F1F4F9}
+html[data-theme="light"] .cu-act.del{background:rgba(224,90,90,.12)}
+.ai-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ai-head .ai-bar{flex:1 1 auto;margin:0}
+.ai-empty{font-size:12.5px;color:var(--tx3);line-height:1.6;padding:2px 2px 10px}
+.ai-head #aiRunBtn{flex:0 0 auto;white-space:nowrap;align-self:flex-start}
 .ex-item.cu-item .ex-head{flex-wrap:wrap;gap:2px 8px}
 .ex-item.cu-item .ex-name{white-space:normal;word-break:break-word;max-width:100%}
 .ex-item.cu-item .ex-meta{white-space:normal;font-size:11px}
@@ -5761,18 +5777,65 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }
     rows.innerHTML=secCu+secFav;
     bindLibRows(rows);
+    bindCuSwipe(rows);
     rows.querySelectorAll('[data-cuedit]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); try{ openCuSheet({edit:b.dataset.cuedit}); }catch(e){} });
     rows.querySelectorAll('[data-cudel]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); try{ cuDelete(b.dataset.cudel); }catch(e){} });
+  }
+  function bindCuSwipe(rows){
+    const closeAll=except=>{ rows.querySelectorAll('.cu-row.open').forEach(r=>{ if(r!==except) r.classList.remove('open'); }); };
+    rows.querySelectorAll('.cu-row').forEach(row=>{
+      const id=row.dataset.curow;
+      let x0=null, y0=0, swiped=false;
+      const skip=ev=>!!(ev.target.closest && ev.target.closest('.cu-side'));
+      const begin=(x,y)=>{ x0=x; y0=y; swiped=false; };
+      const moveTo=(x,y)=>{
+        if(x0==null) return;
+        const dx=x-x0, dy=y-y0;
+        if(Math.abs(dx) < Math.abs(dy)*1.2) return;
+        if(dx<-28 && !row.classList.contains('open')){ closeAll(row); row.classList.add('open'); swiped=true; }
+        else if(dx>22 && row.classList.contains('open')){ row.classList.remove('open'); swiped=true; }
+      };
+      const endTap=()=>{ if(x0==null) return; x0=null; };
+      const TOUCHED=('ontouchstart' in window) && navigator.maxTouchPoints>0;
+      if(TOUCHED){
+        row.addEventListener('touchstart',ev=>{
+          if(ev.touches.length!==1 || skip(ev)){ x0=null; return; }
+          begin(ev.touches[0].clientX, ev.touches[0].clientY);
+        },{passive:true});
+        row.addEventListener('touchmove',ev=>{
+          if(x0==null || ev.touches.length!==1) return;
+          const dx=ev.touches[0].clientX-x0, dy=ev.touches[0].clientY-y0;
+          if(Math.abs(dx) >= Math.abs(dy)*1.2){ try{ ev.preventDefault(); }catch(e){} }
+          moveTo(ev.touches[0].clientX, ev.touches[0].clientY);
+        },{passive:false});
+        row.addEventListener('touchend',()=>{ endTap(); },{passive:true});
+        row.addEventListener('touchcancel',()=>{ x0=null; },{passive:true});
+      } else {
+        row.addEventListener('mousedown',ev=>{ if(skip(ev)) return; begin(ev.clientX, ev.clientY); });
+        row.addEventListener('mousemove',ev=>{ if(x0!=null) moveTo(ev.clientX, ev.clientY); });
+        row.addEventListener('mouseup',()=>{ endTap(); });
+      }
+      const body=row.querySelector('.cu-main');
+      body.addEventListener('click',ev=>{
+        if(skip(ev)) return;
+        if(swiped){ swiped=false; return; }
+        if(x0!=null){ x0=null; return; }
+        if(row.classList.contains('open')){ row.classList.remove('open'); return; }
+        try{ trSelect(id); }catch(e){}
+      });
+    });
   }
   function cuRowHtml(e,lastMap){
     const last=lastMap[e.id];
     const sub=last
       ? `<span class="ex-last">上次 ${last.weight>0?last.weight+'kg ':''}${last.sets}×${last.reps}</span><span class="ex-ago">${trAgo(last.date)}</span>`
       : `<span class="ex-last none">未练过</span>`;
-    return `<div class="ex-item cu-item" data-ex="${e.id}">
-        <div class="ex-head"><span class="ex-name">${ENGINE.esc(e.n)} <span class="ex-cu">自定义</span></span><span class="ex-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'')}</span></div>
-        <div class="ex-sub">${sub}</div>
-        <div class="ex-acts"><button class="ex-mini" data-cuedit="${e.id}" type="button">编辑</button><button class="ex-mini danger" data-cudel="${e.id}" type="button">删除</button></div>
+    return `<div class="cu-row" data-curow="${e.id}">
+        <div class="cu-side"><button class="cu-act" data-cuedit="${e.id}" type="button">编辑</button><button class="cu-act del" data-cudel="${e.id}" type="button">删除</button></div>
+        <div class="cu-main" data-ex="${e.id}">
+          <div class="ex-head"><span class="ex-name">${ENGINE.esc(e.n)} <span class="ex-cu">自定义</span></span><span class="ex-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'')}</span></div>
+          <div class="ex-sub">${sub}</div>
+        </div>
       </div>`;
   }
   function cuAsk(msg, desc, onOk, okText){
@@ -9658,49 +9721,67 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 
   /* ---------- 报告页：先出规则版，AI 就绪时用同一契约覆盖 ---------- */
   let __aiJob=0;
+  function aiHeadHtml(msg, dis, btnTxt){
+    return '<div class="ai-head"><div class="ai-bar"><i class="ai-dot"></i><span>'+ENGINE.esc(msg)+'</span></div>'+
+      (btnTxt?'<button class="btn ghost sm" type="button" id="aiRunBtn"'+(dis?' disabled':'')+'>'+ENGINE.esc(btnTxt)+'</button>':'')+'</div>';
+  }
+  function aiRunBind(tab, box){
+    const b=box.querySelector('#aiRunBtn');
+    if(b) b.onclick=()=>{ try{ aiRunReport(tab); }catch(e){} };
+  }
   function aiFillReport(tab){
     const box=document.getElementById('aiBox'); if(!box) return;
-    if(!aiReady()) return;
+    if(!aiReady()){
+      box.innerHTML='<div class="ai-bar off"><i class="ai-dot"></i><span>未配置 AI · 当前为内置规则版，去「设置 → AI 服务」填入 API Key 后可生成</span></div>';
+      return;
+    }
+    let hit=null; try{ hit=aiCacheGet(tab, aiFingerprint()); }catch(e){}
+    if(hit && hit.data){ aiShowCache(tab, hit); return; }
+    aiPlaceholder(tab);
+  }
+  function aiPlaceholder(tab){
+    const box=document.getElementById('aiBox'); if(!box) return;
+    box.innerHTML=aiHeadHtml('AI 分析还没生成 · 点右侧按钮按最新记录生成（约 8 秒）', false, '生成分析')+
+      '<div class="ai-empty">本页不会自动调用 AI，只在点击时消耗额度；下面是内置规则版，可先对照阅读。</div>';
+    aiRunBind(tab, box);
+  }
+  function aiShowCache(tab, hit){
+    const box=document.getElementById('aiBox'); if(!box) return;
+    let logsN=0; try{ logsN=aiStat().logsN||0; }catch(e){}
+    const t=new Date(hit.ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    box.innerHTML=aiHeadHtml('AI · '+aiCfg().model+' · '+t+' 生成 · 依据 '+(logsN||'—')+' 条记录', false, '重新生成')+
+      aiRenderReport(tab, hit.data);
+    aiRunBind(tab, box);
+  }
+  function aiRunReport(tab){
+    const box=document.getElementById('aiBox'); if(!box) return;
+    if(!aiReady()){ box.innerHTML=aiReportBar('未配置 AI · 已用内置规则', true); return; }
     const job=++__aiJob;
-    const fp=aiFingerprint();
-    let st0={logsN:0};
-    try{ const d0=aiStat(); st0={logsN:d0.logsN}; }catch(e){}
-    const hit=aiCacheGet(tab, fp, 30*60e3);
-    const stripCache=()=>{
-      box.innerHTML='<div class="ai-bar"><i class="ai-dot"></i><span>AI · '+ENGINE.esc(aiCfg().model)+' · 上次结果命中缓存</span></div>'+
-        aiRenderReport(tab, hit.data)+
-        '<div class="ai-fold"><details><summary>上次 AI 结果生成于 '+new Date(hit.ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' · 点此用最新数据重算</summary><button class="btn ghost sm" type="button" id="aiRegen">重新生成</button></details></div>';
-      const rb=box.querySelector('#aiRegen');
-      if(rb) rb.onclick=()=>{ aiCacheDel(tab); try{ renderReport(); }catch(e){} };
-    };
-    if(hit && hit.data){ stripCache(); return; }
-    box.innerHTML=aiReportBar('AI 正在按契约生成 · 逐节输出…');
+    let st0={logsN:0}; try{ st0={logsN:aiStat().logsN||0}; }catch(e){}
+    box.innerHTML=aiHeadHtml('AI 正在生成 · 逐节输出…', true, '生成中…');
     const stage=document.createElement('div'); stage.className='ai-stage';
     box.appendChild(stage);
     aiReport(tab, stage, n=>{
-      const bar=document.getElementById('aiBar');
-      if(bar && bar.querySelector('span')) bar.querySelector('span').textContent='AI 正在生成 · 已出 '+n+' 节';
+      const sp=box.querySelector('#aiBar span');
+      if(sp) sp.textContent='AI 正在生成 · 已出 '+n+' 节';
     }).then(data=>{
       if(job!==__aiJob) return;
+      let fp=''; try{ fp=aiFingerprint(); }catch(e){}
       aiCacheSet(tab, fp, data);
       try{ setTimeout(aiMemRefresh, 300); }catch(e){}
-      box.innerHTML='<div class="ai-bar"><i class="ai-dot"></i><span>AI · '+ENGINE.esc(aiCfg().model)+' · 依据 '+((st0.logsN||0))+' 条记录生成</span></div>'+
-        (data.oneline?'<div class="ai-one">'+ENGINE.esc(data.oneline)+'</div>':'')+
-        (data.sections||[]).map(aiSecHtml).join('')+
-        '<div class="ai-src" style="border:0;background:none;padding:2px 2px 6px">AI 生成内容仅供参考，不构成医疗或投资建议 · 下方为内置规则版，可对照阅读</div>';
+      box.innerHTML=aiHeadHtml('AI · '+aiCfg().model+' · 依据 '+(st0.logsN||0)+' 条记录生成', false, '重新生成')+
+        aiRenderReport(tab, data)+
+        '<div class="ai-src" style="border:0;background:none;padding:2px 2px 6px">AI 生成内容仅供参考，不构成医疗或投资建议</div>';
+      aiRunBind(tab, box);
       if($('aiLast')) $('aiLast').textContent=aiLastText();
       if($('aiUsage')) $('aiUsage').textContent=aiUsageText();
       if($('aiSum')) $('aiSum').textContent=aiSummary();
     }).catch(e=>{
       if(job!==__aiJob) return;
       const msg=String(e&&e.message||'');
-      if(!box.dataset.retried && !/网络不可达|请求超时|未配置/.test(msg)){
-        box.dataset.retried='1';
-        try{ box.innerHTML=''; }catch(e2){}
-        setTimeout(()=>{ try{ aiFillReport(tab); }catch(e3){} }, 260);
-        return;
-      }
-      box.innerHTML=aiReportBar('AI 不可用 · 已用内置规则（'+msg+'）', true);
+      box.innerHTML=aiHeadHtml('AI 不可用 · 已用内置规则（'+msg+'）', false, '重试')+
+        '<div class="ai-empty">可检查网络，或在「设置 → AI 服务」里点「测试连接」。</div>';
+      aiRunBind(tab, box);
       try{ trToast('离线模式 · 已用内置规则'); }catch(e2){}
     });
   }
@@ -9709,7 +9790,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     disposeCharts();
     const body=$('reportBody');
     const btn=$('btnGen');
-    if(btn) btn.style.display = ['persona','plan','trend'].includes(currentTab) ? 'inline-flex' : 'none';
+    if(btn) btn.style.display = 'none';
     if(currentTab==='logs'){ renderLogsPanel(); return; }
     if(currentTab==='stats'){ renderStatsPanel(); return; }
     if(currentTab==='train'){ renderTrainPanel(); return; }
