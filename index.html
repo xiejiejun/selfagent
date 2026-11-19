@@ -1505,6 +1505,30 @@ html[data-theme="light"] .ex-item.on{background:#dff7ef;outline:1.5px solid #0e8
 .ms-x{border:0;background:none;color:var(--tx3);font-size:20px;line-height:1;padding:0 4px;cursor:pointer}
 .cu-sheet{padding:2px 0 6px}
 .cu-btns{display:flex;gap:8px;margin-top:8px}
+/* p232 拍照识别结果 */
+.cam-body{padding:0 0 6px}
+.cam-img{width:100%;max-height:180px;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:block}
+.cam-meta{display:flex;align-items:baseline;gap:8px;margin:10px 0 2px}
+.cam-meta b{font-size:15px}
+.cam-meta span{font-size:11.5px;color:var(--tx3)}
+.cam-low{font-size:11.5px;color:#E0A63C;margin:6px 0 0}
+.cam-sum{font-size:11.5px;color:var(--tx3);margin:12px 0 6px}
+.cam-list{display:flex;flex-direction:column;gap:6px;max-height:34dvh;overflow:auto}
+.cam-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid var(--line);
+  border-radius:10px;padding:9px 12px;color:var(--tx);font:inherit;cursor:pointer}
+.cam-row b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62%}
+.cam-row em{font-style:normal;font-size:11px;color:var(--tx3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cam-row i{font-style:normal;color:var(--accent);font-size:15px}
+.cam-row:active{background:rgba(61,220,191,.06)}
+.cam-act{margin-top:10px}
+.cam-act .btn{width:100%;justify-content:center}
+/* p232 自定义动作 AI 校验 */
+.cu-ai{border:1px solid rgba(61,220,191,.28);background:rgba(61,220,191,.05);border-radius:12px;padding:10px 12px;margin-top:8px;font-size:12px;line-height:1.6}
+.cu-ai b{display:block;font-size:12.5px;margin-bottom:4px;color:var(--accent)}
+.cu-ai .cu-ai-btns{display:flex;gap:8px;margin-top:8px}
+.cu-ai .cu-ai-btns .btn{flex:1;justify-content:center}
+.cu-ai.warn{border-color:rgba(224,166,60,.4);background:rgba(224,166,60,.06)}
+.cu-ai.warn b{color:#E0A63C}
 .cu-btns .btn{flex:1;justify-content:center}
 .tc-empty{color:var(--tx3);font-size:12px}
 
@@ -5565,6 +5589,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           </div>
           <div class="tr-tc-links">
             <button class="tr-tc-link" id="libOpen" type="button">＋ 添加动作</button>
+            <button class="tr-tc-link" id="camPick" type="button">拍照识别器械</button>
             <button class="tr-tc-link" id="trRepeat" type="button">导入上次训练</button>
           </div>
           <div class="tr-next" id="trNext" hidden></div>
@@ -6351,7 +6376,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       syncDrop(scope);
     }
   }
-  function openCuSheet(){
+  function openCuSheet(pre){
+    pre=pre||{};
     document.querySelectorAll('.msheet').forEach(x=>x.remove());
     const el=document.createElement('div'); el.className='msheet';
     el.innerHTML=`<div class="msheet-box"><div class="ms-head"><b>自定义动作</b><button class="ms-x" type="button" data-cux>×</button></div>
@@ -6368,14 +6394,137 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     document.body.appendChild(el);
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
     el.querySelectorAll('[data-cux]').forEach(b=>b.onclick=()=>el.remove());
-    el.querySelector('#cuSave').onclick=()=>{
-      const n=(el.querySelector('#cuName').value||'').trim(); if(!n){ trToast('请填写动作名称'); return; }
-      const steps=(el.querySelector('#cuSteps').value||'').split('\n').map(x=>x.trim()).filter(Boolean);
-      train.custom.push({id:'cu'+Date.now().toString(36), n, p:el.querySelector('#cuPart').value||'其他', e:(el.querySelector('#cuEquip').value||'自重').trim(), t:'', g:'', s:steps.length?steps:['自定义动作，按个人经验执行'], custom:true});
+    if(pre.name) el.querySelector('#cuName').value=pre.name;
+    if(pre.equip) el.querySelector('#cuEquip').value=pre.equip;
+    if(pre.part){
+      const map={'腿':'腿','上腿':'腿','小腿':'腿','臂':'臂','上臂':'臂','前臂':'臂','腹':'腰腹','腰腹':'腰腹','颈':'其他','有氧':'其他'};
+      const pv=map[pre.part]||pre.part;
+      const sel=el.querySelector('#cuPart');
+      if([].slice.call(sel.options).some(o=>o.text===pv)) sel.value=pv;
+    }
+    const cuAi=document.createElement('div'); cuAi.id='cuAi';
+    el.querySelector('.cu-sheet').appendChild(cuAi);
+    let checked=null, checking=false;
+    const cuBtn=el.querySelector('#cuSave');
+    const doSave=(name, stp)=>{
+      const part=el.querySelector('#cuPart').value||'其他';
+      const equip=(el.querySelector('#cuEquip').value||'自重').trim();
+      train.custom.push({id:'cu'+Date.now().toString(36), n:name, p:part, e:equip, t:'', g:'', s:(stp&&stp.length)?stp:['自定义动作，按个人经验执行'], custom:true});
       saveTrain(); el.remove(); trRenderList(); trToast('已加入动作库');
+    };
+    cuBtn.onclick=()=>{
+      const n=(el.querySelector('#cuName').value||'').trim(); if(!n){ trToast('请填写动作名称'); return; }
+      if(checking) return;
+      const steps=(el.querySelector('#cuSteps').value||'').split('\n').map(x=>x.trim()).filter(Boolean);
+      const part=el.querySelector('#cuPart').value||'其他';
+      const equip=(el.querySelector('#cuEquip').value||'自重').trim();
+      if(checked){ doSave(checked.norm||n, checked.steps||steps); return; }
+      if(!aiReady() || !AG || !AG.dedupe){ doSave(n, steps); return; }
+      checking=true;
+      const old=cuBtn.textContent; cuBtn.textContent='AI 检查中…'; cuBtn.disabled=true;
+      AG.dedupe(n, part, equip, steps).then(o=>{
+        const norm=(o.norm||n).trim();
+        const stp=(Array.isArray(o.steps)&&o.steps.length)?o.steps.filter(x=>typeof x==='string'&&x.trim()):steps;
+        checked={norm, steps:stp};
+        const dup=(o.dup&&o.dup.name)?o.dup:null;
+        const lines=[];
+        if(dup) lines.push('<b>库内已有相似动作</b>「'+ENGINE.esc(dup.name)+'」'+(dup.why?'：'+ENGINE.esc(dup.why):'')+'。建议直接用库内动作，避免动作库被重复条目污染。');
+        else lines.push('<b>未发现重复</b>，可以放心新建。');
+        if(norm && norm!==n) lines.push('建议命名：<b>'+ENGINE.esc(norm)+'</b>，便于合并同类与 PR 对比。');
+        if(stp.length && !steps.length) lines.push('已按标准格式补全 '+stp.length+' 步要领。');
+        else if(stp.length && steps.length) lines.push('要领已按标准格式整理为 '+stp.length+' 步。');
+        cuAi.className='cu-ai'+(dup?' warn':'');
+        cuAi.innerHTML=lines.join('<br>')+
+          '<div class="cu-ai-btns">'+(dup?'<button class="btn ghost sm" type="button" id="cuUseLib">用库内动作</button>':'')+
+          '<button class="btn sm" type="button" id="cuGo">'+(dup?'仍要新建':'确认保存')+'</button></div>';
+        const lb=cuAi.querySelector('#cuUseLib');
+        if(lb) lb.onclick=()=>{
+          el.remove();
+          const ex=allExercises().find(e=>e.n===dup.name);
+          if(ex) openPlanSheet(ex.id); else trToast('去动作库搜一下这个名称');
+        };
+        cuAi.querySelector('#cuGo').onclick=()=>doSave(norm, stp);
+        cuBtn.textContent='已检查 · 待确认'; cuBtn.disabled=true;
+        checking=false;
+      }).catch(()=>{
+        cuBtn.textContent=old; cuBtn.disabled=false; checking=false;
+        doSave(n, steps);
+      });
     };
     try{ kbAvoid(el, el.querySelector('.msheet-box')); }catch(e){}
   }
+  /* ---------- 拍照识别器械：多模态 → 库内匹配 → 直接加今日 ---------- */
+  function camCompress(file, cb){
+    const fr=new FileReader();
+    fr.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        try{
+          const max=1024, sc=Math.min(1, max/Math.max(img.width,img.height));
+          const w=Math.round(img.width*sc), h=Math.round(img.height*sc);
+          const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+          cv.getContext('2d').drawImage(img,0,0,w,h);
+          cb(cv.toDataURL('image/jpeg',0.72));
+        }catch(e){ cb(null); }
+      };
+      img.onerror=()=>cb(null);
+      img.src=fr.result;
+    };
+    fr.onerror=()=>cb(null);
+    fr.readAsDataURL(file);
+  }
+  function camOpen(){
+    try{ if(!aiReady()){ trToast('先在设置里接一个支持看图的自定义 API'); return; } }catch(e){}
+    const inp=document.createElement('input');
+    inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
+    inp.style.display='none';
+    document.body.appendChild(inp);
+    inp.onchange=()=>{
+      const f=(inp.files||[])[0];
+      try{ inp.remove(); }catch(e){}
+      if(!f) return;
+      try{ trToast('识别中…'); }catch(e){}
+      camCompress(f, url=>{
+        if(!url){ try{ trToast('图片读取失败'); }catch(e){} return; }
+        AG.recognize(url).then(r=>{ camShow(r, url); })
+          .catch(e=>{ try{ trToast('识别失败：'+String(e&&e.message||e)); }catch(e2){} });
+      });
+    };
+    inp.click();
+  }
+  function camShow(r, url){
+    const conf=Math.round(+r.confidence||0);
+    const equip=String(r.equip||'').trim(), part=String(r.part||'').trim();
+    let list=allExercises().filter(e=>{
+      const t=(e.e||'')+' '+e.n;
+      if(part && e.p===part) return true;
+      return equip && t.indexOf(equip)>=0;
+    });
+    if(!list.length && part) list=allExercises().filter(e=>e.p===part);
+    const rows=list.slice(0,8).map(e=>'<button class="cam-row" data-camadd="'+e.id+'" type="button"><b>'+ENGINE.esc(e.n)+'</b><em>'+ENGINE.esc(e.p)+' · '+ENGINE.esc(e.e||'')+'</em><i>＋</i></button>').join('');
+    document.querySelectorAll('.msheet').forEach(x=>x.remove());
+    const el=document.createElement('div'); el.className='msheet';
+    el.innerHTML='<div class="msheet-box"><div class="ms-head"><b>识别结果</b><button class="ms-x" type="button" data-cx>×</button></div>'+
+      '<div class="cam-body">'+
+      '<img class="cam-img" src="'+url+'" alt="">'+
+      '<div class="cam-meta"><b>'+ENGINE.esc(equip||'未识别')+'</b><span>'+ENGINE.esc(part||'—')+' · 置信度 '+conf+'%</span></div>'+
+      (conf<60?'<div class="cam-low">看得不太清，请确认器械名称再选动作。</div>':'')+
+      '<div class="cam-sum">'+(list.length?('可以练这些动作（'+list.length+' 个）'):'库里还没有匹配这个器械的动作')+'</div>'+
+      '<div class="cam-list">'+rows+'</div>'+
+      '<div class="cam-act"><button class="btn ghost sm" type="button" data-camnew>新建这个器械的动作</button></div>'+
+      '</div></div>';
+    document.body.appendChild(el);
+    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    el.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>el.remove());
+    el.querySelectorAll('[data-camadd]').forEach(b=>b.onclick=()=>{
+      const id=b.dataset.camadd;
+      el.remove();
+      try{ openPlanSheet(id); }catch(e){}
+    });
+    const nb=el.querySelector('[data-camnew]');
+    if(nb) nb.onclick=()=>{ el.remove(); try{ openCuSheet({name:equip, equip:equip, part:part}); }catch(e){} };
+  }
+
   let trPlan=null, trPlanOrig=null;
   function partLastDate(part){
     return train.records.filter(r=>r.part===part).reduce((a,b)=>(a>b.date?a:b.date),'');
@@ -8023,6 +8172,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               <div class="backup-msg" id="bakMsg"></div>
             </div>
             <div class="setting-sec">
+              <h2 style="font-size:14px">Agent 记忆</h2>
+              <div class="hint">每次 AI 分析后会提炼几条稳定事实（作息、偏好、弱项），之后所有调用都会自动带上，让判断前后一致。只存本机。</div>
+              <textarea class="imp-area" id="memView" readonly style="min-height:78px"></textarea>
+              <div class="backup-row"><button class="btn ghost sm" id="memClear" type="button">清除记忆</button></div>
+            </div>
+            <div class="setting-sec">
               <h2 style="font-size:14px">云端数据库</h2>
               <div class="hint">可选。把日志、人物档案、训练记录存到云端 Postgres（Supabase 免费层），换设备或清缓存后可恢复。不填则仅存本机浏览器。</div>
               <div class="cloud-grid">
@@ -8135,6 +8290,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function bindSettingsActions(){
     bindBackup();
     try{ bindAISettings(); }catch(e){}
+    const mv=$('memView'); if(mv) mv.value=aiMemList();
+    const mc=$('memClear'); if(mc) mc.onclick=()=>{
+      try{ localStorage.removeItem('selfagent_agent_memory_v1'); }catch(e){}
+      if(mv) mv.value=aiMemList();
+      try{ trToast('已清除 Agent 记忆'); }catch(e){}
+    };
     const crb=$('coachReplayBtn'); if(crb) crb.onclick=()=>{ try{ coachReplay(); }catch(e){} };
     const cab=$('coachAutoBtn');
     if(cab){
@@ -8765,7 +8926,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
     const to=setTimeout(()=>{ try{ ctrl&&ctrl.abort(); }catch(e){} }, 60000);
     const body={model:c.model||'deepseek-chat',
-      messages:[{role:'system',content:o.system||''},{role:'user',content:o.user||''}],
+      messages:[{role:'system',content:(o.system||'')+(aiMemText()?('\n\n【长期记忆】\n'+aiMemText()):'')},
+        {role:'user',content:o.image?[{type:'text',text:o.user||''},{type:'image_url',image_url:{url:o.image}}]:(o.user||'')}],
       temperature:(o.temp!=null?+o.temp:0.4), stream:!!o.stream};
     return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.key},
       body:JSON.stringify(body), signal:ctrl?ctrl.signal:undefined}).then(r=>{
@@ -8815,6 +8977,68 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       throw (e instanceof Error)?e:new Error(raw);
     });
   }
+
+  /* ---------- Agent 契约层（AgentProvider）：换模型只改这一层 ---------- */
+  function aiJSON(t){
+    const s=String(t||'').trim();
+    const i=s.indexOf('{'), j=s.lastIndexOf('}');
+    if(i<0||j<=i) return null;
+    try{ return JSON.parse(s.slice(i,j+1)); }catch(e){ return null; }
+  }
+  const MEM_KEY='selfagent_agent_memory_v1';
+  function aiMemAll(){ try{ return JSON.parse(localStorage.getItem(MEM_KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function aiMemText(){
+    const f=(aiMemAll().facts||[]).slice(0,8);
+    return f.length ? f.map((x,i)=>(i+1)+'. '+x).join('\n') : '';
+  }
+  function aiMemSave(o){ try{ localStorage.setItem(MEM_KEY, JSON.stringify(o||{})); }catch(e){} }
+  function aiMemList(){
+    const f=(aiMemAll().facts||[]);
+    if(!f.length) return '还没有积累。生成一次 AI 报告后会自动提炼。';
+    return f.map((x,i)=>(i+1)+'. '+x).join('\n');
+  }
+  function aiMemRefresh(){
+    if(!aiReady()) return;
+    const fp=aiFingerprint(), m=aiMemAll();
+    if(m.fp===fp && (m.facts||[]).length) return;
+    let dg=''; try{ dg=aiDigest(true).text.slice(0,2600); }catch(e){ return; }
+    aiChat({
+      system:'你是记忆抽取器。只输出一个 JSON：{"facts":["…"]}，3-6 条，每条不超过 16 字，只写稳定的偏好、弱项、作息与恢复规律；不写单次事件、不写建议、不加解释。',
+      user:dg, temp:0.2
+    }).then(t=>{
+      const o=aiJSON(t);
+      if(o && Array.isArray(o.facts) && o.facts.length){
+        aiMemSave({facts:o.facts.filter(x=>typeof x==='string').slice(0,8), fp:fp, ts:Date.now()});
+        const mv=document.getElementById('memView'); if(mv) mv.value=aiMemList();
+      }
+    }).catch(()=>{});
+  }
+  const AG={
+    recognize(dataUrl){
+      return aiChat({
+        system:'你是健身器械识别器。看图后只输出一个 JSON：{"equip":"器械名","part":"胸|背|腿|肩|臂|腰腹|有氧|其他","confidence":0到100的数字,"actions":["适合的动作名，2-4个"]}。看不清就降低 confidence，并在 equip 里写你实际看到的样子。不要输出 JSON 以外的任何文字。',
+        user:'识别这张图片里的健身器械，并判断它适合练什么部位。',
+        image:dataUrl, temp:0.2
+      }).then(t=>{
+        const o=aiJSON(t);
+        if(!o || !o.equip) throw new Error('识别结果格式不符');
+        return o;
+      });
+    },
+    dedupe(name, part, equip, steps){
+      const cands=allExercises().filter(e=>e.p===part).slice(0,50).map(e=>e.n+'／'+e.e);
+      return aiChat({
+        system:'你是健身动作库编辑。只输出一个 JSON：{"dup":null 或 {"name":"候选中最相近的名称","why":"20 字内的差异说明"},"norm":"规范化名称，器械在前、变式放括号，如 杠铃卧推（平板）","steps":["4-6 步标准要领"]}。命名要能合并同类、又能区分器械与变式；steps 每步一句、动词开头。',
+        user:'想新建动作：'+name+'｜部位：'+part+'｜器械：'+equip+'｜同部位候选：'+(cands.join('; ')||'（空）'),
+        temp:0.3
+      }).then(t=>{
+        const o=aiJSON(t);
+        if(!o) throw new Error('校验结果格式不符');
+        return o;
+      });
+    },
+    memoryRefresh:aiMemRefresh
+  };
 
   /* ---------- 事件归一 / 统计摘要 / 三级压缩 ---------- */
   function aiP2(n){ return String(n).padStart(2,'0'); }
@@ -9209,6 +9433,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }).then(data=>{
       if(job!==__aiJob) return;
       aiCacheSet(tab, fp, data);
+      try{ setTimeout(aiMemRefresh, 300); }catch(e){}
       box.innerHTML='<div class="ai-bar"><i class="ai-dot"></i><span>AI · '+ENGINE.esc(aiCfg().model)+' · 依据 '+((st0.logsN||0))+' 条记录生成</span></div>'+
         (data.oneline?'<div class="ai-one">'+ENGINE.esc(data.oneline)+'</div>':'')+
         (data.sections||[]).map(aiSecHtml).join('')+
@@ -9472,6 +9697,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     };
     next();
   }
+  document.addEventListener('click',ev=>{
+    const t=ev.target;
+    if(t && t.closest && t.closest('#camPick')){
+      ev.preventDefault();
+      try{ camOpen(); }catch(e){ console.warn('cam',e); }
+    }
+  });
+
   const _tourBtn=document.getElementById('homeTour');
   if(_tourBtn) _tourBtn.addEventListener('click',()=>{ try{ coachReplay(); }catch(e){ console.warn('coach',e); } });
 
