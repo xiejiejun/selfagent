@@ -2211,6 +2211,44 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media(min-width:900px){.tr-seg,.tr-panel{max-width:840px}}
 .pl-tools{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
 .pl-tools .plan-reset{margin-left:auto}
+/* 专注模式：有氧条 */
+.fm-cd{margin:0 0 10px;border:1px solid var(--line);border-left:3px solid #5B9CFF;border-radius:10px;background:var(--panel2);padding:8px 10px}
+.fm-cd-row{display:flex;align-items:center;gap:8px;font-size:12px;min-height:30px}
+.fm-cd-k{font-size:10px;color:var(--tx3);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+.fm-cd-t{flex:1;color:var(--tx)}
+.fm-cd-run{border:1px solid rgba(91,156,255,.5);background:rgba(91,156,255,.12);color:var(--tx);border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer;font-variant-numeric:tabular-nums}
+.fm-cd-fin{border:1px solid var(--line2);background:var(--panel);color:var(--tx2);border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer}
+.fm-cd-done{color:var(--accent);font-size:11.5px}
+/* 有氧：独立记录类型 */
+.cd-card{border:1px solid var(--line);border-left:3px solid #5B9CFF;border-radius:12px;padding:11px 12px;background:var(--panel2);margin-top:8px}
+.cd-top{display:flex;align-items:center;gap:8px}
+.cd-ic{font-size:15px;line-height:1}
+.cd-nm{font-size:13.5px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cd-lv{font-size:10.5px;color:var(--tx3);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.cd-meta{font-size:12px;color:var(--tx2);margin-top:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cd-card.done{border-left-color:#3EC478}
+.cd-card.done .cd-nm{color:var(--tx3)}
+.cd-acts{display:flex;gap:8px;margin-top:9px}
+.cd-acts button{min-height:32px;border-radius:8px;border:1px solid var(--line2);background:var(--panel);color:var(--tx2);font:inherit;font-size:12px;padding:0 12px;cursor:pointer}
+.cd-run{color:var(--tx);border-color:rgba(91,156,255,.5);background:rgba(91,156,255,.12)}
+.cd-timer{font-variant-numeric:tabular-nums;font-size:13px;color:var(--tx);letter-spacing:.5px}
+.cd-x{margin-left:auto;border:0;background:none;color:var(--tx3);font-size:15px;cursor:pointer}
+.cd-sheet-inner{padding:4px 2px 10px}
+.ex-sheet.cd-sheet{align-items:flex-end;justify-content:center}
+.ex-sheet.cd-sheet .ex-sheet-inner{border-radius:16px 16px 0 0;padding-bottom:24px}
+.cd-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cd-h span{font-size:14px;font-weight:600}
+.cd-lbl{font-size:11px;color:var(--tx3);margin:12px 0 6px}
+.cd-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cd-chips button{min-height:36px;border:1px solid var(--line);background:var(--panel2);border-radius:9px;color:var(--tx2);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cd-chips button.on{border-color:rgba(91,156,255,.6);color:var(--tx);background:rgba(91,156,255,.14)}
+.cd-step{display:flex;align-items:center;gap:12px}
+.cd-step button{width:38px;height:34px;border:1px solid var(--line);background:var(--panel2);border-radius:9px;color:var(--tx);font-size:16px;cursor:pointer}
+.cd-step b{font-size:20px;min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+.cd-lv3{display:flex;gap:6px}
+.cd-lv3 button{flex:1;min-height:34px;border:1px solid var(--line);background:var(--panel2);border-radius:9px;color:var(--tx2);font:inherit;font-size:12px;cursor:pointer}
+.cd-lv3 button.on{border-color:rgba(47,209,197,.5);color:var(--tx);background:rgba(47,209,197,.1)}
+.cd-dist{width:100%;margin-top:12px;min-height:38px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--tx);padding:0 12px;font:inherit;font-size:13px}
 /* 计划页：Feed 语言的卡片化 */
 .plan-hero{margin:2px 0 12px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;background:linear-gradient(180deg,rgba(47,209,197,.07),rgba(255,255,255,.02));position:relative}
 .plan-hero .ph-t{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
@@ -4838,8 +4876,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   let trSel=null;
 
   function loadTrain(){
-    try{ const t=JSON.parse(localStorage.getItem(TRAIN_KEY)); if(t) return Object.assign({items:[], records:[], custom:[], favs:[], renames:{}}, t); }catch(e){}
-    return {items:[], records:[], custom:[], favs:[], renames:{}};
+    try{ const t=JSON.parse(localStorage.getItem(TRAIN_KEY)); if(t) return Object.assign({items:[], records:[], custom:[], favs:[], renames:{}, cardio:[]}, t); }catch(e){}
+    return {items:[], records:[], custom:[], favs:[], renames:{}, cardio:[]};
   }
   function saveTrain(){ try{ localStorage.setItem(TRAIN_KEY, JSON.stringify(train)); }catch(e){} try{ syncTrainLog(); }catch(e){} }
   let __syncAt=0;
@@ -5429,6 +5467,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.innerHTML=`<div class="fm-progress"><i style="width:${pct}%"></i></div>
       <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span role="timer" aria-label="训练进度">${dAll}/${tAll} 组 · ${__focusIdx+1}/${__focusUids.length} 动作</span></div>
       <div class="fm-strip" role="tablist" aria-label="今日动作预览">${strip}</div>
+      ${cdFocusHtml()}
       <div class="fm-titlerow"><div class="fm-name">${ENGINE.esc(r.name)}</div><button class="fm-help" data-fmhelp type="button" aria-label="查看 ${ENGINE.esc(r.name)} 动作详情">?</button></div>
       <div class="fm-sub">${doneN}/${gs.length} 组已完成${doneN===gs.length?' · 本动作完成':' · 点圆圈完成一组'}</div>
       <div class="fm-sets">${gs.map(g=>{
@@ -5466,6 +5505,33 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       armed=true; x.textContent='确认退出？'; x.classList.add('armed');
       clearTimeout(armT); armT=setTimeout(()=>{ armed=false; x.textContent='×'; x.classList.remove('armed'); },3000);
     };
+    el.querySelectorAll('[data-fmcdrun]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.fmcdrun, r2=(train.cardio||[]).find(x=>x.uid===uid); if(!r2) return;
+      window.__cdT0=window.__cdT0||{};
+      if(window.__cdT0[uid]){ r2.dur=Math.max(1,Math.round((Date.now()-window.__cdT0[uid])/60000)); delete window.__cdT0[uid]; }
+      else window.__cdT0[uid]=Date.now();
+      saveTrain(); renderFocus();
+    });
+    el.querySelectorAll('[data-fmcdone]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.fmcdone, r2=(train.cardio||[]).find(x=>x.uid===uid); if(!r2) return;
+      const t0=window.__cdT0&&window.__cdT0[uid];
+      if(t0){ r2.dur=Math.max(1,Math.round((Date.now()-t0)/60000)); delete window.__cdT0[uid]; }
+      r2.done=true; saveTrain(); renderFocus();
+      trToast('有氧完成：'+r2.modal+' '+r2.dur+' 分钟');
+    });
+    if(window.__fmCdTick) clearInterval(window.__fmCdTick);
+    window.__fmCdTick=setInterval(()=>{
+      const el2=document.getElementById('focusMode');
+      if(!el2){ clearInterval(window.__fmCdTick); window.__fmCdTick=null; return; }
+      el2.querySelectorAll('[data-fmcdrun]').forEach(b=>{
+        const t0=window.__cdT0&&window.__cdT0[b.dataset.fmcdrun];
+        if(!t0) return;
+        const sec=Math.floor((Date.now()-t0)/1000);
+        b.textContent='计时 '+String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')+' · 暂停';
+      });
+    },1000);
     el.querySelectorAll('[data-fmgo]').forEach(b=>b.onclick=()=>{
       const i=__focusUids.indexOf(b.dataset.fmgo); if(i<0) return;
       __focusIdx=i; renderFocus();
@@ -5632,6 +5698,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el._paint();
     setTimeout(()=>{ try{ el.querySelector('#fmAddQ').focus(); }catch(e){} },60);
   }
+  function cdFocusHtml(){
+    const d=trDateVal();
+    const cds=(train.cardio||[]).filter(c=>c.date===d && (c.role==='pre'||c.role==='post'));
+    if(!cds.length) return '';
+    window.__cdT0=window.__cdT0||{};
+    return '<div class="fm-cd">'+cds.map(c=>{
+      const run=!!window.__cdT0[c.uid];
+      const sec=run?Math.floor((Date.now()-window.__cdT0[c.uid])/1000):0;
+      return `<div class="fm-cd-row">
+        <span class="fm-cd-k">${c.role==='pre'?'热身':'收尾'}</span>
+        <span class="fm-cd-t">${ENGINE.esc(c.modal)} ${c.dur||0}′</span>
+        ${c.done?'<span class="fm-cd-done">✓ 已完成</span>':`<span class="fm-cd-run" data-fmcdrun="${c.uid}">${run?('计时 '+String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')+' · 暂停'):'开始计时'}</span><button class="fm-cd-fin" data-fmcdone="${c.uid}" type="button">完成</button>`}
+      </div>`;
+    }).join('')+'</div>';
+  }
   function openFocus(){
     const rs=focusList();
     if(!rs.length){ trToast('先把动作加入今日'); return; }
@@ -5767,6 +5848,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           </div>
           <div class="tr-tc-links">
             <button class="tr-tc-link" id="libOpen" type="button">＋ 添加动作</button>
+            <button class="tr-tc-link" id="cdOpen" type="button">＋ 有氧</button>
             <button class="tr-tc-link" id="camPick" type="button">拍照识别器械</button>
             <button class="tr-tc-link" id="trRepeat" type="button">导入上次训练</button>
           </div>
@@ -6049,8 +6131,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const items=(train.records||[]).filter(r=>r.date===day);
     let total=0, done=0;
     items.forEach(r=>{ const gs=ensureGroups(r); total+=gs.length; done+=gs.filter(g=>g.done).length; });
-    if($('todayStat')) $('todayStat').innerHTML = items.length ? ('<span>'+items.length+' 动作</span><span>'+done+'/'+total+' 组</span>') : '还没有排动作';
-    if($('trEmpty')) $('trEmpty').hidden = !!items.length;
+    const cds=trCardioFor(day);
+    const cdDone=cds.filter(c=>c.done).reduce((a,c)=>a+(c.dur||0),0);
+    const cdPlan=cds.reduce((a,c)=>a+(c.dur||0),0);
+    if($('todayStat')) $('todayStat').innerHTML = (items.length||cds.length)
+      ? ('<span>'+items.length+' 动作</span><span>'+done+'/'+total+' 组</span>'+(cds.length?('<span>有氧 '+(cdDone||cdPlan)+' 分钟</span>'):''))
+      : '还没有排动作';
+    if($('trEmpty')) $('trEmpty').hidden = !!(items.length||cds.length);
     const go=$('trStart');
     if(go){
       let act='start', txt='▶ 开始训练';
@@ -6067,7 +6154,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const pMon=new Date(mon.getTime()-7*864e5), pEnd=new Date(mon.getTime()-864e5);
     const thisW=(train.records||[]).filter(r=>r.date>=kMon && r.date<=kNow).reduce((a,r)=>a+(r.sets||0),0);
     const lastW=(train.records||[]).filter(r=>r.date>=fmt(pMon) && r.date<=fmt(pEnd)).reduce((a,r)=>a+(r.sets||0),0);
-    let wk='本周 '+thisW+' 组';
+    const cdW=(train.cardio||[]).filter(c=>c.date>=kMon&&c.date<=kNow&&c.done).reduce((a,c)=>a+(c.dur||0),0);
+    let wk='本周 '+thisW+' 组'+(cdW?(' · 有氧 '+cdW+' 分钟'):'');
     if(lastW>0){ const dd=Math.round((thisW-lastW)/lastW*100); wk+=' · 比上周 '+(dd>0?'+':'')+dd+'%'; }
     if($('weekSum')) $('weekSum').textContent=wk;
     let pl='AI 计划 · 点此生成';
@@ -6079,6 +6167,17 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       }
     }catch(e){}
     if($('planStripSum')) $('planStripSum').textContent=pl;
+    try{
+      const h=(train.cardioHabit)||{};
+      if(h.post && total>0 && done>=total){
+        const dKey='selfagent_cd_remind_v1';
+        const todayKey=day;
+        if(localStorage.getItem(dKey)!==todayKey && cds.every(c=>c.role!=='post' || !c.done)){
+          localStorage.setItem(dKey, todayKey);
+          setTimeout(()=>trToast('别忘了你的 '+((h.dur)||10)+' 分钟'+(h.modal||'快走')), 400);
+        }
+      }
+    }catch(e){}
     const sb=$('segToday');
     if(sb){ const has=items.length>0; sb.textContent=has?(done+'/'+total):''; sb.classList.toggle('on', has); }
     const pb2=$('segPlan');
@@ -6097,6 +6196,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="lib"]'); if(p) p.scrollIntoView({block:'start'}); },60);
       setTimeout(()=>{ const inp=document.getElementById('trSearch'); if(inp) inp.focus(); },160);
     };
+    try{ bindCardioEntry(); }catch(e){}
     const st=$('trStart');
     if(st) st.onclick=()=>{
       const act=st.dataset.act||'start';
@@ -6108,6 +6208,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="plan"]'); if(p) p.scrollIntoView({block:'start'}); },60);
         return;
       }
+      try{ cdMountHabit(); trRenderToday(); }catch(e){}
       try{ openFocus(); }catch(e){}
     };
     const tb=$('trEmpty');
@@ -7403,7 +7504,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const maxW=Math.max(0,...prev.map(x=>x.weight||0));
       if(r.weight>0 && maxW>0 && r.weight>maxW) prs.push(r.name+' '+r.weight+'kg');
     });
-    const parts=[...new Set(today.map(r=>r.part))];
+    const cd=(train.cardio||[]).filter(c=>c.date===d);
+    const cdMin=cd.reduce((a,c)=>a+(c.dur||0),0);
+    const parts=[...new Set(today.map(r=>r.part).concat(cd.length?['有氧']:[]))];
     const prevDay=train.records.filter(r=>r.date<d && parts.includes(r.part))
       .reduce((a,b)=>(a>b.date?a:b.date),'');
     let cmp='';
@@ -7423,6 +7526,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <div><b>${Math.round(vol)}</b><span>容量 kg</span></div>
         <div><b>${prs.length}</b><span>PR</span></div>
       </div>
+      ${cd.length?`<div class="sum-cmp">有氧：${cd.map(c=>ENGINE.esc(c.modal)+' '+(c.dur||0)+'′').join(' · ')}（合计 ${cdMin} 分钟）</div>`:''}
       ${prs.length?`<div class="sum-pr">新纪录：${prs.slice(0,3).map(x=>ENGINE.esc(x)).join(' · ')}</div>`:''}
       ${cmp?`<div class="sum-cmp">${cmp}</div>`:''}
       <div class="sum-parts">部位：${parts.map(p=>ENGINE.esc(p)).join(' / ')}</div>
@@ -7486,6 +7590,85 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       feelEditing=false; try{ __syncAt=0; }catch(e){} saveTrain(); trRenderToday(); refreshHome();
       trToast('练后感受已记录');
     };
+  }
+  const CARDIO_MODALS=['跑步','骑行','游泳','跳绳','椭圆机','划船机','快走','爬楼'];
+  const CARDIO_ICON={'跑步':'🏃','骑行':'🚴','游泳':'🏊','跳绳':'🪢','椭圆机':'🌀','划船机':'🚣','快走':'🚶','爬楼':'🪜'};
+  function trCardioFor(d){
+    return (train.cardio||[]).filter(c=>c.date===d).sort((a,b)=>(a.ts||0)-(b.ts||0));
+  }
+  function cdCardHtml(r){
+    const icon=CARDIO_ICON[r.modal]||'🏃';
+    const running=!!(window.__cdT0&&window.__cdT0[r.uid]);
+    const done=!!r.done;
+    return `<div class="cd-card${done?' done':''}" data-cduid="${r.uid}">
+      <div class="cd-top"><span class="cd-ic">${icon}</span><span class="cd-nm">${ENGINE.esc(r.modal)}${r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':''}</span>
+        <span class="cd-lv">${ENGINE.esc(r.lv||'中等')}</span>
+        <button class="cd-x" type="button" data-cddel="${r.uid}" aria-label="移除">×</button></div>
+      <div class="cd-meta">${done?'已完成':running?'计时中':'计划'} · ${r.dur||0} 分钟${r.dist?(' · '+r.dist+' km'):''}${running?'<span class="cd-timer" data-cdtimer="'+r.uid+'"></span>':''}</div>
+      ${done?'':`<div class="cd-acts">
+        <button type="button" class="cd-run" data-cdrun="${r.uid}">${running?'暂停':'开始计时'}</button>
+        <button type="button" data-cdfin="${r.uid}">完成</button>
+      </div>`}
+    </div>`;
+  }
+  function openCardioSheet(){
+    document.querySelectorAll('.cd-sheet').forEach(x=>x.remove());
+    let modal='跑步', dur=20, lv='中等';
+    const el=document.createElement('div');
+    el.className='ex-sheet on cd-sheet';
+    el.innerHTML=`<div class="ex-sheet-inner cd-sheet-inner">
+      <div class="cd-h"><span>添加有氧</span><button class="ex-sheet-x" type="button" data-cdx>×</button></div>
+      <div class="cd-lbl">项目</div>
+      <div class="cd-chips" data-cdm>${CARDIO_MODALS.map(m=>`<button type="button" data-cdmv="${m}" class="${m===modal?'on':''}">${CARDIO_ICON[m]} ${m}</button>`).join('')}</div>
+      <div class="cd-lbl">时长</div>
+      <div class="cd-step"><button type="button" data-cdd="-5">−</button><b data-cddur>${dur}</b><button type="button" data-cdd="5">+</button><span class="hint" style="margin:0">分钟</span></div>
+      <div class="cd-lbl">强度</div>
+      <div class="cd-lv3">${['轻松','中等','强度'].map(x=>`<button type="button" data-cdlv="${x}" class="${x===lv?'on':''}">${x}</button>`).join('')}</div>
+      <input class="cd-dist" data-cddist placeholder="距离 km（可选）" inputmode="decimal">
+      <button class="btn sm btn-block" type="button" data-cdok style="margin-top:14px">加入今日</button>
+    </div>`;
+    document.body.appendChild(el);
+    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    el.querySelector('[data-cdx]').onclick=()=>el.remove();
+    const paint=()=>{ el.querySelector('[data-cddur]').textContent=dur; };
+    el.querySelectorAll('[data-cdmv]').forEach(b=>b.onclick=()=>{
+      el.querySelectorAll('[data-cdmv]').forEach(x=>x.classList.toggle('on',x===b));
+      modal=b.dataset.cdmv;
+    });
+    el.querySelectorAll('[data-cdlv]').forEach(b=>b.onclick=()=>{
+      el.querySelectorAll('[data-cdlv]').forEach(x=>x.classList.toggle('on',x===b));
+      lv=b.dataset.cdlv;
+    });
+    el.querySelectorAll('[data-cdd]').forEach(b=>{
+      let hold=null, tick=null;
+      const stop=()=>{ clearTimeout(hold); clearInterval(tick); hold=tick=null; };
+      const fire=()=>{ dur=Math.max(5,Math.min(180,dur+parseInt(b.dataset.cdd,10))); paint(); };
+      b.addEventListener('pointerdown',ev=>{ ev.preventDefault(); fire(); hold=setTimeout(()=>{ tick=setInterval(fire,110); },420); });
+      b.addEventListener('pointerup',stop);
+      b.addEventListener('pointercancel',stop);
+      b.addEventListener('pointerleave',stop);
+    });
+    el.querySelector('[data-cdok]').onclick=()=>{
+      const dist=parseFloat(el.querySelector('[data-cddist]').value)||0;
+      train.cardio=train.cardio||[];
+      train.cardio.push({uid:'cd'+Date.now().toString(36), date:trDateVal(), modal:modal, dur:dur, dist:dist, lv:lv, done:false, ts:Date.now()});
+      saveTrain(); trRenderToday(); refreshHome(); el.remove();
+      trToast('已加入有氧：'+modal+' '+dur+' 分钟');
+    };
+  }
+  function bindCardioEntry(){
+    const b=$('cdOpen'); if(b) b.onclick=()=>openCardioSheet();
+  }
+  function cdMountHabit(){
+    const h=(train.cardioHabit)||{}; if(!h.pre && !h.post) return;
+    const d=trDateVal();
+    train.cardio=train.cardio||[];
+    const has=role=>train.cardio.some(c=>c.date===d && c.role===role);
+    const add=role=>train.cardio.push({uid:'ch'+role+Date.now().toString(36), date:d, modal:h.modal||'快走', dur:h.dur||10, dist:0, lv:h.lv||'中等', done:false, role:role, ts:Date.now()});
+    if(h.pre && !has('pre')) add('pre');
+    if(h.post && !has('post')) add('post');
+    saveTrain();
+    trToast('已按有氧习惯挂载'+(h.pre&&h.post?'（前 + 后）':(h.pre?'（训练前）':'（训练后）')));
   }
   function trRenderToday(){
     const box=$('trToday'); if(!box) return;
@@ -7562,6 +7745,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       </div>`;
     }).join('')
       : '';
+    const cds=trCardioFor(d);
+    box.innerHTML=(items.length?box.innerHTML:'')+cds.map(cdCardHtml).join('');
 
     if($('trNext')){
       const nxt=items.filter(r=>r.uid!==activeUid && pendOf(r));
@@ -7577,6 +7762,47 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if($('todayBadge')) $('todayBadge').textContent = sets ? ('今日 '+sets+' 组') : '';
     try{ trSyncStrips(); }catch(e){}
     if($('trSum')){ const sm=$('trSum'); sm.innerHTML=`<span><b data-cnt="${items.length}">0</b>动作</span><span><b data-cnt="${sets}">0</b>总组数</span><span><b data-cnt="${reps}">0</b>总次数</span><span><b data-cnt="${Math.round(vol)}">0</b>容量kg</span>`; try{ bindCountUp(sm); }catch(e){} }
+
+    // 有氧：开始 / 暂停 / 完成 / 移除
+    window.__cdT0=window.__cdT0||{};
+    box.querySelectorAll('[data-cdrun]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.cdrun, r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
+      const t0=window.__cdT0[uid];
+      if(t0){ r.dur=Math.max(1,Math.round((Date.now()-t0)/60000)); delete window.__cdT0[uid]; }
+      else { window.__cdT0[uid]=Date.now(); try{ haptic('core'); }catch(e){} }
+      saveTrain(); trRenderToday();
+    });
+    box.querySelectorAll('[data-cdfin]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.cdfin, r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
+      const t0=window.__cdT0[uid];
+      if(t0){ const m=Math.max(1,Math.round((Date.now()-t0)/60000)); r.dur=m; delete window.__cdT0[uid]; }
+      r.done=true; saveTrain(); trRenderToday(); refreshHome();
+      trToast('有氧完成：'+r.modal+' '+r.dur+' 分钟');
+    });
+    box.querySelectorAll('[data-cddel]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.cddel; const r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
+      train.cardio=train.cardio.filter(x=>x.uid!==uid); delete window.__cdT0[uid];
+      saveTrain(); trRenderToday(); refreshHome();
+      const t=document.createElement('div'); t.className='toast undo';
+      t.innerHTML='已移除有氧 '+ENGINE.esc(r.modal)+' <button type="button">撤销</button>';
+      document.body.appendChild(t);
+      t.querySelector('button').onclick=()=>{ train.cardio.push(r); saveTrain(); trRenderToday(); refreshHome(); t.remove(); };
+      setTimeout(()=>{ try{t.remove();}catch(e){} },4200);
+    });
+    if(window.__cdTick) clearInterval(window.__cdTick);
+    window.__cdTick=setInterval(()=>{
+      const els=document.querySelectorAll('[data-cdtimer]');
+      if(!els.length){ clearInterval(window.__cdTick); window.__cdTick=null; return; }
+      els.forEach(el=>{
+        const uid=el.dataset.cdtimer, t0=window.__cdT0[uid];
+        if(!t0){ el.textContent=''; return; }
+        const sec=Math.floor((Date.now()-t0)/1000);
+        el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+      });
+    },1000);
 
     // 展开 / 收起：同一时刻只开一张卡
     box.querySelectorAll('[data-topen]').forEach(el=>el.onclick=()=>{
@@ -8506,6 +8732,24 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(typeof train!=='undefined'&&train){ train.restUser=(v>0?v:null); try{ saveTrain(); }catch(e){} }
       renderSettingsPanel(); try{ trToast('默认休息：'+(v>0?v+' 秒':'按动作推荐')); }catch(e){}
     };
+    const cdSave=()=>{
+      if(typeof train==='undefined'||!train) return;
+      train.cardioHabit=train.cardioHabit||{pre:false,post:false,modal:'快走',dur:10,lv:'中等'};
+      try{ saveTrain(); }catch(e){}
+    };
+    const hp=$('cdHabitPre'); if(hp) hp.onclick=()=>{
+      train.cardioHabit=train.cardioHabit||{modal:'快走',dur:10,lv:'中等'};
+      train.cardioHabit.pre=!train.cardioHabit.pre; cdSave(); renderSettingsPanel();
+    };
+    const hq=$('cdHabitPost'); if(hq) hq.onclick=()=>{
+      train.cardioHabit=train.cardioHabit||{modal:'快走',dur:10,lv:'中等'};
+      train.cardioHabit.post=!train.cardioHabit.post; cdSave(); renderSettingsPanel();
+    };
+    const hmSel=$('cdHabitModal'); if(hmSel) hmSel.onchange=()=>{ train.cardioHabit=train.cardioHabit||{}; train.cardioHabit.modal=hmSel.value; cdSave(); };
+    const hd=$('cdHabitDur'); if(hd) hd.onchange=()=>{ train.cardioHabit=train.cardioHabit||{}; train.cardioHabit.dur=Math.max(5,Math.min(180,parseInt(hd.value,10)||10)); cdSave(); };
+    document.querySelectorAll('[data-cdhlv]').forEach(b=>b.onclick=()=>{
+      train.cardioHabit=train.cardioHabit||{}; train.cardioHabit.lv=b.dataset.cdhlv; cdSave(); renderSettingsPanel();
+    });
     const auto=$('setAutoNext');
     if(auto) auto.onclick=()=>{
       if(typeof train!=='undefined'&&train){ train.autoNext=!train.autoNext; try{ saveTrain(); }catch(e){} }
@@ -8684,6 +8928,30 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               <div class="set-inline">
                 <div><b style="font-size:13.5px">自动下一组</b><div class="hint" style="margin:4px 0 0">休息结束自动跳到下一组</div></div>
                 <button class="toggle" id="setAutoNext" role="switch" type="button" aria-checked="${(typeof train!=='undefined'&&train&&train.autoNext)?'true':'false'}" aria-label="自动下一组"><i></i></button>
+              </div>
+            </div>
+            <div class="setting-sec">
+              <h2 style="font-size:14px">有氧习惯</h2>
+              <div class="hint">进入专注模式自动挂载，配一次之后不用每次手动加。</div>
+              <div class="set-inline" style="margin-top:10px">
+                <div><b style="font-size:13px">训练前</b><div class="hint" style="margin:2px 0 0">排在第一个动作前，当热身</div></div>
+                <button class="toggle" id="cdHabitPre" role="switch" type="button" aria-checked="${(typeof train!=='undefined'&&train&&train.cardioHabit&&train.cardioHabit.pre)?'true':'false'}" aria-label="训练前有氧"><i></i></button>
+              </div>
+              <div class="set-inline" style="margin-top:10px">
+                <div><b style="font-size:13px">训练后</b><div class="hint" style="margin:2px 0 0">最后一个动作后，收尾</div></div>
+                <button class="toggle" id="cdHabitPost" role="switch" type="button" aria-checked="${(typeof train!=='undefined'&&train&&train.cardioHabit&&train.cardioHabit.post)?'true':'false'}" aria-label="训练后有氧"><i></i></button>
+              </div>
+              <div class="set-inline" style="margin-top:12px">
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                  <select id="cdHabitModal" style="min-height:34px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--tx);font:inherit;font-size:12px;padding:0 8px">
+                    ${CARDIO_MODALS.map(m=>`<option value="${m}" ${((train.cardioHabit&&train.cardioHabit.modal)||'快走')===m?'selected':''}>${m}</option>`).join('')}
+                  </select>
+                  <input type="number" id="cdHabitDur" min="5" max="180" step="5" value="${(train.cardioHabit&&train.cardioHabit.dur)||10}" style="width:70px;min-height:34px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--tx);font:inherit;font-size:12px;padding:0 8px">
+                  <span class="hint" style="margin:0">分钟</span>
+                </div>
+              </div>
+              <div class="cd-lv3" id="cdHabitLv" style="margin-top:10px">
+                ${['轻松','中等','强度'].map(x=>`<button type="button" data-cdhlv="${x}" class="${((train.cardioHabit&&train.cardioHabit.lv)||'中等')===x?'on':''}">${x}</button>`).join('')}
               </div>
             </div>
           </section>
@@ -10186,6 +10454,40 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       push({cat:'fit',catLabel:'训练',lv:(d>=0?'up':'warn'),head:'本周 '+g.sets7+' 组 · '+(g.setsP===0?'上周没有训练记录':(d>=0?'比上周多 '+d:'比上周少 '+Math.abs(d))+' 组'),
         why:g.days7+' 个训练日，上周 '+g.setsP+' 组', conf:'基于 '+g.rec7.length+' 条训练记录', refs:[]});
     }
+    /* 有氧 */
+    try{
+      const now=Date.now(), ms=864e5;
+      const cds=(train.cardio||[]);
+      const cd7=cds.filter(c=>{ const t=now-new Date((c.date||'')+'T00:00:00').getTime(); return t<=7*ms&&t>=0; });
+      const cdMin=cd7.filter(c=>c.done).reduce((a,c)=>a+(c.dur||0),0);
+      const cdAllDone=cd7.length&&cd7.every(c=>c.done);
+      if(cdMin>0){
+        const anaer=g.sets7;
+        const ratio=anaer? Math.round(cdMin/anaer*10)/10 : null;
+        const low=cdMin<30;
+        push({cat:'fit',catLabel:'有氧',lv:low?'warn':'up',
+          head:'本周有氧 '+cdMin+' 分钟'+(ratio!=null?('，有氧/力量 = '+ratio+' 分钟每组'):'')+(low?'，偏少':''),
+          why:'本周完成有氧 '+cd7.filter(c=>c.done).length+' 次，力量 '+anaer+' 组；'+(low?'每周 60–150 分钟中等强度是常见基线':'维持当前节奏'),
+          conf:'基于 '+cd7.length+' 条有氧记录', refs:[]});
+      } else if(cd7.length && !cdAllDone){
+        push({cat:'fit',catLabel:'有氧',lv:'warn',head:'有氧还有 '+cd7.filter(c=>!c.done).length+' 条没完成',
+          why:'已排 '+cd7.length+' 条，完成 '+cd7.filter(c=>c.done).length+' 条', conf:'基于本周有氧安排', refs:[]});
+      }
+      /* 有氧日次日精力 vs 纯力量日 */
+      const nxt=d=>{ const x=new Date(d+'T00:00:00'); x.setDate(x.getDate()+1); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+      const scoreOf=k=>{ const v=(logs||[]).filter(l=>l.kind!=='train'&&String(l.date||'')===k).map(l=>l.score).filter(x=>typeof x==='number'&&x>0); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; };
+      let cdSum=0,cdN=0,stSum=0,stN=0;
+      cds.filter(c=>c.done).forEach(c=>{
+        const s2=scoreOf(nxt(c.date)); if(s2==null) return;
+        const hasStr=(train.records||[]).some(r=>r.date===c.date);
+        if(hasStr){ cdSum+=s2; cdN++; } else { stSum+=s2; stN++; }
+      });
+      if(cdN>=2&&stN>=2){
+        const diff=cdSum/cdN-stSum/stN;
+        if(Math.abs(diff)>=0.4) push({cat:'energy',catLabel:'有氧',lv:diff>0?'up':'warn',head:'有氧日次日精力 '+(diff>0?'+':'')+diff.toFixed(1),
+          why:'有氧日次日 '+cdN+' 天 vs 纯力量日 '+stN+' 天的精力均值差', conf:'基于 '+(cdN+stN)+' 天样本', refs:[]});
+      }
+    }catch(e){}
     /* 记录连续性 */
     try{
       const st2=streakDays();
@@ -10238,7 +10540,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return `<div class="ins-bar">
       <div class="ins-cell"><span class="k">精力</span><span class="v"><i class="cnt" data-cnt="${g.rAvg==null?0:Math.round(g.rAvg*10)/10}" data-dec="1">${f1(g.rAvg)}</i><em>/5</em></span><span class="s">${dir}（上周 ${f1(g.pAvg)}）</span></div>
       <div class="ins-cell"><span class="k">情绪</span><span class="v">${md||'—'}</span><span class="s">上周 ${g.pMood==null?'—':f1(g.pMood)+'/5'}</span></div>
-      <div class="ins-cell"><span class="k">本周训练</span><span class="v"><i class="cnt" data-cnt="${g.sets7}">${g.sets7}</i><em>组</em></span><span class="s">${g.days7} 个训练日</span></div>
+      <div class="ins-cell"><span class="k">本周训练</span><span class="v"><i class="cnt" data-cnt="${g.sets7}">${g.sets7}</i><em>组</em></span><span class="s">有氧 ${(function(){let m=0;try{(train.cardio||[]).forEach(c=>{const t=Date.now()-new Date(c.date+'T00:00:00').getTime(); if(c.done&&t<=7*864e5&&t>=0) m+=(c.dur||0);});}catch(e){}return m;})()} 分钟 · ${g.days7} 个训练日</span></div>
     </div>${insSparkHtml()}`;
   }
   function insSparkHtml(){
