@@ -7835,14 +7835,23 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         seg.querySelectorAll('[data-aie]').forEach(x=>x.classList.toggle('on', x.dataset.aie===b.dataset.aie));
         if($('aiSum')) $('aiSum').textContent=aiSummary();
         if(msg) msg.textContent = b.dataset.aie==='api' ? '已切到自定义 API（填好 Base/Key 才会真正调用）' : '已切回内置规则引擎（完全离线）';
+        try{ trToast(b.dataset.aie==='api' ? '自定义 API 已启用' : '已切回内置规则'); }catch(e){}
         try{ renderReport(); }catch(e){}
       };
     });
     const save=()=>{
-      aiSave({base:(base&&base.value||'').trim(), key:(key&&key.value||'').trim(), model:(model&&model.value||'').trim()||'deepseek-chat'});
+      const k=(key&&key.value||'').trim(), u=(base&&base.value||'').trim();
+      const patch={base:u, key:k, model:(model&&model.value||'').trim()||'deepseek-chat'};
+      if(k && u) patch.engine='api';
+      aiSave(patch);
+      if(patch.engine==='api' && seg){
+        seg.querySelectorAll('[data-aie]').forEach(x=>x.classList.toggle('on', x.dataset.aie==='api'));
+      }
       if($('aiSum')) $('aiSum').textContent=aiSummary();
       if($('aiUsage')) $('aiUsage').textContent=aiUsageText();
-      if(msg) msg.textContent='已保存到本机（不进备份）';
+      if(msg) msg.textContent='已保存到本机（不进备份）'+(patch.engine==='api'?' · 已启用自定义 API':'');
+      if(patch.engine==='api'){ try{ trToast('已启用自定义 API'); }catch(e){} try{ renderReport(); }catch(e){} }
+      return patch;
     };
     if($('aiSaveCfg')) $('aiSaveCfg').onclick=save;
     if($('aiClearKey')) $('aiClearKey').onclick=()=>{ aiSave({key:''}); if(key) key.value=''; if($('aiSum')) $('aiSum').textContent=aiSummary(); if(msg) msg.textContent='Key 已清除'; };
@@ -8651,7 +8660,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.appendChild(bar);
     aiAsk(q, r, box).then(out=>{
       const a=box.querySelector('.ask-a'); if(!a) return;
-      a.innerHTML='<b>AI 回答</b><p>'+ENGINE.esc(out.answer)+'</p>'+
+      const pretty=(txt)=>String(txt||'').replace(/(\d{10,16})/g, (m)=>{
+        const l=(logs||[]).find(x=>String(x.id)===m);
+        if(!l) return m;
+        const p=String(l.date||'').split('-');
+        return '（'+((p[1]||'')+'/'+(p[2]||''))+'：'+String(l.content||'').slice(0,12)+'…）';
+      });
+      a.innerHTML='<b>AI 回答</b><p>'+ENGINE.esc(pretty(out.answer))+'</p>'+
         '<div class="ask-sub">'+(out.confidence!=null?('置信度 '+Math.round(out.confidence*100)+'% · '):'')+'模型 '+ENGINE.esc(aiCfg().model)+' · 原文依据见下</div>';
       const ids=(out.evidence||[]).filter(Boolean);
       if(ids.length){
@@ -9005,17 +9020,23 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     aiChat({system:'你是自我认知教练。只输出一句 30 字内的中文观察，针对用户最近的行为模式，含具体数字，不要引号、不要解释。',
       user:'最近数据：\n'+d.text, stream:false, temp:0.4}).then(t=>{
       const line=aiOneLine(t, 54);
-      if(!line) return;
+      if(!line){ aiSigShow('模型没给出可用观察，点此重试', true); return; }
       aiCacheSet('ins:'+fp, fp, line);
       aiSigShow(line);
-    }).catch(()=>{});
+    }).catch(e=>{
+      const m=String(e&&e.message||e||'');
+      if(m==='未配置 AI') return;
+      aiSigShow('暂不可用（'+m+'），点此重试', true);
+    });
   }
-  function aiSigShow(text){
+  function aiSigShow(text, retry){
     const box=document.getElementById('homeSignals'); if(!box) return;
-    if(box.querySelector('.sig.ai')) return;
-    const el=document.createElement('div'); el.className='sig ai';
+    let el=box.querySelector('.sig.ai');
+    if(!el){ el=document.createElement('div'); el.className='sig ai'; box.appendChild(el); }
     el.innerHTML='<b style="font-weight:600">AI 观察：</b>'+ENGINE.esc(String(text));
-    box.appendChild(el);
+    el.onclick=retry ? ()=>{ aiCacheDel('ins:'+aiFingerprint()); aiHomeInsight(); } : null;
+    el.style.cursor = retry ? 'pointer' : '';
+    return el;
   }
 
   /* ---------- 训练计划理由 ---------- */
