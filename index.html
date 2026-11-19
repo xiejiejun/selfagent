@@ -1522,6 +1522,10 @@ html[data-theme="light"] .ex-item.on{background:#dff7ef;outline:1.5px solid #0e8
 .cam-row:active{background:rgba(61,220,191,.06)}
 .cam-act{margin-top:10px}
 .cam-act .btn{width:100%;justify-content:center}
+.cu-gifline{font-size:11.5px;color:var(--tx3);margin-top:6px}
+.cu-gifline b{display:inline;color:var(--accent);font-weight:600}
+.ex-media-empty{display:flex;align-items:center;gap:10px;padding:10px 0 2px}
+.ex-media-empty span{font-size:11.5px;color:var(--tx3)}
 /* p232 自定义动作 AI 校验 */
 .cu-ai{border:1px solid rgba(61,220,191,.28);background:rgba(61,220,191,.05);border-radius:12px;padding:10px 12px;margin-top:8px;font-size:12px;line-height:1.6}
 .cu-ai b{display:block;font-size:12.5px;margin-bottom:4px;color:var(--accent)}
@@ -6030,7 +6034,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="ex-dt-head"><span class="ex-dt-name">${ENGINE.esc(e.n)}</span><span class="ex-dt-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}</span><button class="ex-fav${fav?' on':''}" data-sheet-fav="${e.id}" type="button" aria-label="收藏">${fav?'★':'☆'}</button><button class="ex-more" data-sheet-more="${e.id}" type="button" aria-label="更多">⋯</button></div>
       ${hist}
       ${e.en?`<div class="ex-en">${ENGINE.esc(e.en)}</div>`:''}
-      ${e.g?`<div class="ex-media"><div class="gif-ph">动画加载中…</div><img class="ex-gif" alt="${ENGINE.esc(e.n)} 动画"></div>`:''}
+      ${e.g?`<div class="ex-media"><div class="gif-ph">动画加载中…</div><img class="ex-gif" alt="${ENGINE.esc(e.n)} 动画"></div>`
+        :`<div class="ex-media-empty"><button class="btn ghost sm" data-giffind="${e.id}" type="button">联网找演示动图</button><span>按动作名与器械在图库里匹配</span></div>`}
       <h4>动作要领</h4><ol>${(e.s||[]).map(x=>`<li>${ENGINE.esc(x)}</li>`).join('')}</ol>
       ${e.t?`<h4>目标肌群</h4><div class="tip">${ENGINE.esc(e.t)}</div>`:''}
     </div>`;
@@ -6138,6 +6143,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       b.textContent=on?'★':'☆'; b.classList.toggle('on',on);
     });
     root.querySelectorAll('[data-sheet-more]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); openExMore(b.dataset.sheetMore, b); });
+    root.querySelectorAll('[data-giffind]').forEach(b=>b.onclick=()=>{
+      const id=b.dataset.giffind, ex=findEx(id); if(!ex) return;
+      const reset=()=>{ b.disabled=false; b.textContent='联网找演示动图'; };
+      const apply=file=>{
+        ex.g=file;
+        try{ const c=(train.custom||[]).find(x=>x.id===id); if(c){ c.g=file; saveTrain(); } }catch(err){}
+        root.innerHTML=detailBodyHtml(ex); bindDetail(root, ex);
+      };
+      b.disabled=true; b.textContent='查找中…';
+      const localTry=()=>{ const l=gifFindLocal(ex.n, ex.p, ex.e); if(l){ apply(l.ex.g); trToast('已匹配动图：'+l.ex.n); } else { reset(); trToast('没找到合适的动图'); } };
+      AG.gifPick(ex.n, ex.p, ex.e, ex.s).then(g=>{
+        if(g && g.ex && g.ex.g){ apply(g.ex.g); trToast('已匹配动图：'+g.ex.n); }
+        else localTry();
+      }).catch(()=>localTry());
+    });
   }
   function openExMore(id, anchor){
     document.querySelectorAll('.lg-menu').forEach(x=>x.remove());
@@ -6409,7 +6429,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const doSave=(name, stp)=>{
       const part=el.querySelector('#cuPart').value||'其他';
       const equip=(el.querySelector('#cuEquip').value||'自重').trim();
-      train.custom.push({id:'cu'+Date.now().toString(36), n:name, p:part, e:equip, t:'', g:'', s:(stp&&stp.length)?stp:['自定义动作，按个人经验执行'], custom:true});
+      train.custom.push({id:'cu'+Date.now().toString(36), n:name, p:part, e:equip, t:'', g:(checked&&checked.gif)||'', s:(stp&&stp.length)?stp:['自定义动作，按个人经验执行'], custom:true});
       saveTrain(); el.remove(); trRenderList(); trToast('已加入动作库');
     };
     cuBtn.onclick=()=>{
@@ -6419,7 +6439,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const part=el.querySelector('#cuPart').value||'其他';
       const equip=(el.querySelector('#cuEquip').value||'自重').trim();
       if(checked){ doSave(checked.norm||n, checked.steps||steps); return; }
-      if(!aiReady() || !AG || !AG.dedupe){ doSave(n, steps); return; }
+      if(!aiReady() || !AG || !AG.dedupe){
+        const l=gifFindLocal(n, part, equip);
+        checked={norm:n, steps:steps, gif:(l&&l.ex)?l.ex.g:null};
+        doSave(n, steps); return;
+      }
       checking=true;
       const old=cuBtn.textContent; cuBtn.textContent='AI 检查中…'; cuBtn.disabled=true;
       AG.dedupe(n, part, equip, steps).then(o=>{
@@ -6443,6 +6467,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           const ex=allExercises().find(e=>e.n===dup.name);
           if(ex) openPlanSheet(ex.id); else trToast('去动作库搜一下这个名称');
         };
+        const gifLine=document.createElement('div'); gifLine.className='cu-gifline'; gifLine.textContent='正在匹配演示动图…';
+        cuAi.appendChild(gifLine);
+        checked.gif=null;
+        const localAttach=()=>{ const l=gifFindLocal(norm, part, equip); if(l){ checked.gif=l.ex.g; gifLine.innerHTML='已匹配演示动图：<b>'+ENGINE.esc(l.ex.n)+'</b>'; } else { gifLine.textContent='没找到合适的演示动图，可稍后在动作详情里再试'; } };
+        AG.gifPick(norm, part, equip, stp).then(g=>{
+          if(g && g.ex && g.ex.g){ checked.gif=g.ex.g; gifLine.innerHTML='已匹配演示动图：<b>'+ENGINE.esc(g.ex.n)+'</b>'+(g.why?('（'+ENGINE.esc(g.why)+'）'):''); }
+          else localAttach();
+        }).catch(localAttach);
         cuAi.querySelector('#cuGo').onclick=()=>doSave(norm, stp);
         cuBtn.textContent='已检查 · 待确认'; cuBtn.disabled=true;
         checking=false;
@@ -6454,6 +6486,49 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     try{ kbAvoid(el, el.querySelector('.msheet-box')); }catch(e){}
   }
   /* ---------- 拍照识别器械：多模态 → 库内匹配 → 直接加今日 ---------- */
+  function gifNorm(t){ return String(t||'').toLowerCase().replace(/[\s（）()·\-—_、，,。.]/g,''); }
+  function gifCJK(t){
+    const s=gifNorm(t);
+    const c=s.replace(/[a-z0-9]/g,'');
+    return c||s;
+  }
+  function gifLCS(a, b){
+    let best=0;
+    for(let i=0;i<a.length;i++){
+      for(let j=i+1;j<=a.length;j++){
+        const seg=a.slice(i,j);
+        if(b.indexOf(seg)>=0) best=Math.max(best, seg.length); else break;
+      }
+    }
+    return best;
+  }
+  function gifScore(name, e){
+    const a=gifCJK(name), b=gifCJK(e.n);
+    if(!a||!b) return 0;
+    if(a===b) return 130;
+    const mn=Math.min(a.length, b.length)||1;
+    let sc=Math.round(gifLCS(a,b)/mn*45);
+    const set={}; a.split('').forEach(c=>{ set[c]=1; });
+    let hit=0; b.split('').forEach(c=>{ if(set[c]) hit++; });
+    sc += Math.round(hit/mn*30);
+    if(b.indexOf(a)>=0 || a.indexOf(b)>=0) sc+=20;
+    const ea=gifCJK(e.e);
+    if(ea && (a.indexOf(ea)>=0 || ea.indexOf(a)>=0)) sc+=10;
+    return sc;
+  }
+  function gifFindLocal(name, part, equip){
+    let best=null, bs=0;
+    allExercises().forEach(e=>{
+      if(!e.g) return;
+      let sc=gifScore(name, e);
+      if(part && e.p===part) sc+=8;
+      const ee=gifNorm(e.e), qq=gifNorm(equip);
+      if(ee && qq && (ee.indexOf(qq)>=0 || qq.indexOf(ee)>=0)) sc+=6;
+      if(sc>bs){ bs=sc; best=e; }
+    });
+    return (best && bs>=50) ? {ex:best, score:bs} : null;
+  }
+
   function camCompress(file, cb){
     const fr=new FileReader();
     fr.onload=()=>{
@@ -9024,6 +9099,22 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         if(!o || !o.equip) throw new Error('识别结果格式不符');
         return o;
       });
+    },
+    gifPick(name, part, equip, steps){
+      const pool=allExercises().filter(e=>e.g && (!part || e.p===part));
+      const picked=pool.map(e=>({e:e, s:gifScore(name, e)})).sort((x,y)=>y.s-x.s).slice(0,12).map(x=>x.e);
+      if(!picked.length) return Promise.resolve(null);
+      const list=picked.map(e=>e.n+'（'+e.p+'/'+e.e+'）').join('; ');
+      return aiChat({
+        system:'你是动作动图检索器。判断给定动作是否符合候选里的某一个（同一种运动模式、同器械或近似变式即可）。只输出一个 JSON：{"pick":"候选中的名称，若都不匹配则为 null","why":"20 字内"}。不要输出 JSON 以外的文字。',
+        user:'动作：'+name+'｜部位：'+part+'｜器械：'+equip+'｜要领：'+((steps||[]).slice(0,3).join('；')||'—')+'｜候选：'+list,
+        temp:0.2
+      }).then(t=>{
+        const o=aiJSON(t);
+        if(!o || !o.pick) return null;
+        const m=picked.find(x=>x.n===o.pick);
+        return m ? {ex:m, why:(o.why||'')} : null;
+      }).catch(()=>null);
     },
     dedupe(name, part, equip, steps){
       const cands=allExercises().filter(e=>e.p===part).slice(0,50).map(e=>e.n+'／'+e.e);
