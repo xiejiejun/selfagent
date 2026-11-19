@@ -1279,7 +1279,7 @@ transition:transform .18s ease,box-shadow .18s ease}
 .fm-add-empty{font-size:12px;color:var(--tx3);padding:12px 0;text-align:center}
 
 /* 专注模式：动作预览条 / 加组 / 用时 */
-.fm-strip{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.fm-strip{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
 .fm-strip::-webkit-scrollbar{display:none}
 .fm-chip{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;
 border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--tx2);font-size:11.5px;cursor:pointer;white-space:nowrap}
@@ -2236,6 +2236,31 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .fm-cdbc-lv{display:flex;gap:4px}
 .fm-cdbc-lv button{border:1px solid var(--line);background:none;color:var(--tx3);border-radius:7px;padding:4px 8px;font-size:11px;cursor:pointer}
 .fm-cdbc-lv button.on{border-color:rgba(91,156,255,.55);color:#5B9CFF}
+/* 有氧独立分屏 */
+.fmc-scr{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:12px;padding:20px 18px 26px}
+.fmc-head{display:flex;align-items:center;gap:10px;align-self:stretch;width:100%}
+.fmc-ic{font-size:26px;line-height:1}
+.fmc-tt b{display:block;font-size:16px;font-weight:650}
+.fmc-tt em{font-style:normal;font-size:11.5px;color:var(--tx3)}
+.fmc-ring{--p:0;width:200px;height:200px;border-radius:50%;background:conic-gradient(#5B9CFF calc(var(--p)*1%),rgba(255,255,255,.06) 0);display:grid;place-items:center;transition:background .3s;margin:6px 0}
+.fmc-in{width:174px;height:174px;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.fmc-time{font-size:40px;font-weight:600;font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.5px}
+.fmc-in em{font-style:normal;font-size:11px;color:var(--tx3)}
+.fmc-main{display:flex;gap:10px;align-self:stretch}
+.fmc-start,.fmc-done{flex:1;min-height:64px;border-radius:14px;font:inherit;font-size:16px;font-weight:600;cursor:pointer}
+.fmc-start{border:1px solid var(--line2);background:var(--panel);color:var(--tx)}
+.fmc-start.on{border-color:rgba(91,156,255,.5);background:rgba(91,156,255,.12)}
+.fmc-done{border:0;background:var(--accent);color:#04211c}
+.fmc-subrow{display:flex;align-items:center;justify-content:space-between;align-self:stretch;gap:8px}
+.fmc-chip{border:1px solid var(--line2);background:none;color:var(--tx2);border-radius:9px;padding:7px 11px;font-size:12px;cursor:pointer}
+.fmc-lv{display:flex;gap:5px}
+.fmc-lv button{border:1px solid var(--line);background:none;color:var(--tx3);border-radius:8px;padding:6px 10px;font-size:11.5px;cursor:pointer}
+.fmc-lv button.on{border-color:rgba(91,156,255,.55);color:#5B9CFF}
+.fmc-skip{border:0;background:none;color:var(--tx3);font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;margin-top:4px}
+.fm-chip.cd{border-color:rgba(91,156,255,.45);color:#5B9CFF}
+.fm-chip.ghost{opacity:.72}
+.fm-trans{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--bg);font-size:22px;font-weight:650;animation:cdPulse 1s ease-in-out}
+.fm-trans em{font-style:normal;font-size:12px;color:var(--tx3);font-weight:400}
 /* 有氧：独立记录类型 */
 .cd-card{border:1px solid var(--line);border-left:3px solid #5B9CFF;border-radius:12px;padding:11px 12px;background:var(--panel2);margin-top:8px}
 .cd-top{display:flex;align-items:center;gap:8px}
@@ -2279,6 +2304,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .rm-i{display:block;width:100%;text-align:left;border:0;background:none;color:var(--tx);font:inherit;font-size:14px;padding:12px 10px;border-radius:8px;cursor:pointer}
 .rm-i:active{background:var(--panel2)}
 .rm-i.del{color:#E0574F}
+/* 折叠行：从这条开始 */
+.tc-fold.next{border-left:3px solid var(--accent);padding-left:9px}
+.tc-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:7px;vertical-align:middle;animation:cdPulse 1.8s ease-in-out infinite}
+/* 今日空态头 */
+.tr-empty-h{padding:4px 2px 10px;display:flex;flex-direction:column;gap:2px}
+.tr-empty-h[hidden]{display:none!important}
+.tr-empty-h b{font-size:13px;font-weight:600}
+.tr-empty-h em{font-style:normal;font-size:11.5px;color:var(--tx3)}
 .cd-sheet-inner{padding:4px 2px 10px}
 .ex-sheet.cd-sheet{align-items:flex-end;justify-content:center}
 .ex-sheet.cd-sheet .ex-sheet-inner{border-radius:16px 16px 0 0;padding-bottom:24px}
@@ -5500,6 +5533,31 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     let r=rs.find(x=>x.uid===__focusUids[__focusIdx])||rs.find(x=>x.uid===__focusUids[0])||rs[0];
     __focusIdx=__focusUids.indexOf(r.uid); if(__focusIdx<0) __focusIdx=0;
     try{ localStorage.setItem('_focus_prog', JSON.stringify({date:trDateVal(), uid:r.uid})); }catch(e){}
+    const cds=trCardioFor(trDateVal());
+    const pre=cds.find(c=>c.role==='pre' && !c.done && !c.skipped);
+    const post=cds.find(c=>c.role==='post' && !c.done && !c.skipped);
+    if(!window.__fmPhase){ window.__fmPhase = pre ? 'warmup' : 'strength'; }
+    if(window.__fmPhase==='warmup' && !pre){ window.__fmPhase='strength'; }
+    if(window.__fmPhase==='cooldown' && !post){ window.__fmPhase='strength'; }
+    if(window.__fmPhase==='warmup' || window.__fmPhase==='cooldown'){
+      const c=window.__fmPhase==='warmup'?pre:post;
+      renderFocusCd(c, window.__fmPhase, rs, cds);
+      return;
+    }
+    // 力量全部完成 → 过渡页 → 收尾
+    let dSum=0, tSum=0;
+    rs.forEach(x=>{ const q=ensureGroups(x); tSum+=q.length; dSum+=q.filter(g=>g.done).length; });
+    const allDone = tSum>0 && dSum>=tSum;
+    if(allDone && post && !window.__fmTrans){
+      window.__fmTrans=true;
+      window.__fmPhase='strength';
+      try{ document.querySelectorAll('.rest').forEach(e=>e.remove()); }catch(e){}
+      if(window.__restTimer){ clearInterval(window.__restTimer); window.__restTimer=null; }
+      const el0=document.getElementById('focusMode')||(()=>{ const d=document.createElement('div'); d.id='focusMode'; d.className='focus-mode'; document.body.appendChild(d); return d; })();
+      el0.innerHTML='<div class="fm-trans">力量完成 ✓<em>进入收尾</em></div>';
+      setTimeout(()=>{ window.__fmTrans=false; window.__fmPhase='cooldown'; renderFocus(); },1500);
+      return;
+    }
     let el=document.getElementById('focusMode');
     if(!el){ el=document.createElement('div'); el.id='focusMode'; el.className='focus-mode'; document.body.appendChild(el); }
     el.setAttribute('data-theme','focus');
@@ -5515,12 +5573,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const on = i===__focusIdx;
       return `<button class="fm-chip ${on?'on':''} ${d===q.length?'done':''}" data-fmgo="${x.uid}" type="button" aria-label="${ENGINE.esc(x.name)} ${d}/${q.length} 组">
         <span>${ENGINE.esc(x.name)}</span><em>${d}/${q.length}</em></button>`;
-    }).join('');
+    }).join('') + cds.filter(c=>!c.skipped && !c.done).map(c=>`<button class="fm-chip cd" data-fmcdjump="${c.uid}" type="button"><span>${CARDIO_ICON[c.modal]||'🏃'} ${ENGINE.esc(c.modal)}</span><em>${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'}</em></button>`).join('');
     const hintOn=(window.__hintUid!==r.uid);
     el.innerHTML=`<div class="fm-progress"><i style="width:${pct}%"></i></div>
       <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span role="timer" aria-label="训练进度">${dAll}/${tAll} 组 · ${__focusIdx+1}/${__focusUids.length} 动作</span></div>
       <div class="fm-strip" role="tablist" aria-label="今日动作预览">${strip}</div>
-      ${cdFocusHtml()}
       <div class="fm-titlerow"><div class="fm-name">${ENGINE.esc(r.name)}</div><button class="fm-help" data-fmhelp type="button" aria-label="查看 ${ENGINE.esc(r.name)} 动作详情">?</button></div>
       <div class="fm-sub">${doneN}/${gs.length} 组已完成${doneN===gs.length?' · 本动作完成':' · 点圆圈完成一组'}</div>
       <div class="fm-sets">${gs.map(g=>{
@@ -5560,6 +5617,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       x.style.maxWidth='none';
       clearTimeout(armT); armT=setTimeout(()=>{ armed=false; x.textContent='×'; x.classList.remove('armed'); },3000);
     };
+    el.querySelectorAll('[data-fmcdjump]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const c=(train.cardio||[]).find(x=>x.uid===b.dataset.fmcdjump); if(!c) return;
+      window.__fmPhase = c.role==='pre'?'warmup':c.role==='post'?'cooldown':'warmup';
+      if(window.__fmPhase==='warmup' && c.role!=='pre'){ window.__fmCdAdhoc=c.uid; }
+      renderFocus();
+    });
     el.querySelectorAll('[data-fmcdrun]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
       const uid=b.dataset.fmcdrun, r2=(train.cardio||[]).find(x=>x.uid===uid); if(!r2) return;
@@ -5769,6 +5833,94 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el._paint();
     setTimeout(()=>{ try{ el.querySelector('#fmAddQ').focus(); }catch(e){} },60);
   }
+  function renderFocusCd(c, phase, rs, cds){
+    if(!c){ window.__fmPhase='strength'; renderFocus(); return; }
+    let el=document.getElementById('focusMode');
+    if(!el){ el=document.createElement('div'); el.id='focusMode'; el.className='focus-mode'; bodyAppend(el); }
+    el.setAttribute('data-theme','focus');
+    const isPre = phase==='warmup';
+    const icon=CARDIO_ICON[c.modal]||'🏃';
+    const sec=cdSec(c), run=!!c.run;
+    const target=Math.max(1,(c.dur||20))*60;
+    const pct=Math.min(100,Math.round(sec/target*100));
+    let tAll=0,dAll=0;
+    rs.forEach(x=>{ const q=ensureGroups(x); tAll+=q.length; dAll+=q.filter(g=>g.done).length; });
+    const gp = tAll? Math.round(dAll/tAll*100) : 0;
+    const chips = rs.map((x,i)=>{
+      const q=ensureGroups(x); const d=q.filter(g=>g.done).length;
+      return `<button class="fm-chip ghost" data-fmcdstrength type="button"><span>${ENGINE.esc(x.name)}</span><em>${d}/${q.length}</em></button>`;
+    }).join('') + cds.filter(x=>!x.done&&!x.skipped).map(x=>`<button class="fm-chip cd ${x.uid===c.uid?'on':''}" data-fmcdjump2="${x.uid}" type="button"><span>${CARDIO_ICON[x.modal]||'🏃'} ${ENGINE.esc(x.modal)}</span><em>${x.role==='pre'?'热身':x.role==='post'?'收尾':'有氧'}</em></button>`).join('');
+    const distLabel = CD_DIST.includes(c.modal)?'+0.5 km':'+5 层';
+    el.innerHTML=`<div class="fm-progress"><i style="width:${gp}%"></i></div>
+      <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span>${isPre?'热身':'收尾'} · ${dAll}/${tAll} 组已完成</span></div>
+      <div class="fm-strip" role="tablist" aria-label="今日安排">${chips}</div>
+      <div class="fmc-scr">
+        <div class="fmc-head"><span class="fmc-ic">${icon}</span><div class="fmc-tt"><b>${ENGINE.esc(c.modal)}</b><em>${isPre?'热身':'收尾'} · 目标 ${c.dur||20} 分钟</em></div></div>
+        <div class="fmc-ring" data-fmcdring2="${c.uid}" style="--p:${pct}">
+          <div class="fmc-in"><span class="fmc-time" data-fmcdt2="${c.uid}">${cdFmt(sec)}</span><em data-fmcdsub>${[c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):'', '目标 '+(c.dur||20)+'′'].filter(Boolean).join(' · ')}</em></div>
+        </div>
+        <div class="fmc-main">
+          <button class="fmc-start ${run?'on':''}" data-fmcdrun2="${c.uid}" type="button">${run?'暂停':(sec>0?'继续':'开始')}</button>
+          <button class="fmc-done" data-fmcdone2="${c.uid}" type="button">完成 ✓</button>
+        </div>
+        <div class="fmc-subrow">
+          <button class="fmc-chip" data-fmcddist2="${c.uid}" type="button">${distLabel}</button>
+          <span class="fmc-lv">${['轻松','中等','强度'].map(x=>`<button class="${(c.lv||'中等')===x?'on':''}" data-fmcdlv2="${c.uid}:${x}" type="button">${x}</button>`).join('')}</span>
+        </div>
+        <button class="fmc-skip" data-fmcdskip2="${c.uid}" type="button">今天不练，跳过这一步</button>
+      </div>`;
+    // 退出
+    const x=el.querySelector('[data-fmexit]');
+    let armed=false;
+    x.onclick=()=>{
+      if(armed || !c.run){ closeFocus(); return; }
+      armed=true; x.classList.add('armed'); x.style.maxWidth='none';
+      x.textContent=(c.modal+'还在计时，确认退出？');
+      setTimeout(()=>{ armed=false; x.textContent='×'; x.classList.remove('armed'); x.style.maxWidth=''; },3000);
+    };
+    // 返回力量
+    el.querySelectorAll('[data-fmcdstrength]').forEach(b=>b.onclick=()=>{ window.__fmPhase='strength'; renderFocus(); });
+    el.querySelectorAll('[data-fmcdjump2]').forEach(b=>b.onclick=()=>{
+      const c2=(train.cardio||[]).find(v=>v.uid===b.dataset.fmcdjump2); if(!c2) return;
+      window.__fmPhase = c2.role==='post'?'cooldown':'warmup'; renderFocus();
+    });
+    el.querySelectorAll('[data-fmcdrun2]').forEach(b=>b.onclick=()=>{
+      if(c.run) cdPause(c); else { cdStart(c); try{ haptic('core'); }catch(e){} }
+      saveTrain(); renderFocus();
+    });
+    el.querySelectorAll('[data-fmcdone2]').forEach(b=>b.onclick=()=>{
+      cdFinish(c); saveTrain(); refreshHome();
+      try{ haptic('core'); }catch(e){}
+      trToast('有氧完成：'+c.modal+' '+(c.dur||0)+' 分钟');
+      cdAskLv(c);
+      window.__fmPhase = c.role==='post' ? 'done' : 'strength';
+      if(window.__fmPhase==='done'){ closeFocus(); showTrainSummary(); return; }
+      renderFocus();
+    });
+    el.querySelectorAll('[data-fmcdskip2]').forEach(b=>b.onclick=()=>{
+      c.skipped=true; saveTrain(); trRenderToday();
+      trToast('已跳过这次有氧');
+      window.__fmPhase = c.role==='post' ? 'done' : 'strength';
+      if(window.__fmPhase==='done'){ closeFocus(); showTrainSummary(); return; }
+      renderFocus();
+    });
+    el.querySelectorAll('[data-fmcddist2]').forEach(b=>b.onclick=()=>{
+      if(CD_DIST.includes(c.modal)) c.dist=Math.round(((c.dist||0)+0.5)*10)/10; else c.dist=(c.dist||0)+5;
+      saveTrain(); renderFocus();
+    });
+    el.querySelectorAll('[data-fmcdlv2]').forEach(b=>b.onclick=()=>{
+      c.lv=b.dataset.fmcdlv2.split(':')[1]; saveTrain(); renderFocus();
+    });
+    // 心跳
+    if(window.__fmCdTick2) clearInterval(window.__fmCdTick2);
+    window.__fmCdTick2=setInterval(()=>{
+      const t=el.querySelector('[data-fmcdt2]'); if(!t){ clearInterval(window.__fmCdTick2); window.__fmCdTick2=null; return; }
+      const s2=cdSec(c); t.textContent=cdFmt(s2);
+      const ring=el.querySelector('[data-fmcdring2]'); if(ring) ring.style.setProperty('--p',Math.min(100,Math.round(s2/target*100)));
+    },1000);
+    el.classList.add('on');
+  }
+  function bodyAppend(el){ document.body.appendChild(el); }
   function cdFocusHtml(){
     const d=trDateVal();
     const cds=(train.cardio||[]).filter(c=>c.date===d);
@@ -5800,6 +5952,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }).join('');
   }
   function openFocus(){
+    window.__fmPhase=null;
     const rs=focusList();
     if(!rs.length){ trToast('先把动作加入今日'); return; }
     __focusUids=rs.map(r=>r.uid);
@@ -5940,6 +6093,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <div class="tr-next" id="trNext" hidden></div>
           <div class="tr-feel" id="trFeel" hidden></div>
           <div id="trToday"></div>
+          <div class="tr-empty-h" id="trEmptyHead"><b>今天还没有安排</b><em>从这三条里挑一条开始</em></div>
           <div class="tr-entries" id="trEmpty">
             <button class="tr-entry ${hasHist?'':'hot'}" data-entry="ai" type="button"><b>AI 帮我排</b><em>按部位生成今日计划</em></button>
           </div>
@@ -6226,6 +6380,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         : '还没有排动作';
     }
     if($('trEmpty')) $('trEmpty').hidden = !!(items.length||cds.length);
+    if($('trEmptyHead')) $('trEmptyHead').hidden = !!(items.length||cds.length);
     const go=$('trStart');
     if(go){
       let act='start', txt='▶ 开始训练';
@@ -7856,7 +8011,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const pendOf=r=>ensureGroups(r).some(g=>!g.done);
     if(items.length){
       if(trOpenUid===undefined){
-        const f=items.find(pendOf); activeUid=f?f.uid:null;
+        activeUid=null; trOpenUid='';
       } else if(trOpenUid===''){
         activeUid=null;
       } else if(items.some(r=>r.uid===trOpenUid)){
@@ -7866,6 +8021,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         trOpenUid=activeUid;
       }
     }
+    const firstPendingUid = (items.find(pendOf)||{}).uid || null;
     box.innerHTML = items.length ? items.map(r=>{
       const gs=ensureGroups(r);
       const last=trLastRec(r.exId);
@@ -7885,8 +8041,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <span class="tc-sx">${doneN}/${gs.length} · ${groupsDigest(gs,{bare:true})}</span>
           </div>`;
         }
-        return `<div class="tc-fold tr-fade" style="--i:${items.indexOf(r)}" data-topen="${r.uid}">
-          <span class="tc-nm">${ENGINE.esc(r.name)}</span>
+        const isNext = r.uid===firstPendingUid;
+        return `<div class="tc-fold tr-fade ${isNext?'next':''}" style="--i:${items.indexOf(r)}" data-topen="${r.uid}">
+          <span class="tc-nm">${isNext?'<i class="tc-dot" aria-hidden="true"></i>':''}${ENGINE.esc(r.name)}</span>
           <span class="tc-sx">${sxTxt}</span>
           <span class="tc-pr">${doneN}/${gs.length}</span>
           <span class="tc-ar">▸</span>
