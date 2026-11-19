@@ -8095,10 +8095,22 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(raf){ cancelAnimationFrame(raf); raf=0; }
       d.row.style.transform=''; d.row.classList.remove('dragging');
       cont.classList.remove('drag-on');
-      try{ d.h.releasePointerCapture(d.id); }catch(e){}
+      document.removeEventListener('pointermove',onMove);
+      document.removeEventListener('pointerup',onUp);
+      document.removeEventListener('pointercancel',onUp);
       if(!d.moved) return;
       try{ o.onDrop && o.onDrop(d.row); }catch(e){}
       try{ haptic('core'); }catch(e){}
+    };
+    const onMove=ev=>{
+      if(!drag || (ev.pointerId!=null && drag.id!=null && ev.pointerId!==drag.id)) return;
+      drag.lastY=ev.clientY;
+      if(!raf) raf=requestAnimationFrame(paint);
+      ev.preventDefault();
+    };
+    const onUp=ev=>{
+      if(ev && ev.pointerId!=null && drag && drag.id!=null && ev.pointerId!==drag.id) return;
+      finish(ev);
     };
     cont.addEventListener('pointerdown',ev=>{
       const h=ev.target.closest(o.handle||'[data-drag],[data-pldrag]'); if(!h) return;
@@ -8106,20 +8118,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(ev.pointerType==='mouse' && ev.button!==0) return;
       const rr=row.getBoundingClientRect(), bt=cont.getBoundingClientRect().top;
       drag={row,h,startY:ev.clientY,lastY:ev.clientY,moved:false,startTop:rr.top-bt,layoutTop:rr.top-bt,ty:0,h0:rr.height,id:ev.pointerId};
-      try{ h.setPointerCapture(ev.pointerId); }catch(e){}
       row.classList.add('dragging');
       cont.classList.add('drag-on');
       ev.preventDefault(); ev.stopPropagation();
+      // 不设 pointer capture：换位会重插节点，capture 会被浏览器释放并打断拖拽（表现为只能拖一格）
+      document.addEventListener('pointermove',onMove,{passive:false});
+      document.addEventListener('pointerup',onUp);
+      document.addEventListener('pointercancel',onUp);
     },{passive:false});
-    cont.addEventListener('pointermove',ev=>{
-      if(!drag) return;
-      drag.lastY=ev.clientY;
-      if(!raf) raf=requestAnimationFrame(paint);
-      ev.preventDefault();
-    },{passive:false});
-    cont.addEventListener('pointerup',finish);
-    cont.addEventListener('pointercancel',finish);
-    cont.addEventListener('lostpointercapture',finish);
   }
   function trRenderToday(){
     const box=$('trToday'); if(!box) return;
