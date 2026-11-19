@@ -2422,6 +2422,10 @@ html,body{touch-action:manipulation}
 .set-head .nm .set-prog{display:inline}
 .set-more{margin-left:auto;flex:none}
 .cd-drag{padding:0 6px 0 0;font-size:13px;color:var(--tx3)}
+.cd-row::before{background:#5AA9FF}
+.cd-row.done::before{background:var(--line2)}
+.cd-row .cd-ic-sm{font-style:normal;font-size:12px;line-height:1;margin-right:2px}
+.cd-row .tc-prog{font-variant-numeric:tabular-nums}
 .cd-card{user-select:none;-webkit-user-select:none}
 .tc-row,.set-card,.set-head{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .tc-row .pl-drag,.set-head .pl-drag,.cd-drag{touch-action:none!important;-webkit-tap-highlight-color:transparent}
@@ -7962,16 +7966,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const extra=[r.dist?(CD_DIST.includes(r.modal)?(r.dist+' km'):(r.dist+' 层')):'', (done&&r.dur)?(r.dur+'′ 完成'):''].filter(Boolean).join(' · ');
     const distChip=(!done&&!running&&CD_DIST.includes(r.modal))?'<button type="button" class="cd-chip" data-cddist2="'+r.uid+'">+0.5 km</button>':'';
     const floorChip=(!done&&!running&&r.modal==='爬楼')?'<button type="button" class="cd-chip" data-cddist3="'+r.uid+'">+5 层</button>':'';
-    return `<div class="cd-card ${st}" data-cduid="${r.uid}" data-urow="c:${r.uid}">
-      <div class="cd-top"><span class="pl-drag cd-drag" data-drag="1" role="button" aria-label="拖动排序">≡</span><span class="cd-ic">${icon}</span><span class="cd-nm">${ENGINE.esc(r.modal)}${r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':''}</span>
-        <span class="cd-bd"><i></i>${badge}</span>
-        <button class="cd-x" type="button" data-cddel="${r.uid}" aria-label="移除">×</button></div>
-      <div class="cd-meta">${extra}${(running||sec>0)?((extra?' · ':'')+'<span class="cd-timer" data-cdtimer="'+r.uid+'">'+cdFmt(sec)+'</span>'):''}</div>
-      ${done?'':`<div class="cd-acts">
-        <button type="button" class="cd-run" data-cdrun="${r.uid}">${running?'暂停':'开始计时'}</button>
-        <button type="button" data-cdfin="${r.uid}">完成</button>
-        ${distChip}${floorChip}
-      </div>`}
+    const name=ENGINE.esc(r.modal)+(r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':'');
+    const meta=done?(r.dur?r.dur+'′ 完成':'✓ 已完成'):(running||sec>0)?'<span class="cd-timer" data-cdtimer="'+r.uid+'">'+cdFmt(sec)+'</span>':'';
+    return `<div class="tc-row pl-row cd-row ${st}" data-cduid="${r.uid}" data-urow="c:${r.uid}">
+      <span class="pl-drag" data-drag="1" role="button" aria-label="拖动排序">≡</span>
+      <span class="pl-nm"><i class="pl-no cd-ic-sm">${icon}</i><b>${name}</b></span>
+      <span class="tc-prog">${meta}</span>
+      <button class="pl-rowmore" data-cdmore="${r.uid}" type="button" aria-label="更多操作">⋯</button>
     </div>`;
   }
   function openCardioSheet(){
@@ -8103,7 +8104,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           </div>`;
         }
         const isNext = r.uid===firstPendingUid;
-        return `<div class="tc-row pl-row tr-fade ${isNext?'on':''}${doneN?' run':''}" style="--i:${items.indexOf(r)}" data-topen="${r.uid}" data-urow="r:${r.uid}">
+        return `<div class="tc-row pl-row tr-fade${doneN?' run':''}" style="--i:${items.indexOf(r)}" data-topen="${r.uid}" data-urow="r:${r.uid}">
           <span class="pl-drag" data-drag="1" role="button" aria-label="拖动排序">≡</span>
           <span class="pl-nm"><i class="pl-no">${items.indexOf(r)+1}</i><b>${ENGINE.esc(r.name)}</b></span>
           <span class="tc-prog">${doneN?doneN+'/'+gs.length:''}</span>
@@ -8151,7 +8152,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const byKey={}; [...box.children].forEach(n=>{ const k=n.dataset&&n.dataset.urow; if(k) byKey[k]=n; });
       ord.forEach(k=>{ const n=byKey[k]; if(n) box.appendChild(n); });
       let no=1;
-      ord.forEach(k=>{ const n=byKey[k]; if(!n) return; const el=n.querySelector('.pl-no'); if(el) el.textContent=(no++); });
+      ord.forEach(k=>{ const n=byKey[k]; if(!n) return; if(n.classList.contains('cd-row')) return; const el=n.querySelector('.pl-no'); if(el) el.textContent=(no++); });
     }catch(e){}
 
     if($('trNext')){
@@ -8198,6 +8199,38 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const uid=b.dataset.cddist3, r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
       r.dist=(r.dist||0)+5; saveTrain(); trRenderToday();
       trToast('层数 +5，共 '+r.dist+' 层');
+    });
+    box.querySelectorAll('[data-cdmore]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation();
+      const uid=b.dataset.cdmore, r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
+      document.querySelectorAll('.tr-rowmenu').forEach(x=>x.remove());
+      const el=document.createElement('div'); el.className='msheet tr-rowmenu';
+      el.innerHTML=`<div class="msheet-box" style="padding:8px">
+        <div class="rm-t">${ENGINE.esc(r.modal)}${r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':''}</div>
+        <button class="rm-i" data-cm1 type="button">${r.done?'标为未完成':(r.run?'暂停计时':'开始计时')}</button>
+        ${r.done?'':'<button class="rm-i" data-cm2 type="button">完成并记录</button>'}
+        <button class="rm-i del" data-cm3 type="button">从今日移除</button>
+      </div>`;
+      document.body.appendChild(el);
+      const close=()=>el.remove();
+      el.onclick=e=>{ if(e.target===el) close(); };
+      el.querySelector('[data-cm1]').onclick=()=>{
+        close();
+        if(r.done){ r.done=false; r.ts=Date.now(); }
+        else if(r.run) cdPause(r); else cdStart(r);
+        saveTrain(); trRenderToday(); refreshHome(); try{ haptic('core'); }catch(e){}
+      };
+      const fin=el.querySelector('[data-cm2]');
+      if(fin) fin.onclick=()=>{ close(); cdFinish(r); saveTrain(); trRenderToday(); refreshHome(); cdAskLv(r); };
+      el.querySelector('[data-cm3]').onclick=()=>{
+        close();
+        train.cardio=(train.cardio||[]).filter(x=>x.uid!==uid); saveTrain(); trRenderToday(); refreshHome();
+        const t=document.createElement('div'); t.className='toast undo';
+        t.innerHTML='已移除有氧 '+ENGINE.esc(r.modal)+' <button type="button">撤销</button>';
+        document.body.appendChild(t);
+        t.querySelector('button').onclick=()=>{ train.cardio.push(r); saveTrain(); trRenderToday(); refreshHome(); t.remove(); };
+        setTimeout(()=>{ try{t.remove();}catch(e){} },4200);
+      };
     });
     box.querySelectorAll('[data-cddel]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
