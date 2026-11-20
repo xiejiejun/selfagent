@@ -2306,6 +2306,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .rd-lost span{color:var(--tx3)}
 .ms-redo{width:100%;margin-bottom:8px}
 .fmc-skip.redo{color:#F0B34A;border-color:rgba(240,179,74,.5)}
+.fmc-done{opacity:.62;position:relative;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.fmc-done.charging{opacity:1;background:conic-gradient(from -90deg,var(--accent) var(--p,0%),rgba(255,255,255,.10) 0);border-color:var(--accent)}
+.fmc-done.flash,.fm-mini.finish.flash{filter:brightness(1.45)}
+.fm-mini.finish{position:relative;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.fm-mini.finish.charging{color:#fff;border-color:var(--accent);background:conic-gradient(from -90deg,var(--accent) var(--p,0%),rgba(255,255,255,.10) 0)}
 .fm-trans{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--bg);font-size:22px;font-weight:650;animation:cdPulse 1s ease-in-out}
 .fm-trans em{font-style:normal;font-size:12px;color:var(--tx3);font-weight:400}
 /* 有氧：独立记录类型 */
@@ -6183,7 +6188,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const pv=el.querySelector('[data-fmprev]'), nx=el.querySelector('[data-fmnext]');
     if(pv) pv.onclick=()=>{ fmStep(-1); };
     if(nx) nx.onclick=()=>{ fmStep(1); };
-    const fin=el.querySelector('[data-fmfin]'); if(fin) fin.onclick=()=>{ closeFocus(); showTrainSummary(); };
+    const fin=el.querySelector('[data-fmfin]');
+    if(fin) bindHoldFinish(fin, '完成训练', '继续按住…（确认结束）', ()=>{ closeFocus(); showTrainSummary(); }, 800);
     const au=el.querySelector('[data-fmauto]');
     if(au) au.onclick=()=>{ train.autoNext=!train.autoNext; saveTrain();
       au.classList.toggle('on', train.autoNext);
@@ -6245,6 +6251,28 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!allDone) return 'strength';
     if(cds.some(c=>c.role==='post' && !c.done && !c.skipped)) return 'cooldown';
     return 'strength';
+  }
+  function bindHoldFinish(btn, label, confirmText, onDone, ms){
+    if(!btn) return;
+    ms=ms||800;
+    let t=null, iv=null, fired=false, t0=0;
+    const paint=v=>{ btn.style.setProperty('--p', (v*100).toFixed(1)+'%'); btn.classList.toggle('charging', v>0.001); };
+    const clear=()=>{ if(t){ clearTimeout(t); t=null; } if(iv){ clearInterval(iv); iv=null; } btn.classList.remove('charging'); btn.style.removeProperty('--p'); btn.textContent=label; };
+    const start=e=>{
+      if(e && e.preventDefault) e.preventDefault();
+      fired=false; t0=Date.now(); btn.classList.add('charging'); btn.textContent=confirmText;
+      paint(0);
+      if(iv) clearInterval(iv);
+      iv=setInterval(()=>{ paint(Math.min(1,(Date.now()-t0)/ms)); },50);
+      t=setTimeout(()=>{ fired=true; clear(); try{ haptic('warn'); }catch(err){} btn.classList.add('flash'); setTimeout(()=>btn.classList.remove('flash'),420); onDone(); },ms);
+    };
+    const cancel=()=>{ if(fired) return; const was=!!t||btn.classList.contains('charging'); clear(); if(was) trToast('长按以确认'); };
+    btn.addEventListener('pointerdown',start);
+    btn.addEventListener('pointerup',cancel);
+    btn.addEventListener('pointercancel',cancel);
+    btn.addEventListener('pointerleave',ev=>{ if(ev.pointerType==='mouse'||!ev.buttons) cancel(); });
+    btn.addEventListener('contextmenu',e=>e.preventDefault());
+    btn.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); });
   }
   function fmTap(key){
     window.__grpStart=window.__grpStart||{};
@@ -6375,9 +6403,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const more=(train.cardio||[]).some(x=>x.date===trDateVal() && x.uid!==c.uid && !x.done && !x.skipped);
       return more ? 'cardio' : 'done';
     };
-    el.querySelectorAll('[data-fmcdone2]').forEach(b=>b.onclick=()=>{
+    const finishCardio=()=>{
+      if(c.done) return;
       cdFinish(c); saveTrain(); refreshHome();
-      try{ haptic('core'); }catch(e){}
       trToast('有氧完成：'+c.modal+' '+(c.dur||1)+' 分钟，已记录');
       cdAskLv(c);
       const advance=()=>{
@@ -6389,6 +6417,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       };
       if(c.role==='pre'){ trToast('热身完成 ✓'); setTimeout(advance,300); }
       else advance();
+    };
+    el.querySelectorAll('[data-fmcdone2]').forEach(b=>{
+      const notStarted=(!c.run && !(c.sec>0) && !c.done);
+      bindHoldFinish(b, '完成 ✓', notStarted?'继续按住…（将记 0 分钟）':'继续按住…', finishCardio, 800);
     });
     el.querySelectorAll('[data-fmcdskip2]').forEach(b=>b.onclick=()=>{
       c.skipped=true; saveTrain(); trRenderToday();
