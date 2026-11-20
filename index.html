@@ -8433,7 +8433,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const stop=()=>{ clearInterval(tick); };
     const run=(attempt)=> aiAsk(q, r, box).then(out=>{
       stop();
-      const a=box.querySelector('.ask-a'); if(!a) return;
+      let a=box.querySelector('.ask-a');
+      if(!a){ a=document.createElement('div'); a.className='ask-a'; box.appendChild(a); }
       const pretty=(txt)=>String(txt||'').replace(/(\d{10,16})/g, (m)=>{
         const l=(logs||[]).find(x=>String(x.id)===m);
         if(!l) return m;
@@ -8863,7 +8864,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       '\n【数据】'+d.text
     ].join('\n');
     const out={answer:'', evidence:[], confidence:null};
-    return aiChat({system:AI_SYS, user:usr, stream:false, temp:0.3, timeout:26000, maxTok:320, onLine:line=>{
+    return aiChat({system:AI_SYS, user:usr, stream:false, temp:0.3, timeout:26000, maxTok:420, onLine:line=>{
       let o; try{ o=JSON.parse(line); }catch(e){ return; }
       if(o.answer) out.answer=String(o.answer);
       if(Array.isArray(o.evidence)) out.evidence=o.evidence.map(String);
