@@ -2281,18 +2281,29 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .fmc-ic{font-size:26px;line-height:1}
 .fmc-tt b{display:block;font-size:16px;font-weight:650}
 .fmc-tt em{font-style:normal;font-size:11.5px;color:var(--tx3)}
-.fmc-ring{--p:0;--cp:0;position:relative;width:200px;height:200px;border-radius:50%;background:conic-gradient(#5B9CFF calc(var(--p)*1%),rgba(255,255,255,.06) 0);display:grid;place-items:center;transition:background .3s;margin:14px 0;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.fmc-ring{--p:0;--cp:0;position:relative;width:240px;height:240px;border-radius:50%;background:none;display:grid;place-items:center;margin:10px 0;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.fmc3{position:absolute;inset:0;width:240px;height:240px;pointer-events:none}
+.fmc3 .trk{fill:none;stroke-width:12}
+.fmc3 .trk.h{stroke:rgba(91,156,255,.13)}
+.fmc3 .trk.m{stroke:rgba(62,220,132,.12)}
+.fmc3 .trk.s{stroke:rgba(245,197,66,.12)}
+.fmc3 .bar{fill:none;stroke-width:12;stroke-linecap:round;transform:rotate(-90deg);transform-origin:120px 120px;transition:stroke-dashoffset .3s linear}
+.fmc3 .bar.h{stroke:#5B9CFF}
+.fmc3 .bar.h.goal{stroke:#3EDC84}
+.fmc3 .bar.m{stroke:#3EDC84}
+.fmc3 .bar.s{stroke:#F5C542}
+.fmc-ring.pause .fmc3,.fmc-ring.pause .fmc-in{opacity:.6}
 .fmc-chg{position:absolute;inset:-12px;border-radius:50%;pointer-events:none;opacity:.55;
   background:conic-gradient(from -90deg,#3EDC84 calc(var(--cp,0)*1%),rgba(62,196,120,.12) 0);
-  -webkit-mask:radial-gradient(circle,#0000 0 104px,#000 106px 111px,#0000 112px);
-  mask:radial-gradient(circle,#0000 0 104px,#000 106px 111px,#0000 112px);
+  -webkit-mask:radial-gradient(circle,#0000 0 120px,#000 122px 127px,#0000 128px);
+  mask:radial-gradient(circle,#0000 0 120px,#000 122px 127px,#0000 128px);
   transition:opacity .15s}
 .fmc-ring.charging .fmc-chg{opacity:1}
 .fmc-ring.charging .fmc-in{opacity:.65}
 .fmc-ring.charging .fmc-time,.fmc-ring .fmc-in{transition:opacity .12s}
 .fmc-ring.flash .fmc-chg{opacity:1;background:conic-gradient(from -90deg,#fff 100%,#fff 0);filter:drop-shadow(0 0 10px rgba(255,255,255,.75))}
-.fmc-in{position:relative;z-index:2;width:174px;height:174px;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-.fmc-time{font-size:44px;text-align:center;padding:0 10px;line-height:1.1;font-weight:250;font-variant-numeric:tabular-nums;font-family:-apple-system,'SF Pro Display','Segoe UI Variable Display','Segoe UI',system-ui,sans-serif;letter-spacing:.02em;color:var(--tx)}
+.fmc-in{position:relative;z-index:2;width:128px;height:128px;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.fmc-time{font-size:30px;text-align:center;padding:0;line-height:1.05;white-space:nowrap;font-weight:250;font-variant-numeric:tabular-nums;font-family:-apple-system,'SF Pro Display','Segoe UI Variable Display','Segoe UI',system-ui,sans-serif;letter-spacing:.02em;color:var(--tx)}
 .fmc-in em{font-style:normal;font-size:11px;color:var(--tx3)}
 .fmc-main{display:flex;flex-direction:column;align-items:center;gap:6px;align-self:stretch}
 .fmc-start,.fmc-done{min-height:48px;border-radius:24px;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
@@ -2335,6 +2346,17 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .cd-acts{display:flex;gap:8px;margin-top:9px}
 .cd-acts button{min-height:32px;border-radius:8px;border:1px solid var(--line2);background:var(--panel);color:var(--tx2);font:inherit;font-size:12px;padding:0 12px;cursor:pointer}
 .cd-run{color:var(--tx);border-color:rgba(91,156,255,.5);background:rgba(91,156,255,.12)}
+.cd-mini{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
+.cd-mini svg{width:32px;height:32px;flex:0 0 auto}
+.cd-mini .trk{fill:none;stroke-width:9}
+.cd-mini .trk.h{stroke:rgba(91,156,255,.16)}
+.cd-mini .trk.m{stroke:rgba(62,220,132,.15)}
+.cd-mini .trk.s{stroke:rgba(245,197,66,.15)}
+.cd-mini .bar{fill:none;stroke-width:9;stroke-linecap:round;transform:rotate(-90deg);transform-origin:60px 60px;transition:stroke-dashoffset .3s linear}
+.cd-mini .bar.h{stroke:#5B9CFF}
+.cd-mini .bar.h.goal{stroke:#3EDC84}
+.cd-mini .bar.m{stroke:#3EDC84}
+.cd-mini .bar.s{stroke:#F5C542}
 .cd-timer{font-variant-numeric:tabular-nums;font-size:13px;color:var(--tx);letter-spacing:.02em;font-weight:300;font-family:-apple-system,'SF Pro Display','Segoe UI Variable Display','Segoe UI',system-ui,sans-serif}
 .cd-x{margin-left:auto;border:0;background:none;color:var(--tx3);font-size:15px;cursor:pointer}
 .cd-bd{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--tx3);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
@@ -6370,8 +6392,17 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="fm-strip" role="tablist" aria-label="今日安排">${chips}</div>
       <div class="fmc-scr">
         <div class="fmc-head"><span class="fmc-ic">${icon}</span><div class="fmc-tt"><b>${ENGINE.esc(c.modal)}</b><em>${tag} · ${target?('目标 '+(c.dur)+' 分钟'):'点开始计时，结束按实际时长记录'}</em></div></div>
-        <div class="fmc-ring" data-fmcdring2="${c.uid}" role="button" tabindex="0" aria-label="点一下开始计时，长按 1 秒完成" style="--p:${pct}"><i class="fmc-chg"></i>
-          <div class="fmc-in"><span class="fmc-time" data-fmcdt2="${c.uid}">${cdFmt(sec)}</span><em data-fmcdsub>${c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):(target?'目标 '+c.dur+'′':'计时中')}</em></div>
+        <div class="fmc-ring${run?'':' pause'}" data-fmcdring2="${c.uid}" role="button" tabindex="0" aria-label="点一下开始计时，长按 1 秒完成" style="--p:${pct}">
+          <svg class="fmc3" viewBox="0 0 240 240" aria-hidden="true">
+            <circle class="trk h" cx="120" cy="120" r="108"></circle>
+            <circle class="trk m" cx="120" cy="120" r="88"></circle>
+            <circle class="trk s" cx="120" cy="120" r="68"></circle>
+            <circle class="bar h${target?' goal':''}" data-fmcbar="h" cx="120" cy="120" r="108" stroke-dasharray="678.6" stroke-dashoffset="678.6"></circle>
+            <circle class="bar m" data-fmcbar="m" cx="120" cy="120" r="88" stroke-dasharray="552.9" stroke-dashoffset="552.9"></circle>
+            <circle class="bar s" data-fmcbar="s" cx="120" cy="120" r="68" stroke-dasharray="427.3" stroke-dashoffset="427.3"></circle>
+          </svg>
+          <div class="fmc-in"><span class="fmc-time" data-fmcdt2="${c.uid}">${cdHMS(sec)}</span><em data-fmcdsub>${c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):(target?'目标 '+c.dur+'′':(run?'计时中':'已暂停'))}</em></div>
+          <i class="fmc-chg"></i>
         </div>
         <div class="fmc-main">
           <button class="fmc-start ${run?'on':''}" data-fmcdrun2="${c.uid}" type="button">${run?'暂停':(sec>0?'继续':'开始')}</button>
@@ -6520,15 +6551,29 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.querySelectorAll('[data-fmcdlv2]').forEach(b=>b.onclick=()=>{
       c.lv=b.dataset.fmcdlv2.split(':')[1]; saveTrain(); renderFocus();
     });
-    // 心跳
+    // 三环 + 心跳
+    const paintRings=()=>{
+      const t=el.querySelector('[data-fmcdt2]'); if(!t) return false;
+      const ring=el.querySelector('[data-fmcdring2]'); if(!ring) return false;
+      const s2=cdSec(c), hh=Math.floor(s2/3600), mm=Math.floor(s2/60)%60, ss=s2%60;
+      t.textContent=cdHMS(s2);
+      const bus=el.querySelector('.fmc-in'); if(bus) bus.style.width=Math.max(118,Math.min(132, (t.scrollWidth||118)+2))+'px';
+      const put=(cls,p)=>{
+        const bar=ring.querySelector('.bar.'+cls); if(!bar) return;
+        const r=parseFloat(bar.getAttribute('r')), C=2*Math.PI*r;
+        bar.setAttribute('stroke-dashoffset', (C*(1-Math.max(0,Math.min(1,p)))).toFixed(1));
+      };
+      put('h', target ? s2/target : (s2%7200)/7200);
+      put('m', (s2%3600)/3600);
+      put('s', (s2%60)/60);
+      ring.classList.toggle('pause', !c.run && s2>0);
+      const sub=ring.querySelector('[data-fmcdsub]');
+      if(sub && !c.dist){ const base = target ? ('目标 '+c.dur+'′') : ''; sub.textContent = base ? (base + (c.run?'':' · 已暂停')) : (c.run?'计时中':(s2>0?'已暂停':'待开始')); }
+      return true;
+    };
+    paintRings();
     if(window.__fmCdTick2) clearInterval(window.__fmCdTick2);
-    window.__fmCdTick2=setInterval(()=>{
-      const t=el.querySelector('[data-fmcdt2]'); if(!t){ clearInterval(window.__fmCdTick2); window.__fmCdTick2=null; return; }
-      const ringNow=el.querySelector('[data-fmcdring2]');
-      if(ringNow && ringNow.classList.contains('charging')) return;
-      const s2=cdSec(c); t.textContent=cdFmt(s2);
-      const ring=el.querySelector('[data-fmcdring2]'); if(ring) ring.style.setProperty('--p', target?Math.min(100,Math.round(s2/target*100)):Math.round((s2%60)/60*100));
-    },1000);
+    window.__fmCdTick2=setInterval(()=>{ if(!paintRings()){ clearInterval(window.__fmCdTick2); window.__fmCdTick2=null; } },250);
     el.classList.add('on');
   }
   function bodyAppend(el){ document.body.appendChild(el); }
@@ -8670,6 +8715,35 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!r) return 0;
     return (r.sec||0) + (r.run&&r.t0 ? Math.floor((Date.now()-r.t0)/1000) : 0);
   }
+  function cdMiniPaint(svg,sec,dur){
+    if(!svg) return;
+    const put=(cls,p)=>{ const b=svg.querySelector('.bar.'+cls); if(!b) return;
+      const r=parseFloat(b.dataset.r)||1, C=2*Math.PI*r;
+      b.setAttribute('stroke-dashoffset',(C*(1-Math.max(0,Math.min(1,p)))).toFixed(1)); };
+    const target=dur?dur*60:0;
+    put('h', target? sec/target : (sec%7200)/7200);
+    put('m', (sec%3600)/3600);
+    put('s', (sec%60)/60);
+    const hb=svg.querySelector('.bar.h'); if(hb) hb.classList.toggle('goal', !!target);
+  }
+  function cdMiniSvg(sec,dur){
+    const target=dur?dur*60:0;
+    const arc=(cls,r,p)=>{ const C=2*Math.PI*r;
+      return '<circle class="bar '+cls+(cls==='h'&&target?' goal':'')+'" data-r="'+r+'" cx="60" cy="60" r="'+r+'" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-Math.max(0,Math.min(1,p)))).toFixed(1)+'"></circle>'; };
+    return '<svg class="cd-mini3" viewBox="0 0 120 120" aria-hidden="true">'
+      +'<circle class="trk h" cx="60" cy="60" r="52"></circle>'
+      +'<circle class="trk m" cx="60" cy="60" r="38"></circle>'
+      +'<circle class="trk s" cx="60" cy="60" r="24"></circle>'
+      +arc('h',52, target? sec/target : (sec%7200)/7200)
+      +arc('m',38,(sec%3600)/3600)
+      +arc('s',24,(sec%60)/60)
+      +'</svg>';
+  }
+  function cdHMS(sec){
+    const s2=Math.max(0,Math.floor(sec||0));
+    const h=Math.floor(s2/3600), m=Math.floor(s2/60)%60, x=s2%60;
+    return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(x<10?'0':'')+x;
+  }
   function cdFmt(sec){
     const s2=Math.max(0,Math.floor(sec||0));
     return String(Math.floor(s2/60)).padStart(2,'0')+':'+String(s2%60).padStart(2,'0');
@@ -8710,7 +8784,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const distChip=(!done&&!running&&CD_DIST.includes(r.modal))?'<button type="button" class="cd-chip" data-cddist2="'+r.uid+'">+0.5 km</button>':'';
     const floorChip=(!done&&!running&&r.modal==='爬楼')?'<button type="button" class="cd-chip" data-cddist3="'+r.uid+'">+5 层</button>':'';
     const name=ENGINE.esc(r.modal)+(r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':'');
-    const meta=done?(r.dur?r.dur+'′ 完成':'✓ 已完成'):(running||sec>0)?'<span class="cd-timer" data-cdtimer="'+r.uid+'">'+cdFmt(sec)+'</span>':'';
+    const meta=done?(r.dur?r.dur+'′ 完成':'✓ 已完成'):(running||sec>0)?'<span class="cd-mini">'+cdMiniSvg(sec,r.dur)+'<span class="cd-timer" data-cdtimer="'+r.uid+'">'+cdFmt(sec)+'</span></span>':'';
     return `<div class="tc-row pl-row cd-row ${st}" data-cduid="${r.uid}" data-urow="c:${r.uid}">
       <span class="pl-drag" data-drag="1" role="button" aria-label="拖动排序">≡</span>
       <span class="pl-nm"><i class="pl-no cd-ic-sm">${icon}</i><b>${name}</b></span>
@@ -9071,6 +9145,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       els.forEach(el=>{
         const r0=(train.cardio||[]).find(x=>x.uid===el.dataset.cdtimer);
         el.textContent=r0?cdFmt(cdSec(r0)):'';
+        const svg=el.parentElement&&el.parentElement.querySelector('.cd-mini3');
+        if(r0&&svg) cdMiniPaint(svg,cdSec(r0),r0.dur);
       });
     },1000);
 
