@@ -361,7 +361,17 @@ body{
 /* 页面骨架 */
 .stage{max-width:1340px;margin:0 auto;padding:30px 26px 0}
 .page[hidden]{display:none!important}
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:1.8px;color:var(--accent);opacity:.85;margin:0 0 10px}
+.eyebrow{display:none}
+.brand-txt{position:relative;display:inline-block;line-height:1.25}
+#tbBrand{display:inline-block;transition:opacity .24s ease,transform .24s ease}
+#tbPage{position:absolute;left:0;top:0;white-space:nowrap;opacity:0;transform:translateY(4px);transition:opacity .24s ease,transform .24s ease;pointer-events:none}
+body.tb-collapsed #tbBrand{opacity:0;transform:translateY(-4px)}
+body.tb-collapsed #tbPage{opacity:1;transform:none}
+.pt-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.pt-row .page-title{margin:0;min-width:0}
+.pt-date{font-size:11.5px;color:var(--tx3);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.1px}
+.sub-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.sub-row .page-desc{margin-top:0;min-width:0}
 .page-title{font-family:var(--sans);font-weight:600;font-size:26px;letter-spacing:-.4px;line-height:1.3;color:var(--tx)}
 .page-desc{font-size:13px;color:var(--tx2);margin-top:7px;line-height:1.7;max-width:660px}
 
@@ -619,7 +629,17 @@ body{
 /* 页面骨架 */
 .stage{max-width:1340px;margin:0 auto;padding:30px 26px 0}
 .page[hidden]{display:none!important}
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:1.8px;color:var(--accent);opacity:.85;margin:0 0 10px}
+.eyebrow{display:none}
+.brand-txt{position:relative;display:inline-block;line-height:1.25}
+#tbBrand{display:inline-block;transition:opacity .24s ease,transform .24s ease}
+#tbPage{position:absolute;left:0;top:0;white-space:nowrap;opacity:0;transform:translateY(4px);transition:opacity .24s ease,transform .24s ease;pointer-events:none}
+body.tb-collapsed #tbBrand{opacity:0;transform:translateY(-4px)}
+body.tb-collapsed #tbPage{opacity:1;transform:none}
+.pt-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.pt-row .page-title{margin:0;min-width:0}
+.pt-date{font-size:11.5px;color:var(--tx3);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.1px}
+.sub-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.sub-row .page-desc{margin-top:0;min-width:0}
 .page-title{font-family:var(--sans);font-weight:600;font-size:26px;letter-spacing:-.4px;line-height:1.3;color:var(--tx)}
 .page-desc{font-size:13px;color:var(--tx2);margin-top:7px;line-height:1.7;max-width:660px}
 
@@ -2715,7 +2735,7 @@ html[data-theme="light"] .rest.alarm{background:rgba(243,246,250,.96);color:var(
 @keyframes alarmPulse{0%,100%{opacity:1}50%{opacity:.82}}
 
 /* ===== 新手引导教程 ===== */
-.home-hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.home-hd{display:flex;align-items:center;justify-content:flex-end;gap:10px}
 .home-hd .eyebrow{margin:0}
 .tour-entry{background:none;border:1px solid var(--line);color:var(--tx3);font:inherit;font-size:11px;letter-spacing:.4px;padding:5px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .tour-entry:active{transform:scale(.97)}
@@ -2764,7 +2784,7 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
 <header class="topbar">
   <div class="brand">
     <svg class="dot" viewBox="0 0 24 24" fill="none"><path d="M12 2c1.5 4 4.5 7 9 9-4.5 2-7.5 5-9 9-1.5-4-4.5-7-9-9 4.5-2 7.5-5 9-9z" fill="#3DDCBF"/></svg>
-    <span>SelfAgent<span class="brand-sub">自我认知</span></span>
+    <span class="brand-txt"><span id="tbBrand">SelfAgent<span class="brand-sub">自我认知</span></span><span id="tbPage" aria-hidden="true"></span></span>
   </div>
   <nav class="steps">
     <div class="step on" id="navHome" data-page="home"><span class="n">01</span><span class="lbl">首页</span></div>
@@ -2785,12 +2805,14 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
   <section class="page page-home" id="pageHome">
     <div class="home-wrap">
       <div id="homeReview"></div>
-      <div class="home-hd">
-        <div class="eyebrow">HOME</div>
+      <div class="pt-row">
+        <div class="page-title" id="homeTitle">今天</div>
+        <span class="pt-date" id="homeDate"></span>
+      </div>
+      <div class="sub-row">
+        <div class="page-desc" id="homeSub">—</div>
         <button class="tour-entry" id="homeTour" type="button">新手引导</button>
       </div>
-      <div class="page-title" id="homeTitle">今天</div>
-      <div class="page-desc" id="homeSub">—</div>
       <div class="orb-wrap">
         <button class="orb" id="trainOrb" type="button" aria-label="开始训练">
           <svg class="orb-ring" viewBox="0 0 120 120" aria-hidden="true">
@@ -2820,7 +2842,6 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
   <section class="page page-record" id="pageRecord">
     <div class="rp-top">
       <div>
-        <div class="eyebrow">TRAIN</div>
         <div class="page-title">训练</div>
         <div class="page-desc wide-only">排好今天的动作，逐组记录</div>
       </div>
@@ -2834,7 +2855,6 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
   <section class="page page-report" id="pageAgent" hidden>
     <div class="rp-top">
       <div>
-        <div class="eyebrow">INSIGHT</div>
         <div class="page-title">分析</div>
         <div class="page-desc wide-only">基于你的记录，看见自己的模式</div>
       </div>
@@ -2865,7 +2885,6 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
   <section class="page page-report" id="pageLog" hidden>
     <div class="rp-top">
       <div>
-        <div class="eyebrow">LOG</div>
         <div class="page-title">记录</div>
         <div class="page-desc wide-only">一句话记下今天，自动识别类型与标签</div>
       </div>
@@ -2935,7 +2954,6 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
   <section class="page page-report" id="pageSetting" hidden>
     <div class="rp-top">
       <div>
-        <div class="eyebrow">ME</div>
         <div class="page-title">我的</div>
       </div>
     </div>
@@ -10709,10 +10727,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const anyKeys=Array.from(daySet).filter(Boolean).sort();
     const lastAny=anyKeys.length?anyKeys[anyKeys.length-1]:null;
     const lastGap=lastAny?Math.round((new Date(tk)-new Date(lastAny))/864e5):null;
+    if($('homeDate')) $('homeDate').textContent = `${t.getMonth()+1}月${t.getDate()}日 周${'日一二三四五六'[t.getDay()]}`;
     if($('homeSub')) $('homeSub').textContent = streak>1
-      ? `今天 ${t.getMonth()+1} 月 ${t.getDate()} 日 · 已连续 ${streak} 天有记录`
-      : (lastGap!=null ? `${t.getMonth()+1} 月 ${t.getDate()} 日 · 上次记录在 ${lastGap} 天前`
-      : `${t.getMonth()+1} 月 ${t.getDate()} 日 · 写下第一条，画像就开始长出来`);
+      ? `已连续 ${streak} 天有记录`
+      : (lastGap!=null ? `上次记录在 ${lastGap} 天前`
+      : `写下第一条，画像就开始长出来`);
     const weekC=logs.filter(l=>Date.now()-new Date(l.time)<=7*864e5).length;
     if($('homeToday')) $('homeToday').innerHTML = `
       <div class="hc"><span class="hc-k">连续</span><span class="hc-v">${streak}<em>天</em></span></div>
@@ -12288,7 +12307,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     currentPage=p;
     ['navHome','navRecord','navAgent','navLog','navSet'].forEach(id=>{ const n=$(id); if(n) n.classList.toggle('on', id===PAGE_NAV[p]); });
     document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on', b.dataset.page===p));
+    const tb=document.getElementById('tbPage'); if(tb) tb.textContent=(PAGE_NAME[p]||'');
+    document.body.classList.remove('tb-collapsed');
   }
+  const PAGE_NAME={home:'今天',record:'训练',agent:'分析',log:'记录',setting:'我的'};
+  (function tbScroll(){
+    const on=()=>{ const y=window.scrollY||document.documentElement.scrollTop||0; document.body.classList.toggle('tb-collapsed', y>40); };
+    window.addEventListener('scroll', on, {passive:true});
+    on();
+  })();
   function syncTabs(){ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.tab===currentTab)); }
   function markStepIdx(n){
     const map={1:'record',2:'agent',3:'agent',4:'agent',5:'log',6:'log',7:'record',8:'setting'};
