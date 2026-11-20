@@ -5642,6 +5642,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function focusOrbData(){
     let done=0,total=0;
     try{ focusList().forEach(r=>{const gs=Array.isArray(r.groups)?r.groups:[];total+=gs.length;done+=gs.filter(g=>g.done).length;}); }catch(e){}
+    try{ (train.cardio||[]).filter(c=>c.date===trDateVal()).forEach(c=>{ total+=1; if(c.done||c.skipped) done+=1; }); }catch(e){}
     return {done,total};
   }
   var __orbCfg={mode:'record',side:'right',bottom:86};
@@ -5682,7 +5683,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function orbRunDefault(){
     if(__orbCfg.mode==='focus'){
       if(document.getElementById('focusMode')) return;
-      if(!focusList().length){
+      const cdsNow=(train.cardio||[]).filter(c=>c.date===trDateVal() && !c.done && !c.skipped);
+      if(!focusList().length && !cdsNow.length){
         try{ openPage('record'); trSetSeg('plan'); }catch(e){}
         setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="plan"]'); if(p) p.scrollIntoView({block:'start'}); },120);
         trToast('今日还没有计划：先选部位生成一份，再点球开练');
