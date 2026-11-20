@@ -1,0 +1,4 @@
+﻿start 09:52:04
+try1 ok=True :: git : To https://github.com/xiejiejun/selfagent.git | 所在位置 C:\Users\jiejun.xie\Doubao\chats\2026-10-24\new-chat\selfagent\_push_retry.ps1:6 字符: 11 | +   $out = (git -c http.proxy= -c https.proxy= -c http.version=HTTP/1.1 ... | +           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ |     + CategoryInfo          : NotSpecified: (To https://gith...n/selfagent.git:String) [], RemoteException |     + FullyQualifiedErrorId : NativeCommandError |   |    0d618f8..08ccfd7  main -> main | 
+SUCCESS
+end 09:52:23
