@@ -904,27 +904,35 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
 
 /* ===== 首页仪表板 ===== */
 .page-home .home-wrap{max-width:1080px;margin:0 auto}
-.home-today{display:grid;gap:10px;grid-template-columns:repeat(2,1fr);margin:16px 0 18px}
-@media(min-width:900px){.home-today{grid-template-columns:repeat(4,1fr)}}
-.hc{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:12px;padding:14px 15px}
-.hc-k{display:block;font-size:11.5px;color:var(--tx3)}
-.hc-v{display:block;font-size:26px;font-weight:600;color:var(--tx);letter-spacing:-.6px;margin-top:5px}
-.hc-v em{font-style:normal;font-size:11.5px;color:var(--tx3);font-weight:400;margin-left:4px;letter-spacing:0}
-.home-hm{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-bottom:16px}
-.hm-head{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--tx3);margin-bottom:11px}
+.home-today{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:14px 0 12px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:11px;padding:9px 2px}
+.hc{background:none;border:0;border-right:1px solid var(--line);border-radius:0;padding:0 9px;min-width:0}
+.hc:last-child{border-right:0}
+.hc-k{display:block;font-size:10.5px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc-v{display:block;font-size:16px;font-weight:600;color:var(--tx);letter-spacing:-.3px;margin-top:2px;font-variant-numeric:tabular-nums}
+.hc-v em{font-style:normal;font-size:10px;color:var(--tx3);font-weight:400;margin-left:3px;letter-spacing:0}
+.hc.null{cursor:pointer}
+.hc.null .hc-v{color:var(--tx3);font-size:13px;font-weight:500}
+.hc.null .hc-k{color:var(--accent)}
+.home-hm{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-bottom:12px}
+.hm-head{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--tx3);margin-bottom:8px}
 .hm-legend{display:flex;align-items:center;gap:4px}
 .hm-legend i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.06);display:block}
-.hm{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,11px);gap:3px;overflow-x:auto;padding-bottom:2px}
-.hm i{width:11px;height:11px;border-radius:3px;background:rgba(255,255,255,.05);display:block;transition:transform .15s}
+.hm{display:grid;grid-auto-flow:column;justify-content:center;grid-auto-columns:13px;grid-template-rows:repeat(7,13px);gap:3px;overflow-x:auto;padding-bottom:1px}
+.hm i{width:13px;height:13px;border-radius:3px;background:rgba(255,255,255,.05);display:block;transition:transform .15s}
 .hm i:hover{transform:scale(1.18)}
 .hm i[data-l="1"],.hm-legend i[data-l="1"]{background:rgba(61,220,191,.24)}
 .hm i[data-l="2"],.hm-legend i[data-l="2"]{background:rgba(61,220,191,.42)}
 .hm i[data-l="3"],.hm-legend i[data-l="3"]{background:rgba(61,220,191,.62)}
 .hm i[data-l="4"],.hm-legend i[data-l="4"]{background:rgba(61,220,191,.86)}
-.home-signals{display:grid;gap:8px;margin-bottom:18px}
-.sig{font-size:12.5px;color:var(--tx2);background:rgba(255,255,255,.02);border:1px solid var(--line);border-left:2px solid rgba(61,220,191,.55);border-radius:10px;padding:10px 12px}
+.home-signals{display:grid;gap:7px;margin-bottom:12px}
+.home-signals:empty{display:none}
+.sig{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;line-height:1.45;color:var(--tx2);background:rgba(255,255,255,.02);border:1px solid var(--line);border-left:2px solid rgba(61,220,191,.55);border-radius:9px;padding:9px 11px}
 .sig.warn{border-left-color:var(--risk);color:var(--tx)}
-.home-actions{display:flex;gap:10px}
+.sig.ai{border-left-color:var(--accent);color:var(--tx)}
+.sig>span{min-width:0}
+.sig-act{border:0;background:none;padding:0;margin-left:auto;color:var(--accent);font:inherit;font-size:11.5px;font-weight:600;white-space:nowrap;cursor:pointer}
+.sig-more{border:0;background:none;padding:2px 0;color:var(--tx3);font:inherit;font-size:11px;text-align:left;cursor:pointer}
+.home-actions{display:flex;gap:10px;padding-bottom:8px}
 
 /* ===== 训练 +1 组 ===== */
 .tr-plus{background:rgba(61,220,191,.1);border:1px solid rgba(61,220,191,.45);color:var(--accent);font:inherit;font-size:11.5px;border-radius:999px;padding:3px 9px;cursor:pointer;margin-right:6px;white-space:nowrap}
@@ -2783,7 +2791,6 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
       </div>
       <div class="page-title" id="homeTitle">今天</div>
       <div class="page-desc" id="homeSub">—</div>
-      <div class="home-today" id="homeToday"></div>
       <div class="orb-wrap">
         <button class="orb" id="trainOrb" type="button" aria-label="开始训练">
           <svg class="orb-ring" viewBox="0 0 120 120" aria-hidden="true">
@@ -2795,17 +2802,16 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
         </button>
         <div class="orb-sub" id="orbSub">先去训练页挑动作</div>
       </div>
+      <div class="home-today" id="homeToday"></div>
+      <div class="home-signals" id="homeSignals"></div>
       <div class="home-hm">
         <div class="hm-head"><span>近 12 周打卡</span>
           <span class="hm-legend">少<i data-l="0"></i><i data-l="1"></i><i data-l="2"></i><i data-l="3"></i><i data-l="4"></i>多</span>
         </div>
         <div class="hm" id="homeHm"></div>
       </div>
-      <div class="home-signals" id="homeSignals"></div>
       <div class="home-actions">
         <button class="btn sm btn-block" id="homeGoRec">＋ 记录</button>
-        <button class="btn ghost sm" id="homeReviewBtn" type="button">本周回顾</button>
-        <button class="btn ghost sm" id="homeGoAgent">查看分析</button>
       </div>
     </div>
   </section>
@@ -10707,11 +10713,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       ? `今天 ${t.getMonth()+1} 月 ${t.getDate()} 日 · 已连续 ${streak} 天有记录`
       : (lastGap!=null ? `${t.getMonth()+1} 月 ${t.getDate()} 日 · 上次记录在 ${lastGap} 天前`
       : `${t.getMonth()+1} 月 ${t.getDate()} 日 · 写下第一条，画像就开始长出来`);
+    const weekC=logs.filter(l=>Date.now()-new Date(l.time)<=7*864e5).length;
     if($('homeToday')) $('homeToday').innerHTML = `
-      <div class="hc"><span class="hc-k">今天记录</span><span class="hc-v">${tl.length}<em>条</em></span></div>
-      <div class="hc"><span class="hc-k">今天训练</span><span class="hc-v">${sets}<em>组</em></span></div>
-      <div class="hc"><span class="hc-k">精力 / 情绪</span><span class="hc-v">${f1(sc)}<em>${mw?('/ '+mw):'/ —'}</em></span></div>
-      <div class="hc"><span class="hc-k">${streak?'连续打卡':'上次记录'}</span><span class="hc-v">${streak?(streak+'<em>天</em>'):(lastGap!=null?(lastGap+'<em>天前</em>'):'<em>还没有</em>')}</span></div>`;
+      <div class="hc"><span class="hc-k">连续</span><span class="hc-v">${streak}<em>天</em></span></div>
+      <div class="hc${sc==null?' null':''}" data-hs="log" role="button" tabindex="0" title="点此记一笔"><span class="hc-k">${sc==null?'精力 · 去记':'精力'}</span><span class="hc-v">${sc==null?'—':f1(sc)}</span></div>
+      <div class="hc${md==null?' null':''}" data-hs="log" role="button" tabindex="0" title="点此记一笔"><span class="hc-k">${md==null?'情绪 · 去记':'情绪'}</span><span class="hc-v">${md==null?'—':f1(md)}</span></div>
+      <div class="hc"><span class="hc-k">本周</span><span class="hc-v">${weekC}<em>条</em></span></div>`;
     try{ updateOrb(tt); }catch(e){}
     // 热力图
     const cnt={};
@@ -10724,28 +10731,24 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       cells+=`<i data-l="${lv}" title="${k} · ${c} 项"></i>`;
     }
     if($('homeHm')) $('homeHm').innerHTML=cells;
-    // 信号
+    // 信号（按影响度排序，最多同屏 2 条）
     const sigs=[];
-    const tds=train.records.map(r=>r.date).filter(Boolean).sort();
-    const last=tds.length?tds[tds.length-1]:null;
-    if(last){
-      const gap=Math.round((new Date(tk)-new Date(last))/864e5);
-      if(gap===0) sigs.push(['good','今天已经练过了']);
-      else if(gap>=3) sigs.push(['warn',`已经 ${gap} 天没训练了`]);
-      else sigs.push(['good',`最近一次训练在 ${gap} 天前`]);
-    } else sigs.push(['warn','还没有训练记录']);
-    const weekC=logs.filter(l=>Date.now()-new Date(l.time)<=7*864e5).length;
-    const prevC=logs.filter(l=>{const a=Date.now()-new Date(l.time); return a>7*864e5&&a<=14*864e5;}).length;
-    if(prevC) sigs.push([weekC>=prevC?'good':'warn',`本周 ${weekC} 条记录，上周 ${prevC} 条`]);
-    else if(weekC) sigs.push(['good',`本周已记 ${weekC} 条`]);
     if(!tl.length){
       const hasY=daySet.has(dk(new Date(Date.now()-864e5)));
-      sigs.push(['warn', hasY ? '今天还没记，30 秒补上（昨天有记录，别断）' : '今天还没有记录，写一句就能存']);
+      sigs.push(['warn', hasY?'今天还没记 · 昨天有记录，别断':'今天还没记', 'rec', '去记录']);
     }
+    const tds=train.records.map(r=>r.date).filter(Boolean).sort();
+    const last=tds.length?tds[tds.length-1]:null;
+    if(last && !sigs.length){
+      const gap=Math.round((new Date(tk)-new Date(last))/864e5);
+      if(gap>=3) sigs.push(['warn',`已经 ${gap} 天没训练了`, 'rec', '去训练']);
+    }
+    const prevC=logs.filter(l=>{const a=Date.now()-new Date(l.time); return a>7*864e5&&a<=14*864e5;}).length;
+    if(prevC) sigs.push([weekC>=prevC?'good':'warn',`本周 ${weekC} 条 · 上周 ${prevC} 条`, 'agent', '看趋势']);
     const corr=corrTrainingEnergy();
     if(corr){
       const d=corr.diff, txt=`训练日次日精力 ${d>=0?'+':''}${d.toFixed(1)}（训练后 ${corr.n} 天 vs 其他 ${corr.n2} 天）`;
-      sigs.push([d>=0.5?'good':(d<=-0.5?'warn':'good'), txt]);
+      sigs.push([d>=0.5?'good':(d<=-0.5?'warn':'good'), txt, 'agent', '看分析']);
     }
     try{
       const lastByPart={};
@@ -10755,9 +10758,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         const gap=Math.round((new Date(tk)-new Date(lastByPart[pt]+'T00:00:00'))/864e5);
         if(!worst || gap>worst.gap) worst={pt,gap};
       });
-      if(worst && worst.gap>=12) sigs.push(['warn',`${worst.pt} 已经 ${worst.gap} 天没练了`]);
+      if(worst && worst.gap>=12) sigs.push(['warn',`${worst.pt} 已经 ${worst.gap} 天没练了`, 'rec', '去训练']);
     }catch(e){}
-    if($('homeSignals')) $('homeSignals').innerHTML = sigs.map(x=>`<div class="sig ${x[0]==='warn'?'warn':''}">${ENGINE.esc(x[1])}</div>`).join('');
+    homeSigSet(sigs);
     try{ setTimeout(()=>{ try{ aiHomeInsight(); }catch(e){} }, 260); }catch(e){}
     try{ renderReview(false); }catch(e){}
   }
@@ -11589,6 +11592,32 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return s.length>n ? s.slice(0,n)+'…' : s;
   }
 
+  /* ---------- 首页信号区 ---------- */
+  let homeSigs=[];
+  function homeSigPaint(){
+    const box=$('homeSignals'); if(!box) return;
+    const exp=box.dataset.exp==='1';
+    const items=exp?homeSigs:homeSigs.slice(0,2);
+    box.innerHTML=items.map(s=>{
+      const cls=s[0]==='warn'?'sig warn':(s[0]==='ai'?'sig ai':'sig');
+      return `<div class="${cls}"><span>${s[1]}</span>${s[3]?`<button class="sig-act" type="button" data-sa="${s[2]}">${s[3]} ▸</button>`:''}</div>`;
+    }).join('')
+      +(homeSigs.length>2?`<button class="sig-more" type="button" data-sigexp="${exp?'0':'1'}">${exp?'收起 ▴':('更多 '+(homeSigs.length-2)+' 条 ▸')}</button>`:'');
+    box.onclick=(ev)=>{
+      const act=ev.target.closest('[data-sa]');
+      if(act){
+        const a=act.dataset.sa;
+        if(a==='rec') openPage('record');
+        else if(a==='agent') openPage('agent');
+        else if(a==='retry'){ try{ aiCacheDel('ins:'+aiFingerprint()); }catch(e){} aiHomeInsight(); }
+        return;
+      }
+      const mo=ev.target.closest('[data-sigexp]');
+      if(mo){ box.dataset.exp=mo.dataset.sigexp; homeSigPaint(); }
+    };
+  }
+  function homeSigSet(list){ homeSigs=list.slice(); const b=$('homeSignals'); if(b) b.dataset.exp='0'; homeSigPaint(); }
+
   /* ---------- 首页主动洞察 ---------- */
   function aiHomeInsight(){
     if(!aiReady()) return;
@@ -11611,13 +11640,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
   }
   function aiSigShow(text, retry){
-    const box=document.getElementById('homeSignals'); if(!box) return;
-    let el=box.querySelector('.sig.ai');
-    if(!el){ el=document.createElement('div'); el.className='sig ai'; box.appendChild(el); }
-    el.innerHTML='<b style="font-weight:600">AI 观察：</b>'+ENGINE.esc(String(text));
-    el.onclick=retry ? ()=>{ aiCacheDel('ins:'+aiFingerprint()); aiHomeInsight(); } : null;
-    el.style.cursor = retry ? 'pointer' : '';
-    return el;
+    const item=['ai', '<b style="font-weight:600">AI 观察：</b>'+ENGINE.esc(String(text)), retry?'retry':'', retry?'重试':''];
+    const i=homeSigs.findIndex(s=>s[0]==='ai');
+    if(i>=0) homeSigs[i]=item;
+    else homeSigs.splice(homeSigs.length>1?1:homeSigs.length, 0, item);
+    homeSigPaint();
   }
 
   /* ---------- 训练计划理由 ---------- */
@@ -12324,6 +12351,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     openFocus();
   });
   ['homeGoRec','homeGoAgent'].forEach((id,i)=>{ const b=$(id); if(b) b.addEventListener('click',()=>openPage(i?'agent':'record')); });
+  (function bindHomeStat(){
+    const w=document.getElementById('homeToday'); if(!w) return;
+    w.addEventListener('click',(ev)=>{ const c=ev.target.closest('[data-hs="log"]'); if(c) openPage('record'); });
+  })();
 
   /* 日志改日期（补记昨天） */
   const P2=n=>String(n).padStart(2,'0');
