@@ -2478,7 +2478,17 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .pl-eff{display:flex;gap:5px;margin-top:11px;padding-top:10px;border-top:1px dashed var(--line)}
 .pl-eff button{flex:1;min-height:32px;border:1px solid var(--line);background:none;color:var(--tx3);border-radius:9px;font:inherit;font-size:12px;transition:all var(--t-fast) var(--ease)}
 .pl-eff button.on{border-color:rgba(47,209,197,.55);color:var(--tx);background:rgba(47,209,197,.12)}
-.pl-eff-note{font-size:10.5px;color:var(--tx3);margin-top:7px}
+.pl-eff-note{font-size:11px;color:var(--tx3);margin-top:7px;line-height:1.5}
+.ph-note{font-size:11px;color:var(--tx3);margin-top:4px}
+.pl-sugg{border:0;background:none;color:var(--accent);font-size:12px;font-weight:600;padding:2px 0;cursor:pointer;font-variant-numeric:tabular-nums}
+.pl-sugg:active{opacity:.7}
+.pl-table{gap:0}
+.pl-table .pl-row{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding-left:0;padding-right:0;min-height:52px;grid-template-columns:16px minmax(0,1fr) 64px 84px 22px}
+.pl-table .pl-row::before{display:none}
+.pl-table .pl-row:first-child{border-top:1px solid var(--line)}
+.pl-addl{margin-top:10px;text-align:center}
+.pl-addl button{border:0;background:none;color:var(--tx3);font-size:12.5px;padding:6px 10px;cursor:pointer}
+.pl-addl button:active{color:var(--accent)}
 .pl-table{border:0;border-radius:0;overflow:visible;background:none;display:flex;flex-direction:column;gap:8px}
 .pl-th{display:none}
 .pl-row{display:grid;grid-template-columns:18px 1fr 74px 56px 22px;gap:6px;align-items:center;padding:0 10px 0 12px;min-height:52px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);cursor:pointer;position:relative;overflow:hidden;transition:background .16s,transform .16s,box-shadow .16s}
@@ -6905,7 +6915,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               const p=a[1], rc=partRecovery(p);
               const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
               const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
-              return `<button class="bm-cell ${st}${i===0?' on':''}" data-planpart="${p}" data-view="${a[0]}" type="button"><b>${a[0]}</b><em>${word}</em></button>`;
+              return `<button class="bm-cell ${st}" data-planpart="${p}" data-view="${a[0]}" type="button"><b>${a[0]}</b><em>${word}</em></button>`;
             }).join('')}</div>
             <div id="plOut"></div>
           </div>
@@ -6945,6 +6955,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   let libTab='search', trSeg='today';
   function trSetSeg(n){
     trSeg=n;
+    try{ const orb=document.getElementById('modeOrb'); if(orb) orb.style.display=(n==='plan')?'none':''; }catch(e){}
     const seg=$('trSeg'); if(seg) seg.querySelectorAll('[data-trseg]').forEach(b=>b.classList.toggle('on', b.dataset.trseg===n));
     document.querySelectorAll('#reportBody [data-trp]').forEach(p=>{ p.hidden = p.dataset.trp!==n; });
     if(n==='lib'){ libShow(libTab||'search'); }
@@ -8339,9 +8350,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const m=n.match(/硬拉|深蹲|弓步|卧推|推胸|划船|下拉|肩推|推举|弯举|飞鸟|夹胸|臂屈伸|伸展|提踵|卷腹|仰卧起坐|平板支撑|引体向上|俯卧撑|臀推|抬腿|举腿|转体|侧屈|平举|耸肩|上拉|跑|单车|跳/);
       return m?m[0]:n.slice(-3);
     };
+    const LEG=/深蹲|弓步|臀桥|臀推|腿举|腿弯|腿屈伸|提踵|小腿|分腿/;
+    const UPPER=/弯举|飞鸟|夹胸|推胸|卧推|划船|下拉|平举|推举|臂屈伸/;
     const eqCount={}, coreCount={};
     for(const e of pool){
       if(picked.length>=4) break;
+      if((part==='上臂'||part==='前臂') && LEG.test(e.n)) continue;
+      if(part==='上腿' && UPPER.test(e.n)) continue;
       const eq=e.e||'自重', core=coreOf(e.n);
       if((eqCount[eq]||0)>=2) continue;
       if((coreCount[core]||0)>=1) continue;
@@ -8349,8 +8364,17 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       seen.add(e.id); eqCount[eq]=(eqCount[eq]||0)+1; coreCount[core]=(coreCount[core]||0)+1;
       picked.push({e,src:'lib'});
     }
+    const allRecs=(train.records||[]);
+    const lastWOf=id=>{ const rs=allRecs.filter(r=>r.exId===id && (r.weight||0)>0); return rs.length?(rs[rs.length-1].weight||0):0; };
+    const peerW=(eq)=>{ let rs=allRecs.filter(r=>r.part===part && (r.weight||0)>0);
+      if(!rs.length && eq){
+        rs=allRecs.filter(r=>{ try{ const x=findEx(r.exId)||{}; return (x.e||r.e||'')===eq && (r.weight||0)>0; }catch(e){ return false; } });
+      }
+      if(!rs.length) return 0;
+      const t=rs.slice(-3).reduce((a,b)=>a+(b.weight||0),0)/Math.min(3,rs.length);
+      return Math.max(2.5, Math.round(t/2.5)*2.5); };
     return picked.map(p=>{
-      const u=p.u; let sets=3, reps=12, weight=0, note='';
+      const u=p.u; let sets=3, reps=12, weight=0, note='', sugg=false;
       if(u){
         const last=u.last;
         sets=last.sets>=4?4:3;
@@ -8362,13 +8386,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       } else if(p.src==='fav'){
         note='你收藏的常用动作 · 按 3×12 起步';
       } else {
-        note='同部位动作库补充 · 按 3×12 起步，重量自选';
+        note='同部位动作库补充 · 按 3×12 起步';
+      }
+      if(!u){
+        const lw=lastWOf(p.e.id);
+        if(lw){ weight=lw; sugg=false; note='上次 '+lw+'kg · 沿用重量，先做 3×12'; }
+        else if((p.e.e||'')!=='自重'){
+          const pw=peerW(p.e.e||'');
+          if(pw){ weight=pw; sugg=true; note='按同部位最近重量估算 · 采纳后可微调'; }
+        }
       }
       if(part==='有氧' && /单车|跑|走|游泳|椭圆|登山|跳|划船机/.test(p.e.n)){
         return {exId:p.e.id, name:p.e.n, part:p.e.p, eq:p.e.e, sets:1, reps:1, weight:0, dur:20,
           note:'有氧以时长为准 · 建议 20-30 分钟中等强度', src:p.src};
       }
-      return {exId:p.e.id, name:p.e.n, part:p.e.p, eq:p.e.e, sets, reps, weight, note, src:p.src};
+      return {exId:p.e.id, name:p.e.n, part:p.e.p, eq:p.e.e, sets, reps, weight, note, sugg:!!sugg, src:p.src};
     });
   }
   function trPlanSave(){ try{ train.planDraft = (trPlan||[]).map(i=>({...i})); saveTrain(); }catch(e){} }
@@ -8475,9 +8507,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <button class="plan-del" data-pldel="${idx}" type="button">移除</button>
           </div>
         </div>`;
-      const wtCell = selfW
-        ? `<button class="pl-warn" data-plwarn="${idx}" type="button">⚠自选</button>`
-        : (i.weight>0?(i.weight+'kg'):'自重');
+      const wtCell = (i.weight||0)>0
+        ? ((i.sugg&&!jn) ? `<button class="pl-sugg" data-plsugg="${idx}" type="button">建议 ${i.weight}kg</button>` : (i.weight+'kg'))
+        : (selfW ? `<button class="pl-warn" data-plwarn="${idx}" type="button">⚠自选</button>` : '自重');
       return `<div class="pl-row${jn?' joined':''}${open?' on':''}" data-plrow="${idx}" data-cardio="${i.dur?1:0}">
           <span class="pl-drag" data-pldrag="${idx}" role="button" aria-label="拖动排序">≡</span>
           <span class="pl-nm"><i class="pl-no">${idx+1}</i><b>${ENGINE.esc(i.name)}</b></span>
@@ -8492,11 +8524,22 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     trPlan.forEach((i,idx)=>{ (trPlanJoined(i.exId)?joinedRows:pendRows).push(mkRow(i,idx)); });
     const rv=(()=>{ try{ return partRecovery(label)||{}; }catch(e){ return {}; } })();
     let eff='std'; try{ eff=localStorage.getItem('selfagent_plan_eff_v1')||'std'; }catch(e){}
+    const statCells=[
+      {n:trPlan.filter(i=>!i.dur).length, k:'动作'},
+      {n:sum.sets, k:'组'},
+      (Math.round(sum.vol)?{n:Math.round(sum.vol).toLocaleString(), k:'容量kg'}:null),
+      (sum.min?{n:sum.min, k:'分钟'}:null)
+    ].filter(c=>c && c.n);
+    const AVOID=['肩','胸','背','腰腹','上臂','上腿'].filter(p=>{ try{ const r=partRecovery(p)||{}; return r.h!=null && r.h<48; }catch(e){ return false; } });
+    const avoidTxt=AVOID.length
+      ? (AVOID.includes(trPlan[0].part) ? ('本部位仍在恢复中 · 可点其他部位切换') : ('已避开恢复中部位：'+AVOID.map(p=>PV[p]||p).join('、')))
+      : '';
     box.innerHTML=`
       <div class="plan-wrap">
         <div class="plan-hero">
           <div class="ph-t"><b>${ENGINE.esc(label)}日计划</b><em>${trPlan.length} 个动作 · ${amount}</em></div>
-          <div class="ph-m"><span><b>${trPlan.filter(i=>!i.dur).length}</b>动作</span><span><b>${sum.sets}</b>组</span><span><b>${Math.round(sum.vol).toLocaleString()}</b>容量kg</span><span><b>${sum.min||0}</b>分钟</span></div>
+          ${avoidTxt?('<div class="ph-note">'+avoidTxt+'</div>'):''}
+          <div class="ph-m">${statCells.map(c=>`<span><b>${c.n}</b>${c.k}</span>`).join('')}</div>
           <div class="pl-eff" id="plEff">
             <button type="button" data-eff="light" class="${eff==='light'?'on':''}">轻松</button>
             <button type="button" data-eff="std" class="${eff==='std'?'on':''}">标准</button>
@@ -8516,10 +8559,17 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           ${pendRows.length?pendRows.join(''):'<div class="pl-empty">待加入的动作都处理完了</div>'}
           ${joinedRows.length?`<button class="pl-jjoined" id="plJoined" type="button">已加入 ${joinedRows.length} ${plJoinedOpen?'▾':'▸'}</button>${plJoinedOpen?joinedRows.join(''):''}`:''}
         </div>
-        ${rv.text?`<div class="plan-recovery ${rv.warn?'warn':''}">${ENGINE.esc(rv.text)}</div>`:''}
+        <div class="pl-addl"><button type="button" id="plAddLink">＋ 添加动作</button></div>
         <div class="pl-go"><button class="btn sm" id="plGoToday" type="button">${pending?('加入剩余 '+pending+' 个 · 去训练 ▸'):'去今日训练 ▸'}</button></div>
       </div>`;
 
+    const pal=box.querySelector('#plAddLink');
+    if(pal) pal.onclick=()=>{ try{ trSetSeg('lib'); }catch(e){} };
+    try{
+      const curPart=trPlan&&trPlan[0]?trPlan[0].part:'';
+      if(curPart) window.planPart=curPart;
+      document.querySelectorAll('#planBodyMap [data-planpart]').forEach(c=>c.classList.toggle('on', c.dataset.planpart===curPart));
+    }catch(e){}
     // 强度档位
     box.querySelectorAll('[data-eff]').forEach(b=>b.onclick=(ev)=>{
       ev.stopPropagation();
@@ -8528,6 +8578,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       try{ localStorage.setItem('selfagent_plan_eff_v1', lv); }catch(e){}
       trPlanSave(); trRenderPlan();
       trToast(lv==='light'?'已切轻松档 · 组数 −20%':lv==='hard'?'已切强化档 · 组数 +20%':'已回标准档');
+    });
+    box.querySelectorAll('[data-plsugg]').forEach(b=>b.onclick=(ev)=>{
+      ev.stopPropagation();
+      const i=trPlan[+b.dataset.plsugg]; if(!i) return;
+      i.sugg=false; trPlanSave(); trRenderPlan(); trToast('已采纳 '+i.weight+'kg');
     });
     // 行内 ⋯ = 打开编辑面板
     box.querySelectorAll('[data-plrowmore]').forEach(b=>b.onclick=(ev)=>{
@@ -9582,9 +9637,16 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           rc.textContent=txt;
         }
       };
-      pbm.querySelectorAll('[data-planpart]').forEach(b=>b.onclick=()=>{
-        window.planPart=b.dataset.planpart; syncPlan();
-        try{ planGenerate(b.dataset.planpart); }catch(e){}
+      pbm.querySelectorAll('[data-planpart]').forEach(b=>b.onclick=async ()=>{
+        const np=b.dataset.planpart;
+        if(np===window.planPart && trPlan && trPlan.length) return;
+        let dirty=false;
+        try{
+          dirty=(trPlan||[]).some(i=>i.adjUser || (i.orig && ((i.sets||0)!==(i.orig.sets||0) || (i.weight||0)!==(i.orig.weight||0) || (i.reps||0)!==(i.orig.reps||0))));
+        }catch(e){}
+        if(dirty && !(await Modal.confirm({title:'替换当前计划', body:'当前计划里有你手改过的行，切换部位会丢弃这些调整。', okText:'替换', cancelText:'保留', danger:true}))) return;
+        window.planPart=np; syncPlan();
+        try{ planGenerate(np); }catch(e){}
       });
       syncPlan();
     }
