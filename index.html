@@ -2298,6 +2298,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .fmc-skip{border:0;background:none;color:var(--tx3);font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;margin-top:4px}
 .fm-chip.cd{border-color:rgba(91,156,255,.45);color:#5B9CFF}
 .fm-chip.ghost{opacity:.72}
+.fm-chip.skip{opacity:.5}
+.fm-chip.skip em{color:var(--tx3)}
+.msheet.redo .ms-title{color:#F0B34A}
+.rd-sub{font-size:12px;color:var(--tx3);margin:-2px 0 10px}
+.rd-lost{font-size:12px;line-height:1.7;color:var(--tx2);border-left:2px solid #E06B6B;padding:8px 10px;border-radius:8px;background:rgba(224,107,107,.08);margin-bottom:14px}
+.rd-lost span{color:var(--tx3)}
+.ms-redo{width:100%;margin-bottom:8px}
 .fm-trans{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--bg);font-size:22px;font-weight:650;animation:cdPulse 1s ease-in-out}
 .fm-trans em{font-style:normal;font-size:12px;color:var(--tx3);font-weight:400}
 /* 有氧：独立记录类型 */
@@ -5244,6 +5251,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <button class="btn sm gm-b" data-gm="warm" type="button">${g.warmup?'取消热身标记':'标记为热身组（不计容量/PR）'}</button>
         <button class="btn ghost sm gm-b" data-gm="edit" type="button">编辑参数</button>
         <button class="btn ghost sm gm-b" data-gm="allwarm" type="button">${g.warmup?'本动作全部取消热身':'把已完成组标为热身'}</button>
+        ${(g.done||g.sec||g.rpe)?`<button class="btn danger sm gm-b" data-gm="redo" type="button">重做本组</button>`:''}
         ${g.done?`<button class="btn ghost sm gm-b" data-gm="undone" type="button">取消本组完成</button>`:''}
       </div>
       <div class="ms-btns"><button class="btn ghost sm" data-gm="close" type="button">关闭</button></div>
@@ -5271,6 +5279,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         trToast(on?'已完成组已标为热身':'已完成组已取消热身');
         el.remove(); return;
       }
+      if(act==='redo'){ el.remove(); openRedoConfirm(key); return; }
       if(act==='undone'){
         g.done=false; delete window.__rpeAsk[key];
         saveTrain(); trRenderToday(); refreshHome();
@@ -5288,7 +5297,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       t=setTimeout(()=>{
         t=null; moved=true;
         window.__holdFired=Date.now();
-        document.addEventListener('click', function swallow(e){ e.stopPropagation(); e.preventDefault(); document.removeEventListener('click', swallow, true); }, true);
+        const swallow=e=>{ if(Date.now()-window.__holdFired<420){ e.stopPropagation(); e.preventDefault(); } document.removeEventListener('click', swallow, true); };
+        document.addEventListener('click', swallow, true);
+        setTimeout(()=>{ try{ document.removeEventListener('click', swallow, true); }catch(e){} }, 460);
         cb();
       }, ms);
     });
@@ -5299,6 +5310,40 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.addEventListener('pointerup',clear);
     el.addEventListener('pointercancel',clear);
     el.addEventListener('pointerleave',clear);
+  }
+  function openRedoConfirm(key){
+    const {r,g}=setOf(key); if(!r||!g) return;
+    document.querySelectorAll('.msheet.redo').forEach(x=>x.remove());
+    const lost=[];
+    if(g.done) lost.push('完成状态');
+    if(g.sec) lost.push('本组 '+g.sec+' 秒');
+    if(g.rpe) lost.push('RPE '+g.rpe);
+    const vol=(g.weight>0?g.weight+' kg':'自重')+' × '+(((g.timed&&!(g.reps>0))||isTimedX(r))?((g.sec||45)+' 秒'):((g.reps||0)+' 次'));
+    const el=document.createElement('div'); el.className='msheet redo';
+    el.innerHTML=`<div class="msheet-box">
+      <div class="ms-title">重做第 ${g.no} 组？</div>
+      <div class="rd-sub">${ENGINE.esc(r.name)} · ${vol}</div>
+      <div class="rd-lost">将清除：${lost.length?lost.join(' · '):'本组的完成记录'}<br><span>已计入的容量与 PR 将回退，重量保留</span></div>
+      <div class="ms-btns"><button class="btn ghost sm" data-rdcancel type="button">取消</button><button class="btn danger sm" data-rdok type="button">确认重做</button></div>
+    </div>`;
+    el.style.zIndex='6300';
+    document.body.appendChild(el);
+    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    el.querySelector('[data-rdcancel]').onclick=()=>el.remove();
+    el.querySelector('[data-rdok]').onclick=()=>{
+      el.remove();
+      const key0=r.uid+':'+g.no;
+      g.done=false;
+      delete g.sec; delete g.rpe;
+      if(!isTimedX(r)) delete g.timed;
+      if(window.__rpeAsk) delete window.__rpeAsk[key];
+      if(window.__grpStart) delete window.__grpStart[key0];
+      saveTrain(); trRenderToday(); refreshHome();
+      if(document.getElementById('focusMode')){ try{ renderFocus(); }catch(e){} }
+      try{ haptic('warn'); }catch(e){}
+      trToast('第 '+g.no+' 组已重置，重量保留');
+    };
+    try{ haptic('warn'); }catch(e){}
   }
   function openSetSheet(key){
     const {r,g}=setOf(key); if(!r||!g) return;
@@ -5313,6 +5358,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       ${g.no>1?`<button class="ms-copy" id="msCopy" type="button">复制上一组：${(ensureGroups(r)[g.no-2]||{}).weight>0?((ensureGroups(r)[g.no-2].weight)+'kg'):'自重'} × ${(ensureGroups(r)[g.no-2]||{}).reps||0}</button>`:''}
       <label class="ms-all"><input type="checkbox" id="msWarm" ${g.warmup?'checked':''}> 热身组（灰色标记，不计入容量）</label>
       <label class="ms-all"><input type="checkbox" id="msAll"> 同步到本动作其余未完成组</label>
+      ${(g.done||g.sec||g.rpe)?`<div class="ms-btns"><button class="btn danger sm ms-redo" data-msredo type="button">重做本组</button></div>`:''}
       <div class="ms-btns"><button class="btn ghost sm" data-msclose type="button">取消</button><button class="btn sm" data-msok type="button">确定</button></div>
     </div>`;
     document.body.appendChild(el);
@@ -5324,6 +5370,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const pv=ensureGroups(r)[g.no-2]; if(!pv) return;
       el.querySelector('#msW').value=pv.weight||0; el.querySelector('#msR').value=pv.reps||0;
     };
+    const rd=el.querySelector('[data-msredo]');
+    if(rd) rd.onclick=()=>{ el.remove(); openRedoConfirm(key); };
     el.querySelector('[data-msclose]').onclick=()=>el.remove();
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
     el.querySelector('[data-msok]').onclick=()=>{
@@ -5494,7 +5542,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function fmSeq(){
     const d=trDateVal();
     const rs=focusList();
-    const cds=(train.cardio||[]).filter(c=>c.date===d && !c.done && !c.skipped);
+    const cds=(train.cardio||[]).filter(c=>c.date===d && !c.skipped);
     const ord=(train.order&&train.order[d])||[], seen={}, out=[];
     ord.forEach(k=>{
       if(k.slice(0,2)==='r:'){ if(rs.some(x=>x.uid===k.slice(2)) && !seen[k]){ seen[k]=1; out.push(k); } }
@@ -5516,7 +5564,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(!__focusUids.some(u=>rs.some(r=>r.uid===u))) __focusUids=rs.map(r=>r.uid);
       __focusUids=__focusUids.filter(u=>rs.some(r=>r.uid===u));
       const i=__focusUids.indexOf(uid); if(i<0) return false;
-      __focusIdx=i; window.__fmPhase='strength'; window.__fmCdAdhoc=null; renderFocus(); return true;
+      __focusIdx=i; window.__fmPin=uid; window.__fmPhase='strength'; window.__fmCdAdhoc=null; renderFocus(); return true;
     }
     const c=(train.cardio||[]).find(x=>x.uid===uid && x.date===trDateVal());
     if(!c || c.done || c.skipped) return false;
@@ -5524,9 +5572,17 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function fmStep(dir){
     const seq=fmSeq(), i=seq.indexOf(fmCurKey());
-    const n=(i<0?0:i)+dir;
-    if(n<0 || n>=seq.length) return false;
-    return fmGo(seq[n]);
+    let n=(i<0?0:i);
+    for(let k=0;k<seq.length;k++){
+      n+=dir; if(n<0 || n>=seq.length) return false;
+      const key=seq[n];
+      if(key.slice(0,2)==='c:'){
+        const c=(train.cardio||[]).find(x=>x.uid===key.slice(2));
+        if(c && (c.done||c.skipped)) continue;
+      }
+      if(fmGo(key)) return true;
+    }
+    return false;
   }
   function fmChips(rs,cds,curKey){
     return fmSeq().map(k=>{
@@ -5537,7 +5593,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         return `<button class="fm-chip ${k===curKey?'on':''} ${d===q.length?'done':''}" data-fmgo="${x.uid}" type="button" aria-label="${ENGINE.esc(x.name)} ${d}/${q.length} 组"><span>${tm?'⏱ ':''}${ENGINE.esc(x.name)}</span><em>${d}/${q.length}</em></button>`;
       }
       const c=cds.find(v=>v.uid===k.slice(2)); if(!c) return '';
-      return `<button class="fm-chip cd ${k===curKey?'on':''}" data-fmcdjump="${c.uid}" type="button"><span>${CARDIO_ICON[c.modal]||'🏃'} ${ENGINE.esc(c.modal)}</span><em>${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'}</em></button>`;
+      const st=c.done?`<em>✓</em>`:(c.skipped?`<em>已跳过</em>`:`<em>${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'}</em>`);
+      return `<button class="fm-chip cd ${k===curKey?'on':''} ${c.done?'done':''} ${c.skipped?'skip':''}" data-fmcdjump="${c.uid}" type="button"><span>${CARDIO_ICON[c.modal]||'🏃'} ${ENGINE.esc(c.modal)}</span>${st}</button>`;
     }).join('');
   }
 
@@ -5760,12 +5817,22 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }
     if(!__focusUids.length || __focusUids.every(u=>!rs.some(r=>r.uid===u))) __focusUids=rs.map(r=>r.uid);
     __focusUids=__focusUids.filter(u=>rs.some(r=>r.uid===u));
-    let r=rs.find(x=>x.uid===__focusUids[__focusIdx])||rs.find(x=>x.uid===__focusUids[0])||rs[0];
+    const pendOf=x=>ensureGroups(x).some(g=>!g.done);
+    const cur=rs.find(x=>x.uid===__focusUids[__focusIdx]);
+    let r=null;
+    if(window.__fmPin){
+      const p=rs.find(x=>x.uid===window.__fmPin);
+      if(p && pendOf(p)) r=p; else window.__fmPin=null;
+    }
+    if(!r) r=rs.find(pendOf)||cur||rs.find(x=>x.uid===__focusUids[0])||rs[0];
     __focusIdx=__focusUids.indexOf(r.uid); if(__focusIdx<0) __focusIdx=0;
     try{ localStorage.setItem('_focus_prog', JSON.stringify({date:trDateVal(), uid:r.uid})); }catch(e){}
     if(!window.__fmPhase){ window.__fmPhase = pre ? 'warmup' : 'strength'; }
     if(window.__fmPhase==='warmup' && !pre){ window.__fmPhase='strength'; }
-    if(window.__fmPhase==='cooldown' && !post){ window.__fmPhase='strength'; }
+    if(window.__fmPhase==='cooldown' && !post){
+      const leftNow=rs.some(x=>ensureGroups(x).some(g=>!g.done));
+      window.__fmPhase = leftNow?'strength':'done';
+    }
     if(window.__fmPhase==='warmup' || window.__fmPhase==='cooldown'){
       const c=window.__fmPhase==='warmup'?pre:post;
       renderFocusCd(c, window.__fmPhase, rs, cds);
@@ -5794,6 +5861,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       window.__fmTransTimer=setTimeout(goAfter,1500);
       return;
     }
+    if(allDone && !post){ window.__fmPhase='done'; closeFocus(); showTrainSummary(); return; }
     let el=document.getElementById('focusMode');
     if(!el){ el=document.createElement('div'); el.id='focusMode'; el.className='focus-mode'; document.body.appendChild(el); }
     el.setAttribute('data-theme','focus');
@@ -6253,20 +6321,25 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       try{ haptic('core'); }catch(e){}
       trToast('有氧完成：'+c.modal+' '+(c.dur||1)+' 分钟，已记录');
       cdAskLv(c);
-      if(!fmStep(1)){
-        const left=focusList().some(x=>ensureGroups(x).some(g=>!g.done));
-        if(left){ window.__fmPhase='strength'; window.__fmCdAdhoc=null; renderFocus(); }
-        else { closeFocus(); showTrainSummary(); }
-      }
+      const advance=()=>{
+        if(fmStep(1)) return;
+        const nx=nextPhase();
+        window.__fmPhase=nx; window.__fmCdAdhoc=null; window.__fmPin=null;
+        if(nx==='done'){ closeFocus(); showTrainSummary(); }
+        else renderFocus();
+      };
+      if(c.role==='pre'){ trToast('热身完成 ✓'); setTimeout(advance,300); }
+      else advance();
     });
     el.querySelectorAll('[data-fmcdskip2]').forEach(b=>b.onclick=()=>{
       c.skipped=true; saveTrain(); trRenderToday();
       trToast('已跳过这次有氧');
       window.__fmCdAdhoc=null;
       if(!fmStep(1)){
-        const left=focusList().some(x=>ensureGroups(x).some(g=>!g.done));
-        if(left){ window.__fmPhase='strength'; renderFocus(); }
-        else { closeFocus(); showTrainSummary(); }
+        const nx=nextPhase();
+        window.__fmPhase=nx; window.__fmPin=null;
+        if(nx==='done'){ closeFocus(); showTrainSummary(); }
+        else renderFocus();
       }
     });
     el.querySelectorAll('[data-fmcddist2]').forEach(b=>b.onclick=()=>{
