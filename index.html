@@ -2321,6 +2321,21 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .fm-chip.skip{opacity:.5}
 .fm-chip.skip em{color:var(--tx3)}
 .msheet.redo .ms-title{color:#F0B34A}
+
+/* ===== 统一浮层：动效与层级 ===== */
+:root{--sheet-dur:.28s;--mask-dur:.2s}
+.msheet{z-index:6600;animation:none;opacity:0;transition:opacity var(--mask-dur) ease}
+.msheet.on{opacity:1}
+.msheet-box{animation:none;transform:translateY(18px);transition:transform var(--sheet-dur) var(--ease)}
+.msheet.on .msheet-box{transform:none}
+.msheet.modal-confirm{align-items:center}
+.msheet.modal-confirm .msheet-box{border-radius:18px;max-width:420px;margin:auto;padding:20px 18px 16px}
+.msheet.modal-confirm .msheet-box::before{display:none}
+.msheet.modal-confirm .ms-title{margin-bottom:6px}
+.cf-body{font-size:13px;line-height:1.65;color:var(--tx2);margin:0 0 16px}
+.msheet .ms-box-scroll{max-height:82dvh;overflow-y:auto;overscroll-behavior:contain}
+@media (max-width:560px){.msheet.modal-confirm{align-items:flex-end}.msheet.modal-confirm .msheet-box{border-radius:18px 18px 0 0;max-width:100%}}
+.toast{z-index:9800}
 .rd-sub{font-size:12px;color:var(--tx3);margin:-2px 0 10px}
 .rd-lost{font-size:12px;line-height:1.7;color:var(--tx2);border-left:2px solid #E06B6B;padding:8px 10px;border-radius:8px;background:rgba(224,107,107,.08);margin-bottom:14px}
 .rd-lost span{color:var(--tx3)}
@@ -3404,8 +3419,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <div class="log-body">${ENGINE.esc(l.content)}</div>
       </div>`;}).join('');
     box.querySelectorAll('.log-del').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        if(!confirm('删除这条记录？删掉后不能恢复。')) return;
+      btn.addEventListener('click', async ()=>{
+        if(!(await Modal.confirm({title:'删除记录', body:'这条日志会从列表移除，删掉后不能恢复。', okText:'删除', cancelText:'保留', danger:true}))) return;
         const row=btn.closest('.log-item');
         collapseRemove(row,()=>{ logs=logs.filter(x=>String(x.id)!==String(btn.dataset.id)); save(); renderLogs(); if(!logs.length) renderReport(); });
       });
@@ -3708,8 +3723,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     {type:'life',tags:'情绪',score:2,mood:2,content:'最近压力有点大，晚上总想刷手机放松，越刷越晚。'}
   ];
   $('btnDemo').addEventListener('click',()=>{ if(logs.length) return; const now=Date.now(); logs=DEMO.map((d,i)=>({...d,id:now+i,time:new Date(now-(i+1)*3600*1000*18).toISOString()})); save(); refreshLogForm(); renderLogs(); markStepIdx(1); });
-  const _bc=$('btnClear'); if(_bc) _bc.addEventListener('click',()=>{
-    if(logs.length && !confirm('清空全部 '+logs.length+' 条记录？删掉后不能恢复，建议先在「设置」里导出备份。')) return;
+  const _bc=$('btnClear'); if(_bc) _bc.addEventListener('click', async ()=>{
+    if(logs.length && !(await Modal.confirm({title:'清空全部记录', body:'将删除全部 '+logs.length+' 条记录（含训练日志），删掉后不能恢复。建议先在「设置」里导出备份。', okText:'清空', cancelText:'保留', danger:true}))) return;
     logs=[]; tagChips=[]; save(); refreshLogForm(); renderLogs(); renderReport();
   });
 
@@ -5243,17 +5258,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const step=weightStep(findEx(r.exId));
     const start=gs[0]?(gs[0].weight||0):(r.weight||0);
     let dir='up';
-    document.querySelectorAll('.msheet').forEach(x=>x.remove());
-    const el=document.createElement('div'); el.className='msheet';
-    el.innerHTML=`<div class="msheet-box">
+    const el=openMs(`
       <div class="ms-title">${ENGINE.esc(r.name)} · 阶梯填充</div>
       <div class="ms-row"><label>起始 kg</label><input id="ldW" type="number" inputmode="decimal" step="0.5" value="${start}"></div>
       <div class="ms-row"><label>每组步幅</label><input id="ldS" type="number" inputmode="decimal" step="0.5" value="${step}"></div>
       <div class="ld-dir"><button class="ld-chip on" data-ld="up" type="button">递增</button><button class="ld-chip" data-ld="down" type="button">递减</button></div>
       <div class="ms-btns"><button class="btn ghost sm" data-msclose type="button">取消</button><button class="btn sm" data-msok type="button">应用到剩余组</button></div>
-    </div>`;
-    document.body.appendChild(el);
-    kbAvoid(el, el.querySelector('.msheet-box'));
+    `, {kb:true});
     el.querySelectorAll('[data-ld]').forEach(b=>b.onclick=()=>{
       dir=b.dataset.ld;
       el.querySelectorAll('[data-ld]').forEach(x=>x.classList.toggle('on', x.dataset.ld===dir));
@@ -5288,8 +5299,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function openGrpMenu(key){
     const {r,g}=setOf(key); if(!r||!g) return;
     document.querySelectorAll('.grp-menu').forEach(x=>x.remove());
-    const el=document.createElement('div'); el.className='msheet grp-menu';
-    el.innerHTML=`<div class="msheet-box">
+    const el=openMs(`
       <div class="ms-title">${ENGINE.esc(r.name)} · 第 ${g.no} 组</div>
       <div class="gm-list">
         <button class="btn sm gm-b" data-gm="warm" type="button">${g.warmup?'取消热身标记':'标记为热身组（不计容量/PR）'}</button>
@@ -5299,10 +5309,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         ${g.done?`<button class="btn ghost sm gm-b" data-gm="undone" type="button">取消本组完成</button>`:''}
       </div>
       <div class="ms-btns"><button class="btn ghost sm" data-gm="close" type="button">关闭</button></div>
-    </div>`;
-    el.style.zIndex='6200';
-    document.body.appendChild(el);
-    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    `, {cls:'grp-menu'});
     el.querySelectorAll('[data-gm]').forEach(b=>b.onclick=()=>{
       const act=b.dataset.gm;
       if(act==='close'){ el.remove(); return; }
@@ -5362,16 +5369,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(c.done) lost.push('完成状态');
     if(c.sec||c.t0) lost.push('本次计时 '+(c.sec?(Math.round(c.sec/60*10)/10+' 分钟'):''));
     if(c.run) lost.push('进行中的计时');
-    const el=document.createElement('div'); el.className='msheet redo';
-    el.innerHTML=`<div class="msheet-box">
+    const el=openMs(`
       <div class="ms-title">重做「${ENGINE.esc(c.modal)}」？</div>
       <div class="rd-sub">${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'} · ${c.free?('自由计时 · '+(Math.max(1,Math.round((c.sec||0)/60)))+' 分钟'):(c.dur?('目标 '+c.dur+' 分钟'):'未设目标时长')}</div>
       <div class="rd-lost">将清除：${lost.length?lost.join(' · '):'本次记录'}<br><span>时长/距离/强度保留，可重新开始计时</span></div>
       <div class="ms-btns"><button class="btn ghost sm" data-rdcancel type="button">取消</button><button class="btn danger sm" data-rdok type="button">确认重做</button></div>
-    </div>`;
-    el.style.zIndex='6300';
-    document.body.appendChild(el);
-    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    `, {cls:'redo'});
     el.querySelector('[data-rdcancel]').onclick=()=>el.remove();
     el.querySelector('[data-rdok]').onclick=()=>{
       el.remove();
@@ -5392,16 +5395,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(g.sec) lost.push('本组 '+g.sec+' 秒');
     if(g.rpe) lost.push('RPE '+g.rpe);
     const vol=(g.weight>0?g.weight+' kg':'自重')+' × '+(((g.timed&&!(g.reps>0))||isTimedX(r))?((g.sec||45)+' 秒'):((g.reps||0)+' 次'));
-    const el=document.createElement('div'); el.className='msheet redo';
-    el.innerHTML=`<div class="msheet-box">
+    const el=openMs(`
       <div class="ms-title">重做第 ${g.no} 组？</div>
       <div class="rd-sub">${ENGINE.esc(r.name)} · ${vol}</div>
       <div class="rd-lost">将清除：${lost.length?lost.join(' · '):'本组的完成记录'}<br><span>已计入的容量与 PR 将回退，重量保留</span></div>
       <div class="ms-btns"><button class="btn ghost sm" data-rdcancel type="button">取消</button><button class="btn danger sm" data-rdok type="button">确认重做</button></div>
-    </div>`;
-    el.style.zIndex='6300';
-    document.body.appendChild(el);
-    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    `, {cls:'redo'});
     el.querySelector('[data-rdcancel]').onclick=()=>el.remove();
     el.querySelector('[data-rdok]').onclick=()=>{
       el.remove();
@@ -5420,9 +5419,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function openSetSheet(key){
     const {r,g}=setOf(key); if(!r||!g) return;
-    document.querySelectorAll('.msheet').forEach(x=>x.remove());
-    const el=document.createElement('div'); el.className='msheet';
-    el.innerHTML=`<div class="msheet-box">
+    const el=openMs(`
       <div class="ms-title">${ENGINE.esc(r.name)} · 第 ${g.no} 组</div>
       ${(g.timed||isTimedX(r))?
       `<div class="ms-row"><label>每组秒数</label><input id="msSec" type="number" inputmode="numeric" step="5" min="5" value="${g.sec||45}"></div>`
@@ -5433,9 +5430,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <label class="ms-all"><input type="checkbox" id="msAll"> 同步到本动作其余未完成组</label>
       ${(g.done||g.sec||g.rpe)?`<div class="ms-btns"><button class="btn danger sm ms-redo" data-msredo type="button">重做本组</button></div>`:''}
       <div class="ms-btns"><button class="btn ghost sm" data-msclose type="button">取消</button><button class="btn sm" data-msok type="button">确定</button></div>
-    </div>`;
-    document.body.appendChild(el);
-    kbAvoid(el, el.querySelector('.msheet-box'));
+    `, {kb:true});
     const wIn=el.querySelector('#msW'); try{ wIn.focus(); wIn.select(); }catch(e){}
     try{ wIn.scrollIntoView({block:'nearest'}); }catch(e){}
     const cp=el.querySelector('#msCopy');
@@ -5565,7 +5560,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       }
     }
   }
-  function tickSet(key){
+  async function tickSet(key){
     const {r,g}=setOf(key); if(!r||!g) return null;
     const now=Date.now();
     const key0=r.uid+':'+g.no;
@@ -5573,7 +5568,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       g.sec=Math.max(1, Math.round((now-window.__grpStart[key0])/1000));
       delete window.__grpStart[key0];
     }
-    if(g.done && !confirm('取消第 '+g.no+' 组的完成状态？')) return null;
+    if(g.done && !(await Modal.confirm({title:'取消第 '+g.no+' 组完成', body:'将撤销本组完成状态，已计入的容量与 PR 回退；重量与次数保留。', okText:'取消完成', cancelText:'保留', danger:true}))) return null;
     g.done=!g.done;
     window.__rpeAsk=window.__rpeAsk||{};
     if(g.done){
@@ -6753,6 +6748,88 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }catch(e){ return false; }
   }
 
+  /* ===== 统一浮层底座（LayerManager） ===== */
+  const Layer=(function(){
+    const stack=[]; let lockN=0, prevOv='';
+    function syncLock(){ document.body.style.overflow = lockN>0?'hidden':(prevOv||''); }
+    function lock(){ if(lockN===0) prevOv=document.body.style.overflow||''; lockN++; syncLock(); }
+    function unlock(){ if(lockN>0) lockN--; syncLock(); }
+    function top(){ return stack[stack.length-1]||null; }
+    function focusables(root){
+      return Array.from(root.querySelectorAll('a[href],button:not([disabled]),input:not([type="hidden"]):not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])'))
+        .filter(x=>x.offsetParent!==null||x===document.activeElement);
+    }
+    function push(root,opt){
+      opt=opt||{}; if(!root||stack.includes(root)) return root;
+      root.__lopt=opt; root.__prevFocus=document.activeElement;
+      lock(); stack.push(root);
+      root.style.zIndex=String(6600+(stack.length-1)*10);
+      root.setAttribute('role', opt.role||'dialog'); root.setAttribute('aria-modal','true');
+      if(opt.maskClose!==false){
+        root.addEventListener('click',e=>{ if(e.target===root) close(root); });
+      }
+      requestAnimationFrame(()=>{ if(root.isConnected) root.classList.add('on'); });
+      return root;
+    }
+    function pop(root){
+      const i=stack.indexOf(root); if(i<0) return;
+      stack.splice(i,1); unlock();
+      const p=root.__prevFocus;
+      try{ if(p&&p.isConnected&&typeof p.focus==='function') p.focus({preventScroll:true}); }catch(e){}
+    }
+    function close(root){
+      if(!root||root.__closing) return; root.__closing=true;
+      root.classList.remove('on'); root.style.pointerEvents='none';
+      pop(root);
+      try{ if(root.__lopt&&root.__lopt.onClose) root.__lopt.onClose(); }catch(e){}
+      const raw=root.__rawRemove;
+      setTimeout(()=>{ try{ (raw||(()=>root.remove()))(); }catch(e){} }, 210);
+    }
+    document.addEventListener('keydown',e=>{
+      const t=top(); if(!t) return;
+      if(e.key==='Escape'){ const o=t.__lopt||{}; if(o.esc===false) return; e.preventDefault(); close(t); return; }
+      if(e.key==='Tab'){
+        const f=focusables(t); if(!f.length) return;
+        const first=f[0], last=f[f.length-1];
+        if(!t.contains(document.activeElement)){ e.preventDefault(); first.focus(); return; }
+        if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+      }
+    }, true);
+    return {push,close,top};
+  })();
+
+  /* 统一 sheet 壳：所有 .msheet 只保留内容，壳与生命周期由这里管理 */
+  function openMs(inner, opt){
+    opt=opt||{};
+    const el=document.createElement('div');
+    el.className='msheet'+(opt.cls?(' '+opt.cls):'');
+    el.innerHTML='<div class="msheet-box'+(opt.boxCls?(' '+opt.boxCls):'')+'"'+(opt.boxStyle?(' style="'+opt.boxStyle+'"'):'')+'>'+inner+'</div>';
+    document.body.appendChild(el);
+    el.__rawRemove=el.remove.bind(el);
+    el.remove=()=>Layer.close(el);
+    if(opt.kb){ try{ kbAvoid(el, el.querySelector('.msheet-box')); }catch(e){} }
+    Layer.push(el, opt);
+    return el;
+  }
+
+  function modalConfirm(o){
+    o=o||{};
+    return new Promise(resolve=>{
+      let settled=false;
+      const el=openMs(
+        '<div class="ms-title">'+ENGINE.esc(o.title||'确认')+'</div>'+
+        '<div class="cf-body">'+(o.body||'')+'</div>'+
+        '<div class="ms-btns"><button class="btn ghost sm" type="button" data-cf="0">'+ENGINE.esc(o.cancelText||'取消')+'</button>'+
+        '<button class="btn '+(o.danger?'danger':'')+' sm" type="button" data-cf="1">'+ENGINE.esc(o.okText||'确定')+'</button></div>',
+        {cls:'modal-confirm', label:o.title||'确认', onClose:()=>{ if(!settled){ settled=true; resolve(false); } }});
+      el.querySelector('[data-cf="0"]').onclick=()=>el.remove();
+      el.querySelector('[data-cf="1"]').onclick=()=>{ settled=true; resolve(true); el.remove(); };
+      setTimeout(()=>{ if(el.isConnected){ const b=el.querySelector('[data-cf="1"]'); if(b) try{ b.focus({preventScroll:true}); }catch(e){} } }, 90);
+    });
+  }
+  const Modal={confirm:modalConfirm};
+
   function renderTrainPanel(){
     try{ dedupeLib(); }catch(e){}
     const body=$('reportBody');
@@ -7002,11 +7079,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function cuAsk(msg, desc, onOk, okText){
     document.querySelectorAll('.cf-ask').forEach(x=>x.remove());
-    const el=document.createElement('div'); el.className='msheet cf-ask';
-    el.innerHTML='<div class="msheet-box" style="padding:18px 16px"><div style="font-size:14.5px;margin-bottom:6px">'+msg+'</div>'+
+    const el=openMs('<div style="font-size:14.5px;margin-bottom:6px">'+msg+'</div>'+
       (desc?'<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">'+desc+'</div>':'')+
-      '<div class="cu-btns"><button class="btn ghost sm" type="button" data-cfno>取消</button><button class="btn sm" type="button" data-cfok>'+ENGINE.esc(okText||'删除')+'</button></div></div>';
-    document.body.appendChild(el);
+      '<div class="cu-btns"><button class="btn ghost sm" type="button" data-cfno>取消</button><button class="btn sm" type="button" data-cfok>'+ENGINE.esc(okText||'删除')+'</button></div>',
+      {cls:'cf-ask', boxStyle:'padding:18px 16px'});
     el.onclick=ev=>{ if(ev.target===el) el.remove(); };
     el.querySelector('[data-cfno]').onclick=()=>el.remove();
     el.querySelector('[data-cfok]').onclick=()=>{ el.remove(); try{ onOk(); }catch(e){} };
@@ -7054,9 +7130,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return hit3||null;
   }
   function openAiFind(){
-    document.querySelectorAll('.msheet').forEach(x=>x.remove());
-    const el=document.createElement('div'); el.className='msheet';
-    el.innerHTML=`<div class="msheet-box"><div class="ms-head"><b>AI 帮我找动作</b><button class="ms-x" type="button" data-aifx>×</button></div>
+    const el=openMs(`<div class="ms-head"><b>AI 帮我找动作</b><button class="ms-x" type="button" data-aifx>×</button></div>
       <div class="aif-in">
         <textarea id="aifQ" placeholder="描述想练的动作，如：练背但没有器械 / 想练臀中肌 / 肩后束孤立"></textarea>
         <div class="aif-chips">
@@ -7068,9 +7142,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <button class="btn sm" id="aifGo" type="button" style="width:100%">AI 帮我找</button>
       </div>
       <div class="aif-res" id="aifRes"></div>
-    </div>`;
-    document.body.appendChild(el);
-    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    `);
     el.querySelectorAll('[data-aifx]').forEach(b=>b.onclick=()=>el.remove());
     const qEl=el.querySelector('#aifQ'), resEl=el.querySelector('#aifRes'), goEl=el.querySelector('#aifGo');
     el.querySelectorAll('[data-aifc]').forEach(b=>b.onclick=()=>{ qEl.value=b.dataset.aifc; });
@@ -7254,16 +7326,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function openRowMenu(r){
     document.querySelectorAll('.tr-rowmenu').forEach(x=>x.remove());
     const e=findEx(r.exId);
-    const el=document.createElement('div'); el.className='msheet tr-rowmenu';
-    el.innerHTML=`<div class="msheet-box" style="padding:8px">
+    const el=openMs(`
       <div class="rm-t">${ENGINE.esc(r.name)}</div>
       <button class="rm-i" data-rm1 type="button">看动作详情</button>
       <button class="rm-i" data-rm2 type="button">重命名</button>
       <button class="rm-i del" data-rm3 type="button">从今日移除</button>
-    </div>`;
-    document.body.appendChild(el);
+    `, {cls:'tr-rowmenu', boxStyle:'padding:8px'});
     const close=()=>el.remove();
-    el.onclick=ev=>{ if(ev.target===el) close(); };
     el.querySelector('[data-rm1]').onclick=()=>{ close(); if(e) openExSheet(e); else trToast('未找到动作详情'); };
     el.querySelector('[data-rm2]').onclick=()=>{ close(); if(e) { openExSheet(e); setTimeout(()=>{ const b=document.querySelector('[data-exnamesave]')||document.querySelector('[data-exeditname]'); if(!b) trToast('请在详情里点“重命名”'); },120); } };
     el.querySelector('[data-rm3]').onclick=()=>{
@@ -7922,9 +7991,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function openCuSheet(pre){
     pre=pre||{};
-    document.querySelectorAll('.msheet').forEach(x=>x.remove());
-    const el=document.createElement('div'); el.className='msheet';
-    el.innerHTML=`<div class="msheet-box"><div class="ms-head"><b>自定义动作</b><button class="ms-x" type="button" data-cux>×</button></div>
+    const el=openMs(`<div class="ms-head"><b>自定义动作</b><button class="ms-x" type="button" data-cux>×</button></div>
       <div class="cu-sheet">
         <div class="f-field"><label class="f-label">动作名称</label><input type="text" id="cuName" placeholder="如：壶铃摇摆"></div>
         <div class="f-row">
@@ -7934,9 +8001,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <div class="f-field"><label class="f-label">动作要领（每行一步）</label><textarea id="cuSteps" placeholder="每行写一步"></textarea></div>
       </div>
       <div class="cu-btns"><button class="btn ghost sm" type="button" data-cux>取消</button><button class="btn sm" type="button" id="cuSave">保存</button></div>
-    </div>`;
-    document.body.appendChild(el);
-    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    `);
     el.querySelectorAll('[data-cux]').forEach(b=>b.onclick=()=>el.remove());
     let preThumb=null;
     if(pre.img && !pre.edit){
@@ -8166,8 +8231,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!list.length && part) list=allExercises().filter(e=>e.p===part);
     const rows=list.slice(0,8).map(e=>'<button class="cam-row" data-camadd="'+e.id+'" type="button"><b>'+ENGINE.esc(e.n)+'</b><em>'+ENGINE.esc(e.p)+' · '+ENGINE.esc(e.e||'')+'</em><i>＋</i></button>').join('');
     document.querySelectorAll('.msheet').forEach(x=>x.remove());
-    const el=document.createElement('div'); el.className='msheet';
-    el.innerHTML='<div class="msheet-box"><div class="ms-head"><b>识别结果</b><button class="ms-x" type="button" data-cx>×</button></div>'+
+    const el=openMs('<div class="ms-head"><b>识别结果</b><button class="ms-x" type="button" data-cx>×</button></div>'+
       '<div class="cam-body">'+
       '<img class="cam-img" src="'+url+'" alt="">'+
       '<div class="cam-meta"><b>'+ENGINE.esc(equip||'未识别')+'</b><span>'+ENGINE.esc(part||'—')+' · 置信度 '+conf+'%</span></div>'+
@@ -8175,9 +8239,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       '<div class="cam-sum">'+(list.length?('可以练这些动作（'+list.length+' 个）'):'库里还没有匹配这个器械的动作')+'</div>'+
       '<div class="cam-list">'+rows+'</div>'+
       '<div class="cam-act"><button class="btn ghost sm" type="button" data-camnew>新建这个器械的动作</button></div>'+
-      '</div></div>';
-    document.body.appendChild(el);
-    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+      '</div>');
     el.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>el.remove());
     el.querySelectorAll('[data-camadd]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.camadd;
@@ -8850,13 +8912,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function cdAskLv(r){
     document.querySelectorAll('.cd-rpe').forEach(x=>x.remove());
-    const el=document.createElement('div'); el.className='msheet cd-rpe';
-    el.innerHTML=`<div class="msheet-box cd-rpe-box">
+    const el=openMs(`
       <div class="cd-rpe-t">${ENGINE.esc(r.modal)} ${cdMinOf(r)} 分钟 · 强度感觉？</div>
       <div class="cd-lv3">${['轻松','中等','强度'].map(x=>`<button type="button" data-cdrpe="${x}" class="${x===(r.lv||'中等')?'on':''}">${x}</button>`).join('')}</div>
       <div class="hint" style="margin-top:8px">用来校正你练完的真实强度</div>
-    </div>`;
-    document.body.appendChild(el);
+    `, {cls:'cd-rpe', boxCls:'cd-rpe-box'});
     let tm=setTimeout(()=>{ try{ el.remove(); }catch(e){} },6000);
     const pick=v=>{ r.lv=v; r.rpe=v; saveTrain(); trRenderToday(); refreshHome(); clearTimeout(tm); el.remove(); trToast('强度已记为 '+v); };
     el.querySelectorAll('[data-cdrpe]').forEach(b=>b.onclick=()=>pick(b.dataset.cdrpe));
@@ -9083,17 +9143,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       ev.stopPropagation();
       const uid=b.dataset.cdmore, r=(train.cardio||[]).find(x=>x.uid===uid); if(!r) return;
       document.querySelectorAll('.tr-rowmenu').forEach(x=>x.remove());
-      const el=document.createElement('div'); el.className='msheet tr-rowmenu';
-      el.innerHTML=`<div class="msheet-box" style="padding:8px">
+      const el=openMs(`
         <div class="rm-t">${ENGINE.esc(r.modal)}${r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':''}</div>
         <button class="rm-i" data-cm1 type="button">${r.done?'标为未完成':(r.run?'暂停计时':'开始计时')}</button>
         ${r.done?'':'<button class="rm-i" data-cm2 type="button">完成并记录</button>'}
         ${(r.done||r.skipped||r.sec)?'<button class="rm-i" data-cm4 type="button">重做本次</button>':''}
         <button class="rm-i del" data-cm3 type="button">从今日移除</button>
-      </div>`;
-      document.body.appendChild(el);
+      `, {cls:'tr-rowmenu', boxStyle:'padding:8px'});
       const close=()=>el.remove();
-      el.onclick=e=>{ if(e.target===el) close(); };
       el.querySelector('[data-cm1]').onclick=()=>{
         close();
         if(r.done){ r.done=false; r.ts=Date.now(); }
@@ -9732,9 +9789,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const l=logs.find(x=>String(x.id)===String(id)); if(!l) return;
       if(l.kind==='train') openTrainSheet(id); else openLogSheet(id);
     };
-    el.querySelector('[data-mact="del"]').onclick=()=>{
+    el.querySelector('[data-mact="del"]').onclick=async ()=>{
       el.remove();
-      if(!confirm('删除这条记录？删掉后不能恢复。')) return;
+      if(!(await Modal.confirm({title:'删除记录', body:'这条日志会从当天分组移除，删掉后不能恢复。', okText:'删除', cancelText:'保留', danger:true}))) return;
       const rowEl=anchor.closest('.log-item');
       keepDayOpen(id);
       collapseRemove(rowEl,()=>{ logs=logs.filter(x=>String(x.id)!==String(id)); save(); renderLogs(); renderLogsPanel(); });
@@ -9757,8 +9814,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       });
     });
     document.querySelectorAll('#reportBody [data-del]').forEach(b=>{
-      b.addEventListener('click',()=>{
-        if(!confirm('删除这条记录？删掉后不能恢复。')) return;
+      b.addEventListener('click', async ()=>{
+        if(!(await Modal.confirm({title:'删除记录', body:'这条日志会从当天分组移除，删掉后不能恢复。', okText:'删除', cancelText:'保留', danger:true}))) return;
         keepDayOpen(b.dataset.del);
         collapseRemove(b.closest('.lg-item,.day-row,.log-item')||b.parentElement,()=>{
           logs=logs.filter(x=>String(x.id)!==String(b.dataset.del)); save(); renderLogs(); renderLogsPanel();
@@ -10436,10 +10493,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     $('impDo').addEventListener('click', ()=>{
       try{ applyBackup(JSON.parse(area.value)); }catch(e){ bakMsg('粘贴的内容不是有效 JSON。'); }
     });
-    function applyBackup(d){
+    async function applyBackup(d){
       if(!d || d._app!=='SelfAgent'){ bakMsg('这不是 SelfAgent 的备份文件。'); return; }
       const n=(d.logs&&d.logs.length)||0;
-      if(!confirm('导入会覆盖当前数据，继续？备份含 '+n+' 条记录')) return;
+      if(!(await Modal.confirm({title:'导入备份', body:'将用备份覆盖本机全部训练、日志与设置，覆盖后不能撤销。这份备份含 '+n+' 条记录。', okText:'覆盖导入', cancelText:'取消', danger:true}))) return;
       Object.keys(BAK_KEYS).forEach(k=>{ if(d[k]!==undefined) localStorage.setItem(BAK_KEYS[k], JSON.stringify(d[k])); });
       bakMsg('导入完成，正在重新加载…'); setTimeout(()=>location.reload(), 400);
     }
@@ -12040,15 +12097,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       rule = tab==='persona' ? (briefHtml()+rptChartHtml()+evidenceHtml()+profileSummaryHtml()+'<h1>个人画像报告 · Persona</h1><div class="kicker">基于 '+logs.length+' 条记录</div>'+ENGINE.genPersona(logs,d))
         : tab==='plan' ? ENGINE.genPlan(logs,d) : ENGINE.genTrend(logs,d);
     }catch(e){ rule='<div class="ai-empty">规则版生成失败。</div>'; }
-    const el=document.createElement('div'); el.className='msheet arch';
-    el.innerHTML='<div class="msheet-box arch-box"><div class="ms-head"><b>'+lbl+'报告归档</b><button class="ms-x" type="button" data-ax>×</button></div>'+
+    const el=openMs('<div class="ms-head"><b>'+lbl+'报告归档</b><button class="ms-x" type="button" data-ax>×</button></div>'+
       '<div class="arch-body">'+
       '<div class="arch-t">AI 版 · '+(ai?'生成于 '+new Date(ai.ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'尚未生成')+'</div>'+
       (ai?aiRenderReport(tab, ai.data):'<div class="ai-empty">在分析页点「生成分析」后，完整 AI 报告会出现在这里。</div>')+
       '<div class="arch-t">内置规则版 · 现在 '+t+' 重算</div>'+rule+
-      '</div></div>';
-    document.body.appendChild(el);
-    el.onclick=ev=>{ if(ev.target===el) el.remove(); };
+      '</div>', {cls:'arch', boxCls:'arch-box'});
     el.querySelector('[data-ax]').onclick=()=>el.remove();
     if(tab==='persona'){ try{ drawRptCharts(); }catch(e){} }
   }
