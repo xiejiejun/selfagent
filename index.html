@@ -2428,6 +2428,25 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .cd-sheet .add-mode b{font-size:13px;font-weight:600}
 .cd-sheet .add-mode i{font-size:11px}
 .cd-sheet .add-mode em{font-size:13px}
+/* ===== 训练页：去嵌套 / 单一添加入口 ===== */
+.tr-seg{border:0;background:none;border-radius:0;padding:0;gap:4px;margin:0 0 10px;border-bottom:1px solid var(--line)}
+.tr-seg-btn{min-height:42px;font-size:13px;font-weight:500;border-radius:8px 8px 0 0}
+.tr-seg-btn.on{background:none;color:var(--accent);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)}
+.tr-tc-add{margin-top:10px}
+.tr-add{display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:0 13px;border:1px solid var(--line2);background:var(--panel2);color:var(--tx);border-radius:10px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.tr-add i{font-style:normal;color:var(--tx3);font-size:11px;line-height:1}
+.tr-add:active{transform:scale(.985)}
+#trToday{margin-top:2px}
+#trToday .pl-row,#trToday .cd-row{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding-left:0;padding-right:0;min-height:50px}
+#trToday .pl-row::before{display:none}
+#trToday .pl-row:last-child,#trToday .cd-row:last-child{border-bottom:0}
+#trToday .pl-row.done .pl-nm b,#trToday .cd-row.done .pl-nm b{color:var(--tx2);font-weight:500}
+#trToday .pl-row.done .tc-prog,#trToday .cd-row.done .tc-prog{color:var(--tx3)}
+.tr-strip{border:0;border-top:1px solid var(--line);border-radius:0;background:none;margin-top:8px}
+.tr-strip-h{padding:0 2px;min-height:40px;font-size:12.5px;color:var(--tx3)}
+.tr-strip-b{border-top:1px solid var(--line);padding:10px 2px 0;margin-top:2px}
+#recTrainWrap .report-shell{background:none;border:0;border-radius:0;box-shadow:none;padding:0;min-height:0}
+#recTrainWrap .report-shell .body-slot{padding:0}
 .add-mode{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--tx);font:inherit;text-align:left;cursor:pointer}
 .add-mode:active{transform:scale(.99)}
 .add-mode-ic{font-size:20px;line-height:1}
@@ -2787,7 +2806,6 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
       </div>
     </div>
     <div id="recTrainWrap">
-    <div class="zone-sep"><span>训练 · 今日</span></div>
     <div class="report-shell sub-zone"><div class="body-slot" id="slotRecord"><div class="md" id="reportBody"></div></div></div>
     </div>
   </section>
@@ -6860,17 +6878,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             </div>
             <button class="btn gen tr-tc-go" id="trStart" type="button" data-act="start">▶ 开始训练</button>
           </div>
-          <div class="tr-tc-links">
-            <button class="tr-tc-link" id="libOpen" type="button">＋ 添加</button>
-            <button class="tr-tc-link" id="camPick" type="button">拍照识别器械</button>
-            <button class="tr-tc-link" id="trRepeat" type="button">导入上次训练</button>
-          </div>
+          <div class="tr-tc-add"><button class="tr-add" id="trAddBtn" type="button"><span>＋ 添加动作</span><i>▾</i></button></div>
           <div class="tr-next" id="trNext" hidden></div>
           <div class="tr-feel" id="trFeel" hidden></div>
           <div id="trToday"></div>
-          <div class="tr-empty-h" id="trEmptyHead"><b>今天还没有安排</b><em>从这三条里挑一条开始</em></div>
+          <div class="tr-empty-h" id="trEmptyHead"><b>今天还没有安排</b><em>从下面选一条开始</em></div>
           <div class="tr-entries" id="trEmpty">
             <button class="tr-entry ${hasHist?'':'hot'}" data-entry="ai" type="button"><b>AI 帮我排</b><em>按部位生成今日计划</em></button>
+            <button class="tr-entry" data-entry="repeat" id="trRepeatSuggest" type="button" hidden><b>上次训练</b><em>一键导入</em></button>
           </div>
         </div>
         <div class="tr-strip" id="weekStrip">
@@ -7281,10 +7296,26 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if($('todayStat')){
       const vol=items.flatMap(r=>ensureGroups(r)).reduce((a,g)=>a+(g.warmup?0:(g.reps||0)*(g.weight||0)),0);
       $('todayStat').innerHTML = (items.length||cds.length)
-        ? `<span class="tc-cell"><b>${items.length}</b>动作</span><span class="tc-cell"><b>${done}/${total}</b>组</span><span class="tc-cell"><b>${Math.round(vol)}</b>kg</span><span class="tc-cell cd"><b>${cdDone||cdPlan}</b>′有氧</span>`
+        ? `<span class="tc-cell"><b>${items.length}</b>动作</span><span class="tc-cell"><b>${done}/${total}</b>组</span><span class="tc-cell"><b>${Math.round(vol)}</b>kg·容量</span><span class="tc-cell cd"><b>${cdDone||cdPlan}</b>′有氧·今日</span>`
         : '还没有排动作';
     }
     if($('trEmpty')) $('trEmpty').hidden = !!(items.length||cds.length);
+    const rp=$('trRepeatSuggest');
+    if(rp){
+      try{
+        const dates=Array.from(new Set((train.records||[]).map(r=>r.date))).sort();
+        const d=dates[dates.length-1];
+        const list=d?train.records.filter(r=>r.date===d):[];
+        const show=!items.length && !cds.length && list.length>0;
+        rp.hidden=!show;
+        if(show){
+          const names=list.slice(0,2).map(r=>r.name).join(' + ')+(list.length>2?(' 等 '+list.length+' 个'):'');
+          const b=rp.querySelector('b'), em=rp.querySelector('em');
+          if(b) b.textContent='上次训练：'+names;
+          if(em) em.textContent='一键导入 '+String(d).slice(5)+' · '+list.length+' 个动作';
+        }
+      }catch(e){ rp.hidden=true; }
+    }
     if($('trEmptyHead')) $('trEmptyHead').hidden = !!(items.length||cds.length);
     const go=$('trStart');
     if(go){
@@ -7353,9 +7384,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const seg=$('trSeg');
     if(seg) seg.querySelectorAll('[data-trseg]').forEach(b=>b.onclick=()=>trSetSeg(b.dataset.trseg));
     if($('libTabs')) $('libTabs').querySelectorAll('[data-lt]').forEach(b=>b.onclick=()=>libShow(b.dataset.lt));
-    const lo2=$('libOpen'); if(lo2) lo2.onclick=()=>{
-      openAddSheet();
-    };
+    const ab=$('trAddBtn'); if(ab) ab.onclick=()=>openAddSheet();
     try{ bindCardioEntry(); }catch(e){}
     const st=$('trStart');
     if(st) st.onclick=()=>{
@@ -7374,6 +7403,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     };
     const tb=$('trEmpty');
     if(tb) tb.querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>{
+      if(b.dataset.entry==='repeat'){ trRepeatLast(); return; }
       if(b.dataset.entry!=='ai') return;
       trSetSeg('plan'); try{ planGenerate(window.planPart||'胸'); }catch(e){}
     });
@@ -8852,7 +8882,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const distChip=(!done&&!running&&CD_DIST.includes(r.modal))?'<button type="button" class="cd-chip" data-cddist2="'+r.uid+'">+0.5 km</button>':'';
     const floorChip=(!done&&!running&&r.modal==='爬楼')?'<button type="button" class="cd-chip" data-cddist3="'+r.uid+'">+5 层</button>':'';
     const name=ENGINE.esc(r.modal)+(r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':'');
-    const meta=done?(r.dur?r.dur+'′ 完成':'✓ 已完成'):(running||sec>0)?'<span class="cd-mini">'+cdMiniSvg(sec,r.dur)+'<span class="cd-timer" data-cdtimer="'+r.uid+'">'+cdFmt(sec)+'</span></span>':'';
+    const meta=done?(r.dur?('✓ '+r.dur+'′'):'✓ 已完成'):(running||sec>0)?'<span class="cd-mini">'+cdMiniSvg(sec,r.dur)+'<span class="cd-timer" data-cdtimer="'+r.uid+'">'+cdFmt(sec)+'</span></span>':'';
     return `<div class="tc-row pl-row cd-row ${st}" data-cduid="${r.uid}" data-urow="c:${r.uid}">
       <span class="pl-drag" data-drag="1" role="button" aria-label="拖动排序">≡</span>
       <span class="pl-nm"><i class="pl-no cd-ic-sm">${icon}</i><b>${name}</b></span>
@@ -8895,14 +8925,27 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       trToast('已加入有氧：'+modal+'，点开始计时');
     };
   }
+  function trRepeatLast(){
+    const dates=Array.from(new Set((train.records||[]).map(r=>r.date))).sort();
+    if(!dates.length){ trToast('还没有历史训练，先记一次'); return false; }
+    const d=dates[dates.length-1];
+    const list=train.records.filter(r=>r.date===d);
+    list.forEach(r=>addRec({exId:r.exId, name:r.name, part:r.part, sets:r.sets, reps:r.reps, weight:r.weight}));
+    trToast('已导入 '+String(d).slice(5)+' 的 '+list.length+' 个动作');
+    return true;
+  }
   function openAddSheet(){
     let el=document.getElementById('addModeSheet');
     if(!el){ el=document.createElement('div'); el.id='addModeSheet'; document.body.appendChild(el); }
+    const hist=(train.records||[]).length;
     el.className='ex-sheet on cd-sheet';
     el.innerHTML=`<div class="ex-sheet-inner cd-sheet-inner">
-      <div class="cd-head"><h2>添加</h2><button class="cd-x" data-adclose type="button">×</button></div>
+      <div class="cd-head"><h2>添加动作</h2><button class="cd-x" data-adclose type="button">×</button></div>
       <button class="add-mode" data-adm="strength" type="button"><span class="add-mode-ic">💪</span><span><b>力量动作</b><i>从动作库挑选，带组次</i></span><em>›</em></button>
       <button class="add-mode" data-adm="cardio" type="button"><span class="add-mode-ic">🏃</span><span><b>有氧</b><i>计时 + 强度 + 距离</i></span><em>›</em></button>
+      <button class="add-mode" data-adm="cam" type="button"><span class="add-mode-ic">📷</span><span><b>拍照识别器械</b><i>拍一张，识别后直接加入</i></span><em>›</em></button>
+      <button class="add-mode" data-adm="custom" type="button"><span class="add-mode-ic">✏️</span><span><b>自定义动作</b><i>库里没有的动作自己建</i></span><em>›</em></button>
+      ${hist?'<button class="add-mode" data-adm="repeat" type="button"><span class="add-mode-ic">⏪</span><span><b>导入上次训练</b><i>沿用上一次的动作与组次</i></span><em>›</em></button>':''}
     </div>`;
     const close=()=>{ el.classList.remove('on'); el.innerHTML=''; };
     el.onclick=ev=>{ if(ev.target===el) close(); };
@@ -8913,9 +8956,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         try{ trSetSeg('lib'); }catch(e){}
         setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="lib"]'); if(p) p.scrollIntoView({block:'start'}); },60);
         setTimeout(()=>{ const inp=document.getElementById('trSearch'); if(inp) inp.focus(); },160);
-      } else {
-        openCardioSheet();
-      }
+      } else if(m==='cardio'){ try{ openCardioSheet(); }catch(e){ console.warn(e); } }
+      else if(m==='cam'){ try{ camOpen(); }catch(e){ console.warn(e); } }
+      else if(m==='custom'){ try{ openCuSheet(); }catch(e){ console.warn(e); } }
+      else if(m==='repeat'){ trRepeatLast(); }
     });
   }
   function cdAskLv(r){
@@ -9107,7 +9151,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       let txt = nxt.length ? ('接下来：'+nxt.slice(0,3).map(r=>r.name+' '+ensureGroups(r).filter(g=>!g.done).length+' 组').join(' · ')) : '';
       if(!nxt.length){
         const pc=cds.filter(c=>!c.done);
-        if(pc.length) txt='接下来：'+pc.slice(0,2).map(c=>c.modal+(c.role==='pre'?' · 热身':c.role==='post'?' · 收尾':'')+' '+(c.dur?c.dur+' 分钟':'计时')).join(' · ');
+        if(pc.length) txt='接下来：'+pc.slice(0,2).map(c=>c.modal+(c.role==='pre'?' · 热身':c.role==='post'?' · 收尾':'')+(c.dur&&c.dur>1?(' '+c.dur+' 分钟'):'（计时）')).join(' · ');
       }
       $('trNext').textContent=txt;
       $('trNext').hidden = !txt;
@@ -9596,15 +9640,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const cand=allExercises().filter(e=>e.n.includes(name) || e.en.toLowerCase().includes(name.toLowerCase())).sort((a,b)=>a.n.length-b.n.length)[0];
       return { name:cand?cand.n:name, part:cand?cand.p:'其他', sets, reps, weight, exId:cand?cand.id:('cuq'+Date.now().toString(36)) };
     }
-    if($('trRepeat')){
-      $('trRepeat').addEventListener('click',()=>{
-        const dates=Array.from(new Set((train.records||[]).map(r=>r.date))).sort();
-        if(!dates.length){ trToast('还没有历史训练，先记一次'); return; }
-        const d=dates[dates.length-1];
-        const list=train.records.filter(r=>r.date===d);
-        list.forEach(r=>addRec({exId:r.exId, name:r.name, part:r.part, sets:r.sets, reps:r.reps, weight:r.weight})); trToast('已导入 '+String(d).slice(5)+' 的 '+list.length+' 个动作');
-      });
-    }
+    if($('trRepeat')) $('trRepeat').addEventListener('click',()=>{ trRepeatLast(); });
     $('trAdd').addEventListener('click',()=>{
       if(!trSel){ trToast('请先在左侧选择一个动作'); return; }
       const e=findEx(trSel); if(!e) return;
