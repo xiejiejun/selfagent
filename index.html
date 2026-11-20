@@ -12164,8 +12164,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 
   /* 日志改日期（补记昨天） */
   const P2=n=>String(n).padStart(2,'0');
+  function logTimeSpanFromInput(inp){
+    const l=logs.find(x=>String(x.id)===String(inp.dataset.lid));
+    if(!l){ inp.remove(); return; }
+    const sp=document.createElement('span');
+    sp.className='log-time'; sp.dataset.lid=l.id; sp.setAttribute('title','点击修改日期，可补记昨天');
+    sp.innerHTML=fmtTime(l.time)+'<i>改</i>';
+    inp.replaceWith(sp);
+  }
+  function closeOpenDateInputs(){
+    document.querySelectorAll('.log-date').forEach(inp=>{ if(inp.isConnected) logTimeSpanFromInput(inp); });
+  }
   document.addEventListener('click',e=>{
     const el=e.target.closest && e.target.closest('.log-time[data-lid]'); if(!el) return;
+    closeOpenDateInputs();
     const cur=logs.find(x=>String(x.id)===String(el.dataset.lid)); if(!cur) return;
     const d=new Date(cur.time);
     const inp=document.createElement('input');
@@ -12180,8 +12192,22 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const v=inp.value.split('-').map(Number);
     const d=new Date(cur.time); d.setFullYear(v[0],v[1]-1,v[2]);
     cur.time=d.toISOString();
+    cur.date=dayKey(cur.time);
     logs.sort((a,b)=>new Date(a.time)-new Date(b.time));
-    save(); renderLogs(); renderReport(); trToast('已改到 '+inp.value);
+    save(); renderLogs();
+    try{ if(typeof currentTab!=='undefined' && currentTab==='logs') renderLogsPanel(); }catch(_){}
+    renderReport(); trToast('已改到 '+inp.value);
+  });
+  /* 取消（点别处 / ESC）：把停在“改日期”状态的输入框还原成时间文本 */
+  document.addEventListener('pointerdown',e=>{
+    const t=e.target;
+    if(t && t.closest && (t.closest('.log-date') || t.closest('.log-time[data-lid]'))) return;
+    closeOpenDateInputs();
+  }, true);
+  document.addEventListener('keydown',e=>{
+    const inp=e.target;
+    if(e.key!=='Escape' || !inp || !inp.classList || !inp.classList.contains('log-date')) return;
+    e.preventDefault(); closeOpenDateInputs();
   });
   const _bTrain=$('btnTrain'); if(_bTrain) _bTrain.addEventListener('click',()=>{
     if(currentPage!=='record') openPage('record');
