@@ -1315,16 +1315,17 @@ border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--tx2);f
 .fm-edit .fm-kg{width:auto;padding:0 5px;font-size:10px;color:var(--tx3)}
 
 /* ===== 身体图 ===== */
-.bodymap{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 2px}
-.bm-cell{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;border-radius:9px;
+.bodymap{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin:6px 0 2px}
+.bm-cell{display:flex;align-items:center;justify-content:center;gap:6px;padding:0 4px;height:34px;border-radius:8px;
 border:1px solid var(--line);background:rgba(255,255,255,.02);cursor:pointer;color:var(--tx)}
-.bm-cell b{font-weight:600;font-size:13px;white-space:nowrap}
-.bm-cell em{font-style:normal;font-size:10px;color:var(--tx3);white-space:nowrap}
-.bm-cell.ok{border-color:rgba(61,220,191,.35);background:rgba(61,220,191,.05)}
+.bm-cell b{font-weight:600;font-size:12.5px;white-space:nowrap}
+.bm-cell em{display:none}
+.bm-cell.ok{border-color:rgba(61,220,191,.4);background:rgba(61,220,191,.1)}
 .bm-cell.ok b{color:var(--accent)}
-.bm-cell.resting{border-color:rgba(231,197,106,.4);background:rgba(231,197,106,.06)}
+.bm-cell.resting{border-color:rgba(231,197,106,.45);background:rgba(231,197,106,.13)}
 .bm-cell.resting b,.bm-cell.resting em{color:#e7c56a}
-.bm-cell.done{border-color:var(--line);background:rgba(255,255,255,.015);opacity:.62}
+.bm-cell.done{border-color:var(--line);background:rgba(255,255,255,.012);opacity:.5}
+.bm-cell.done b{color:var(--tx3)}
 .fm-hold-wrap{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .fm-hold-btn{width:100%;min-height:52px;padding:12px 14px;border-radius:12px;border:1px solid rgba(92,245,214,.4);
 background:rgba(92,245,214,.07);color:var(--accent);font:inherit;font-size:15px;font-weight:600;cursor:pointer;
@@ -1500,7 +1501,8 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .fav-empty{font-size:11.5px;color:var(--tx3);white-space:nowrap}
 .fav-cu{flex:0 0 auto;font-size:11.5px;color:var(--accent);background:none;border:1px solid rgba(61,220,191,.4);
   border-radius:8px;padding:6px 9px;cursor:pointer;white-space:nowrap}
-.bm-cell.on{outline:2px solid var(--accent);outline-offset:1px}
+.bm-cell.on{outline:0;border-color:var(--accent);background:var(--accent)}
+.bm-cell.on b{color:#06211d}
 .ex-dt-head{align-items:center}
 .ex-fav{border:0;background:none;font-size:17px;line-height:1;padding:2px 4px;cursor:pointer;color:var(--tx3);margin-left:auto}
 .ex-fav.on{color:#e7c56a}
@@ -2002,6 +2004,8 @@ html[data-theme="light"] .gif-ph{background:rgba(15,23,33,.04)}
 /* 身体图 */
 html[data-theme="light"] .bm-cell{background:rgba(15,23,33,.03);border-color:var(--line)}
 html[data-theme="light"] .bm-cell.ok{background:rgba(15,158,134,.08);border-color:rgba(15,158,134,.35)}
+html[data-theme="light"] .bm-cell.on{background:#0F9E86;border-color:#0F9E86}
+html[data-theme="light"] .bm-cell.on b{color:#fff}
 html[data-theme="light"] .bm-cell.resting{background:rgba(200,150,40,.1);border-color:rgba(200,150,40,.4)}
 html[data-theme="light"] .bm-cell.resting b,html[data-theme="light"] .bm-cell.resting em{color:#9A7415}
 /* 底栏 / 休息层 */
@@ -2246,7 +2250,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .lib-inline .lib-pane{flex:1;min-height:0}
 .lib-inline .lib-pane>.lib-list{flex:1 1 auto;min-height:260px;max-height:calc(100vh - 190px);overflow:auto}
 @media(min-width:900px){.tr-seg,.tr-panel{max-width:840px}}
-.pl-tools{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.pl-tools{display:flex;gap:8px;align-items:center;margin:7px 0;flex-wrap:wrap}
 .pl-tools .plan-reset{margin-left:auto}
 /* 专注模式：有氧大卡 */
 .fm-cdbc{margin:0 0 12px;border:1px solid var(--line);border-left:3px solid #5B9CFF;border-radius:14px;background:var(--panel2);padding:12px 14px}
@@ -2468,28 +2472,28 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .cd-lv3 button.on{border-color:rgba(47,209,197,.5);color:var(--tx);background:rgba(47,209,197,.1)}
 .cd-dist{width:100%;margin-top:12px;min-height:38px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--tx);padding:0 12px;font:inherit;font-size:13px}
 /* 计划页：Feed 语言的卡片化 */
-.plan-hero{margin:2px 0 12px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;background:linear-gradient(180deg,rgba(47,209,197,.07),rgba(255,255,255,.02));position:relative}
-.plan-hero .ph-t{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+.plan-hero{margin:0 0 8px;border:1px solid var(--line);border-radius:13px;padding:12px 13px;background:linear-gradient(180deg,rgba(47,209,197,.07),rgba(255,255,255,.02));position:relative}
+.plan-hero .ph-t{display:flex;align-items:baseline;gap:8px;margin-bottom:2px;min-height:18px;padding-right:26px}
 .plan-hero .ph-t b{font-size:15px;letter-spacing:.2px}
 .plan-hero .ph-t em{font-style:normal;font-size:11px;color:var(--tx3)}
 .plan-hero .ph-m{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .plan-hero .ph-m span{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--tx3)}
 .plan-hero .ph-m b{font-size:14px;color:var(--tx);font-weight:600;font-variant-numeric:tabular-nums}
-.pl-eff{display:flex;gap:5px;margin-top:11px;padding-top:10px;border-top:1px dashed var(--line)}
-.pl-eff button{flex:1;min-height:32px;border:1px solid var(--line);background:none;color:var(--tx3);border-radius:9px;font:inherit;font-size:12px;transition:all var(--t-fast) var(--ease)}
+.pl-eff{display:flex;gap:5px;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
+.pl-eff button{flex:1;min-height:28px;border:1px solid var(--line);background:none;color:var(--tx3);border-radius:9px;font:inherit;font-size:12px;transition:all var(--t-fast) var(--ease)}
 .pl-eff button.on{border-color:rgba(47,209,197,.55);color:var(--tx);background:rgba(47,209,197,.12)}
-.pl-eff-note{font-size:11px;color:var(--tx3);margin-top:7px;line-height:1.5}
+.pl-eff-note{font-size:10.5px;color:var(--tx3);margin-top:5px;line-height:1.4}
 .ph-note{font-size:11px;color:var(--tx3);margin-top:4px}
 .pl-sugg{border:0;background:none;color:var(--accent);font-size:12px;font-weight:600;padding:2px 0;cursor:pointer;font-variant-numeric:tabular-nums}
 .pl-sugg:active{opacity:.7}
 .pl-table{gap:0}
-.pl-table .pl-row{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding-left:0;padding-right:0;min-height:52px;grid-template-columns:16px minmax(0,1fr) 64px 84px 22px}
+.pl-table .pl-row{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding-left:0;padding-right:0;min-height:46px;grid-template-columns:14px minmax(0,1fr) 60px 84px 22px}
 .pl-table .pl-row::before{display:none}
 .pl-table .pl-row:first-child{border-top:1px solid var(--line)}
-.pl-addl{margin-top:10px;text-align:center}
+.pl-addl{margin-top:4px;text-align:center}
 .pl-addl button{border:0;background:none;color:var(--tx3);font-size:12.5px;padding:6px 10px;cursor:pointer}
 .pl-addl button:active{color:var(--accent)}
-.pl-table{border:0;border-radius:0;overflow:visible;background:none;display:flex;flex-direction:column;gap:8px}
+.pl-table{border:0;border-radius:0;overflow:visible;background:none;display:flex;flex-direction:column;gap:0}
 .pl-th{display:none}
 .pl-row{display:grid;grid-template-columns:18px 1fr 74px 56px 22px;gap:6px;align-items:center;padding:0 10px 0 12px;min-height:52px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);cursor:pointer;position:relative;overflow:hidden;transition:background .16s,transform .16s,box-shadow .16s}
 .pl-row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#3EC478}
@@ -2512,7 +2516,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .pl-warn{font:inherit;font-size:10.5px;color:#a8792d;background:rgba(201,150,60,.14);border:1px solid rgba(201,150,60,.45);border-radius:6px;padding:2px 6px;cursor:pointer}
 .pl-jjoined{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);color:var(--tx3);font:inherit;font-size:11.5px;padding:10px;cursor:pointer}
 .pl-empty{font-size:11.5px;color:var(--tx3);padding:12px 10px}
-.pl-go{padding:10px 0 2px}
+.pl-go{padding:8px 0 2px}
 .pl-go .btn{width:100%}
 .plan-head{position:relative}
 .pl-sum{font-size:11px;color:var(--tx3);margin-left:8px}
@@ -6915,7 +6919,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               const p=a[1], rc=partRecovery(p);
               const st=rc.h<24?'done':(rc.h<48?'resting':'ok');
               const word=rc.h<24?'今日已练':(rc.h<48?'恢复中':'可练');
-              return `<button class="bm-cell ${st}" data-planpart="${p}" data-view="${a[0]}" type="button"><b>${a[0]}</b><em>${word}</em></button>`;
+              return `<button class="bm-cell ${st}" data-planpart="${p}" data-view="${a[0]}" title="${a[0]} · ${word}" type="button"><b>${a[0]}</b><em>${word}</em></button>`;
             }).join('')}</div>
             <div id="plOut"></div>
           </div>
@@ -8537,15 +8541,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.innerHTML=`
       <div class="plan-wrap">
         <div class="plan-hero">
-          <div class="ph-t"><b>${ENGINE.esc(label)}日计划</b><em>${trPlan.length} 个动作 · ${amount}</em></div>
-          ${avoidTxt?('<div class="ph-note">'+avoidTxt+'</div>'):''}
-          <div class="ph-m">${statCells.map(c=>`<span><b>${c.n}</b>${c.k}</span>`).join('')}</div>
+          <div class="ph-t"><b>${ENGINE.esc(label)}日计划</b><em>${trPlan.length} 动作 · ${sum.sets} 组${(Math.round(sum.vol)?' · '+Math.round(sum.vol).toLocaleString()+'kg':'')}</em></div>
+
           <div class="pl-eff" id="plEff">
             <button type="button" data-eff="light" class="${eff==='light'?'on':''}">轻松</button>
             <button type="button" data-eff="std" class="${eff==='std'?'on':''}">标准</button>
             <button type="button" data-eff="hard" class="${eff==='hard'?'on':''}">强化</button>
           </div>
-          <div class="pl-eff-note">切换档位按 ±20% 重算组数，手改过的行保持不动</div>
+          <div class="pl-eff-note">档位重算 ±20% · 手改行不动</div>
           <button class="plan-more" id="plMore" type="button" aria-label="更多">⋯</button>
           <div class="plan-menu" id="plMenu" hidden>
             <button type="button" data-plm="reset">恢复默认</button>
