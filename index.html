@@ -12466,9 +12466,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       setMsg('已同步 · '+new Date(S.lastPush).toLocaleTimeString());
       pushSnapshots();
     }).catch(function(e){
+      var msg=String((e&&e.message)||e);
+      if(/PGRST202|HTTP 404|Could not find the function|function .* does not exist/i.test(msg)){
+        setMsg('云端还没创建同步函数（push_events）。请在 Supabase → SQL Editor 运行 supabase_schema.sql 整段，成功后回这里点“连接并启用自动同步”。队列 '+S.queue.length+' 条已保存在本机，不会丢。');
+        return;   // 结构未就绪，不再无意义重试
+      }
       S.fails++; persist();
       var wait=[30,120,600][Math.min(S.fails-1,2)]*1000;
-      setMsg('上传失败：'+(e&&e.message||e)+' · '+Math.round(wait/1000)+'s 后重试（队列 '+S.queue.length+' 条保留）');
+      setMsg('上传失败：'+msg+' · '+Math.round(wait/1000)+'s 后重试（队列 '+S.queue.length+' 条保留）');
       clearTimeout(S.timer); S.timer=setTimeout(function(){ push(); },wait);
     }).then(function(){ S.pushing=false; });
   }
@@ -12516,7 +12521,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(!quiet && !changed) setMsg('云端已是最新');
       pullSnapshots();
     }).catch(function(e){ try{ window.__cloudErr=(e&&(e.stack||e.message))||String(e); }catch(_){}
-      if(!quiet) setMsg('拉取失败：'+(e&&e.message||e)); })
+      var msg=String((e&&e.message)||e);
+      if(/PGRST202|HTTP 404|Could not find the function/i.test(msg)){ if(!quiet) setMsg('云端还没创建同步函数（pull_events）：请先在 SQL Editor 运行 supabase_schema.sql。'); return; }
+      if(!quiet) setMsg('拉取失败：'+msg); })
       .then(function(){ S.pulling=false; });
   }
 
