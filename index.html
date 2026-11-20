@@ -1258,7 +1258,7 @@ padding:16px 18px 22px;animation:fadeIn .2s ease both}
 .fm-row.done{opacity:.55}
 .fm-tick{width:42px;height:42px;flex:0 0 auto;display:grid;place-items:center;border-radius:50%;border:0;background:none;color:var(--tx3);font-size:14px;font-variant-numeric:tabular-nums;opacity:.7}
 .fm-tick.done{color:#3ff0bb;opacity:1;font-size:22px;font-weight:700;animation:tickPop .28s cubic-bezier(.22,.9,.25,1)}
-.fm-val{font-size:22px;font-variant-numeric:tabular-nums;flex:1}
+.fm-val{font-size:22px;font-variant-numeric:tabular-nums;flex:1;font-weight:300;font-family:-apple-system,'SF Pro Display','Segoe UI Variable Display','Segoe UI',system-ui,sans-serif;letter-spacing:.01em}
 .fm-edit{display:flex;gap:4px}
 .fm-foot{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;width:100%;max-width:560px;margin-left:auto;margin-right:auto}
 .fm-foot .btn[disabled]{opacity:.35;pointer-events:none}
@@ -2281,14 +2281,18 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .fmc-ic{font-size:26px;line-height:1}
 .fmc-tt b{display:block;font-size:16px;font-weight:650}
 .fmc-tt em{font-style:normal;font-size:11.5px;color:var(--tx3)}
-.fmc-ring{--p:0;--cp:0;position:relative;width:200px;height:200px;border-radius:50%;background:conic-gradient(#5B9CFF calc(var(--p)*1%),rgba(255,255,255,.06) 0);display:grid;place-items:center;transition:background .3s,box-shadow .2s;margin:6px 0;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.fmc-chg{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from -90deg,#3DDC84 calc(var(--cp)*1%),rgba(0,0,0,0) 0);opacity:0;transition:opacity .12s;pointer-events:none}
-.fmc-ring.charging .fmc-chg{opacity:.62}
-.fmc-ring.charging{box-shadow:0 0 0 2px rgba(61,220,132,.85),0 0 30px rgba(61,220,132,.35)}
-.fmc-ring.flash{box-shadow:0 0 0 4px #3DDC84,0 0 52px rgba(61,220,132,.65)}
-.fmc-time.ok{color:#3DDC84}
+.fmc-ring{--p:0;--cp:0;position:relative;width:200px;height:200px;border-radius:50%;background:conic-gradient(#5B9CFF calc(var(--p)*1%),rgba(255,255,255,.06) 0);display:grid;place-items:center;transition:background .3s;margin:14px 0;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.fmc-chg{position:absolute;inset:-12px;border-radius:50%;pointer-events:none;opacity:.55;
+  background:conic-gradient(from -90deg,#3EDC84 calc(var(--cp,0)*1%),rgba(62,196,120,.12) 0);
+  -webkit-mask:radial-gradient(circle,#0000 0 104px,#000 106px 111px,#0000 112px);
+  mask:radial-gradient(circle,#0000 0 104px,#000 106px 111px,#0000 112px);
+  transition:opacity .15s}
+.fmc-ring.charging .fmc-chg{opacity:1}
+.fmc-ring.charging .fmc-in{opacity:.65}
+.fmc-ring.charging .fmc-time,.fmc-ring .fmc-in{transition:opacity .12s}
+.fmc-ring.flash .fmc-chg{opacity:1;background:conic-gradient(from -90deg,#fff 100%,#fff 0);filter:drop-shadow(0 0 10px rgba(255,255,255,.75))}
 .fmc-in{position:relative;z-index:2;width:174px;height:174px;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-.fmc-time{font-size:40px;text-align:center;padding:0 10px;line-height:1.15;font-weight:600;font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.5px}
+.fmc-time{font-size:44px;text-align:center;padding:0 10px;line-height:1.1;font-weight:250;font-variant-numeric:tabular-nums;font-family:-apple-system,'SF Pro Display','Segoe UI Variable Display','Segoe UI',system-ui,sans-serif;letter-spacing:.02em;color:var(--tx)}
 .fmc-in em{font-style:normal;font-size:11px;color:var(--tx3)}
 .fmc-main{display:flex;flex-direction:column;align-items:center;gap:6px;align-self:stretch}
 .fmc-start,.fmc-done{min-height:48px;border-radius:24px;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
@@ -2331,7 +2335,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .cd-acts{display:flex;gap:8px;margin-top:9px}
 .cd-acts button{min-height:32px;border-radius:8px;border:1px solid var(--line2);background:var(--panel);color:var(--tx2);font:inherit;font-size:12px;padding:0 12px;cursor:pointer}
 .cd-run{color:var(--tx);border-color:rgba(91,156,255,.5);background:rgba(91,156,255,.12)}
-.cd-timer{font-variant-numeric:tabular-nums;font-size:13px;color:var(--tx);letter-spacing:.5px}
+.cd-timer{font-variant-numeric:tabular-nums;font-size:13px;color:var(--tx);letter-spacing:.02em;font-weight:300;font-family:-apple-system,'SF Pro Display','Segoe UI Variable Display','Segoe UI',system-ui,sans-serif}
 .cd-x{margin-left:auto;border:0;background:none;color:var(--tx3);font-size:15px;cursor:pointer}
 .cd-bd{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--tx3);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 .cd-bd i{width:6px;height:6px;border-radius:50%;background:var(--tx3);display:block}
@@ -6436,23 +6440,18 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const reset=()=>{
         if(ht){ clearTimeout(ht); ht=null; } if(hiv){ clearInterval(hiv); hiv=null; }
         ring.classList.remove('charging'); ring.style.removeProperty('--cp');
-        if(tEl){ tEl.textContent=baseTxt(); tEl.classList.remove('ok'); }
-        if(subEl) subEl.textContent=baseSub();
       };
       const down=e=>{
         if(c.done){ trToast('这段有氧已完成，用「重做本次」可以再练一次'); return; }
         if(e&&e.preventDefault) e.preventDefault();
         hfired=false; ht0=Date.now(); ring.classList.add('charging'); paint(0);
-        if(tEl){ tEl.textContent='保持按住…'; }
-        if(subEl) subEl.textContent=(!c.run && !(c.sec>0))?'未开始 · 将记 0 分钟':'松手即取消';
-        if(hintEl) hintEl.textContent='长按中，松手取消';
+        if(hintEl) hintEl.textContent=(!c.run && !(c.sec>0))?'长按中 · 将记 0 分钟':'长按中，松手取消';
         if(hiv) clearInterval(hiv);
         hiv=setInterval(()=>paint(Math.min(1,(Date.now()-ht0)/800)),50);
         ht=setTimeout(()=>{
           hfired=true; reset();
-          if(tEl){ tEl.textContent='完成 ✓'; tEl.classList.add('ok'); }
           try{ haptic('warn'); }catch(err){}
-          ring.classList.add('flash'); setTimeout(()=>ring.classList.remove('flash'),460);
+          ring.classList.add('flash'); setTimeout(()=>ring.classList.remove('flash'),220);
           finishCardio();
         },800);
       };
