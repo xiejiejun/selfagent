@@ -7236,17 +7236,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       }
     }catch(e){}
     if($('planStripSum')) $('planStripSum').textContent=pl;
-    try{
-      const h=(train.cardioHabit)||{};
-      if(h.post && total>0 && done>=total){
-        const dKey='selfagent_cd_remind_v1';
-        const todayKey=day;
-        if(localStorage.getItem(dKey)!==todayKey && cds.every(c=>c.role!=='post' || !c.done)){
-          localStorage.setItem(dKey, todayKey);
-          setTimeout(()=>trToast('别忘了你的 '+((h.dur)||10)+' 分钟'+(h.modal||'快走')), 400);
-        }
-      }
-    }catch(e){}
     const sb=$('segToday');
     if(sb){ const has=items.length>0; sb.textContent=has?(done+'/'+total):''; sb.classList.toggle('on', has); }
     const pb2=$('segPlan');
@@ -7297,7 +7286,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         setTimeout(()=>{ const p=document.querySelector('#reportBody [data-trp="plan"]'); if(p) p.scrollIntoView({block:'start'}); },60);
         return;
       }
-      try{ cdMountHabit(); trRenderToday(); }catch(e){}
+      trRenderToday();
       try{ openFocus(); }catch(e){}
     };
     const tb=$('trEmpty');
@@ -8867,17 +8856,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function bindCardioEntry(){
     const b=$('cdOpen'); if(b) b.onclick=()=>openCardioSheet();
   }
-  function cdMountHabit(){
-    const h=(train.cardioHabit)||{}; if(!h.pre && !h.post) return;
-    const d=trDateVal();
-    train.cardio=train.cardio||[];
-    const has=role=>train.cardio.some(c=>c.date===d && c.role===role);
-    const add=role=>train.cardio.push({uid:'ch'+role+Date.now().toString(36), date:d, modal:h.modal||'快走', dur:h.dur||10, dist:0, lv:h.lv||'中等', done:false, role:role, ts:Date.now()});
-    if(h.pre && !has('pre')) add('pre');
-    if(h.post && !has('post')) add('post');
-    saveTrain();
-    trToast('已按有氧习惯挂载'+(h.pre&&h.post?'（前 + 后）':(h.pre?'（训练前）':'（训练后）')));
-  }
   // 统一拖拽（今日训练 / 计划页共用同一套参数）
   function liveDragBind(cont,opt){
     if(!cont || cont.__ldb) return; cont.__ldb=1;
@@ -10114,24 +10092,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(typeof train!=='undefined'&&train){ train.restUser=(v>0?v:null); try{ saveTrain(); }catch(e){} }
       renderSettingsPanel(); try{ trToast('默认休息：'+(v>0?v+' 秒':'按动作推荐')); }catch(e){}
     };
-    const cdSave=()=>{
-      if(typeof train==='undefined'||!train) return;
-      train.cardioHabit=train.cardioHabit||{pre:false,post:false,modal:'快走',dur:10,lv:'中等'};
-      try{ saveTrain(); }catch(e){}
-    };
-    const hp=$('cdHabitPre'); if(hp) hp.onclick=()=>{
-      train.cardioHabit=train.cardioHabit||{modal:'快走',dur:10,lv:'中等'};
-      train.cardioHabit.pre=!train.cardioHabit.pre; cdSave(); renderSettingsPanel();
-    };
-    const hq=$('cdHabitPost'); if(hq) hq.onclick=()=>{
-      train.cardioHabit=train.cardioHabit||{modal:'快走',dur:10,lv:'中等'};
-      train.cardioHabit.post=!train.cardioHabit.post; cdSave(); renderSettingsPanel();
-    };
-    const hmSel=$('cdHabitModal'); if(hmSel) hmSel.onchange=()=>{ train.cardioHabit=train.cardioHabit||{}; train.cardioHabit.modal=hmSel.value; cdSave(); };
-    const hd=$('cdHabitDur'); if(hd) hd.onchange=()=>{ train.cardioHabit=train.cardioHabit||{}; train.cardioHabit.dur=Math.max(5,Math.min(180,parseInt(hd.value,10)||10)); cdSave(); };
-    document.querySelectorAll('[data-cdhlv]').forEach(b=>b.onclick=()=>{
-      train.cardioHabit=train.cardioHabit||{}; train.cardioHabit.lv=b.dataset.cdhlv; cdSave(); renderSettingsPanel();
-    });
     const auto=$('setAutoNext');
     if(auto) auto.onclick=()=>{
       if(typeof train!=='undefined'&&train){ train.autoNext=!train.autoNext; try{ saveTrain(); }catch(e){} }
@@ -10310,30 +10270,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               <div class="set-inline">
                 <div><b style="font-size:13.5px">自动下一组</b><div class="hint" style="margin:4px 0 0">休息结束自动跳到下一组</div></div>
                 <button class="toggle" id="setAutoNext" role="switch" type="button" aria-checked="${(typeof train!=='undefined'&&train&&train.autoNext)?'true':'false'}" aria-label="自动下一组"><i></i></button>
-              </div>
-            </div>
-            <div class="setting-sec">
-              <h2 style="font-size:14px">有氧习惯</h2>
-              <div class="hint">进入专注模式自动挂载，配一次之后不用每次手动加。</div>
-              <div class="set-inline" style="margin-top:10px">
-                <div><b style="font-size:13px">训练前</b><div class="hint" style="margin:2px 0 0">排在第一个动作前，当热身</div></div>
-                <button class="toggle" id="cdHabitPre" role="switch" type="button" aria-checked="${(typeof train!=='undefined'&&train&&train.cardioHabit&&train.cardioHabit.pre)?'true':'false'}" aria-label="训练前有氧"><i></i></button>
-              </div>
-              <div class="set-inline" style="margin-top:10px">
-                <div><b style="font-size:13px">训练后</b><div class="hint" style="margin:2px 0 0">最后一个动作后，收尾</div></div>
-                <button class="toggle" id="cdHabitPost" role="switch" type="button" aria-checked="${(typeof train!=='undefined'&&train&&train.cardioHabit&&train.cardioHabit.post)?'true':'false'}" aria-label="训练后有氧"><i></i></button>
-              </div>
-              <div class="set-inline" style="margin-top:12px">
-                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                  <select id="cdHabitModal" style="min-height:34px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--tx);font:inherit;font-size:12px;padding:0 8px">
-                    ${CARDIO_MODALS.map(m=>`<option value="${m}" ${((train.cardioHabit&&train.cardioHabit.modal)||'快走')===m?'selected':''}>${m}</option>`).join('')}
-                  </select>
-                  <input type="number" id="cdHabitDur" min="5" max="180" step="5" value="${(train.cardioHabit&&train.cardioHabit.dur)||10}" style="width:70px;min-height:34px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--tx);font:inherit;font-size:12px;padding:0 8px">
-                  <span class="hint" style="margin:0">分钟</span>
-                </div>
-              </div>
-              <div class="cd-lv3" id="cdHabitLv" style="margin-top:10px">
-                ${['轻松','中等','强度'].map(x=>`<button type="button" data-cdhlv="${x}" class="${((train.cardioHabit&&train.cardioHabit.lv)||'中等')===x?'on':''}">${x}</button>`).join('')}
               </div>
             </div>
           </section>
