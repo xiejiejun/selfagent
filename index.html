@@ -2328,6 +2328,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .rd-lost span{color:var(--tx3)}
 .ms-redo{width:100%;margin-bottom:8px}
 .fmc-skip.redo{color:#F0B34A;border-color:rgba(240,179,74,.5)}
+.fmc-actions{display:flex;align-items:center;justify-content:flex-end;gap:16px;align-self:stretch;width:100%;flex:0 0 auto;margin-top:2px}
+.fmc-actions .fmc-skip{margin-top:0}
 .fmc-done{opacity:.62;position:relative;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 .fmc-done.charging{opacity:1;background:conic-gradient(from -90deg,var(--accent) var(--p,0%),rgba(255,255,255,.10) 0);border-color:var(--accent)}
 .fmc-done.flash,.fm-mini.finish.flash{filter:brightness(1.45)}
@@ -5360,7 +5362,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const el=document.createElement('div'); el.className='msheet redo';
     el.innerHTML=`<div class="msheet-box">
       <div class="ms-title">重做「${ENGINE.esc(c.modal)}」？</div>
-      <div class="rd-sub">${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'} · ${c.dur?('目标 '+c.dur+' 分钟'):'未设目标时长'}</div>
+      <div class="rd-sub">${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'} · ${c.free?('自由计时 · '+(Math.max(1,Math.round((c.sec||0)/60)))+' 分钟'):(c.dur?('目标 '+c.dur+' 分钟'):'未设目标时长')}</div>
       <div class="rd-lost">将清除：${lost.length?lost.join(' · '):'本次记录'}<br><span>时长/距离/强度保留，可重新开始计时</span></div>
       <div class="ms-btns"><button class="btn ghost sm" data-rdcancel type="button">取消</button><button class="btn danger sm" data-rdok type="button">确认重做</button></div>
     </div>`;
@@ -6059,7 +6061,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         if(!r0) return;
         const sec=cdSec(r0); t.textContent=cdFmt(sec);
         const ring=el2.querySelector('[data-fmcdring="'+r0.uid+'"]');
-        if(ring){ const tg=Math.max(1,(r0.dur||20))*60; ring.style.setProperty('--p',Math.min(100,Math.round(sec/tg*100))); }
+        if(ring){ const tg=(r0.dur&&!r0.free)?r0.dur*60:0; ring.style.setProperty('--p',tg?Math.min(100,Math.round(sec/tg*100)):0); }
       });
     },1000);
     el.querySelectorAll('[data-fmgo]').forEach(b=>b.onclick=()=>{
@@ -6379,7 +6381,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const tag = phase==='warmup'?'热身':phase==='cooldown'?'收尾':'有氧';
     const icon=CARDIO_ICON[c.modal]||'🏃';
     const sec=cdSec(c), run=!!c.run;
-    const target=c.dur?c.dur*60:0;
+    const target=(c.dur&&!c.free)?c.dur*60:0;
     const pct=target?Math.min(100,Math.round(sec/target*100)):Math.round((sec%60)/60*100);
     let tAll=0,dAll=0;
     rs.forEach(x=>{ const q=ensureGroups(x); tAll+=q.length; dAll+=q.filter(g=>g.done).length; });
@@ -6392,7 +6394,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span>${tag}${tAll?(' · '+dAll+'/'+tAll+' 组已完成'):''}</span></div>
       <div class="fm-strip" role="tablist" aria-label="今日安排">${chips}</div>
       <div class="fmc-scr">
-        <div class="fmc-head"><span class="fmc-ic">${icon}</span><div class="fmc-tt"><b>${ENGINE.esc(c.modal)}</b><em>${tag} · ${target?('目标 '+(c.dur)+' 分钟'):'点开始计时，结束按实际时长记录'}</em></div></div>
+        <div class="fmc-head"><span class="fmc-ic">${icon}</span><div class="fmc-tt"><b>${ENGINE.esc(c.modal)}</b><em>${tag} · ${target?('目标 '+c.dur+' 分钟'):'自由计时 · 按实际时长记录'}</em></div></div>
         <div class="fmc-ring${run?'':' pause'}" data-fmcdring2="${c.uid}" role="button" tabindex="0" aria-label="点一下开始计时，长按 1 秒完成" style="--p:${pct}">
           <svg class="fmc3" viewBox="0 0 240 240" aria-hidden="true">
             <circle class="trk h" cx="120" cy="120" r="108"></circle>
@@ -6402,7 +6404,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
             <circle class="bar m" data-fmcbar="m" cx="120" cy="120" r="88" stroke-dasharray="552.9" stroke-dashoffset="552.9"></circle>
             <circle class="bar s" data-fmcbar="s" cx="120" cy="120" r="68" stroke-dasharray="427.3" stroke-dashoffset="427.3"></circle>
           </svg>
-          <div class="fmc-in"><span class="fmc-time" data-fmcdt2="${c.uid}">${cdHMS(sec)}</span><em data-fmcdsub>${c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):(target?'目标 '+c.dur+'′':(run?'计时中':'已暂停'))}</em></div>
+          <div class="fmc-in"><span class="fmc-time" data-fmcdt2="${c.uid}">${cdHMS(sec)}</span><em data-fmcdsub>${c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):(target?'目标 '+c.dur+'′':(!c.free&&run)?'自由计时 · 计时中':(sec>0?'自由计时 · 已暂停':'自由计时'))}</em></div>
           <i class="fmc-chg"></i>
         </div>
         <div class="fmc-main">
@@ -6413,8 +6415,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <button class="fmc-chip" data-fmcddist2="${c.uid}" type="button">${distLabel}</button>
           <span class="fmc-lv">${['轻松','中等','强度'].map(x=>`<button class="${(c.lv||'中等')===x?'on':''}" data-fmcdlv2="${c.uid}:${x}" type="button">${x}</button>`).join('')}</span>
         </div>
-        ${(c.done||c.skipped||c.sec)?`<button class="fmc-skip redo" data-fmcdredo="${c.uid}" type="button">重做本次</button>`:''}
-        <button class="fmc-skip" data-fmcdskip2="${c.uid}" type="button">今天不练，跳过这一步</button>
+        <div class="fmc-actions">
+          ${(c.done||c.skipped||c.sec)?`<button class="fmc-skip redo" data-fmcdredo="${c.uid}" type="button">重做本次</button>`:''}
+          <button class="fmc-skip" data-fmcdskip2="${c.uid}" type="button">跳过本次</button>
+        </div>
         <div class="fm-foot">
           <button class="fm-nav prev" data-fmcdprev type="button" ${seqPos<=0?'disabled':''}>← 上一个</button>
           <button class="fm-nav next" data-fmcdnext type="button" ${seqPos<0||seqPos>=seq.length-1?'disabled':''}>下一个 →</button>
@@ -6450,7 +6454,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const finishCardio=()=>{
       if(c.done) return;
       cdFinish(c); saveTrain(); refreshHome();
-      trToast('有氧完成：'+c.modal+' '+(c.dur||1)+' 分钟，已记录');
+      trToast('有氧完成：'+c.modal+' '+Math.max(1,Math.round(cdSec(c)/60))+' 分钟，已记录');
       cdAskLv(c);
       const advance=()=>{
         if(fmStep(1)) return;
@@ -6466,7 +6470,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(ring){
       const tEl=ring.querySelector('[data-fmcdt2]'), subEl=ring.querySelector('[data-fmcdsub]'), hintEl=el.querySelector('[data-fmchint]');
       const baseTxt=()=>cdFmt(cdSec(c));
-      const baseSub=()=>c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):(c.dur?'目标 '+c.dur+'′':'计时中');
+      const baseSub=()=>c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):((c.dur&&!c.free)?'目标 '+c.dur+'′':'自由计时');
       let ht=null,hiv=null,hfired=false,ht0=0,sx=0,sy=0,rtoken=0;
       // --cp 只存数字（0-100），CSS 用 calc(var(--cp)*1%)，带 % 会乘成百分比×百分比导致整条 background 失效
       const paint=v=>{ ring.style.setProperty('--cp',(Math.max(0,Math.min(100,v*100))).toFixed(1)); if(v>0) ring.classList.add('charging'); };
@@ -6568,7 +6572,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       put('s', (s2%60)/60);
       ring.classList.toggle('pause', !c.run && s2>0);
       const sub=ring.querySelector('[data-fmcdsub]');
-      if(sub && !c.dist){ const base = target ? ('目标 '+c.dur+'′') : ''; sub.textContent = base ? (base + (c.run?'':' · 已暂停')) : (c.run?'计时中':(s2>0?'已暂停':'待开始')); }
+      if(sub && !c.dist){ sub.textContent = target ? ('目标 '+c.dur+'′' + (c.run?'':' · 已暂停')) : (c.free ? ('自由计时' + (c.run?' · 计时中':(s2>0?' · 已暂停':''))) : (c.run?'计时中':(s2>0?'已暂停':'待开始'))); }
       return true;
     };
     paintRings();
@@ -6584,9 +6588,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return cds.map(c=>{
       const icon=CARDIO_ICON[c.modal]||'🏃';
       const sec=cdSec(c), run=!!c.run;
-      const target=Math.max(1,(c.dur||20))*60;
-      const pct=Math.min(100,Math.round(sec/target*100));
-      const distTxt=[c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):'', '目标 '+(c.dur||20)+'′'].filter(Boolean).join(' · ');
+      const target=(c.dur&&!c.free)?c.dur*60:0;
+      const pct=target?Math.min(100,Math.round(sec/target*100)):0;
+      const distTxt=[c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):'', (c.dur&&!c.free)?('目标 '+c.dur+'′'):'自由计时'].filter(Boolean).join(' · ');
       return `<div class="fm-cdbc ${c.done?'done':''}" data-fmcd="${c.uid}">
         <div class="fm-cdbc-h"><span class="fm-cdbc-nm">${icon} ${ENGINE.esc(c.modal)}<em class="fm-cdbc-k">${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'}</em></span>
           ${c.done?'<span class="fm-cdbc-ok">✓ 已完成</span>':`<button class="fm-cdbc-skip" data-fmcdskip="${c.uid}" type="button">今天不练</button>`}</div>
@@ -7190,8 +7194,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     let total=0, done=0;
     items.forEach(r=>{ const gs=ensureGroups(r); total+=gs.length; done+=gs.filter(g=>g.done).length; });
     const cds=trCardioFor(day);
-    const cdDone=cds.filter(c=>c.done).reduce((a,c)=>a+(c.dur||0),0);
-    const cdPlan=cds.reduce((a,c)=>a+(c.dur||0),0);
+    const cdDone=cds.filter(c=>c.done).reduce((a,c)=>a+cdMinOf(c),0);
+    const cdPlan=cds.reduce((a,c)=>a+cdMinOf(c),0);
     if($('todayStat')){
       const vol=items.flatMap(r=>ensureGroups(r)).reduce((a,g)=>a+(g.warmup?0:(g.reps||0)*(g.weight||0)),0);
       $('todayStat').innerHTML = (items.length||cds.length)
@@ -7216,14 +7220,14 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const pMon=new Date(mon.getTime()-7*864e5), pEnd=new Date(mon.getTime()-864e5);
     const thisW=(train.records||[]).filter(r=>r.date>=kMon && r.date<=kNow).reduce((a,r)=>a+(r.sets||0),0);
     const lastW=(train.records||[]).filter(r=>r.date>=fmt(pMon) && r.date<=fmt(pEnd)).reduce((a,r)=>a+(r.sets||0),0);
-    const cdW=(train.cardio||[]).filter(c=>c.date>=kMon&&c.date<=kNow&&c.done).reduce((a,c)=>a+(c.dur||0),0);
+    const cdW=(train.cardio||[]).filter(c=>c.date>=kMon&&c.date<=kNow&&c.done).reduce((a,c)=>a+cdMinOf(c),0);
     let wk='本周 '+thisW+' 组'+(cdW?(' · 有氧 '+cdW+' 分钟'):'');
     if(lastW>0){ const dd=Math.round((thisW-lastW)/lastW*100); wk+=' · 比上周 '+(dd>0?'+':'')+dd+'%'; }
     if($('weekSum')) $('weekSum').textContent=wk;
     try{
       const wkCd=(train.cardio||[]).filter(c=>c.date>=kMon&&c.date<=kNow&&c.done);
       const by={};
-      wkCd.forEach(c=>{ const m=c.modal||'有氧'; (by[m]=by[m]||{n:0,d:0}); by[m].n++; by[m].d+=c.dur||0; });
+      wkCd.forEach(c=>{ const m=c.modal||'有氧'; (by[m]=by[m]||{n:0,d:0}); by[m].n++; by[m].d+=cdMinOf(c); });
       const txt=Object.keys(by).slice(0,3).map(m=>m+' '+by[m].n+' 次 · '+by[m].d+'′').join(' / ');
       if($('cdWeekDist')) $('cdWeekDist').textContent=txt;
     }catch(e){}
@@ -8609,7 +8613,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(r.weight>0 && maxW>0 && r.weight>maxW) prs.push(r.name+' '+r.weight+'kg');
     });
     const cd=(train.cardio||[]).filter(c=>c.date===d);
-    const cdMin=cd.reduce((a,c)=>a+(c.dur||0),0);
+    const cdMin=cd.reduce((a,c)=>a+cdMinOf(c),0);
     const parts=[...new Set(today.map(r=>r.part).concat(cd.length?['有氧']:[]))];
     const prevDay=train.records.filter(r=>r.date<d && parts.includes(r.part))
       .reduce((a,b)=>(a>b.date?a:b.date),'');
@@ -8630,7 +8634,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <div><b>${Math.round(vol)}</b><span>容量 kg</span></div>
         <div><b>${prs.length}</b><span>PR</span></div>
       </div>
-      ${cd.length?`<div class="sum-cmp">有氧：${cd.map(c=>ENGINE.esc(c.modal)+' '+(c.dur||0)+'′').join(' · ')}（合计 ${cdMin} 分钟）</div>`:''}
+      ${cd.length?`<div class="sum-cmp">有氧：${cd.map(c=>ENGINE.esc(c.modal)+' '+cdMinOf(c)+'′').join(' · ')}（合计 ${cdMin} 分钟）</div>`:''}
       ${prs.length?`<div class="sum-pr">新纪录：${prs.slice(0,3).map(x=>ENGINE.esc(x)).join(' · ')}</div>`:''}
       ${cmp?`<div class="sum-cmp">${cmp}</div>`:''}
       <div class="sum-parts">部位：${parts.map(p=>ENGINE.esc(p)).join(' / ')}</div>
@@ -8700,6 +8704,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function trCardioFor(d){
     return (train.cardio||[]).filter(c=>c.date===d).sort((a,b)=>(a.ts||0)-(b.ts||0));
   }
+  // 有氧时长（分钟）：计划项取目标 dur，自由计时按实际计时换算
+  function cdMinOf(c){ if(!c) return 0; return c.free ? Math.round((c.sec||0)/60) : (c.dur||Math.round((c.sec||0)/60)||0); }
   function cdSec(r){
     if(!r) return 0;
     return (r.sec||0) + (r.run&&r.t0 ? Math.floor((Date.now()-r.t0)/1000) : 0);
@@ -8743,7 +8749,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!r) return;
     if(r.run||r.t0) r.sec=cdSec(r);
     r.run=false; r.t0=0;
-    if((r.sec||0)>0) r.dur=Math.max(1,Math.round(r.sec/60));
+    if(r.dur) r.free=false;
+    if((r.sec||0)>0){ if(!r.dur) r.free=true; r.min=Math.round(r.sec/60); }
     r.done=true;
     cdLog(r);
   }
@@ -8843,7 +8850,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     document.querySelectorAll('.cd-rpe').forEach(x=>x.remove());
     const el=document.createElement('div'); el.className='msheet cd-rpe';
     el.innerHTML=`<div class="msheet-box cd-rpe-box">
-      <div class="cd-rpe-t">${ENGINE.esc(r.modal)} ${r.dur||0} 分钟 · 强度感觉？</div>
+      <div class="cd-rpe-t">${ENGINE.esc(r.modal)} ${cdMinOf(r)} 分钟 · 强度感觉？</div>
       <div class="cd-lv3">${['轻松','中等','强度'].map(x=>`<button type="button" data-cdrpe="${x}" class="${x===(r.lv||'中等')?'on':''}">${x}</button>`).join('')}</div>
       <div class="hint" style="margin-top:8px">用来校正你练完的真实强度</div>
     </div>`;
@@ -11777,7 +11784,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const now=Date.now(), ms=864e5;
       const cds=(train.cardio||[]);
       const cd7=cds.filter(c=>{ const t=now-new Date((c.date||'')+'T00:00:00').getTime(); return t<=7*ms&&t>=0; });
-      const cdMin=cd7.filter(c=>c.done).reduce((a,c)=>a+(c.dur||0),0);
+      const cdMin=cd7.filter(c=>c.done).reduce((a,c)=>a+cdMinOf(c),0);
       const cdAllDone=cd7.length&&cd7.every(c=>c.done);
       if(cdMin>0){
         const anaer=g.sets7;
@@ -11858,7 +11865,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return `<div class="ins-bar">
       <div class="ins-cell"><span class="k">精力</span><span class="v"><i class="cnt" data-cnt="${g.rAvg==null?0:Math.round(g.rAvg*10)/10}" data-dec="1">${f1(g.rAvg)}</i><em>/5</em></span><span class="s">${dir}（上周 ${f1(g.pAvg)}）</span></div>
       <div class="ins-cell"><span class="k">情绪</span><span class="v">${md||'—'}</span><span class="s">上周 ${g.pMood==null?'—':f1(g.pMood)+'/5'}</span></div>
-      <div class="ins-cell"><span class="k">本周训练</span><span class="v"><i class="cnt" data-cnt="${g.sets7}">${g.sets7}</i><em>组</em></span><span class="s">有氧 ${(function(){let m=0;try{(train.cardio||[]).forEach(c=>{const t=Date.now()-new Date(c.date+'T00:00:00').getTime(); if(c.done&&t<=7*864e5&&t>=0) m+=(c.dur||0);});}catch(e){}return m;})()} 分钟 · ${g.days7} 个训练日</span></div>
+      <div class="ins-cell"><span class="k">本周训练</span><span class="v"><i class="cnt" data-cnt="${g.sets7}">${g.sets7}</i><em>组</em></span><span class="s">有氧 ${(function(){let m=0;try{(train.cardio||[]).forEach(c=>{const t=Date.now()-new Date(c.date+'T00:00:00').getTime(); if(c.done&&t<=7*864e5&&t>=0) m+=cdMinOf(c);});}catch(e){}return m;})()} 分钟 · ${g.days7} 个训练日</span></div>
     </div>${insSparkHtml()}`;
   }
   function insSparkHtml(){
