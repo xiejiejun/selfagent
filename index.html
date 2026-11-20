@@ -2305,6 +2305,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .rd-lost{font-size:12px;line-height:1.7;color:var(--tx2);border-left:2px solid #E06B6B;padding:8px 10px;border-radius:8px;background:rgba(224,107,107,.08);margin-bottom:14px}
 .rd-lost span{color:var(--tx3)}
 .ms-redo{width:100%;margin-bottom:8px}
+.fmc-skip.redo{color:#F0B34A;border-color:rgba(240,179,74,.5)}
 .fm-trans{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--bg);font-size:22px;font-weight:650;animation:cdPulse 1s ease-in-out}
 .fm-trans em{font-style:normal;font-size:12px;color:var(--tx3);font-weight:400}
 /* 有氧：独立记录类型 */
@@ -5311,6 +5312,35 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.addEventListener('pointercancel',clear);
     el.addEventListener('pointerleave',clear);
   }
+  function openCdRedoConfirm(c){
+    if(!c) return;
+    document.querySelectorAll('.msheet.redo').forEach(x=>x.remove());
+    const lost=[];
+    if(c.done) lost.push('完成状态');
+    if(c.sec||c.t0) lost.push('本次计时 '+(c.sec?(Math.round(c.sec/60*10)/10+' 分钟'):''));
+    if(c.run) lost.push('进行中的计时');
+    const el=document.createElement('div'); el.className='msheet redo';
+    el.innerHTML=`<div class="msheet-box">
+      <div class="ms-title">重做「${ENGINE.esc(c.modal)}」？</div>
+      <div class="rd-sub">${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'} · ${c.dur?('目标 '+c.dur+' 分钟'):'未设目标时长'}</div>
+      <div class="rd-lost">将清除：${lost.length?lost.join(' · '):'本次记录'}<br><span>时长/距离/强度保留，可重新开始计时</span></div>
+      <div class="ms-btns"><button class="btn ghost sm" data-rdcancel type="button">取消</button><button class="btn danger sm" data-rdok type="button">确认重做</button></div>
+    </div>`;
+    el.style.zIndex='6300';
+    document.body.appendChild(el);
+    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    el.querySelector('[data-rdcancel]').onclick=()=>el.remove();
+    el.querySelector('[data-rdok]').onclick=()=>{
+      el.remove();
+      c.done=false; c.skipped=false; c.sec=0; c.ts=null;
+      delete c.run; delete c.t0;
+      saveTrain(); trRenderToday(); refreshHome();
+      if(document.getElementById('focusMode')){ try{ renderFocus(); }catch(e){} }
+      try{ haptic('warn'); }catch(e){}
+      trToast('「'+c.modal+'」已重置，可重新计时');
+    };
+    try{ haptic('warn'); }catch(e){}
+  }
   function openRedoConfirm(key){
     const {r,g}=setOf(key); if(!r||!g) return;
     document.querySelectorAll('.msheet.redo').forEach(x=>x.remove());
@@ -5827,8 +5857,31 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!r) r=rs.find(pendOf)||cur||rs.find(x=>x.uid===__focusUids[0])||rs[0];
     __focusIdx=__focusUids.indexOf(r.uid); if(__focusIdx<0) __focusIdx=0;
     try{ localStorage.setItem('_focus_prog', JSON.stringify({date:trDateVal(), uid:r.uid})); }catch(e){}
-    if(!window.__fmPhase){ window.__fmPhase = pre ? 'warmup' : 'strength'; }
+    if(!window.__fmPhase){
+      let ph=null;
+      for(const k0 of fmSeq()){
+        if(k0.slice(0,2)==='c:'){
+          const c0=(train.cardio||[]).find(x=>x.uid===k0.slice(2));
+          if(c0 && !c0.done && !c0.skipped){ ph = c0.role==='pre'?'warmup':(c0.role==='post'?'cooldown':'cardio'); break; }
+          continue;
+        }
+        break; // 首个是力量动作：按力量开始
+      }
+      window.__fmPhase = ph || (pre ? 'warmup' : 'strength');
+    }
     if(window.__fmPhase==='warmup' && !pre){ window.__fmPhase='strength'; }
+    // 尚未有任何进度时，严格跟随今日序列首项（有氧排在前面就先练有氧）
+    const anyProg = rs.some(x=>ensureGroups(x).some(g=>g.done)) || cds.some(c=>c.done||c.skipped||c.sec>0);
+    if(!anyProg && !window.__fmPin && !window.__fmCdAdhoc){
+      const k0=fmSeq()[0];
+      if(k0 && k0.slice(0,2)==='c:'){
+        const c0=cds.find(x=>x.uid===k0.slice(2));
+        if(c0 && !c0.done && !c0.skipped){
+          window.__fmPhase = c0.role==='pre'?'warmup':(c0.role==='post'?'cooldown':'cardio');
+          window.__fmCdAdhoc = c0.role?null:c0.uid;
+        }
+      }
+    }
     if(window.__fmPhase==='cooldown' && !post){
       const leftNow=rs.some(x=>ensureGroups(x).some(g=>!g.done));
       window.__fmPhase = leftNow?'strength':'done';
@@ -5839,7 +5892,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       return;
     }
     if(window.__fmPhase==='cardio'){
-      const picked=(window.__fmCdAdhoc && cds.find(x=>x.uid===window.__fmCdAdhoc && !x.done && !x.skipped));
+      const picked=(window.__fmCdAdhoc && cds.find(x=>x.uid===window.__fmCdAdhoc));
       const c=picked||adhoc[0]||cds.find(x=>!x.done&&!x.skipped);
       if(c){ renderFocusCd(c, 'cardio', rs, cds); return; }
       window.__fmPhase = rs.length?'strength':'done';
@@ -6198,7 +6251,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const p=key.split(':'); const {r,g}=setOf(p[0]+':'+p[1]); if(!r||!g) return;
     const st=window.__grpStart[key];
     if(st){ trToast('本组计时中，向右滑动结束'); return; }
-    if(g.done){ trToast('这组已完成，先取消完成再计时'); return; }
+    if(g.done){
+      g.done=false; delete window.__grpStart[key];
+      saveTrain(); trRenderToday(); refreshHome(); renderFocus();
+      trToast('已取消第 '+g.no+' 组完成');
+      return;
+    }
     window.__grpStart[key]=Date.now();
     try{ haptic('light'); }catch(e){}
     renderFocus();
@@ -6283,6 +6341,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <button class="fmc-chip" data-fmcddist2="${c.uid}" type="button">${distLabel}</button>
           <span class="fmc-lv">${['轻松','中等','强度'].map(x=>`<button class="${(c.lv||'中等')===x?'on':''}" data-fmcdlv2="${c.uid}:${x}" type="button">${x}</button>`).join('')}</span>
         </div>
+        ${(c.done||c.skipped||c.sec)?`<button class="fmc-skip redo" data-fmcdredo="${c.uid}" type="button">重做本次</button>`:''}
         <button class="fmc-skip" data-fmcdskip2="${c.uid}" type="button">今天不练，跳过这一步</button>
         <div class="fm-foot">
           <button class="fm-nav prev" data-fmcdprev type="button" ${seqPos<=0?'disabled':''}>← 上一个</button>
@@ -6342,6 +6401,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         else renderFocus();
       }
     });
+    el.querySelectorAll('[data-fmcdredo]').forEach(b=>b.onclick=()=>{ openCdRedoConfirm(c); });
     el.querySelectorAll('[data-fmcddist2]').forEach(b=>b.onclick=()=>{
       if(CD_DIST.includes(c.modal)) c.dist=Math.round(((c.dist||0)+0.5)*10)/10; else c.dist=(c.dist||0)+5;
       saveTrain(); renderFocus();
@@ -6405,7 +6465,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         if(pr && pr.date===trDateVal()){ const i=rs.findIndex(r=>r.uid===pr.uid); if(i>=0) __focusIdx=i; }
       }catch(e){}
     }
-    window.__fmPhase=fmRebuildPhase();
+    window.__fmPhase = restored ? fmRebuildPhase() : null;
     window.__hintUid=null;
     renderFocus();
   }
@@ -8854,6 +8914,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         <div class="rm-t">${ENGINE.esc(r.modal)}${r.role==='pre'?' · 热身':r.role==='post'?' · 收尾':''}</div>
         <button class="rm-i" data-cm1 type="button">${r.done?'标为未完成':(r.run?'暂停计时':'开始计时')}</button>
         ${r.done?'':'<button class="rm-i" data-cm2 type="button">完成并记录</button>'}
+        ${(r.done||r.skipped||r.sec)?'<button class="rm-i" data-cm4 type="button">重做本次</button>':''}
         <button class="rm-i del" data-cm3 type="button">从今日移除</button>
       </div>`;
       document.body.appendChild(el);
@@ -8867,6 +8928,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       };
       const fin=el.querySelector('[data-cm2]');
       if(fin) fin.onclick=()=>{ close(); cdFinish(r); saveTrain(); trRenderToday(); refreshHome(); cdAskLv(r); };
+      const rdo=el.querySelector('[data-cm4]');
+      if(rdo) rdo.onclick=()=>{ close(); openCdRedoConfirm(r); };
       el.querySelector('[data-cm3]').onclick=()=>{
         close();
         train.cardio=(train.cardio||[]).filter(x=>x.uid!==uid); saveTrain(); trRenderToday(); refreshHome();
