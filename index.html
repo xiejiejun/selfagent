@@ -1412,6 +1412,9 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .fm-row{position:relative}
 .fm-swipe{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;padding:7px 12px 7px 14px;border-radius:12px;background:linear-gradient(90deg,rgba(45,212,160,.06),rgba(45,212,160,.34));border:1px solid rgba(45,212,160,.55);color:#3ff0bb;font-size:13.5px;font-weight:800;letter-spacing:.02em;pointer-events:none;animation:fmSwipePulse 1.1s ease-in-out infinite;text-shadow:0 0 10px rgba(45,212,160,.45)}
 .fm-swipe b{font-size:26px;line-height:1;font-weight:900}
+.grp-menu .gm-list{display:flex;flex-direction:column;gap:8px;margin:2px 0 10px}
+.grp-menu .gm-b{width:100%;justify-content:center}
+.fm-livet{font-variant-numeric:tabular-nums;font-size:19px;font-weight:900;letter-spacing:.02em;padding-left:8px;margin-left:2px;border-left:1px solid rgba(45,212,160,.45);color:#9ffbe4}
 .fm-swipe em{font-style:normal}
 @keyframes fmSwipePulse{0%,100%{transform:translate(-4px,-50%);opacity:.72}50%{transform:translate(10px,-50%);opacity:1}}
 @media (prefers-reduced-motion:reduce){ .fm-swipe{animation:none} }
@@ -5116,6 +5119,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   const trToday=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
   const trDateVal=()=>{ const el=$('trDate'); return (el&&el.value)||trToday(); };
   function trUid(r){ if(!r.uid) r.uid='t'+Math.random().toString(36).slice(2,9); return r.uid; }
+  const TIMED_RE=/静力|平板|有氧|心肺|核心|全身|绳子|战绳|跳|跑|登山|波比|开合|支撑|计时/;
+  function isTimedX(o){ return TIMED_RE.test(((o&&o.part)||'')+((o&&o.name)||(o&&o.n)||'')); }
   function weightStep(e){
     const eq=(e&&e.e)||'';
     if(/杠铃/.test(eq)) return 2.5;
@@ -5129,7 +5134,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const old=Array.isArray(r.groups)?r.groups:[];
     r.groups=Array.from({length:n},(_,i)=>{
       const g=old[i]||{no:i+1,reps,weight:w,done:false};
-      g.no=i+1; if(!g.reps) g.reps=reps; if(g.weight==null) g.weight=w;
+      g.no=i+1; if(g.timed){ if(!(g.reps>0)) g.reps=0; } else if(!g.reps) g.reps=reps; if(g.weight==null) g.weight=w;
       if(!g.uid) g.uid=(r.uid||'x')+'s'+i;
       return g;
     });
@@ -5224,9 +5229,76 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!pv){ trToast('第 1 组没有上一组可复制'); return; }
     if(g.done){ trToast('这一组已完成，先取消完成再复制'); return; }
     g.weight=pv.weight||0; g.reps=pv.reps||0; g.warmup=!!pv.warmup;
+    if(pv.sec){ g.sec=pv.sec; g.timed=true; }
     r.weight=g.weight; r.reps=g.reps;
     saveTrain(); trRenderToday(); refreshHome();
     trToast('已复制上一组：'+(g.weight>0?g.weight+'kg':'自重')+' × '+g.reps);
+  }
+  function openGrpMenu(key){
+    const {r,g}=setOf(key); if(!r||!g) return;
+    document.querySelectorAll('.grp-menu').forEach(x=>x.remove());
+    const el=document.createElement('div'); el.className='msheet grp-menu';
+    el.innerHTML=`<div class="msheet-box">
+      <div class="ms-title">${ENGINE.esc(r.name)} · 第 ${g.no} 组</div>
+      <div class="gm-list">
+        <button class="btn sm gm-b" data-gm="warm" type="button">${g.warmup?'取消热身标记':'标记为热身组（不计容量/PR）'}</button>
+        <button class="btn ghost sm gm-b" data-gm="edit" type="button">编辑参数</button>
+        <button class="btn ghost sm gm-b" data-gm="allwarm" type="button">${g.warmup?'本动作全部取消热身':'把已完成组标为热身'}</button>
+        ${g.done?`<button class="btn ghost sm gm-b" data-gm="undone" type="button">取消本组完成</button>`:''}
+      </div>
+      <div class="ms-btns"><button class="btn ghost sm" data-gm="close" type="button">关闭</button></div>
+    </div>`;
+    el.style.zIndex='6200';
+    document.body.appendChild(el);
+    el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
+    el.querySelectorAll('[data-gm]').forEach(b=>b.onclick=()=>{
+      const act=b.dataset.gm;
+      if(act==='close'){ el.remove(); return; }
+      if(act==='edit'){ el.remove(); openSetSheet(key); return; }
+      if(act==='warm'){
+        g.warmup=!g.warmup;
+        saveTrain(); trRenderToday(); refreshHome();
+        if(document.getElementById('focusMode')){ try{ renderFocus(); }catch(e){} }
+        trToast(g.warmup?'已标记为热身组':'已取消热身标记');
+        el.remove(); return;
+      }
+      if(act==='allwarm'){
+        const gs=ensureGroups(r);
+        const on=!gs.some(x=>x.warmup&&x.done);
+        gs.forEach(x=>{ if(x.done){ x.warmup=on; } });
+        saveTrain(); trRenderToday(); refreshHome();
+        if(document.getElementById('focusMode')){ try{ renderFocus(); }catch(e){} }
+        trToast(on?'已完成组已标为热身':'已完成组已取消热身');
+        el.remove(); return;
+      }
+      if(act==='undone'){
+        g.done=false; delete window.__rpeAsk[key];
+        saveTrain(); trRenderToday(); refreshHome();
+        if(document.getElementById('focusMode')){ try{ renderFocus(); }catch(e){} }
+        trToast('已取消第 '+g.no+' 组完成'); el.remove(); return;
+      }
+    });
+    try{ haptic('light'); }catch(e){}
+  }
+  function bindHold(el, ms, cb){
+    let t=null, sx=0, sy=0, moved=false;
+    const clear=()=>{ if(t){ clearTimeout(t); t=null; } };
+    el.addEventListener('pointerdown',ev=>{
+      moved=false; sx=ev.clientX; sy=ev.clientY;
+      t=setTimeout(()=>{
+        t=null; moved=true;
+        window.__holdFired=Date.now();
+        document.addEventListener('click', function swallow(e){ e.stopPropagation(); e.preventDefault(); document.removeEventListener('click', swallow, true); }, true);
+        cb();
+      }, ms);
+    });
+    el.addEventListener('pointermove',ev=>{
+      if(!t) return;
+      if(Math.abs(ev.clientX-sx)>10 || Math.abs(ev.clientY-sy)>10) clear();
+    });
+    el.addEventListener('pointerup',clear);
+    el.addEventListener('pointercancel',clear);
+    el.addEventListener('pointerleave',clear);
   }
   function openSetSheet(key){
     const {r,g}=setOf(key); if(!r||!g) return;
@@ -5234,8 +5306,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const el=document.createElement('div'); el.className='msheet';
     el.innerHTML=`<div class="msheet-box">
       <div class="ms-title">${ENGINE.esc(r.name)} · 第 ${g.no} 组</div>
-      <div class="ms-row"><label>重量 kg</label><input id="msW" type="number" inputmode="decimal" step="0.5" value="${g.weight||0}"></div>
-      <div class="ms-row"><label>次数</label><input id="msR" type="number" inputmode="numeric" step="1" value="${g.reps||10}"></div>
+      ${(g.timed||isTimedX(r))?
+      `<div class="ms-row"><label>每组秒数</label><input id="msSec" type="number" inputmode="numeric" step="5" min="5" value="${g.sec||45}"></div>`
+      :`<div class="ms-row"><label>重量 kg</label><input id="msW" type="number" inputmode="decimal" step="0.5" value="${g.weight||0}"></div>
+      <div class="ms-row"><label>次数</label><input id="msR" type="number" inputmode="numeric" step="1" value="${g.reps||10}"></div>`}
       ${g.no>1?`<button class="ms-copy" id="msCopy" type="button">复制上一组：${(ensureGroups(r)[g.no-2]||{}).weight>0?((ensureGroups(r)[g.no-2].weight)+'kg'):'自重'} × ${(ensureGroups(r)[g.no-2]||{}).reps||0}</button>`:''}
       <label class="ms-all"><input type="checkbox" id="msWarm" ${g.warmup?'checked':''}> 热身组（灰色标记，不计入容量）</label>
       <label class="ms-all"><input type="checkbox" id="msAll"> 同步到本动作其余未完成组</label>
@@ -5253,11 +5327,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     el.querySelector('[data-msclose]').onclick=()=>el.remove();
     el.addEventListener('click',ev=>{ if(ev.target===el) el.remove(); });
     el.querySelector('[data-msok]').onclick=()=>{
-      const w=Math.max(0,parseFloat(el.querySelector('#msW').value)||0);
-      const reps=Math.max(1,parseInt(el.querySelector('#msR').value,10)||1);
       const all=el.querySelector('#msAll').checked;
       const warm=!!(el.querySelector('#msWarm')&&el.querySelector('#msWarm').checked);
       const gs=ensureGroups(r);
+      const secIn=el.querySelector('#msSec');
+      if(secIn){
+        const sec=Math.max(5,parseInt(secIn.value,10)||45);
+        const apply=x=>{ x.sec=sec; x.timed=true; };
+        if(all) gs.forEach(x=>{ if(!x.done) apply(x); }); else apply(g);
+        g.warmup=warm; if(all){ r.warmup=warm; }
+        saveTrain(); trRenderToday(); el.remove();
+        if(document.getElementById('focusMode')){ try{ renderFocus(); }catch(e){} }
+        trToast('已设为 '+sec+' 秒/组'); return;
+      }
+      const w=Math.max(0,parseFloat(el.querySelector('#msW').value)||0);
+      const reps=Math.max(1,parseInt(el.querySelector('#msR').value,10)||1);
       if(all){ gs.forEach(x=>{ if(!x.done){ x.weight=w; x.reps=reps; } }); r.weight=w; r.reps=reps; }
       else { g.weight=w; g.reps=reps; r.weight=w; r.reps=reps; }
       g.warmup=warm; if(all){ r.warmup=warm; }
@@ -5376,6 +5460,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       setTimeout(()=>{ if(window.__rpeAsk){ delete window.__rpeAsk[key]; trRenderToday(); } },5200);
     } else { delete window.__rpeAsk[key]; }
     saveTrain(); trRenderToday(); refreshHome();
+    if(g.done){ try{ grpPR(r,g); }catch(e){} }
     if(g.done) startRest(r);
     if(document.getElementById('focusMode')) renderFocus();
     if(g.done){
@@ -5448,7 +5533,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       if(k.slice(0,2)==='r:'){
         const x=rs.find(v=>v.uid===k.slice(2)); if(!x) return '';
         const q=ensureGroups(x), d=q.filter(g=>g.done).length;
-        return `<button class="fm-chip ${k===curKey?'on':''} ${d===q.length?'done':''}" data-fmgo="${x.uid}" type="button" aria-label="${ENGINE.esc(x.name)} ${d}/${q.length} 组"><span>${ENGINE.esc(x.name)}</span><em>${d}/${q.length}</em></button>`;
+        const tm=q.some(g=>g.timed)||isTimedX(x);
+        return `<button class="fm-chip ${k===curKey?'on':''} ${d===q.length?'done':''}" data-fmgo="${x.uid}" type="button" aria-label="${ENGINE.esc(x.name)} ${d}/${q.length} 组"><span>${tm?'⏱ ':''}${ENGINE.esc(x.name)}</span><em>${d}/${q.length}</em></button>`;
       }
       const c=cds.find(v=>v.uid===k.slice(2)); if(!c) return '';
       return `<button class="fm-chip cd ${k===curKey?'on':''}" data-fmcdjump="${c.uid}" type="button"><span>${CARDIO_ICON[c.modal]||'🏃'} ${ENGINE.esc(c.modal)}</span><em>${c.role==='pre'?'热身':c.role==='post'?'收尾':'有氧'}</em></button>`;
@@ -5702,8 +5788,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       try{ document.querySelectorAll('.rest').forEach(e=>e.remove()); }catch(e){}
       if(window.__restTimer){ clearInterval(window.__restTimer); window.__restTimer=null; }
       const el0=document.getElementById('focusMode')||(()=>{ const d=document.createElement('div'); d.id='focusMode'; d.className='focus-mode'; document.body.appendChild(d); return d; })();
-      el0.innerHTML='<div class="fm-trans">力量完成 ✓<em>进入收尾</em></div>';
-      setTimeout(()=>{ window.__fmTrans=false; window.__fmPhase='cooldown'; renderFocus(); },1500);
+      el0.innerHTML='<div class="fm-trans" data-fmskip role="button" aria-label="跳过转场">力量完成 ✓<em>进入收尾 · 点按跳过</em></div>';
+      const goAfter=()=>{ if(!window.__fmTrans) return; window.__fmTrans=false; window.__fmPhase='cooldown'; renderFocus(); };
+      const tr0=el0.querySelector('[data-fmskip]'); if(tr0) tr0.onclick=goAfter;
+      window.__fmTransTimer=setTimeout(goAfter,1500);
       return;
     }
     let el=document.getElementById('focusMode');
@@ -5714,7 +5802,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     let tAll=0, dAll=0;
     rs.forEach(x=>{ const q=ensureGroups(x); tAll+=q.length; dAll+=q.filter(g=>g.done).length; });
     const pct = tAll? Math.round(dAll/tAll*100) : 0;
-    const isTimed=/静力|平板|有氧|心肺|核心|全身|绳子|战绳|跳|跑|登山|波比|开合|支撑/.test((r.part||'')+(r.name||''));
+    const isTimed=isTimedX(r);
     const step=weightStep(r);
     const strip=fmChips(rs,cds,'r:'+r.uid);
     const seq=fmSeq(), curKey='r:'+r.uid, seqPos=seq.indexOf(curKey);
@@ -5732,8 +5820,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <span class="fm-donebg" aria-hidden="true"><b>✓</b><em>松手完成</em></span>
           <div class="fm-main">
             <span class="fm-tick ${g.done?'done':''}" aria-hidden="true">${g.done?'✓':g.no}</span>
-            <span class="fm-val">${g.weight>0?g.weight+' kg':'自重'} × ${g.reps}<i>${st?('· 计时 '+Math.max(1,Math.round((Date.now()-st)/1000))+'s'):(g.done&&g.sec?('· '+g.sec+'s'):'')}</i></span>
-            ${st?'<span class="fm-swipe" aria-hidden="true"><b>›››</b><em>右滑结束</em></span>':((hintOn && !g.done && g===firstUndone)?'<span class="fm-hint" aria-hidden="true">点一下开始计时</span>':'')}
+            <span class="fm-val">${((g.timed&&!(g.reps||0))||isTimedX(r))?(Math.max(1,g.sec||0)+' 秒'):((g.weight>0?g.weight+' kg':'自重')+' × '+g.reps)}<i>${(!st&&g.done&&g.sec)?('· 实际 '+g.sec+'s'):((!st&&!g.timed&&g.sec)?('· '+g.sec+'s'):'')}</i></span>
+            ${st?'<span class="fm-swipe" aria-hidden="true"><b>›››</b><em>右滑结束</em><span class="fm-livet" data-fmlive="'+k+'">'+fmtMS(Math.max(0,Math.round((Date.now()-st)/1000)))+'</span></span>':((hintOn && !g.done && g===firstUndone)?'<span class="fm-hint" aria-hidden="true">点一下开始计时</span>':'')}
           </div>
           <span class="fm-side">
             <button class="fm-act" data-fmedit="${k}" type="button">编辑</button>
@@ -5844,10 +5932,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         row.classList.remove('armed'); row.style.setProperty('--dop','0');
         dxNow=0;
       };
-      const begin=(x,y)=>{ x0=x; y0=y; swiped=false; armed=false; dxNow=0; row.classList.add('dragging'); };
+      let holdT=null;
+      const dropHold=()=>{ if(holdT){ clearTimeout(holdT); holdT=null; } };
+      const begin=(x,y)=>{ x0=x; y0=y; swiped=false; armed=false; dxNow=0; row.classList.add('dragging');
+        dropHold();
+        holdT=setTimeout(()=>{
+          holdT=null; x0=null; reset(true);
+          try{ haptic('medium'); }catch(e){}
+          openGrpMenu(key);
+        },520);
+      };
       const moveTo=(x,y)=>{
         if(x0==null) return;
         const dx=x-x0, dy=y-y0;
+        if(Math.abs(dx)>8 || Math.abs(dy)>8) dropHold();
         if(Math.abs(dx) < Math.abs(dy)*1.2 || Math.abs(dx) < 4) return;
         const running=window.__grpStart && window.__grpStart[key];
         if(running){
@@ -5874,6 +5972,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         setTimeout(()=>{ fmStop(key); },190);
       };
       const endTap=(ev)=>{
+        dropHold();
         const had=x0; x0=null;
         if(had==null) return;
         if(swiped){ swiped=false; reset(true); return; }
@@ -5915,10 +6014,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       window.__clockT=setInterval(()=>{
         document.querySelectorAll('.fm-row.timing').forEach(row=>{
           const k=row.dataset.fmrow; const st=window.__grpStart&&window.__grpStart[k];
-          const i=row.querySelector('.fm-val i');
-          if(st&&i) i.textContent='· 计时 '+Math.max(1,Math.round((Date.now()-st)/1000))+'s';
+          if(!st) return;
+          const sec=Math.max(0,Math.round((Date.now()-st)/1000));
+          const lv=row.querySelector('[data-fmlive]');
+          if(lv) lv.textContent=fmtMS(sec);
+          row.style.setProperty('--tp', String(Math.min(1,sec/60)));
         });
-      },500);
+      },250);
     }
     el.querySelectorAll('[data-fmedit]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation();
@@ -5969,6 +6071,59 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const add=el.querySelector('[data-fmadd]'); if(add) add.onclick=()=>openFmAdd();
     el.querySelector('.fm-strip').scrollLeft = Math.max(0, (__focusIdx-1)*86);
     wakeOn();
+    fmPersist();
+  }
+  function fmtMS(sec){
+    sec=Math.max(0,Math.round(sec||0));
+    const m=Math.floor(sec/60), ss=sec%60;
+    return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss;
+  }
+  function fmPersist(){
+    try{
+      train.fmState={
+        date:trDateVal(),
+        phase:window.__fmPhase||null,
+        adhoc:window.__fmCdAdhoc||null,
+        idx:(__focusUids[__focusIdx]||null),
+        starts:Object.assign({}, window.__grpStart||{})
+      };
+      saveTrain();
+    }catch(e){}
+  }
+  function fmRestore(){
+    try{
+      const st=train.fmState;
+      if(!st || st.date!==trDateVal()){ return false; }
+      const now=Date.now(), kept={};
+      Object.keys(st.starts||{}).forEach(k=>{
+        const p=k.split(':');
+        const rec=(train.records||[]).find(x=>x.uid===p[0]); if(!rec) return;
+        const g=(rec.groups||[]).find(q=>String(q.no)===p[1]);
+        if(!g || g.done) return;
+        const ts=st.starts[k];
+        if(!ts || now-ts>6*3600*1000) return;
+        kept[k]=ts;
+      });
+      window.__grpStart=kept;
+      const rs=focusList();
+      if(st.idx){ const i=rs.findIndex(r=>r.uid===st.idx); if(i>=0) __focusIdx=i; }
+      if(st.adhoc) window.__fmCdAdhoc=st.adhoc;
+      return true;
+    }catch(e){ return false; }
+  }
+  function fmRebuildPhase(){
+    const d=trDateVal();
+    const cds=trCardioFor(d);
+    if(window.__fmCdAdhoc){
+      const a=cds.find(c=>c.uid===window.__fmCdAdhoc && !c.done && !c.skipped);
+      if(a) return 'cardio';
+    }
+    if(cds.some(c=>c.role==='pre' && !c.done && !c.skipped)) return 'warmup';
+    const rs=focusList();
+    const allDone=rs.length>0 && rs.every(x=>{ const q=ensureGroups(x); return q.length>0 && q.every(g=>g.done); });
+    if(!allDone) return 'strength';
+    if(cds.some(c=>c.role==='post' && !c.done && !c.skipped)) return 'cooldown';
+    return 'strength';
   }
   function fmTap(key){
     window.__grpStart=window.__grpStart||{};
@@ -5987,7 +6142,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const st=window.__grpStart[key];
     const sec=Math.max(1,Math.round((Date.now()-st)/1000));
     delete window.__grpStart[key];
-    g.sec=sec; g.done=true; g.timed=true;
+    g.sec=sec; g.done=true;
+    g.timed = isTimedX(r) || !(g.reps>0);
+    try{ grpPR(r,g); }catch(e){}
     const gs=ensureGroups(r); r.sets=gs.length;
     r.dur=Math.round(((r.dur||0)+sec/60)*10)/10;
     saveTrain(); trRenderToday();
@@ -6041,6 +6198,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const chips = fmChips(rs,cds,'c:'+c.uid);
     const seq=fmSeq(), curKey='c:'+c.uid, seqPos=seq.indexOf(curKey);
     const distLabel = CD_DIST.includes(c.modal)?'+0.5 km':'+5 层';
+    window.__fmPhase=phase; fmPersist();
     el.innerHTML=`<div class="fm-progress"><i style="width:${gp}%"></i></div>
       <div class="fm-top"><button class="fm-x" data-fmexit type="button" aria-label="退出训练">×</button><span>${tag}${tAll?(' · '+dAll+'/'+tAll+' 组已完成'):''}</span></div>
       <div class="fm-strip" role="tablist" aria-label="今日安排">${chips}</div>
@@ -6160,15 +6318,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function openFocus(){
     window.__fmPhase=null;
+    window.__fmCdAdhoc=null;
+    window.__grpStart={};
     const rs=focusList();
     const cdsP=trCardioFor(trDateVal()).filter(c=>!c.done && !c.skipped);
     if(!rs.length && !cdsP.length){ trToast('先把动作或有氧加入今日'); return; }
     __focusUids=rs.map(r=>r.uid);
     __focusIdx=0;
-    try{
-      const pr=JSON.parse(localStorage.getItem('_focus_prog')||'null');
-      if(pr && pr.date===trDateVal()){ const i=rs.findIndex(r=>r.uid===pr.uid); if(i>=0) __focusIdx=i; }
-    }catch(e){}
+    const restored=fmRestore();
+    if(!restored){
+      try{
+        const pr=JSON.parse(localStorage.getItem('_focus_prog')||'null');
+        if(pr && pr.date===trDateVal()){ const i=rs.findIndex(r=>r.uid===pr.uid); if(i>=0) __focusIdx=i; }
+      }catch(e){}
+    }
+    window.__fmPhase=fmRebuildPhase();
     window.__hintUid=null;
     renderFocus();
   }
@@ -6195,13 +6359,34 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       trToast('今天的组都完成了 · 记得看训练小结');
     }
   }
+  /* 组级 PR：该动作历史已完成、非热身组的最大重量（可排除当前组） */
+  function bestSetWeight(exId, skipUid, skipNo){
+    let best=0;
+    (train.records||[]).forEach(x=>{
+      if(x.exId!==exId) return;
+      (x.groups||[]).forEach(g=>{
+        if(!g.done || g.warmup) return;
+        if(x.uid===skipUid && g.no===skipNo) return;
+        best=Math.max(best, g.weight||0);
+      });
+    });
+    return best;
+  }
+  function grpPR(r,g){
+    if(!r||!g||!g.done||g.warmup) return;
+    if(!(g.weight>0)) return;
+    const best=bestSetWeight(r.exId, r.uid, g.no);
+    if(g.weight>best){
+      setTimeout(()=>trToast('PR · '+r.name+' '+g.weight+'kg 新纪录'+(best?'（原 '+best+'kg）':'（首次记录）')), 400);
+    }
+  }
   function addRec(o){
     const d=trDateVal();
-    const prevW=Math.max(0,...(train.records||[]).filter(r=>r.exId===o.exId).map(r=>r.weight||0));
-    const prevReps=Math.max(0,...(train.records||[]).filter(r=>r.exId===o.exId).map(r=>r.reps||0));
+    const prevW=Math.max(0,...(train.records||[]).filter(r=>r.exId===o.exId).map(r=>bestSetWeight(r.exId)));
+    const prevReps=Math.max(0,...(train.records||[]).filter(r=>r.exId===o.exId).map(r=>(r.groups||[]).filter(g=>!g.warmup).reduce((a,g)=>Math.max(a,g.reps||0), r.warmup?0:(r.reps||0))));
     const rec={date:d, exId:o.exId, name:o.name, part:o.part, sets:o.sets, reps:o.reps, weight:o.weight, dur:o.dur||0};
     rec.uid=trUid(rec);
-    rec.groups=Array.from({length:Math.max(1,o.sets||1)},(_,i)=>({no:i+1, reps:o.reps||10, weight:o.weight||0, done:false, uid:rec.uid+'s'+i}));
+    rec.groups=Array.from({length:Math.max(1,o.sets||1)},(_,i)=>({no:i+1, reps:o.reps||10, weight:o.weight||0, done:false, uid:rec.uid+'s'+i, ...(o.sec?{sec:o.sec, timed:true}:{})}));
     train.records.push(rec); _useStat=null; saveTrain(); trRenderToday(); refreshHome();
     if(o.weight>0 && prevW>0 && o.weight>prevW){
       setTimeout(()=>trToast('PR · '+o.name+' '+o.weight+'kg 新纪录'+(prevW?'（原 '+prevW+'kg）':'(首次记录)')), 700);
@@ -6932,9 +7117,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     opts=opts||{}; const lim=opts.lim||3;
     const arr=(groups||[]).filter(g=>g && !g.warmup);
     if(!arr.length) return '';
-    const f=g=>(((g.weight||0)>0)?(g.weight+'kg'):'自重')+'×'+(g.reps||0);
-    const same=arr.every(g=>(g.weight||0)===(arr[0].weight||0)&&(g.reps||0)===(arr[0].reps||0));
-    if(same) return (opts.bare?'':arr.length+' 组 · ')+f(arr[0]);
+    const timed=g=>!!(g.timed && !(g.reps||0));
+    const f=g=>timed(g)?((g.sec||0)+' 秒'):((((g.weight||0)>0)?(g.weight+'kg'):'自重')+'×'+(g.reps||0));
+    const same=arr.every(g=>timed(g)===timed(arr[0]) && (timed(g)?((g.sec||0)===(arr[0].sec||0)):((g.weight||0)===(arr[0].weight||0)&&(g.reps||0)===(arr[0].reps||0))));
+    if(same) return (opts.bare?'':arr.length+' 组 · ')+(timed(arr[0])?(f(arr[0])+'/组'):f(arr[0]));
     return arr.length>lim ? (arr.slice(0,lim).map(f).join(' · ')+' · +'+(arr.length-lim)+' 组') : arr.map(f).join(' · ');
   }
   function lastGroupsOf(rec){
@@ -7028,31 +7214,44 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const box=root.querySelector('.ex-detail'); if(!box) return;
     if(box.querySelector('.ex-addform')) return;
     const last=trLastRec(id);
+    const timed=isTimedX(e);
     const sets=last?(last.sets||3):3, reps=last?(last.reps||10):10, w=last?(last.weight||0):0;
+    const sec=(last&&(last.groups||[]).find(g=>g.sec))?last.groups.find(g=>g.sec).sec:45;
     const st=weightStep(e);
     box.insertAdjacentHTML('beforeend', `
       <div class="ex-addform">
-        <div class="ex-addform-h">先定组数与重量</div>
+        <div class="ex-addform-h">${timed?'定组数与每组时长':'先定组数与重量'}</div>
         <div class="f-row">
           <div class="f-field"><label class="f-label">组数</label><div class="stepper"><button data-exadd="sets:-1" type="button">−</button><input id="exAddSets" type="number" inputmode="numeric" value="${sets}" min="1" max="20"><button data-exadd="sets:1" type="button">+</button></div></div>
-          <div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-exadd="reps:-1" type="button">−</button><input id="exAddReps" type="number" inputmode="numeric" value="${reps}" min="1" max="100"><button data-exadd="reps:1" type="button">+</button></div></div>
-          <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-exadd="weight:-${st}" type="button">−</button><input id="exAddW" type="number" inputmode="decimal" value="${w}" min="0" step="0.5" placeholder="0 = 自重"><button data-exadd="weight:${st}" type="button">+</button></div></div>
+          ${timed
+            ?`<div class="f-field"><label class="f-label">每组秒数</label><div class="stepper grow"><button data-exadd="sec:-5" type="button">−</button><input id="exAddSec" type="number" inputmode="numeric" value="${sec}" min="5" max="600" step="5"><button data-exadd="sec:5" type="button">+</button></div></div>`
+            :`<div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-exadd="reps:-1" type="button">−</button><input id="exAddReps" type="number" inputmode="numeric" value="${reps}" min="1" max="100"><button data-exadd="reps:1" type="button">+</button></div></div>
+          <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-exadd="weight:-${st}" type="button">−</button><input id="exAddW" type="number" inputmode="decimal" value="${w}" min="0" step="0.5" placeholder="0 = 自重"><button data-exadd="weight:${st}" type="button">+</button></div></div>`}
         </div>
         <div class="tr-actions"><button class="btn sm" data-exaddok type="button">加入今日</button><button class="btn ghost sm" data-exaddcancel type="button">取消</button></div>
       </div>`);
     const form=box.querySelector('.ex-addform');
-    const S=form.querySelector('#exAddSets'), Rp=form.querySelector('#exAddReps'), W=form.querySelector('#exAddW');
-    form.querySelectorAll('[data-exadd]').forEach(b=>b.onclick=()=>{
-      const p=b.dataset.exadd.split(':'); const d=parseFloat(p[1]);
-      const el=p[0]==='sets'?S:(p[0]==='reps'?Rp:W);
-      const mn=parseFloat(el.min||'0'), mx=parseFloat(el.max||'999');
-      el.value=String(Math.min(mx,Math.max(mn,Math.round(((parseFloat(el.value)||0)+d)*10)/10)));
+    const S=form.querySelector('#exAddSets'), Rp=form.querySelector('#exAddReps'), W=form.querySelector('#exAddW'), SC=form.querySelector('#exAddSec');
+    form.querySelectorAll('[data-exadd]').forEach(b=>{
+      const press=(ev)=>{
+        ev.preventDefault();
+        const p=b.dataset.exadd.split(':'); const d=parseFloat(p[1]);
+        const el=p[0]==='sets'?S:(p[0]==='reps'?Rp:(p[0]==='sec'?SC:W));
+        if(!el) return;
+        const mn=parseFloat(el.min||'0'), mx=parseFloat(el.max||'999');
+        el.value=String(Math.min(mx,Math.max(mn,Math.round(((parseFloat(el.value)||0)+d)*10)/10)));
+      };
+      b.onclick=press;
+      let hold=null, iv=null;
+      const stop=()=>{ clearTimeout(hold); clearInterval(iv); };
+      b.addEventListener('pointerdown',()=>{ hold=setTimeout(()=>{ iv=setInterval(()=>press({preventDefault(){}}),120); },420); });
+      b.addEventListener('pointerup',stop); b.addEventListener('pointerleave',stop); b.addEventListener('pointercancel',stop);
     });
     form.querySelector('[data-exaddcancel]').onclick=()=>form.remove();
     form.querySelector('[data-exaddok]').onclick=()=>{
-      const su=Math.max(1,parseInt(S.value,10)||1), rp=Math.max(1,parseInt(Rp.value,10)||1), ww=Math.max(0,parseFloat(W.value)||0);
+      const su=Math.max(1,parseInt(S.value,10)||1), rp=timed?0:Math.max(1,parseInt(Rp.value,10)||1), ww=timed?0:(Math.max(0,parseFloat(W.value)||0)), sc2=timed?Math.max(5,parseInt(SC.value,10)||45):0;
       form.remove();
-      trAddPlanned(id, su, rp, ww);
+      trAddPlanned(id, su, rp, ww, sc2);
       try{ document.getElementById('exSheet').classList.remove('on'); }catch(err){}
     };
     try{ S.focus(); S.select(); }catch(err){}
@@ -7061,8 +7260,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function openPlanSheet(id, edit){
     const e=findEx(id); if(!e) return;
     const last=trLastRec(id);
+    const timed=isTimedX(e);
     const sets=last?(last.sets||3):3, reps=last?(last.reps||10):10, w=last?(last.weight||0):0;
+    const sec=(last&&(last.groups||[]).find(g=>g.sec))?last.groups.find(g=>g.sec).sec:45;
     const st=weightStep(e);
+    const lastTxt=timed?(sec+' 秒/组'):((last.weight>0?last.weight+'kg 自重':'自重')+' '+((last.sets||0)+'×'+(last.reps||0)));
     let sh=document.getElementById('planSheet');
     if(!sh){
       sh=document.createElement('div'); sh.id='planSheet'; sh.className='ex-sheet plan-sheet';
@@ -7071,49 +7273,61 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }
     sh.innerHTML=`<div class="ex-sheet-inner">
       <div class="ex-sheet-bar"><span>${ENGINE.esc(e.n)} · ${edit?'编辑今日计划':'加入今日计划'}</span><button class="ex-sheet-x" data-psx type="button" aria-label="关闭">×</button></div>
-      <div class="ps-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}${last?` · 上次 ${last.weight>0?last.weight+'kg ':'自重 '}${last.sets}×${last.reps}`:''}</div>
+      <div class="ps-meta">${ENGINE.esc(e.p)} · ${ENGINE.esc(e.e||'自重')}${last?(' · 上次 '+lastTxt):''}</div>
       <div class="f-row">
         <div class="f-field"><label class="f-label">组数</label><div class="stepper"><button data-psadd="sets:-1" type="button">−</button><input id="psSets" type="number" inputmode="numeric" value="${sets}" min="1" max="20"><button data-psadd="sets:1" type="button">+</button></div></div>
-        <div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-psadd="reps:-1" type="button">−</button><input id="psReps" type="number" inputmode="numeric" value="${reps}" min="1" max="100"><button data-psadd="reps:1" type="button">+</button></div></div>
-        <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-psadd="weight:-${st}" type="button">−</button><input id="psW" type="number" inputmode="decimal" value="${w}" min="0" step="0.5" placeholder="0 = 自重"><button data-psadd="weight:${st}" type="button">+</button></div></div>
+        ${timed
+          ?`<div class="f-field"><label class="f-label">每组秒数</label><div class="stepper grow"><button data-psadd="sec:-5" type="button">−</button><input id="psSec" type="number" inputmode="numeric" value="${sec}" min="5" max="600" step="5"><button data-psadd="sec:5" type="button">+</button></div></div>`
+          :`<div class="f-field"><label class="f-label">每组次数</label><div class="stepper"><button data-psadd="reps:-1" type="button">−</button><input id="psReps" type="number" inputmode="numeric" value="${reps}" min="1" max="100"><button data-psadd="reps:1" type="button">+</button></div></div>
+        <div class="f-field"><label class="f-label">重量 kg</label><div class="stepper grow"><button data-psadd="weight:-${st}" type="button">−</button><input id="psW" type="number" inputmode="decimal" value="${w}" min="0" step="0.5" placeholder="0 = 自重"><button data-psadd="weight:${st}" type="button">+</button></div></div>`}
       </div>
-      <div class="ps-note">加入后「今日训练计划」会有对应组数，可在专注模式里逐组打勾。</div>
+      <div class="ps-note">加入后「今日训练计划」会有对应组数，可在专注模式里逐个计时或打勾。</div>
       <div class="tr-actions"><button class="btn sm" data-psok type="button">${edit?'保存修改':'加入今日计划'}</button><button class="btn ghost sm" data-psx type="button">取消</button></div>
     </div>`;
-    const S=sh.querySelector('#psSets'), Rp=sh.querySelector('#psReps'), W=sh.querySelector('#psW');
-    sh.querySelectorAll('[data-psadd]').forEach(b=>b.onclick=()=>{
-      const p=b.dataset.psadd.split(':'); const d=parseFloat(p[1]);
-      const el=p[0]==='sets'?S:(p[0]==='reps'?Rp:W);
-      const mn=parseFloat(el.min||'0'), mx=parseFloat(el.max||'999');
-      el.value=String(Math.min(mx,Math.max(mn,Math.round(((parseFloat(el.value)||0)+d)*10)/10)));
+    const S=sh.querySelector('#psSets'), Rp=sh.querySelector('#psReps'), W=sh.querySelector('#psW'), SC=sh.querySelector('#psSec');
+    sh.querySelectorAll('[data-psadd]').forEach(b=>{
+      const press=(ev)=>{
+        ev.preventDefault();
+        const p=b.dataset.psadd.split(':'); const d=parseFloat(p[1]);
+        const el=p[0]==='sets'?S:(p[0]==='reps'?Rp:(p[0]==='sec'?SC:W));
+        if(!el) return;
+        const mn=parseFloat(el.min||'0'), mx=parseFloat(el.max||'999');
+        el.value=String(Math.min(mx,Math.max(mn,Math.round(((parseFloat(el.value)||0)+d)*10)/10)));
+      };
+      b.onclick=press;
+      let hold=null, iv=null;
+      const stop=()=>{ clearTimeout(hold); clearInterval(iv); };
+      b.addEventListener('pointerdown',()=>{ hold=setTimeout(()=>{ iv=setInterval(()=>press({preventDefault(){}}),120); },420); });
+      b.addEventListener('pointerup',stop); b.addEventListener('pointerleave',stop); b.addEventListener('pointercancel',stop);
     });
     sh.querySelectorAll('[data-psx]').forEach(b=>b.onclick=()=>sh.classList.remove('on'));
     sh.querySelector('[data-psok]').onclick=()=>{
-      const su=Math.max(1,parseInt(S.value,10)||1), rp=Math.max(1,parseInt(Rp.value,10)||1), ww=Math.max(0,parseFloat(W.value)||0);
+      const su=Math.max(1,parseInt(S.value,10)||1), rp=timed?0:Math.max(1,parseInt(Rp.value,10)||1), ww=timed?0:(Math.max(0,parseFloat(W.value)||0)), sc2=timed?Math.max(5,parseInt(SC.value,10)||45):0;
       sh.classList.remove('on');
-      trAddPlanned(id, su, rp, ww);
+      trAddPlanned(id, su, rp, ww, sc2);
     };
     sh.classList.add('on');
   }
-  function trAddPlanned(id, sets, reps, weight, silent){
+  function trAddPlanned(id, sets, reps, weight, sec, silent){
     try{ if(__planAddKey){ feedActMark(__planAddKey); __planAddKey=''; } }catch(e){}
     try{ libClose(); }catch(err){}
     const e=findEx(id); if(!e) return;
     const day=trDateVal();
     const old=train.records.find(r=>r.date===day && r.exId===id);
+    const tsec=Math.max(0, sec||0), isT=!!(tsec);
     if(old){
       const gs=ensureGroups(old);
       old.sets=sets; old.reps=reps; old.weight=weight;
       old.groups=Array.from({length:sets},(_,i)=>{
         const g=gs[i]||{};
-        return {no:i+1, reps:reps, weight:weight, done:!!g.done, rpe:g.rpe||0, uid:g.uid||(old.uid+'s'+i), sec:g.sec||0, timed:g.timed||false};
+        return {no:i+1, reps:reps, weight:weight, done:!!g.done, rpe:g.rpe||0, uid:g.uid||(old.uid+'s'+i), sec:isT?tsec:(g.sec||0), timed:isT?true:!!g.timed, warmup:!!g.warmup};
       });
       saveTrain(); trRenderToday(); trRenderList(); renderMyLib(); refreshHome();
     } else {
-      addRec({exId:id, name:e.n, part:e.p, sets:sets, reps:reps, weight:weight});
+      addRec({exId:id, name:e.n, part:e.p, sets:sets, reps:reps, weight:weight, sec:tsec});
     }
     try{ updateOrb(); }catch(err){}
-    if(!silent) trToast('已加入今日：'+e.n+' '+sets+'×'+reps+(weight>0?' @'+weight+'kg':'（自重）'));
+    if(!silent) trToast('已加入今日：'+e.n+' '+sets+'×'+(isT?(tsec+' 秒'):reps)+(isT?'':(weight>0?' @'+weight+'kg':'（自重）')));
   }
   function bindDetail(root, e){
     if(!root) return;
@@ -8473,7 +8687,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const rows=gs.map(g=>`
         <div class="set-row ${g.done?'done':''}" data-srow="${r.uid}:${g.no}">
           <span class="set-no ${g.done?'done':''} ${g.warmup?'warm':''}" aria-hidden="true">${g.warmup?'W':(g.done?'✓':g.no)}</span>
-          <button class="set-val" data-setopen="${r.uid}:${g.no}" type="button" title="点击修改重量与次数">${g.weight>0?g.weight+' kg':'自重'} × ${g.reps}</button>
+          <button class="set-val" data-setopen="${r.uid}:${g.no}" type="button" title="点击修改参数">${(g.timed&&!(g.reps||0))?((g.sec||0)+' 秒'):((g.weight>0?g.weight+' kg':'自重')+' × '+g.reps)}</button>
           ${(g.rpe||(window.__rpeAsk&&window.__rpeAsk[r.uid+':'+g.no]))?`<span class="rpe-set">
             <button class="rpe-dot easy ${g.rpe==='easy'?'on':''}" data-rpe="${r.uid}:${g.no}:easy" type="button" title="轻松"></button>
             <button class="rpe-dot ok ${g.rpe==='ok'?'on':''}" data-rpe="${r.uid}:${g.no}:ok" type="button" title="刚好"></button>
@@ -8530,7 +8744,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const vol=allG.reduce((a,g)=>a+(g.warmup?0:(g.reps||0)*(g.weight||0)),0);
     if($('todayBadge')) $('todayBadge').textContent = sets ? ('今日 '+sets+' 组') : '';
     try{ trSyncStrips(); }catch(e){}
-    if($('trSum')){ const sm=$('trSum'); sm.innerHTML=`<span><b data-cnt="${items.length}">0</b>动作</span><span><b data-cnt="${sets}">0</b>总组数</span><span><b data-cnt="${reps}">0</b>总次数</span><span><b data-cnt="${Math.round(vol)}">0</b>容量kg</span>`; try{ bindCountUp(sm); }catch(e){} }
+    if($('trSum')){ const sm=$('trSum'); sm.innerHTML=`<span><b data-cnt="${items.length}">0</b>动作</span><span><b data-cnt="${sets}">0</b>总组数</span><span><b data-cnt="${reps}">0</b>总次数</span><span><b data-cnt="${Math.round(vol)}">0</b>有效容量kg<em style="font-style:normal;font-size:11px;color:var(--tx3);margin-left:2px">（不含热身）</em></span>`; try{ bindCountUp(sm); }catch(e){} }
 
     // 有氧：开始 / 暂停 / 完成 / 移除 / 快速补录
     box.querySelectorAll('[data-cdrun]').forEach(b=>b.onclick=ev=>{
@@ -8679,6 +8893,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         dx=0;
       });
     }
+    box.querySelectorAll('.set-row[data-srow]').forEach(row=>{
+      if(row.__holdBound) return; row.__holdBound=1;
+      bindHold(row, 480, ()=>{ openGrpMenu(row.dataset.srow); });
+    });
     box.querySelectorAll('[data-setopen]').forEach(b=>b.onclick=ev=>{
       ev.stopPropagation(); openSetSheet(b.dataset.setopen);
     });
