@@ -1858,7 +1858,6 @@ html[data-theme="light"] .ex-item.on{background:#dff7ef;outline:1.5px solid #0e8
 .coach-mask{position:fixed;inset:0;z-index:12000;background:transparent}
 .coach-tip .coach-acts{display:flex;gap:8px;margin-top:10px}
 .coach-tip .coach-acts .btn{flex:1}
-.grad-mask{position:fixed;inset:0;z-index:13000;background:rgba(4,7,10,.86);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);display:grid;place-items:center;padding:20px}
 .about-more{margin-top:12px}
 .about-more summary{cursor:pointer;font-size:12.5px;color:var(--tx2);padding:8px 0;list-style:none}
 .about-more summary::before{content:'▸ ';color:var(--tx3)}
@@ -1870,7 +1869,6 @@ html[data-theme="light"] .ob-eg{background:rgba(14,143,122,.07);border-color:rgb
 html[data-theme="light"] .ob-eg em{color:#0E8F7A}
 html[data-theme="light"] .ob-p{background:#fff;border-color:var(--line2);color:var(--tx2)}
 html[data-theme="light"] .ob-p.on{background:rgba(14,143,122,.1);border-color:rgba(14,143,122,.45);color:#0E8F7A}
-html[data-theme="light"] .grad-mask{background:rgba(243,246,250,.94)}
 html[data-theme="light"] .coach-mask .tour-hole{box-shadow:0 0 0 2000px rgba(18,26,38,.62);outline-color:rgba(14,143,122,.8)}
 
 /* Agent 接入：AI 报告 / 问答 / 设置 */
@@ -3552,7 +3550,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       type, tags:tags.join(','), score:meta.score, mood, content, time:stamp.toISOString(), date:dk });
     save(); renderLogs(); if(typeof markStepIdx==='function') markStepIdx(1);
     refreshHome(); renderFastChips(); checkMilestone();
-    try{ mileMark('log'); }catch(e){}
     logNudge(logs.length);
     return true;
   }
@@ -5586,7 +5583,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         coach('tick','倒计时结束会提醒你；RPE 三档顺手点一下，AI 分析会用到',
           document.querySelector('.rest.pill')||document.querySelector('.rest.full')||document.querySelector('.fm-row.timing')||document.querySelector('.fm-sets'));
       }, 460); } }catch(e){}
-      try{ const gs=ensureGroups(r); if(gs.every(x=>x.done)) mileMark('trained'); }catch(e){}
     }
     if(g.done && document.getElementById('focusMode')){
       const gs=ensureGroups(r);
@@ -10766,37 +10762,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     }
     return st;
   }
-  /* ---------- 毕业时刻：记过、练过、看过分析一次 ---------- */
-  const MILE_KEY='selfagent_mile_v1';
-  function mileState(){ try{ return JSON.parse(localStorage.getItem(MILE_KEY)||'{}'); }catch(e){ return {}; } }
-  function mileMark(k){
-    const st=mileState(); if(st[k]) return;
-    st[k]=1; try{ localStorage.setItem(MILE_KEY, JSON.stringify(st)); }catch(e){}
-    try{ checkGraduate(); }catch(e){}
-  }
-  function checkGraduate(){
-    const st=mileState();
-    if(st.graduated) return;
-    if(!(st.log && st.trained && st.insight)) return;
-    if(document.getElementById('gradCard')) return;
-    if(document.getElementById('coach')) return;
-    st.graduated=1; try{ localStorage.setItem(MILE_KEY, JSON.stringify(st)); }catch(e){}
-    const n=(typeof logs!=='undefined'?logs.length:0);
-    let sets=0;
-    try{ (train.records||[]).forEach(r=>{ sets+=(Array.isArray(r.groups)?r.groups.filter(g=>g.done).length:(r.sets||0)); }); }catch(e){}
-    const w=document.createElement('div'); w.className='grad-mask'; w.id='gradCard';
-    w.innerHTML=`<div class="ob-card">
-      <div class="ob-k">DAY 1</div>
-      <h3>你已经会用 SelfAgent 了</h3>
-      <p class="ob-sub">今天记下 ${n} 条、练完 ${sets} 组。<br>接下来，让它读一读你自己的数据。</p>
-      <div class="ob-acts"><button class="btn sm" type="button" id="gradGo">看看 AI 怎么解读你</button></div>
-      <button class="ob-link" type="button" id="gradLater">以后再说</button>
-    </div>`;
-    document.body.appendChild(w);
-    const close=()=>{ try{ w.remove(); }catch(e){} };
-    w.querySelector('#gradGo').onclick=()=>{ close(); try{ openPage('agent'); }catch(e){} };
-    w.querySelector('#gradLater').onclick=close;
-  }
   function checkMilestone(){
     const n=streakDays();
     if(![7,30,100,365].includes(n)) return;
@@ -12138,7 +12103,6 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(p==='log'){ try{ trRenderToday(); renderLogs(); }catch(e){} }
     window.scrollTo({top:0});
     try{ coachOnPage(p); }catch(e){}
-    if(p==='agent'){ try{ mileMark('insight'); }catch(e){} }
   }
   function goTab(tab){
     const pg=TAB_PAGE[tab]||'agent';
