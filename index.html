@@ -6435,21 +6435,48 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const tEl=ring.querySelector('[data-fmcdt2]'), subEl=ring.querySelector('[data-fmcdsub]'), hintEl=el.querySelector('[data-fmchint]');
       const baseTxt=()=>cdFmt(cdSec(c));
       const baseSub=()=>c.dist?(CD_DIST.includes(c.modal)?c.dist+' km':c.dist+' 层'):(c.dur?'目标 '+c.dur+'′':'计时中');
-      let ht=null,hiv=null,hfired=false,ht0=0;
-      const paint=v=>{ ring.style.setProperty('--cp',(v*100).toFixed(1)+'%'); ring.classList.toggle('charging',v>0.001); };
-      const reset=()=>{
+      let ht=null,hiv=null,hfired=false,ht0=0,sx=0,sy=0,rtoken=0;
+      // --cp 只存数字（0-100），CSS 用 calc(var(--cp)*1%)，带 % 会乘成百分比×百分比导致整条 background 失效
+      const paint=v=>{ ring.style.setProperty('--cp',(Math.max(0,Math.min(100,v*100))).toFixed(1)); if(v>0) ring.classList.add('charging'); };
+      const retract=()=>{
+        const from=parseFloat(ring.style.getPropertyValue('--cp'))||0;
+        if(!from){ ring.classList.remove('charging'); ring.style.removeProperty('--cp'); return; }
+        const tok=++rtoken, rt0=Date.now(), dur=150;
+        const step=()=>{
+          if(tok!==rtoken) return;
+          const k=Math.min(1,(Date.now()-rt0)/dur);
+          ring.style.setProperty('--cp',(from*(1-k)).toFixed(1));
+          if(k>=1){ clearInterval(iv2); ring.classList.remove('charging'); ring.style.removeProperty('--cp'); }
+        };
+        const iv2=setInterval(step,30); step();
+      };
+      const onDocMove=ev=>{
+        if(hfired) return;
+        if(Math.hypot(ev.clientX-sx,ev.clientY-sy)>40){
+          if(ht){ clearTimeout(ht); ht=null; } if(hiv){ clearInterval(hiv); hiv=null; }
+          retract();
+          unbindMove();
+          if(hintEl) hintEl.textContent=(c.run?'长按环 1 秒完成':(c.sec>0?'长按环 1 秒完成':'点环开始 · 长按环 1 秒完成'));
+          trToast('手指移出范围，已取消');
+        }
+      };
+      const bindMove=()=>{ document.addEventListener('pointermove',onDocMove,{passive:true}); };
+      const unbindMove=()=>{ document.removeEventListener('pointermove',onDocMove); };
+      const reset=hard=>{
         if(ht){ clearTimeout(ht); ht=null; } if(hiv){ clearInterval(hiv); hiv=null; }
-        ring.classList.remove('charging'); ring.style.removeProperty('--cp');
+        unbindMove();
+        if(hard){ ring.classList.remove('charging'); ring.style.removeProperty('--cp'); }
+        else retract();
       };
       const down=e=>{
         if(c.done){ trToast('这段有氧已完成，用「重做本次」可以再练一次'); return; }
         if(e&&e.preventDefault) e.preventDefault();
-        hfired=false; ht0=Date.now(); ring.classList.add('charging'); paint(0);
+        hfired=false; ht0=Date.now(); sx=e.clientX||0; sy=e.clientY||0; rtoken++; bindMove(); paint(0); ring.classList.add('charging');
         if(hintEl) hintEl.textContent=(!c.run && !(c.sec>0))?'长按中 · 将记 0 分钟':'长按中，松手取消';
         if(hiv) clearInterval(hiv);
         hiv=setInterval(()=>paint(Math.min(1,(Date.now()-ht0)/800)),50);
         ht=setTimeout(()=>{
-          hfired=true; reset();
+          hfired=true; reset(true);
           try{ haptic('warn'); }catch(err){}
           ring.classList.add('flash'); setTimeout(()=>ring.classList.remove('flash'),220);
           finishCardio();
@@ -6458,7 +6485,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const up=()=>{
         if(hfired) return;
         const held=Date.now()-ht0, was=ring.classList.contains('charging');
-        reset();
+        reset(held<260);
         if(held<260){
           if(!c.run && !(c.sec>0)){ cdStart(c); try{ haptic('core'); }catch(err){} saveTrain(); renderFocus(); trToast('开始计时'); }
           else if(!c.run) { cdStart(c); try{ haptic('core'); }catch(err){} saveTrain(); renderFocus(); trToast('继续计时'); }
@@ -6470,8 +6497,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       };
       ring.addEventListener('pointerdown',down);
       ring.addEventListener('pointerup',up);
-      ring.addEventListener('pointercancel',()=>{ if(!hfired) reset(); });
-      ring.addEventListener('pointerleave',ev=>{ if(!hfired && (ev.pointerType==='mouse'||!ev.buttons)) reset(); });
+      ring.addEventListener('pointercancel',()=>{ if(!hfired) reset(false); });
+      ring.addEventListener('pointerleave',ev=>{ if(!hfired && ev.pointerType==='mouse' && !ev.buttons) reset(false); });
       ring.addEventListener('contextmenu',e=>e.preventDefault());
     }
     el.querySelectorAll('[data-fmcdskip2]').forEach(b=>b.onclick=()=>{
