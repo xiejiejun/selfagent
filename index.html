@@ -3319,6 +3319,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   let settings = loadSettings();
   let currentTab = 'persona';
   let logFilter = { type:'all', tag:'', range:30 };
+  const logDayOpen = {};   // 日期 -> 是否展开；未记录时默认展开“今天”
+  function keepDayOpen(id){
+    const l=logs.find(x=>String(x.id)===String(id));
+    const d=l ? (l.date||dayKey(l.time)) : dayKey(new Date());
+    logDayOpen[d]=true;
+  }
   let tagChips=[];
   let chartInsts = [];
   let ganttChart = null;
@@ -9683,12 +9689,16 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       map[d].push(l);
     });
     order.sort((a,b)=> a<b?1:-1);
-    return order.map(d=>`<div class="day-block" data-daygrp="${d}">
-        <button class="day-tog" type="button" data-daytog="${d}" aria-expanded="false">
+    const today=dayKey(new Date());
+    return order.map(d=>{
+      const open = logDayOpen[d]!==undefined ? logDayOpen[d] : (d===today);
+      return `<div class="day-block${open?' open':''}" data-daygrp="${d}">
+        <button class="day-tog" type="button" data-daytog="${d}" aria-expanded="${open?'true':'false'}">
           <span>${dayLabel(d)}</span><em>${map[d].length} 条</em><i class="day-ar">▸</i>
         </button>
-        <div class="day-body" hidden>${map[d].map(logCard).join('')}</div>
-      </div>`).join('');
+        <div class="day-body"${open?'':' hidden'}>${map[d].map(logCard).join('')}</div>
+      </div>`;
+    }).join('');
   }
   function renderLogsPanel(){
     const body=$('reportBody');
@@ -9726,6 +9736,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       el.remove();
       if(!confirm('删除这条记录？删掉后不能恢复。')) return;
       const rowEl=anchor.closest('.log-item');
+      keepDayOpen(id);
       collapseRemove(rowEl,()=>{ logs=logs.filter(x=>String(x.id)!==String(id)); save(); renderLogs(); renderLogsPanel(); });
     };
     setTimeout(()=>{
@@ -9742,11 +9753,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         g.classList.toggle('open', !open);
         body.hidden = open;
         b.setAttribute('aria-expanded', open?'false':'true');
+        logDayOpen[b.dataset.daytog] = !open;
       });
     });
     document.querySelectorAll('#reportBody [data-del]').forEach(b=>{
       b.addEventListener('click',()=>{
         if(!confirm('删除这条记录？删掉后不能恢复。')) return;
+        keepDayOpen(b.dataset.del);
         collapseRemove(b.closest('.lg-item,.day-row,.log-item')||b.parentElement,()=>{
           logs=logs.filter(x=>String(x.id)!==String(b.dataset.del)); save(); renderLogs(); renderLogsPanel();
         });
@@ -9821,7 +9834,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       l.score=Math.max(1,Math.min(5,parseInt(body.querySelector('#lsScore').value,10)||3));
       l.mood=Math.max(1,Math.min(5,parseInt(body.querySelector('#lsMood').value,10)||3));
       l.content=body.querySelector('#lsContent').value.trim();
-      save(); sh.hidden=true; renderLogs(); renderLogsPanel();
+      save(); sh.hidden=true; renderLogs(); keepDayOpen(l.id); renderLogsPanel();
     };
     sh.hidden=false;
   }
@@ -9857,7 +9870,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       l.meta.checkin={mood:mood2, energy:energy2, note:note, at:Date.now()};
       if(l.date){ train.checkins=train.checkins||{}; train.checkins[l.date]={mood:mood2,energy:energy2,note:note,at:Date.now()}; }
       save(); saveTrain();
-      sh.hidden=true; renderLogsPanel();
+      keepDayOpen(l.id); sh.hidden=true; renderLogsPanel();
       trToast&&trToast('感受已保存');
     };
     sh.hidden=false;
