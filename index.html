@@ -8419,10 +8419,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function aiAskEnhance(q, r, box){
     if(!aiReady()) return;
+    const oldBar=box.querySelector('#aiAskBar'); if(oldBar) oldBar.remove();
     const bar=document.createElement('div'); bar.className='ai-bar'; bar.id='aiAskBar';
-    bar.innerHTML='<i class="ai-dot"></i><span>AI 正在结合你的记录回答…</span>';
+    bar.innerHTML='<i class="ai-dot"></i><span class="ai-txt">AI 正在回答… 0.0s</span>';
     box.appendChild(bar);
-    aiAsk(q, r, box).then(out=>{
+    const t0=Date.now();
+    const tick=setInterval(()=>{
+      const el=bar.querySelector('.ai-txt');
+      if(!el){ clearInterval(tick); return; }
+      const sec=Math.round((Date.now()-t0)/100)/10;
+      el.textContent='AI 正在回答… '+sec+'s'+(sec>=8?'　网络慢时可先看上面的本地结论':'');
+    },400);
+    const stop=()=>{ clearInterval(tick); };
+    const run=(attempt)=> aiAsk(q, r, box).then(out=>{
+      stop();
       const a=box.querySelector('.ask-a'); if(!a) return;
       const pretty=(txt)=>String(txt||'').replace(/(\d{10,16})/g, (m)=>{
         const l=(logs||[]).find(x=>String(x.id)===m);
@@ -8443,16 +8453,21 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         }).join('');
         bindEvChips(src);
       }
-      if(bar) bar.remove();
+      if(bar&&bar.parentNode) bar.remove();
       const hist=(window.__askHist||[]); hist.push({q:q, a:out.answer}); window.__askHist=hist.slice(-4);
       if($('aiUsage')) $('aiUsage').textContent=aiUsageText();
     }).catch(e=>{
-      if(!bar) return;
+      if(attempt<2) return run(attempt+1);
+      stop();
       bar.className='ai-bar off';
-      bar.innerHTML='<i class="ai-dot"></i><span>离线模式 · 已用内置规则'+(e&&e.message?('（'+e.message+'）'):'')+'</span>';
-      try{ trToast('离线模式 · 已用内置规则'); }catch(e2){}
-      setTimeout(()=>{ try{ bar.remove(); }catch(e3){} }, 4500);
+      const why=String((e&&e.message)||'超时').split(' · ')[0].slice(0,24)||'超时';
+      bar.innerHTML='<i class="ai-dot"></i><span class="ai-txt">AI 未返回（'+ENGINE.esc(why)+'）· 已用内置规则</span><button type="button" class="ai-retry" id="aiAskRetry">重试</button>';
+      const rb=bar.querySelector('#aiAskRetry');
+      if(rb) rb.onclick=()=>{ try{ bar.remove(); }catch(e3){} aiAskEnhance(q, r, box); };
+      try{ trToast('AI 未返回 · 已用内置规则'); }catch(e2){}
+      setTimeout(()=>{ try{ if(bar&&bar.parentNode) bar.remove(); }catch(e4){} }, 8000);
     });
+    run(1);
   }
   function bindEvChips(scope){
     (scope||document).querySelectorAll('[data-ev]').forEach(el=>{
@@ -8540,11 +8555,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const base=c.base.replace(/\/+$/,'');
     const url=base.indexOf('/chat/completions')>=0 ? base : base+'/chat/completions';
     const ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
-    const to=setTimeout(()=>{ try{ ctrl&&ctrl.abort(); }catch(e){} }, 60000);
+    const to=setTimeout(()=>{ try{ ctrl&&ctrl.abort(); }catch(e){} }, (o.timeout>0?o.timeout:60000));
     const body={model:c.model||'deepseek-chat',
       messages:[{role:'system',content:(o.system||'')+(aiMemText()?('\n\n【长期记忆】\n'+aiMemText()):'')},
         {role:'user',content:o.image?[{type:'text',text:o.user||''},{type:'image_url',image_url:{url:o.image}}]:(o.user||'')}],
       temperature:(o.temp!=null?+o.temp:0.4), stream:!!o.stream};
+    if(o.maxTok) body.max_tokens=+o.maxTok;
     return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.key},
       body:JSON.stringify(body), signal:ctrl?ctrl.signal:undefined}).then(r=>{
       if(!r.ok){ clearTimeout(to); return r.text().catch(()=>'').then(t=>{ throw new Error('HTTP '+r.status+(t?' · '+String(t).slice(0,80):'')); }); }
@@ -8847,7 +8863,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       '\n【数据】'+d.text
     ].join('\n');
     const out={answer:'', evidence:[], confidence:null};
-    return aiChat({system:AI_SYS, user:usr, stream:false, temp:0.3, onLine:line=>{
+    return aiChat({system:AI_SYS, user:usr, stream:false, temp:0.3, timeout:26000, maxTok:320, onLine:line=>{
       let o; try{ o=JSON.parse(line); }catch(e){ return; }
       if(o.answer) out.answer=String(o.answer);
       if(Array.isArray(o.evidence)) out.evidence=o.evidence.map(String);
