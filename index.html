@@ -3616,6 +3616,31 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.classList.add('on');
     box.querySelectorAll('[data-id]').forEach(it=>it.onmousedown=ev=>{ ev.preventDefault(); $('trSearch').value=''; renderSuggest(); openPlanSheet(it.dataset.id); });
   }
+  /* 静止帧缩略图：每个动作一张 180x180 webp（约 2-3KB），不加载动图/视频 */
+  const THUMB_BASES = (location.protocol === 'file:')
+    ? ['https://xiejiejun.github.io/selfagent/media/thumb/']
+    : ['media/thumb/', 'https://cdn.jsdelivr.net/gh/xiejiejun/selfagent@main/media/thumb/'];
+  const thumbOf = id => (/^\d{4,5}$/.test(String(id||'')) ? String(id) : '');
+  function thumbFail(img, card, e){
+    const ti=(parseInt(img.dataset.ti,10)||0)+1;
+    if(ti < THUMB_BASES.length){ img.dataset.ti=String(ti); img.src=THUMB_BASES[ti]+img.dataset.vid+'.webp'; return; }
+    img.remove();
+    const ph = card ? card.querySelector('.gph') : null;
+    const thumb = card ? card.querySelector('.gthumb') : null;
+    if(e && e.g && thumb){
+      const im=document.createElement('img'); im.loading='lazy'; im.alt=''; thumb.appendChild(im);
+      try{ trLoadGif(im, e.g, ph); }catch(err){}
+      return;
+    }
+    if(e && thumb && gymClipOf(e.id)){
+      thumb.classList.add('gvid-box');
+      __observeThumb(card, function(){
+        try{ trMountClip(thumb, e, ph); const vd=thumb.querySelector('video'); if(vd) vd.style.pointerEvents='none'; }catch(err){}
+      });
+      return;
+    }
+    if(ph && !ph.textContent) ph.textContent='图未加载';
+  }
   const GRID={box:null,list:[],cols:2,colW:160,rowH:210,pad:10,gap:10,r0:-1,r1:-1};
   function gridList(){
     let list=trFiltered();
@@ -3626,15 +3651,16 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const last=lastMap[e.id];
     const fav=(train.favs||[]).includes(e.id);
     const sub = last ? `上次 ${last.weight>0?last.weight+'kg ':''}${last.sets}×${last.reps} · ${trAgo(last.date)}` : '未练过';
+    const tid = thumbOf(e.id);
     const vid = gymClipOf(e.id) ? gymClipOf(e.id) : '';
-    const g = (!vid && e.g) ? (GIF_BASE + e.g) : '';
+    const g = (!tid && !vid && e.g) ? (GIF_BASE + e.g) : '';
     const left = GRID.pad + c*(GRID.colW+GRID.gap);
     const top = GRID.pad + r*GRID.rowH;
     const thumbH = GRID.colW;
-    return `<div class="gcard ${fav?'fav':''} ${(g||vid)?'':'noimg'}" data-ex="${e.id}" style="left:${left}px;top:${top}px;width:${GRID.colW}px">
+    return `<div class="gcard ${fav?'fav':''} ${(tid||g||vid)?'':'noimg'}" data-ex="${e.id}" style="left:${left}px;top:${top}px;width:${GRID.colW}px">
       <div class="gthumb" style="height:${thumbH}px">
-        ${g?`<img loading="lazy" decoding="async" alt="" src="${g}">`:''}
-        <span class="gph">${e.g?'':(vid?'短片':'无图')}</span>
+        ${tid?`<img class="gt" loading="lazy" decoding="async" alt="" data-ti="0" data-vid="${tid}" src="${THUMB_BASES[0]}${tid}.webp">`:''}${g?`<img loading="lazy" decoding="async" alt="" src="${g}">`:''}
+        <span class="gph">${(tid||e.g)?'':(vid?'短片':'无图')}</span>
         <span class="gfav">★</span>
       </div>
       <div class="gname">${ENGINE.esc(e.n)}</div>
@@ -3694,10 +3720,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       ['pointerup','pointerleave','pointercancel'].forEach(t=>card.addEventListener(t,cancel));
       card.addEventListener('contextmenu',ev=>ev.preventDefault());
       card.onclick=()=>{ if(lpFired){ lpFired=false; return; } try{ trSelect(id); }catch(e){} };
-      const img=card.querySelector('img');
+      const img=card.querySelector('.gthumb img:not(.gt)');
       if(img) img.addEventListener('error',()=>{ card.classList.add('noimg'); const ph=card.querySelector('.gph'); if(ph && !ph.textContent) ph.textContent='图未加载'; });
       const e0=findEx(id), thumb=card.querySelector('.gthumb');
-      if(e0 && thumb && gymClipOf(id)){
+      const gt=card.querySelector('img.gt');
+      if(gt){
+        gt.addEventListener('error', ()=>{ try{ thumbFail(gt, card, e0); }catch(err){} });
+      } else if(e0 && thumb && gymClipOf(id)){
         thumb.classList.add('gvid-box');
         __observeThumb(card, function(){
           try{
@@ -4048,7 +4077,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     : ['media/clip/',
        'https://cdn.jsdelivr.net/gh/DuarteSantos8/openGym@main/catalogue/media/clip/',
        'https://raw.githubusercontent.com/DuarteSantos8/openGym/main/catalogue/media/clip/'];
-  const gymClipOf = id => (/^\d{4}$/.test(String(id||'')) ? String(id) : '');
+  const gymClipOf = id => (/^\d{4,5}$/.test(String(id||'')) ? String(id) : '');
   function trClipErr(v, box, e, ph){
     // 同一来源先重试 2 次（CDN 偶发 403/超时），再换下一个来源
     if(v.dataset.skipretry === '1'){ v.dataset.try = '3'; }

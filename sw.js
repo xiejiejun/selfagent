@@ -1,5 +1,5 @@
-// SelfAgent Service Worker：静态资源 stale-while-revalidate（秒开+后台更新），短片缓存优先
-const V = 'sa-p446';
+// SelfAgent Service Worker：静态资源 stale-while-revalidate（秒开+后台更新），短片与缩略图缓存优先
+const V = 'sa-p447';
 const PRECACHE = ['./', './index.html', './style.css', './lib.js'];
 
 self.addEventListener('install', e => {
@@ -44,7 +44,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const u = new URL(req.url);
   if (u.origin !== self.location.origin) return;
-  if (/\/media\/clip\/[0-9]+\.mp4$/.test(u.pathname)) {
+  if (/\/media\/(clip\/[0-9]+\.mp4|thumb\/[0-9]+\.webp)$/.test(u.pathname)) {
     e.respondWith(cacheFirst(req));
     return;
   }
