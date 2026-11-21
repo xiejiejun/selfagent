@@ -1,5 +1,5 @@
 // SelfAgent Service Worker：静态资源 stale-while-revalidate（秒开+后台更新），短片与缩略图缓存优先
-const V = 'sa-p447';
+const V = 'sa-p448';
 const PRECACHE = ['./', './index.html', './style.css', './lib.js'];
 
 self.addEventListener('install', e => {
