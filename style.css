@@ -2841,3 +2841,7 @@ html[data-theme="light"] .fm-hint{background:rgba(15,23,33,.04)}
 .lib-searchrow .search-wrap{flex:1 1 auto;min-width:0}
 .eqchip{display:inline-flex;align-items:center;height:30px;line-height:1}
 .lib-eqrow{align-items:center;min-height:34px}
+
+/* patch442: 动作网格用 openGym 短片占位（无 GIF 动作） */
+.gthumb video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#101418;border:0;box-shadow:none;border-radius:0;display:block;z-index:1}
+.gcard.noimg .gthumb video{display:none}
