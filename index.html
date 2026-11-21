@@ -7799,6 +7799,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
               <div class="backup-msg" id="bakMsg"></div>
             </div>
             <div class="setting-sec">
+              <h2 style="font-size:14px">导入训练笔记</h2>
+              <div class="hint">把 Markdown 训练笔记粘进来（标题行带日期，如「腿 0911」；条目行如「- [x] 杠铃深蹲 12×4 22.5kg×2」「- [x] 椭圆机 25min」）。笔记按日期合并进训练记录和训练日志，同一天同一动作已存在就跳过，不会覆盖原有数据。</div>
+              <textarea class="imp-area" id="mdArea" placeholder="腿 0911&#10;- [x] 杠铃深蹲 12×4 22.5kg×2&#10;- [x] 椭圆机 25min"></textarea>
+              <div class="backup-row"><button class="btn ghost sm" id="mdPick" type="button">选择 .md 文件</button><button class="btn ghost sm" id="mdBtn" type="button">解析预览</button><button class="btn sm" id="mdDo" type="button" hidden>确认导入</button>
+                <input type="file" id="mdFile" accept=".md,.txt,.markdown,text/plain" hidden>
+              </div>
+              <div class="backup-msg" id="mdMsg"></div>
+            </div>
+            <div class="setting-sec">
               <h2 style="font-size:14px">Agent 记忆</h2>
               <div class="hint">每次 AI 分析后会提炼几条稳定事实（作息、偏好、弱项），之后所有调用都会自动带上，让判断前后一致。只存本机。</div>
               <textarea class="imp-area" id="memView" readonly style="min-height:78px"></textarea>
@@ -7849,6 +7858,140 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     bindSettingsActions();
     bindSetPanels();
   }
+  /* ---------------- 训练笔记（Markdown）导入 ---------------- */
+  const MD_PART_KW = [['腿', '腿'], ['胸', '胸'], ['背', '背'], ['肩', '肩'], ['二头', '臂'], ['三头', '臂'], ['手臂', '臂']];
+  function mdHash(str){ let h = 5381; for (let i = 0; i < str.length; i++) { h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; } return h.toString(36); }
+  function mdPart(title){
+    for (const kv of MD_PART_KW){ if (String(title||'').indexOf(kv[0]) >= 0) return kv[1]; }
+    return '其他';
+  }
+  function mdDate(mm, dd, now){
+    const y0 = now.getFullYear(); const m = +mm, d = +dd;
+    const guess = new Date(y0, m - 1, d);
+    const y = guess > new Date(y0, now.getMonth(), now.getDate() + 7) ? y0 - 1 : y0;
+    return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  }
+  function mdStrength(body){
+    let txt = body.replace(/（(\d+)\s*\+\s*(\d+)）/g, '$1');
+    const tk = [];
+    const re = /(\d+(?:\.\d+)?)\s*[×xX]\s*(\d+(?:\.\d+)?)/g;
+    let m;
+    while ((m = re.exec(txt)) !== null) tk.push({ reps: +m[1], sets: +m[2], start: m.index, end: re.lastIndex });
+    if (!tk.length) return null;
+    const name = txt.slice(0, tk[0].start).replace(/[（(].*$/, '').replace(/[，,·]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!name) return null;
+    const groups = [];
+    tk.forEach((t, i) => {
+      const seg = txt.slice(t.end, i + 1 < tk.length ? tk[i + 1].start : txt.length);
+      let w = 0, unit = 'kg';
+      const wm = seg.match(/(\d+(?:\.\d+)?)\s*(kg|lbs|lb|磅)/i);
+      if (wm){ unit = /lb/i.test(wm[2]) ? 'lb' : 'kg'; w = +wm[1]; if (unit === 'lb') w = Math.round(w * 0.4536 * 10) / 10; }
+      const warm = /热身/.test(seg);
+      const n = Math.max(1, Math.min(20, t.sets));
+      for (let k = 0; k < n; k++) groups.push({ reps: t.reps, weight: w, warmup: warm });
+    });
+    const work = groups.filter(g => !g.warmup);
+    const anchor = work.length ? work : groups;
+    return { name: name, groups: groups, sets: groups.length,
+      reps: Math.max.apply(null, anchor.map(g => g.reps || 0)),
+      weight: Math.max.apply(null, anchor.map(g => g.weight || 0)) };
+  }
+  function mdParse(texts){
+    const now = new Date();
+    const out = [];
+    String(texts || '').replace(/\r/g, '').split('\n').forEach(function (raw) {
+      const line = raw.trim(); if (!line) return;
+      const dm = line.match(/(\d{2})(\d{2})\s*$/);
+      const isItem = /^-\s*\[[xX ]\]/.test(line);
+      if (!isItem && dm && !/：$/.test(line) && line.length > 4){
+        const title = line.slice(0, dm.index).replace(/[：:]\s*$/, '').replace(/\s+/g, ' ').trim();
+        out.push({ date: mdDate(dm[1], dm[2], now), title: title, part: mdPart(title), items: [] });
+        return;
+      }
+      if (isItem && out.length){
+        const body = line.replace(/^-\s*\[[xX ]\]\s*/, '').trim();
+        if (!body) return;
+        const cm = body.match(/^(.+?)\s*(\d+)\s*(?:min|分钟|′)/i);
+        if (cm){ out[out.length - 1].items.push({ type: 'cardio', name: cm[1].trim(), min: +cm[2] }); return; }
+        const st = mdStrength(body);
+        if (st && st.sets) out[out.length - 1].items.push(Object.assign({ type: 'strength' }, st));
+      }
+    });
+    return out;
+  }
+  function mdDupSet(){
+    const set = {};
+    (train.records || []).forEach(function (r){ set[r.date + '|' + r.name + '|' + (r.sets || 0) + '|' + (r.weight || 0)] = 1; });
+    (train.cardio || []).forEach(function (c){ set[c.date + '|cd|' + c.modal + '|' + (c.dur || 0)] = 1; });
+    return set;
+  }
+  let __mdPending = null;
+  function mdPreview(){
+    const txt = (($('mdArea') || {}).value || '');
+    const sess = mdParse(txt);
+    const dup = mdDupSet();
+    let nRec = 0, nCd = 0, nSkip = 0;
+    sess.forEach(function (s){
+      s.items.forEach(function (it){
+        if (it.type === 'cardio'){ if (dup[s.date + '|cd|' + it.name + '|' + it.min]) nSkip++; else nCd++; }
+        else { if (dup[s.date + '|' + it.name + '|' + it.sets + '|' + it.weight]) nSkip++; else nRec++; }
+      });
+    });
+    __mdPending = { sess: sess, dup: dup };
+    return { days: sess.length, rec: nRec, cd: nCd, skip: nSkip, first: sess.length ? sess[0].date : '', last: sess.length ? sess[sess.length - 1].date : '' };
+  }
+  function mdImport(){
+    if (!__mdPending) return null;
+    const { sess, dup } = __mdPending;
+    const now = Date.now();
+    const added = { rec: 0, cd: 0, log: 0 };
+    const cdKeep = [];
+    sess.forEach(function (s, si){
+      const vol = s.items.filter(function (i){ return i.type === 'strength'; }).reduce(function (a, i){ return a + i.sets * i.reps * i.weight; }, 0);
+      let groups = 0;
+      s.items.forEach(function (it, ii){
+        if (it.type === 'cardio'){
+          const k = s.date + '|cd|' + it.name + '|' + it.min;
+          if (dup[k]) return;
+          dup[k] = 1;
+          train.cardio.push({ uid: 'im' + mdHash(k + now), date: s.date, modal: it.name, dur: it.min, min: it.min, sec: it.min * 60,
+            done: true, free: false, role: 'post', ts: now });
+          added.cd++;
+          return;
+        }
+        const k = s.date + '|' + it.name + '|' + it.sets + '|' + it.weight;
+        if (dup[k]) return;
+        dup[k] = 1;
+        const exId = 'im' + mdHash(it.name);
+        const uid = 'im' + mdHash(k + now + ii);
+        const rec = { date: s.date, exId: exId, name: it.name, part: s.part, sets: it.sets, reps: it.reps, weight: it.weight, dur: 0, uid: uid };
+        rec.groups = it.groups.map(function (g, gi){ return { no: gi + 1, reps: g.reps, weight: g.weight, done: true, warmup: !!g.warmup, uid: uid + 's' + gi }; });
+        train.records.push(rec);
+        groups += it.sets;
+        added.rec++;
+      });
+      const has = added.rec || added.cd;
+      const logId = 'im' + mdHash(s.date + '|' + s.title);
+      if (has && !logs.some(function (l){ return l.id === logId; })){
+        const nEx = s.items.filter(function (i){ return i.type === 'strength'; }).length;
+        const nCd = s.items.filter(function (i){ return i.type === 'cardio'; });
+        const parts = [];
+        if (nEx) parts.push(nEx + ' 个动作');
+        if (groups) parts.push(groups + ' 组');
+        if (vol) parts.push(Math.round(vol).toLocaleString('en-US') + 'kg');
+        if (nCd.length) parts.push(nCd.map(function (c){ return c.name + ' ' + c.min + '′'; }).join('、'));
+        logs.push({ id: logId, kind: 'train', time: new Date(s.date + 'T20:00:00').toISOString(), date: s.date,
+          day: '20:00', content: (s.title || '训练') + ' · ' + parts.join(' · '), tags: [s.part],
+          score: 0, mood: 0, meta: { imported: true, part: s.part } });
+        added.log++;
+      }
+    });
+    logs.sort(function (a, b){ return String(b.time).localeCompare(String(a.time)); });
+    train.records.sort(function (a, b){ return String(a.date).localeCompare(String(b.date)); });
+    train.cardio.sort(function (a, b){ return String(a.date).localeCompare(String(b.date)); });
+    __mdPending = null;
+    return added;
+  }
   const BAK_KEYS = {logs:STORE_KEY, settings:SETTINGS_KEY, profile:PROFILE_KEY, training:TRAIN_KEY};
   function collectBackup(){
     const data = {_app:'SelfAgent', _v:1, _at:new Date().toISOString()};
@@ -7857,6 +8000,35 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function bakMsg(t){ const el=$('bakMsg'); if(el) el.textContent=t; }
   function bindBackup(){
+    const mdBtn=$('mdBtn'), mdDo=$('mdDo'), mdArea=$('mdArea');
+    const mdMsg=(t)=>{ const el=$('mdMsg'); if(el) el.textContent=t; };
+    const mdPick=$('mdPick'), mdFile=$('mdFile');
+    if(mdPick) mdPick.addEventListener('click',()=>{ mdFile.click(); });
+    if(mdFile) mdFile.addEventListener('change',()=>{
+      const f=mdFile.files[0]; if(!f) return;
+      const r=new FileReader();
+      r.onload=()=>{ mdArea.value=String(r.result||''); mdMsg('已读入 '+f.name+'（'+mdArea.value.length+' 字），点「解析预览」。'); };
+      r.onerror=()=>{ mdMsg('读取失败，可以直接把文本粘贴到下面的输入框。'); };
+      r.readAsText(f);
+    });
+    if(mdBtn) mdBtn.addEventListener('click',()=>{
+      let r=null; try{ r=mdPreview(); }catch(e){ mdMsg('解析失败：'+(e&&e.message||e)); return; }
+      if(!r || !r.days){ mdMsg('没解析到带日期的训练段，检查标题行是否带 4 位日期（如「腿 0911」）。'); if(mdDo) mdDo.hidden=true; return; }
+      mdMsg('解析到 '+r.days+' 天（'+r.first+' → '+r.last+'）：力量 '+r.rec+' 条、有氧 '+r.cd+' 条'+(r.skip ? ('，已存在 '+r.skip+' 条将跳过') : ''));
+      if(mdDo) mdDo.hidden = !(r.rec || r.cd);
+      setTimeout(()=>{ try{ layRebuild && layRebuild(); }catch(e){} }, 0);
+    });
+    if(mdDo) mdDo.addEventListener('click', async ()=>{
+      if(!__mdPending){ mdMsg('请先点「解析预览」。'); return; }
+      const p=mdPreview();
+      if(!(await Modal.confirm({title:'导入训练笔记', body:'将新增 '+p.rec+' 条力量记录、'+p.cd+' 条有氧记录并生成对应日志。同一天同一动作已存在的会跳过，原有数据不会被删除。', okText:'导入', cancelText:'取消'}))) return;
+      let added=null; try{ added=mdImport(); }catch(e){ mdMsg('导入失败：'+(e&&e.message||e)); return; }
+      if(!added){ mdMsg('没有可导入的内容。'); return; }
+      try{ saveTrain(); }catch(e){}
+      try{ save(); }catch(e){}
+      mdMsg('已导入：力量 '+added.rec+' 条、有氧 '+added.cd+' 条、日志 '+added.log+' 条。正在刷新…');
+      setTimeout(()=>location.reload(), 600);
+    });
     const expBtn=$('expBtn'), impBtn=$('impBtn'), impFile=$('impFile'), area=$('impArea'), doRow=$('impDoRow');
     if(!expBtn) return;
     expBtn.addEventListener('click', ()=>{
