@@ -1118,7 +1118,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const dn=gs.filter(g=>g.done).length;
       const iv=gs.filter(g=>g.done&&!g.warmup).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
       const pk=(k)=>{ const v=gs.filter(g=>(g[k]||0)>0 && !g.warmup).slice(-1)[0] || gs.filter(g=>(g[k]||0)>0).slice(-1)[0]; return v?v[k]:0; };
-      return {type:'strength', exId:r.exId, name:r.name, part:r.part, sets:gs.length, reps:pk('reps'),
+      return {type:'strength', uid:r.uid||'', exId:r.exId, name:r.name, part:r.part, sets:gs.length, reps:pk('reps'),
         weight:pk('weight'), done:dn, volume:Math.round(iv),
         groups:gs.map(g=>({no:g.no,reps:g.reps,weight:g.weight,done:!!g.done,rpe:g.rpe||0,sec:g.sec||0}))};
     });
@@ -1159,10 +1159,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       return ch;
     }catch(e){ return false; }
   }
-  function syncTrainLog(){
-    if(Date.now()-__syncAt<3000) return; __syncAt=Date.now();
+  function syncTrainLog(dk, force){
+    if(!force && Date.now()-__syncAt<3000) return; __syncAt=Date.now();
     try{
-      const d=trDateVal();
+      const d=dk||trDateVal();
       const items=dayItems(d);
       const same=(logs||[]).filter(l=>l.kind==='train' && l.date===d);
       if(!items.length){ if(same.length){ logs=logs.filter(l=>!(l.kind==='train' && l.date===d)); save(); renderLogs(); } return; }
@@ -6068,7 +6068,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const parts=a.map(f);
       return parts.length>3 ? (parts.slice(0,3).join(' · ')+' · +'+(parts.length-3)) : parts.join(' · ');
     };
-    const rows=items.map((i,ii)=>{
+    const moreBtn=(ai)=>`<button class="lg-exmore" data-exmenu="${l.id}:${ai}" type="button" aria-label="动作操作" style="background:none;border:0;color:inherit;font:inherit;padding:0 4px;opacity:.55">⋯</button>`;
+    const rows=all.map((i,ai)=>{
+      if(i.type==='cardio'){
+        return `<div class="lg-ex cd${i.done?' fin':''}" data-lgx="${l.id}:${ai}">
+        <div class="lg-h">
+          <b>${ENGINE.esc(i.name)}</b>
+          <em>${i.min?i.min+' 分钟':'时长未记'}</em>
+          <span class="lg-dots">${i.done?'<span class="lg-dot on"></span>':''}</span>
+          ${moreBtn(ai)}
+          <span class="lg-ar">▸</span>
+        </div>
+        <div class="lg-sets"><div class="lg-set"><span class="lg-no">1</span><em>有氧 · 时长训练${i.done?' · 已完成':''}</em></div></div>
+      </div>`;
+      }
       const gs=(i.groups||[]);
       const sets = gs.length
         ? gs.map(g=>`<div class="lg-set"><span class="lg-no${g.warmup?' warm':''}">${g.warmup?'W':g.no}</span><em>${g.weight>0?(g.weight+'kg'):'自重'} × ${g.reps}</em>${g.done?'<s>✓</s>':''}${g.rpe?`<i>${['','轻松','刚好','力竭'][g.rpe]||''}</i>`:''}${g.sec?`<i>${g.sec}s</i>`:''}</div>`).join('')
@@ -6076,26 +6089,18 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const doneN=gs.filter(g=>g.done).length;
       const setsN=gs.length||i.sets||0;
       const allDone=setsN>0&&doneN===setsN;
-      return `<div class="lg-ex${allDone?' fin':''}" data-lgx="${l.id}:${ii}">
+      return `<div class="lg-ex${allDone?' fin':''}" data-lgx="${l.id}:${ai}">
         <div class="lg-h">
           <b>${ENGINE.esc(i.name)}</b>
           <em>${lgd(gs)}</em>
           <span class="lg-dots">${dots(setsN,doneN)}</span>
           ${prSet.has(String(i.exId))?'<span class="lg-prch">PR</span>':''}
+          ${moreBtn(ai)}
           <span class="lg-ar">▸</span>
         </div>
         <div class="lg-sets">${sets}</div>
       </div>`;
-    }).join('')
-      + cds.map((c,ci)=>`<div class="lg-ex cd${c.done?' fin':''}" data-lgcd="${l.id}:${ci}">
-        <div class="lg-h">
-          <b>${ENGINE.esc(c.name)}</b>
-          <em>${c.min?c.min+' 分钟':'时长未记'}</em>
-          <span class="lg-dots">${c.done?'<span class="lg-dot on"></span>':''}</span>
-          <span class="lg-ar">▸</span>
-        </div>
-        <div class="lg-sets"><div class="lg-set"><span class="lg-no">1</span><em>有氧 · 时长训练${c.done?' · 已完成':''}</em></div></div>
-      </div>`).join('');
+    }).join('') + `<div class="lg-addwrap" style="padding:6px 0 2px"><button class="lg-add" data-exadd="${l.id}" type="button" style="background:none;border:1px dashed rgba(255,255,255,.22);border-radius:10px;color:inherit;font:inherit;font-size:13px;opacity:.75;width:100%;padding:8px 0">＋ 添加动作</button></div>`;
     return `
       <div class="log-item tcard">
         <div class="log-head">
@@ -6250,9 +6255,167 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         if(!open) ex.classList.add('open');
       });
     });
+    document.querySelectorAll('#reportBody [data-exmenu]').forEach(b=>{
+      b.addEventListener('click',ev=>{ ev.stopPropagation(); ev.preventDefault(); openExMenu(b.dataset.exmenu, b); });
+    });
+    document.querySelectorAll('#reportBody [data-exadd]').forEach(b=>{
+      b.addEventListener('click',ev=>{ ev.stopPropagation(); openExPicker(b.dataset.exadd); });
+    });
     document.querySelectorAll('#reportBody [data-lmenu]').forEach(b=>{
       b.addEventListener('click',ev=>{ ev.stopPropagation(); openLogMenu(b.dataset.lmenu, b); });
     });
+  }
+
+  /* ---------- 训练日志：动作项增删改查 ---------- */
+  function exItemOf(logId, ai){
+    const l=logs.find(x=>String(x.id)===String(logId));
+    if(!l) return null;
+    const item=((l.meta&&l.meta.items)||[])[ai];
+    return item?{l:l,item:item,ai:ai}:null;
+  }
+  function recOfItem(l, item){
+    const list=(train.records||[]).filter(r=>r&&r.date===l.date);
+    if(item.uid){ const m=list.find(r=>r.uid===item.uid); if(m) return m; }
+    return list.find(r=>r.exId===item.exId && r.name===item.name)
+      || list.find(r=>r.exId===item.exId)
+      || list.find(r=>r.name===item.name) || null;
+  }
+  function openExMenu(key, anchor){
+    const p=String(key).split(':'); const ai=parseInt(p[1],10);
+    const got=exItemOf(p[0], ai); if(!got) return;
+    document.querySelectorAll('.lg-menu').forEach(x=>x.remove());
+    const r=anchor.getBoundingClientRect();
+    const el=document.createElement('div'); el.className='lg-menu';
+    el.innerHTML='<button type="button" data-exact="edit">编辑</button><button type="button" data-exact="del">删除</button>';
+    document.body.appendChild(el);
+    el.style.top=Math.round(Math.max(8, Math.min(r.bottom+6, window.innerHeight-96)))+'px';
+    el.style.left=Math.max(12, Math.round(Math.min(r.right-120, window.innerWidth-132)))+'px';
+    el.querySelector('[data-exact="edit"]').onclick=()=>{ el.remove(); openExEditSheet(p[0], ai); };
+    el.querySelector('[data-exact="del"]').onclick=()=>{ el.remove(); deleteExItem(p[0], ai); };
+    setTimeout(()=>{
+      const h=e=>{ if(!el.contains(e.target)){ el.remove(); document.removeEventListener('click',h); } };
+      document.addEventListener('click',h);
+    },0);
+  }
+  function deleteExItem(logId, ai){
+    const got=exItemOf(logId, ai); if(!got) return;
+    const l=got.l, item=got.item;
+    Modal.confirm({title:'删除这个动作', body:'只删掉「'+item.name+'」及其组数，当天其他动作保留；删除后不能恢复。', okText:'删除', cancelText:'保留', danger:true}).then(ok=>{
+      if(!ok) return;
+      if(item.type==='cardio'){
+        const list=train.cardio||[];
+        const i=list.findIndex(c=>c&&c.date===l.date && ((item.uid&&c.uid===item.uid)||(!item.uid&&(c.modal||'')===item.name)));
+        if(i>=0){ const c=list[i]; try{ window.__markDel&&window.__markDel('cardio',c.uid); }catch(e){} list.splice(i,1); }
+      } else {
+        const rec=recOfItem(l,item);
+        if(rec){ try{ window.__markDel&&window.__markDel('train',rec.uid); }catch(e){} train.records=(train.records||[]).filter(r=>r!==rec); }
+      }
+      try{ if(typeof _useStat!=='undefined') _useStat=null; }catch(e){}
+      saveTrain();
+      try{ syncTrainLog(l.date, true); }catch(e){}
+      renderLogs(); renderLogsPanel();
+      try{ trToast('已删除 '+item.name); }catch(e){}
+    });
+  }
+  function openExEditSheet(logId, ai, opt){
+    const l=logs.find(x=>String(x.id)===String(logId)); if(!l) return;
+    const isNew=!!(opt&&opt.newEx);
+    const item=isNew?{type:'strength', name:opt.newEx.n, exId:opt.newEx.id, part:opt.newEx.p, groups:[]}
+      : ((l.meta&&l.meta.items)||[])[ai];
+    if(!item) return;
+    const sh=ensureLogSheet(); const body=$('lsBody');
+    const hd=sh.querySelector('.ls-head b'); if(hd) hd.textContent=(item.type==='cardio'?'编辑有氧':(isNew?'添加动作':'编辑动作'))+' · '+(l.date||'').slice(5);
+    if(item.type==='cardio'){
+      body.innerHTML=`
+        <div class="f-row"><div class="f-field"><label class="f-label">有氧项目</label><input id="eeName" value="${ENGINE.esc(item.name||'')}"></div>
+          <div class="f-field"><label class="f-label">时长（分钟）</label><input id="eeMin" type="number" inputmode="numeric" min="1" max="600" value="${item.min||30}"></div></div>
+        <label class="f-label" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="eeDone" type="checkbox" ${item.done?'checked':''}> 已完成</label>
+        <div class="ls-actions"><button class="btn ghost sm" type="button" data-close="1">取消</button><button class="btn sm" type="button" id="eeSave">保存</button></div>`;
+      body.querySelector('#eeSave').onclick=()=>{
+        const nm=body.querySelector('#eeName').value.trim()||item.name;
+        const mn=Math.max(1,parseInt(body.querySelector('#eeMin').value,10)||1);
+        const dn=body.querySelector('#eeDone').checked;
+        const list=train.cardio||[];
+        const idx=list.findIndex(c=>c&&c.date===l.date && ((item.uid&&c.uid===item.uid)||(!item.uid&&(c.modal||'')===item.name)));
+        if(idx>=0){ Object.assign(list[idx], {modal:nm, name:nm, min:mn, dur:mn, sec:mn*60, done:dn}); }
+        sh.hidden=true;
+        saveTrain(); try{ syncTrainLog(l.date,true); }catch(e){}
+        renderLogs(); renderLogsPanel();
+      };
+      sh.hidden=false; return;
+    }
+    const rec=isNew?null:recOfItem(l,item);
+    const src=(rec&&(rec.groups||[]).length)?rec.groups:(item.groups||[]);
+    let rows=src.length?src.map(g=>({reps:+g.reps||0, weight:+g.weight||0, done:!!g.done, warmup:!!g.warmup, rpe:g.rpe||0, sec:g.sec||0}))
+      : [{reps:item.reps||10, weight:item.weight||0, done:false, warmup:false, rpe:0, sec:0}];
+    const paint=()=>{
+      body.querySelector('#eeRows').innerHTML=rows.map((g,gi)=>`<div class="ee-row" data-eei="${gi}" style="display:flex;align-items:center;gap:8px;margin:6px 0">
+        <span style="width:34px;opacity:.6">${gi+1}</span>
+        <input class="ee-reps" type="number" inputmode="numeric" min="1" max="200" value="${g.reps}" style="width:64px">
+        <span style="opacity:.6">次 ×</span>
+        <input class="ee-w" type="number" inputmode="decimal" min="0" step="0.5" value="${g.weight}" style="width:74px">
+        <span style="opacity:.6">kg</span>
+        <button type="button" class="btn ghost sm" data-eedone style="padding:2px 8px">${g.done?'✓':'待'}</button>
+        <button type="button" class="btn ghost sm" data-eedel style="padding:2px 8px">×</button>
+      </div>`).join('');
+      body.querySelectorAll('[data-eedone]').forEach(b=>b.onclick=()=>{ const gi=+b.closest('[data-eei]').dataset.eei; rows[gi].done=!rows[gi].done; paint(); });
+      body.querySelectorAll('[data-eedel]').forEach(b=>b.onclick=()=>{ if(rows.length<=1){ trToast('至少保留一组'); return; } const gi=+b.closest('[data-eei]').dataset.eei; rows.splice(gi,1); paint(); });
+      body.querySelectorAll('.ee-reps').forEach((inp,i)=>inp.oninput=()=>{ rows[i].reps=Math.max(0,parseInt(inp.value,10)||0); });
+      body.querySelectorAll('.ee-w').forEach((inp,i)=>inp.oninput=()=>{ rows[i].weight=Math.max(0,parseFloat(inp.value)||0); });
+    };
+    body.innerHTML=`
+      <div class="f-field"><label class="f-label">动作名</label><input id="eeName" value="${ENGINE.esc(item.name||'')}"></div>
+      <div id="eeRows" style="margin:10px 0"></div>
+      <button class="btn ghost sm" type="button" id="eeAddSet">＋ 加一组</button>
+      <div class="ls-actions"><button class="btn ghost sm" type="button" data-close="1">取消</button><button class="btn sm" type="button" id="eeSave">保存</button></div>`;
+    paint();
+    body.querySelector('#eeAddSet').onclick=()=>{ const last=rows[rows.length-1]||{reps:10,weight:0}; rows.push({reps:last.reps,weight:last.weight,done:false,warmup:false,rpe:0,sec:0}); paint(); };
+    body.querySelector('#eeSave').onclick=()=>{
+      const nm=body.querySelector('#eeName').value.trim()||item.name;
+      const gs=rows.map((g,gi)=>({no:gi+1, reps:Math.max(0,g.reps), weight:Math.max(0,g.weight), done:!!g.done, warmup:!!g.warmup, rpe:g.rpe||0, sec:g.sec||0}));
+      const maxReps=Math.max.apply(null, gs.map(g=>g.reps||0));
+      const maxW=Math.max.apply(null, gs.map(g=>g.weight||0));
+      let target=rec;
+      if(isNew){
+        target={date:l.date, exId:opt.newEx.id, name:nm, part:opt.newEx.p, sets:gs.length, reps:maxReps, weight:maxW, dur:0};
+        target.uid=trUid(target);
+        train.records.push(target);
+      } else if(!target){
+        target={date:l.date, exId:item.exId, name:item.name, part:item.part, sets:gs.length, reps:maxReps, weight:maxW, dur:0};
+        target.uid=trUid(target);
+        train.records.push(target);
+      }
+      target.name=nm; target.sets=gs.length; target.reps=maxReps; target.weight=maxW;
+      target.groups=gs.map((g,gi)=>(Object.assign({}, g, {uid:(target.uid||'')+'s'+gi})));
+      if(!target.uid) trUid(target);
+      try{ if(typeof _useStat!=='undefined') _useStat=null; }catch(e){}
+      sh.hidden=true;
+      saveTrain(); try{ syncTrainLog(l.date, true); }catch(e){}
+      renderLogs(); renderLogsPanel();
+      try{ trToast(isNew?('已添加 '+nm):('已保存 '+nm)); }catch(e){}
+    };
+    sh.hidden=false;
+  }
+  function openExPicker(logId){
+    const l=logs.find(x=>String(x.id)===String(logId)); if(!l) return;
+    const sh=ensureLogSheet(); const body=$('lsBody');
+    const hd=sh.querySelector('.ls-head b'); if(hd) hd.textContent='添加动作 · '+(l.date||'').slice(5);
+    const all=(typeof allExercises==='function')?allExercises():[];
+    const paint=(q)=>{
+      const kw=String(q||'').trim().toLowerCase();
+      const hits=(kw?all.filter(e=>String(e.n||'').toLowerCase().indexOf(kw)>=0):all).slice(0,40);
+      body.querySelector('#eeList').innerHTML=hits.length?hits.map(e=>`<button type="button" data-eepick="${ENGINE.esc(e.id)}" style="display:flex;justify-content:space-between;gap:10px;width:100%;background:none;border:0;border-bottom:1px solid rgba(255,255,255,.07);color:inherit;font:inherit;text-align:left;padding:9px 2px"><span>${ENGINE.esc(e.n)}</span><i style="opacity:.5;font-style:normal;font-size:12px">${ENGINE.esc(e.p||'')}</i></button>`).join(''):'<div class="hint" style="padding:12px 2px">没找到，换个关键词</div>';
+      body.querySelectorAll('[data-eepick]').forEach(b=>b.onclick=()=>{
+        const e=all.find(x=>String(x.id)===String(b.dataset.eepick));
+        if(e) openExEditSheet(logId, -1, {newEx:{id:e.id, n:e.n, p:e.p}});
+      });
+    };
+    body.innerHTML=`<input id="eeQ" placeholder="搜索动作名" style="width:100%;margin-bottom:8px">
+      <div id="eeList" style="max-height:52vh;overflow:auto"></div>
+      <div class="ls-actions"><button class="btn ghost sm" type="button" data-close="1">取消</button></div>`;
+    paint('');
+    body.querySelector('#eeQ').oninput=e=>paint(e.target.value);
+    sh.hidden=false;
   }
 
 
