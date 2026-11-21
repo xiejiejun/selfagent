@@ -5128,9 +5128,20 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   const GYM_BASES = (location.protocol === 'file:')
     ? ['_openGym/media/clip/']
     : ['https://cdn.jsdelivr.net/gh/DuarteSantos8/openGym@main/catalogue/media/clip/',
+       'media/clip/',
        'https://raw.githubusercontent.com/DuarteSantos8/openGym/main/catalogue/media/clip/'];
   const gymClipOf = id => (/^\d{4}$/.test(String(id||'')) ? String(id) : '');
   function trClipErr(v, box, e, ph){
+    // 同一来源先重试 2 次（CDN 偶发 403/超时），再换下一个来源
+    const tries = (parseInt(v.dataset.try, 10) || 0) + 1;
+    if(tries <= 2){
+      v.dataset.try = String(tries);
+      setTimeout(function(){
+        try{ v.src = GYM_BASES[parseInt(v.dataset.bi, 10) || 0] + v.dataset.vid + '.mp4'; v.load(); v.play().catch(function(){}); }catch(err){}
+      }, 700 * tries);
+      return;
+    }
+    v.dataset.try = '0';
     let bi = (parseInt(v.dataset.bi, 10) || 0) + 1;
     if(bi < GYM_BASES.length){
       v.dataset.bi = String(bi);
