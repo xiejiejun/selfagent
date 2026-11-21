@@ -9628,9 +9628,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   /* ---------- openGym 示范短片（本地 _openGym 同步库 / 线上 CDN 回退） ---------- */
   const GYM_BASES = (location.protocol === 'file:')
     ? ['_openGym/media/clip/']
-    : ['https://cdn.jsdelivr.net/gh/DuarteSantos8/openGym@main/catalogue/media/clip/',
-       'https://raw.githubusercontent.com/DuarteSantos8/openGym/main/catalogue/media/clip/',
-       'media/clip/'];
+    : ['media/clip/',
+       'https://cdn.jsdelivr.net/gh/DuarteSantos8/openGym@main/catalogue/media/clip/',
+       'https://raw.githubusercontent.com/DuarteSantos8/openGym/main/catalogue/media/clip/'];
   const gymClipOf = id => (/^\d{4}$/.test(String(id||'')) ? String(id) : '');
   function trClipErr(v, box, e, ph){
     // 同一来源先重试 2 次（CDN 偶发 403/超时），再换下一个来源
