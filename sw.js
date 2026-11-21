@@ -1,5 +1,5 @@
 // SelfAgent Service Worker：静态资源 stale-while-revalidate（秒开+后台更新），短片缓存优先
-const V = 'sa-p445';
+const V = 'sa-p446';
 const PRECACHE = ['./', './index.html', './style.css', './lib.js'];
 
 self.addEventListener('install', e => {
@@ -29,9 +29,10 @@ function cacheFirst(req) {
 
 // 先给缓存，同时后台拉新版（下次进入即生效）
 function swr(req) {
-  return caches.open(V).then(c => c.match(req).then(hit => {
+  const key = (() => { const u = new URL(req.url); u.search = ''; return u.href; })();
+  return caches.open(V).then(c => c.match(key).then(hit => {
     const net = fetch(req, { cache: 'reload' }).then(res => {
-      if (res && res.ok) c.put(req, res.clone());
+      if (res && res.ok) c.put(key, res.clone());
       return res;
     }).catch(() => hit);
     return hit || net;
