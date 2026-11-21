@@ -717,7 +717,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       btn.addEventListener('click', async ()=>{
         if(!(await Modal.confirm({title:'删除记录', body:'这条日志会从列表移除，删掉后不能恢复。', okText:'删除', cancelText:'保留', danger:true}))) return;
         const row=btn.closest('.log-item');
-        collapseRemove(row,()=>{ logs=logs.filter(x=>String(x.id)!==String(btn.dataset.id)); save(); renderLogs(); if(!logs.length) renderReport(); });
+        collapseRemove(row,()=>{ deleteLogById(btn.dataset.id); renderLogs(); if(!logs.length) renderReport(); });
       });
     });
   }
@@ -1019,8 +1019,13 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   ];
   $('btnDemo').addEventListener('click',()=>{ if(logs.length) return; const now=Date.now(); logs=DEMO.map((d,i)=>({...d,id:now+i,time:new Date(now-(i+1)*3600*1000*18).toISOString()})); save(); refreshLogForm(); renderLogs(); markStepIdx(1); });
   const _bc=$('btnClear'); if(_bc) _bc.addEventListener('click', async ()=>{
-    if(logs.length && !(await Modal.confirm({title:'清空全部记录', body:'将删除全部 '+logs.length+' 条记录（含训练日志），删掉后不能恢复。建议先在「设置」里导出备份。', okText:'清空', cancelText:'保留', danger:true}))) return;
+    if(logs.length && !(await Modal.confirm({title:'清空全部记录', body:'将删除全部 '+logs.length+' 条记录（含训练日志与训练数据），删掉后不能恢复。建议先在「设置」里导出备份。', okText:'清空', cancelText:'保留', danger:true}))) return;
+    (train.records||[]).forEach(r=>{ if(r&&r.uid&&window.__markDel) window.__markDel('train',r.uid); });
+    (train.cardio||[]).forEach(r=>{ if(r&&r.uid&&window.__markDel) window.__markDel('cardio',r.uid); });
+    logs.forEach(l=>{ if(window.__markDel) window.__markDel(l.kind==='train'?'train':'log', l.id); });
     logs=[]; tagChips=[]; save(); refreshLogForm(); renderLogs(); renderReport();
+    try{ train.records=[]; train.cardio=[]; train.items=[]; train.checkins={}; saveTrain(); }catch(e){}
+    try{ window.dispatchEvent(new Event('resize')); }catch(e){}
   });
 
   /* ---------- ECharts 管理 ---------- */
@@ -2462,6 +2467,29 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       save(); renderLogs();
       if(typeof currentTab!=='undefined' && currentTab==='logs'){ try{ renderLogsPanel(); }catch(e){} }
     }catch(e){}
+  }
+  function delTrainDay(dk){
+    try{
+      const rm=(train.records||[]).filter(r=>r&&r.date===dk).map(r=>r.uid);
+      const cm=(train.cardio||[]).filter(r=>r&&r.date===dk).map(r=>r.uid);
+      if(window.__markDel){ rm.forEach(u=>window.__markDel('train',u)); cm.forEach(u=>window.__markDel('cardio',u)); }
+      train.records=(train.records||[]).filter(r=>r&&r.date!==dk);
+      train.cardio=(train.cardio||[]).filter(r=>r&&r.date!==dk);
+      if(train.items) train.items=(train.items||[]).filter(i=>i&&i.date!==dk);
+      if(train.checkins) delete train.checkins[dk];
+      saveTrain();
+      logs=logs.filter(l=>!(l.kind==='train' && l.date===dk));
+      save();
+      try{ renderLogs(); renderLogsPanel(); }catch(e){}
+      try{ trRenderToday(); }catch(e){}
+      try{ trToast('已删除当天训练数据'); }catch(e){}
+    }catch(e){}
+  }
+  function deleteLogById(id){
+    const l=(logs||[]).find(x=>String(x.id)===String(id));
+    if(window.__markDel && l) window.__markDel(l.kind==='train'?'train':'log', l.id);
+    if(l && l.kind==='train' && l.date){ delTrainDay(l.date); return; }
+    logs=logs.filter(x=>String(x.id)!==String(id)); save();
   }
   function allExercises(){
     const arr=(train.custom||[]).map(c=>({id:c.id, n:c.n, en:c.en||'', p:c.p||c.part||'其他', e:c.e||c.eq||'自重', t:c.t||'', g:c.g||'', s:c.s||c.steps||[], img:c.img||'', imgCap:c.imgCap||'', custom:true})).concat(TRAIN_LIB.filter(e=>!EX_IS_DUP(e.id)));
@@ -7367,10 +7395,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     };
     el.querySelector('[data-mact="del"]').onclick=async ()=>{
       el.remove();
-      if(!(await Modal.confirm({title:'删除记录', body:'这条日志会从当天分组移除，删掉后不能恢复。', okText:'删除', cancelText:'保留', danger:true}))) return;
+      if(!(await Modal.confirm({title:'删除记录', body:'这条记录会从当天分组移除；若是训练记录，当天的训练数据也会一起删除，不能恢复。', okText:'删除', cancelText:'保留', danger:true}))) return;
       const rowEl=anchor.closest('.log-item');
       keepDayOpen(id);
-      collapseRemove(rowEl,()=>{ logs=logs.filter(x=>String(x.id)!==String(id)); save(); renderLogs(); renderLogsPanel(); });
+      collapseRemove(rowEl,()=>{ deleteLogById(id); renderLogs(); renderLogsPanel(); });
     };
     setTimeout(()=>{
       const h=e=>{ if(!el.contains(e.target)){ el.remove(); document.removeEventListener('click',h); } };
@@ -7391,10 +7419,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
     document.querySelectorAll('#reportBody [data-del]').forEach(b=>{
       b.addEventListener('click', async ()=>{
-        if(!(await Modal.confirm({title:'删除记录', body:'这条日志会从当天分组移除，删掉后不能恢复。', okText:'删除', cancelText:'保留', danger:true}))) return;
+        if(!(await Modal.confirm({title:'删除记录', body:'这条记录会从当天分组移除；若是训练记录，当天的训练数据也会一起删除，不能恢复。', okText:'删除', cancelText:'保留', danger:true}))) return;
         keepDayOpen(b.dataset.del);
         collapseRemove(b.closest('.lg-item,.day-row,.log-item')||b.parentElement,()=>{
-          logs=logs.filter(x=>String(x.id)!==String(b.dataset.del)); save(); renderLogs(); renderLogsPanel();
+          deleteLogById(b.dataset.del); renderLogs(); renderLogsPanel();
         });
       });
     });
@@ -10456,6 +10484,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   // 同步状态：队列 / 拉取水位 / 影子索引 / 快照指纹
   var S={queue:[],since:'1970-01-01T00:00:00Z',lastPush:'',shadow:{},hash:{},snapAt:{},pushing:false,pulling:false,fails:0,timer:null};
   try{ var sr=localStorage.getItem(SYK); if(sr){ var so=JSON.parse(sr)||{}; S.queue=(so.queue||[]).slice(0,500); S.since=so.since||S.since; S.lastPush=so.lastPush||''; S.hash=so.hash||{}; S.snapAt=so.snapAt||{}; } }catch(e){}
+  // 删除登记：本机删掉的 uid 一直记着，直到云端回执；离线删除也不会丢
+  var DELK='selfagent_del_v1', D=[];
+  try{ var dr=localStorage.getItem(DELK); if(dr){ D=(JSON.parse(dr)||[]).filter(function(x){ return x&&x.k&&x.u; }).slice(0,800); } }catch(e){}
 
   var NS='6ba7b810-9dad-11d1-80b4-00c04fd430c8';
   var _set=Storage.prototype.setItem, idCache={};
@@ -10466,6 +10497,17 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   function setMsg(t){ var el=document.getElementById('cloudMsg'); if(el) el.textContent=t; }
   function rj(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
   function persist(){ try{ _set.call(localStorage,SYK,JSON.stringify({queue:S.queue,since:S.since,lastPush:S.lastPush,hash:S.hash,snapAt:S.snapAt})); }catch(e){} }
+  function saveD(){ try{ _set.call(localStorage,DELK,JSON.stringify(D.slice(0,800))); }catch(e){} }
+  function markDel(kind,uid){ if(uid==null) return; uid=String(uid); if(!uid) return;
+    for(var i=0;i<D.length;i++){ if(D[i].k===kind && D[i].u===uid) return; }
+    D.push({k:kind,u:uid,t:Date.now()}); saveD(); }
+  function delRow(d){ return {id:evtId(d.k,d.u),kind:d.k,type:null,tags:null,score:null,mood:null,content:null,
+    ts:new Date().toISOString(),date:(new Date()).toISOString().slice(0,10),source:'auto',meta:{uid:d.u,src:'del'},deleted:true}; }
+  function flushDels(){ if(!on()) return;
+    D.forEach(function(d){ var id=evtId(d.k,d.u);
+      for(var i=0;i<S.queue.length;i++){ if(S.queue[i].id===id) return; }
+      S.queue.push(delRow(d)); });
+    persist(); schedule(); }
 
   // ---- 稳定 UUID：sha1(secret|kind|uid) → uuid v5，跨设备同一条记录得到同一个 id ----
   function sha1(msg){
@@ -10547,11 +10589,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       source:'auto',meta:old.meta||null,deleted:true});
   }
   function rescan(){
-    if(!on()) return;
     var idx=indexNow();
-    Object.keys(idx).forEach(function(id){ if(S.shadow[id]!==idx[id]){ enqueue(JSON.parse(idx[id])); } });
-    Object.keys(S.shadow).forEach(function(id){ if(!idx[id]){ tombstone(id,S.shadow[id]); } });
+    Object.keys(idx).forEach(function(id){ if(S.shadow[id]!==idx[id]){ if(on()) enqueue(JSON.parse(idx[id])); } });
+    Object.keys(S.shadow).forEach(function(id){ if(!idx[id]){
+      var old={}; try{ old=JSON.parse(S.shadow[id]); }catch(e){}
+      markDel(old.kind||'log', (old.meta&&old.meta.uid)||String(id));
+      if(on()) tombstone(id,S.shadow[id]);
+    } });
     S.shadow=idx;
+    flushDels();
     persist(); schedule();
   }
   function schedule(){
@@ -10574,6 +10620,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     rpc('push_events',{p_client:cfg.secret,p_batch:batch},keepalive).then(function(res){
       var set={}; ids.forEach(function(i){ set[i]=1; });
       S.queue=S.queue.filter(function(r){ return !set[r.id]; });
+      D=D.filter(function(d){ return !set[evtId(d.k,d.u)]; }); saveD();
       S.lastPush=(res&&res.at)||new Date().toISOString(); S.fails=0;
       persist();
       if(S.queue.length){ setMsg('继续上传，剩余 '+S.queue.length+' 条…'); S.pushing=false; push(keepalive); return; }
@@ -10597,10 +10644,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     var touched={}, maxAt=S.since;
     var logs=rj(LK.logs)||[], tr=rj(LK.training)||{records:[],cardio:[]};
     var pend={}; S.queue.forEach(function(q){ pend[q.id]=1; });
+    var delIds={}; D.forEach(function(d){ delIds[evtId(d.k,d.u)]=1; });
     rows.forEach(function(r){
       if(r.deleted){ touched.remove=(touched.remove||[]); touched.remove.push(r.meta&&r.meta.uid); }
       else {
-        if(pend[r.id]) return;                      // 本地还有未推的改动，先不覆盖
+        if(pend[r.id]||delIds[r.id]) return;        // 本地还有未推的改动 / 本地已删，先不覆盖
         var src=(r.meta&&r.meta.src)||'', rec=(r.meta&&r.meta.rec)||null; if(!rec) return;
         if(src==='logs'){ var i=logs.findIndex(function(x){ return String(x.id)===String(rec.id); }); if(i>=0) logs[i]=rec; else logs.push(rec); touched.logs=1; }
         else if(src==='records'){ tr.records=tr.records||[]; var j=tr.records.findIndex(function(x){ return x.uid===rec.uid; }); if(j>=0) tr.records[j]=rec; else tr.records.push(rec); touched.tr=1; }
@@ -10699,11 +10747,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   var scanTimer=null;
   Storage.prototype.setItem=function(k,v){
     _set.call(this,k,v);
-    if(k===CK||k===SYK||!on()) return;
-    if(k in SNAP){
-      callSnap(k);
-    }
+    if(k===CK||k===SYK) return;
     if(k===LK.logs||k===LK.training){ clearTimeout(scanTimer); scanTimer=setTimeout(rescan,120); }
+    if(!on()) return;
+    if(k in SNAP){ callSnap(k); }
   };
   function callSnap(k){
     var kind=Object.keys(SNAP).find(function(x){ return SNAP[x]===k; }); if(!kind) return;
@@ -10743,7 +10790,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(on()){ setMsg('已连接 '+base()+' · 待同步 '+(S.queue.length||0)+' 条'+(S.lastPush?(' · 上次 '+new Date(S.lastPush).toLocaleTimeString()):'')); rescan(); }
     else setMsg('未配置：数据只存本机浏览器');
   };
-  window.__cloudSync={flush:function(){ rescan(); push(); },pull:pull,state:function(){ return {queue:S.queue.length,since:S.since,lastPush:S.lastPush}; }};
+  window.__cloudSync={flush:function(){ rescan(); push(); },pull:pull,state:function(){ return {queue:S.queue.length,since:S.since,lastPush:S.lastPush,pendingDel:D.length}; }};
+  window.__markDel=markDel;
   if(on()){ setTimeout(function(){ rescan(); push(); pull(true); pullSnapshots(); },1200); }
 })();
 
