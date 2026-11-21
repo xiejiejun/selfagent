@@ -606,7 +606,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const merged={};
       arr.forEach(l=>{
         ((l.meta&&l.meta.items)||[]).forEach(it=>{
-          const key=it.exId||it.name;
+          const key=it.exId||(it.name+'|'+(it.min||''));
           if(!merged[key]){ merged[key]=JSON.parse(JSON.stringify(it)); return; }
           const p=merged[key];
           p.groups=(p.groups||[]).map((g,i)=>{ const g2=(it.groups||[])[i]; if(!g2) return g;
@@ -618,7 +618,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       });
       const items=Object.keys(merged).map(k=>merged[k]);
       base.meta={items:items,volume:Math.round(items.reduce((a,i)=>a+(i.volume||0),0))};
-      base.content=items.map(i=>i.name).join('、');
+      base.content=dayContent(items);
       logs=logs.filter(l=> l===base || !(l.kind==='train' && l.date===d));
       ch=true;
     });
@@ -1111,28 +1111,48 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   function saveTrain(){ try{ localStorage.setItem(TRAIN_KEY, JSON.stringify(train)); }catch(e){} try{ syncTrainLog(); }catch(e){} }
   let __syncAt=0;
-  /* 旧数据迁移：kind:'train' 但 meta 空的条目，用训练记录重建 */
+  /* 当天数据装配：力量记录 + 有氧记录，日志快照与迁移共用（有氧不能被丢） */
+  function stDayItems(dk){
+    return (train.records||[]).filter(r=>r&&r.date===dk).map(r=>{
+      const gs=ensureGroups(r);
+      const dn=gs.filter(g=>g.done).length;
+      const iv=gs.filter(g=>g.done&&!g.warmup).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
+      const pk=(k)=>{ const v=gs.filter(g=>(g[k]||0)>0 && !g.warmup).slice(-1)[0] || gs.filter(g=>(g[k]||0)>0).slice(-1)[0]; return v?v[k]:0; };
+      return {type:'strength', exId:r.exId, name:r.name, part:r.part, sets:gs.length, reps:pk('reps'),
+        weight:pk('weight'), done:dn, volume:Math.round(iv),
+        groups:gs.map(g=>({no:g.no,reps:g.reps,weight:g.weight,done:!!g.done,rpe:g.rpe||0,sec:g.sec||0}))};
+    });
+  }
+  function cdDayItems(dk){
+    return (train.cardio||[]).filter(c=>c && c.date===dk && !c.skipped).map(c=>{
+      const min=c.min||c.dur||Math.round((c.sec||0)/60)||0;
+      return {type:'cardio', name:c.modal||c.name||'有氧', min:min, done:!!c.done, uid:c.uid||''};
+    });
+  }
+  function dayItems(dk){ return stDayItems(dk).concat(cdDayItems(dk)); }
+  function dayContent(items){
+    const st=(items||[]).filter(i=>i.type!=='cardio').map(i=>i.name);
+    const cd=(items||[]).filter(i=>i.type==='cardio').map(i=>i.name+(i.min?(' '+i.min+'min'):''));
+    return st.concat(cd).join('、');
+  }
+  /* 旧数据迁移：kind:'train' 且 meta 缺项或有氧缺失的条目，用当天数据重建 */
   function rebuildTrainMeta(){
     try{
       const arr=JSON.parse(localStorage.getItem('selfagent_logs_v1'))||[];
       let ch=false;
       arr.forEach(l=>{
         if(l.kind!=='train') return;
-        if(l.meta && (l.meta.items||[]).length) return;
         let dk=l.date;
         if(!dk && l.time){ const d=new Date(l.time); const p=n=>String(n).padStart(2,'0'); dk=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
-        const items=(train.records||[]).filter(r=>r.date===dk).map(r=>{
-          const gs=ensureGroups(r);
-          const dn=gs.filter(g=>g.done).length;
-          const iv=gs.filter(g=>g.done&&!g.warmup).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
-          const pk=(k)=>{ const v=gs.filter(g=>(g[k]||0)>0 && !g.warmup).slice(-1)[0] || gs.filter(g=>(g[k]||0)>0).slice(-1)[0]; return v?v[k]:0; };
-          return {exId:r.exId,name:r.name,part:r.part,sets:gs.length,reps:pk('reps'),
-            weight:pk('weight'),done:dn,volume:Math.round(iv),
-            groups:gs.map(g=>({no:g.no,reps:g.reps,weight:g.weight,done:!!g.done,rpe:g.rpe||0,sec:g.sec||0}))};
-        });
+        const old=(l.meta&&l.meta.items)||[];
+        const cds=cdDayItems(dk);
+        const hasCd=old.some(i=>i.type==='cardio');
+        if(old.length && (!cds.length || hasCd)) return;
+        if(!cds.length && !(train.records||[]).some(r=>r&&r.date===dk)) return;
+        const items=dayItems(dk);
         if(!items.length) return;
-        l.meta={items:items,volume:Math.round(items.reduce((a,i)=>a+i.volume,0))};
-        l.content=items.map(i=>i.name).join('、');
+        l.meta={items:items, volume:Math.round(items.reduce((a,i)=>a+(i.volume||0),0))};
+        l.content=dayContent(items);
         ch=true;
       });
       if(ch){ localStorage.setItem('selfagent_logs_v1', JSON.stringify(arr)); }
@@ -1143,25 +1163,15 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(Date.now()-__syncAt<3000) return; __syncAt=Date.now();
     try{
       const d=trDateVal();
-      const list=(train.records||[]).filter(r=>r.date===d);
+      const items=dayItems(d);
       const same=(logs||[]).filter(l=>l.kind==='train' && l.date===d);
-      if(!list.length){ if(same.length){ logs=logs.filter(l=>!(l.kind==='train' && l.date===d)); save(); renderLogs(); } return; }
+      if(!items.length){ if(same.length){ logs=logs.filter(l=>!(l.kind==='train' && l.date===d)); save(); renderLogs(); } return; }
       const fitType=(settings.types||[]).find(t=>t.key==='fit')||(settings.types||[])[0]||{key:'other'};
-      let vol=0, names=[];
-      const items=list.map(i=>{
-        const gs=ensureGroups(i); const dn=gs.filter(g=>g.done).length;
-        const iv=gs.filter(g=>g.done&&!g.warmup).reduce((a,g)=>a+(g.reps||0)*(g.weight||0),0);
-        vol+=iv; names.push(i.name);
-        const pk=(k)=>{ const v=gs.filter(g=>(g[k]||0)>0 && !g.warmup).slice(-1)[0] || gs.filter(g=>(g[k]||0)>0).slice(-1)[0]; return v?v[k]:0; };
-        return {exId:i.exId, name:i.name, part:i.part, sets:gs.length,
-          reps:pk('reps'), weight:pk('weight'),
-          done:dn, volume:Math.round(iv),
-          groups:gs.map(g=>({no:g.no,reps:g.reps,weight:g.weight,done:!!g.done,rpe:g.rpe||0,sec:g.sec||0}))};
-      });
+      const vol=items.filter(i=>i.type!=='cardio').reduce((a,i)=>a+(i.volume||0),0);
       const base=same[0];
       const item=Object.assign({}, base || {id:'autotr-'+d}, {
         kind:'train', source:(base&&base.source==='manual')?'manual':'auto', type:fitType.key, tags:'训练',
-        score:null, mood:null, content:names.join('、'), time:new Date().toISOString(), date:d,
+        score:null, mood:null, content:dayContent(items), time:new Date().toISOString(), date:d,
         meta:{items:items, volume:Math.round(vol), checkin:((train.checkins||{})[d]||null)}});
       logs=logs.filter(l=>!(l.kind==='train' && l.date===d));
       logs.push(item);
@@ -6039,7 +6049,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
   }
   function trainCard(l){
-    const m=l.meta||{}; const items=m.items||[];
+    const m=l.meta||{}; const all= m.items||[];
+    const items=all.filter(i=>i.type!=='cardio');
+    const cds=all.filter(i=>i.type==='cardio');
     const allG=items.reduce((a,i)=>a.concat(i.groups||[]),[]);
     const totalSets=items.reduce((a,i)=>a+((i.groups&&i.groups.length)?i.groups.length:(i.sets||0)),0);
     const doneSets=items.reduce((a,i)=>a+((i.groups||[]).filter(g=>g.done).length),0);
@@ -6074,7 +6086,16 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
         </div>
         <div class="lg-sets">${sets}</div>
       </div>`;
-    }).join('');
+    }).join('')
+      + cds.map((c,ci)=>`<div class="lg-ex cd${c.done?' fin':''}" data-lgcd="${l.id}:${ci}">
+        <div class="lg-h">
+          <b>${ENGINE.esc(c.name)}</b>
+          <em>${c.min?c.min+' 分钟':'时长未记'}</em>
+          <span class="lg-dots">${c.done?'<span class="lg-dot on"></span>':''}</span>
+          <span class="lg-ar">▸</span>
+        </div>
+        <div class="lg-sets"><div class="lg-set"><span class="lg-no">1</span><em>有氧 · 时长训练${c.done?' · 已完成':''}</em></div></div>
+      </div>`).join('');
     return `
       <div class="log-item tcard">
         <div class="log-head">
@@ -6083,7 +6104,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
           <span class="log-time">${fmtTime(l.time)}</span>
           <button class="lg-more" data-lmenu="${l.id}" aria-label="更多" type="button">⋯</button>
         </div>
-        <div class="lg-sum">${items.length} 动作 · ${doneSets}/${totalSets} 组 · ${vol?Math.round(vol).toLocaleString()+' kg':'—'}${prs.n?` · <b class="lg-pr">${prs.n} PR</b>`:''}</div>
+        <div class="lg-sum">${items.length} 动作 · ${doneSets}/${totalSets} 组${cds.length?` · 有氧 ${cds.map(c=>ENGINE.esc(c.name)+' '+(c.min||0)+'′').join('、')}`:''} · ${vol?Math.round(vol).toLocaleString()+' kg':'—'}${prs.n?` · <b class="lg-pr">${prs.n} PR</b>`:''}</div>
         ${m.checkin?`<div class="tc-feel"><span>情绪 ${m.checkin.mood}/5 ${FEEL_MOOD[(m.checkin.mood||1)-1]||''}</span><span>状态 ${m.checkin.energy}/5 ${FEEL_ENERGY[(m.checkin.energy||1)-1]||''}</span>${m.checkin.note?`<em>“${ENGINE.esc(m.checkin.note)}”</em>`:''}</div>`:''}
         <div class="lg-list">${rows||'<div class="tc-empty">暂无明细</div>'}</div>
       </div>`;
@@ -7167,17 +7188,23 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       });
       const has = added.rec || added.cd;
       const logId = 'im' + mdHash(s.date + '|' + s.title);
-      if (has && !logs.some(function (l){ return l.id === logId; })){
-        const nEx = s.items.filter(function (i){ return i.type === 'strength'; }).length;
-        const nCd = s.items.filter(function (i){ return i.type === 'cardio'; });
+      if (has){
+        const its = dayItems(s.date);
+        const nEx = its.filter(function (i){ return i.type === 'strength'; }).length;
+        const nCd = its.filter(function (i){ return i.type === 'cardio'; });
+        const totSets = its.filter(function (i){ return i.type !== 'cardio'; })
+          .reduce(function (a, i){ return a + ((i.groups && i.groups.length) ? i.groups.length : (i.sets || 0)); }, 0);
+        const volAll = its.filter(function (i){ return i.type !== 'cardio'; })
+          .reduce(function (a, i){ return a + (i.volume || 0); }, 0);
         const parts = [];
         if (nEx) parts.push(nEx + ' 个动作');
-        if (groups) parts.push(groups + ' 组');
-        if (vol) parts.push(Math.round(vol).toLocaleString('en-US') + 'kg');
+        if (totSets) parts.push(totSets + ' 组');
         if (nCd.length) parts.push(nCd.map(function (c){ return c.name + ' ' + c.min + '′'; }).join('、'));
+        if (volAll) parts.push(Math.round(volAll).toLocaleString('en-US') + 'kg');
+        logs = logs.filter(function (l){ return !(l.kind === 'train' && l.date === s.date); });
         logs.push({ id: logId, kind: 'train', time: new Date(s.date + 'T20:00:00').toISOString(), date: s.date,
           day: '20:00', content: (s.title || '训练') + ' · ' + parts.join(' · '), tags: [s.part],
-          score: 0, mood: 0, meta: { imported: true, part: s.part } });
+          score: 0, mood: 0, meta: { imported: true, part: s.part, items: its, volume: Math.round(volAll) } });
         added.log++;
       }
     });
