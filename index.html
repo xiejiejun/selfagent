@@ -75,7 +75,11 @@
         <div class="hm-head"><span>近 12 周打卡</span>
           <span class="hm-legend">少<i data-l="0"></i><i data-l="1"></i><i data-l="2"></i><i data-l="3"></i><i data-l="4"></i>多</span>
         </div>
-        <div class="hm" id="homeHm"></div>
+        <div class="hm-grid">
+          <div class="hm-months" id="homeHmMonths"></div>
+          <div class="hm-bd"><div class="hm-wk"><span>一</span><span></span><span>三</span><span></span><span>五</span><span></span><span>日</span></div><div class="hm" id="homeHm"></div></div>
+        </div>
+        <div class="hm-foot" id="homeHmFoot"></div>
       </div>
       <div class="home-actions">
         <button class="btn sm btn-block" id="homeGoRec">＋ 记录</button>
@@ -8149,6 +8153,12 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
 
   /* ---------- 首页仪表板 ---------- */
   const dk=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  function hmLongest(cnt, t0){
+    let best=0, run=0;
+    for(let i=90;i>=0;i--){ const d=new Date(t0); d.setDate(t0.getDate()-i); const c=cnt[dk(d)]||0;
+      if(c>0){ run++; if(run>best) best=run; } else run=0; }
+    return best;
+  }
   function renderHome(){
     const t=new Date(), tk=dk(t);
     const tl=logs.filter(l=>dk(new Date(l.time))===tk);
@@ -8179,13 +8189,44 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     const cnt={};
     logs.forEach(l=>{ const k=dk(new Date(l.time)); cnt[k]=(cnt[k]||0)+1; });
     train.records.forEach(r=>{ if(r.date) cnt[r.date]=(cnt[r.date]||0)+(r.sets||1); });
-    let cells='';
-    for(let i=83;i>=0;i--){
-      const d=new Date(); d.setDate(d.getDate()-i); const k=dk(d), c=cnt[k]||0;
-      const lv=c===0?0:c<=2?1:c<=5?2:c<=9?3:4;
-      cells+=`<i data-l="${lv}" title="${k} · ${c} 项"></i>`;
+    const HM_W=13, HM_STEP=7;
+    const t0=new Date(t.getFullYear(),t.getMonth(),t.getDate());
+    const wkStart=new Date(t0); wkStart.setDate(t0.getDate()-((t0.getDay()+6)%7));   // 本周一
+    const first=new Date(wkStart); first.setDate(wkStart.getDate()-(HM_W-1)*HM_STEP);
+    let cells='', months='', blanksBefore=0;
+    const monArr=[];
+    let hitDays=0;
+    for(let w=0;w<HM_W;w++){
+      for(let r=0;r<HM_STEP;r++){
+        const d=new Date(first); d.setDate(first.getDate()+w*HM_STEP+r);
+        const k=dk(d), c=cnt[k]||0;
+        if(d>t0){ cells+='<i class="fut" data-l="x"></i>'; continue; }
+        const lv=c===0?0:c<=1?1:c<=3?2:c<=6?3:4;
+        if(c>0) hitDays++;
+        cells+=`<i data-l="${lv}"${k===tk?' class="today"':''} title="${d.getMonth()+1}/${d.getDate()} 周${'日一二三四五六'[d.getDay()]} · ${c?c+' 项':'没记录'}"></i>`;
+      }
+      const firstOfMonth=new Date(first); firstOfMonth.setDate(first.getDate()+w*HM_STEP);
+      const inWeek=(function(){ for(let r=0;r<7;r++){ const d=new Date(first); d.setDate(first.getDate()+w*7+r); if(d.getDate()===1) return d; } return null; })();
+      monArr.push(inWeek?(inWeek.getMonth()+1)+'月':'');
     }
-    if($('homeHm')) $('homeHm').innerHTML=cells;
+    if($('homeHm')){
+      $('homeHm').innerHTML=cells;
+      const hmEl=$('homeHm'), monEl=$('homeHmMonths');
+      const fit=()=>{
+        const W=hmEl.clientWidth; if(!W||W<120) return;
+        const c=Math.floor((W-48)/13); if(c<9) return;
+        hmEl.style.gridTemplateColumns='repeat(13,'+c+'px)';
+        hmEl.style.gridTemplateRows='repeat(7,'+c+'px)';
+        if(monEl) monEl.style.gridTemplateColumns='repeat(13,'+c+'px)';
+      };
+      hmEl._hmFit=fit; fit(); setTimeout(fit,80);
+      if(!hmEl._hmBound){ hmEl._hmBound=1;
+        window.addEventListener('resize',()=>{ if(hmEl._hmFit) hmEl._hmFit(); });
+        window.addEventListener('orientationchange',()=>setTimeout(()=>{ if(hmEl._hmFit) hmEl._hmFit(); },200));
+      }
+    }
+    if($('homeHmMonths')) $('homeHmMonths').innerHTML=monArr.map(m=>'<span>'+m+'</span>').join('');
+    if($('homeHmFoot')) $('homeHmFoot').innerHTML='<b>'+hitDays+'</b> 天有记录 · 最长连续 <b>'+hmLongest(cnt,t0)+'</b> 天';
     // 信号（按影响度排序，最多同屏 2 条）
     const sigs=[];
     if(!tl.length){
