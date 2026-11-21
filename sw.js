@@ -1,0 +1,48 @@
+// SelfAgent Service Worker：静态资源离线缓存（index/style/lib 网络优先，短片缓存优先）
+const V = 'sa-p444';
+const PRECACHE = ['./', './index.html', './style.css', './lib.js'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(V).then(c => c.addAll(PRECACHE).catch(() => {})).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys()
+      .then(ks => Promise.all(ks.filter(k => k !== V).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+function cacheFirst(req) {
+  return caches.open(V).then(c =>
+    c.match(req).then(hit => hit || fetch(req).then(res => {
+      if (res && res.ok) c.put(req, res.clone());
+      return res;
+    })
+  ));
+}
+
+function netFirst(req) {
+  return fetch(req, { cache: 'no-cache' }).then(res => {
+    if (res && res.ok) {
+      const copy = res.clone();
+      caches.open(V).then(c => c.put(req, copy)).catch(() => {});
+    }
+    return res;
+  }).catch(() => caches.open(V).then(c => c.match(req)).then(hit => hit || Response.error()));
+}
+
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const u = new URL(req.url);
+  if (u.origin !== self.location.origin) return;
+  if (/\/media\/clip\/[0-9]+\.mp4$/.test(u.pathname)) {
+    e.respondWith(cacheFirst(req));
+    return;
+  }
+  if (u.pathname.endsWith('/') || /(index\.html|lib\.js|style\.css)$/.test(u.pathname)) {
+    e.respondWith(netFirst(req));
+  }
+});

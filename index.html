@@ -1068,6 +1068,11 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     return __libP;
   }
   try{ if(document.readyState!=='loading'){ setTimeout(ensureLib,0); } else { document.addEventListener('DOMContentLoaded',function(){ setTimeout(ensureLib,0); }); } }catch(e){}
+  try{
+    if('serviceWorker' in navigator && location.protocol === 'https:'){
+      window.addEventListener('load', function(){ setTimeout(function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }, 1500); });
+    }
+  }catch(e){}
   const EX_DUP=(function(){
     const seen={}, map={};
     TRAIN_LIB.forEach(e=>{ const k=(e.n||'')+'|'+(e.p||''); if(seen[k]) map[e.id]=seen[k]; else seen[k]=e.id; });
