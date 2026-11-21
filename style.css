@@ -1491,7 +1491,9 @@ details.my-lib>.my-empty,details.my-lib>.my-hot,details.my-lib>.lib-group{margin
 .lg-list{display:flex;flex-direction:column;gap:2px;margin-top:2px}
 .lg-ex{border-radius:9px}
 .lg-ex.fin .lg-h b{color:var(--tx2)}
-.lg-h{display:flex;align-items:center;gap:8px;min-height:42px;cursor:pointer}
+.lg-h{display:flex;align-items:center;gap:8px;min-height:42px;flex-wrap:nowrap;cursor:pointer}
+.lg-exmore{flex:0 0 auto}
+.lg-exmore:active{color:#3DDCBF}
 .lg-ex.open .lg-h{border-bottom:1px dashed var(--line);margin-bottom:3px}
 .lg-h b{font-size:13.5px;font-weight:600;color:var(--tx);max-width:40vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lg-h em{font-style:normal;color:var(--tx2);font-size:11.5px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

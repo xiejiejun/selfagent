@@ -6068,7 +6068,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const parts=a.map(f);
       return parts.length>3 ? (parts.slice(0,3).join(' · ')+' · +'+(parts.length-3)) : parts.join(' · ');
     };
-    const moreBtn=(ai)=>`<button class="lg-exmore" data-exmenu="${l.id}:${ai}" type="button" aria-label="动作操作" style="background:none;border:0;color:inherit;font:inherit;padding:0 4px;opacity:.55">⋯</button>`;
+    const moreBtn=(ai)=>`<button class="lg-exmore" data-exmenu="${l.id}:${ai}" type="button" aria-label="动作操作" style="background:none;border:0;color:inherit;font:inherit;font-size:15px;line-height:1;padding:6px 10px;min-width:32px;min-height:32px;margin-left:2px;opacity:.62">⋯</button>`;
     const rows=all.map((i,ai)=>{
       if(i.type==='cardio'){
         return `<div class="lg-ex cd${i.done?' fin':''}" data-lgx="${l.id}:${ai}">
