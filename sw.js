@@ -1,9 +1,13 @@
-// SelfAgent Service Worker：静态资源离线缓存（index/style/lib 网络优先，短片缓存优先）
-const V = 'sa-p444';
+// SelfAgent Service Worker：静态资源 stale-while-revalidate（秒开+后台更新），短片缓存优先
+const V = 'sa-p445';
 const PRECACHE = ['./', './index.html', './style.css', './lib.js'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(V).then(c => c.addAll(PRECACHE).catch(() => {})).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(V)
+      .then(c => c.addAll(PRECACHE).catch(() => {}))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -19,18 +23,19 @@ function cacheFirst(req) {
     c.match(req).then(hit => hit || fetch(req).then(res => {
       if (res && res.ok) c.put(req, res.clone());
       return res;
-    })
-  ));
+    }))
+  );
 }
 
-function netFirst(req) {
-  return fetch(req, { cache: 'no-cache' }).then(res => {
-    if (res && res.ok) {
-      const copy = res.clone();
-      caches.open(V).then(c => c.put(req, copy)).catch(() => {});
-    }
-    return res;
-  }).catch(() => caches.open(V).then(c => c.match(req)).then(hit => hit || Response.error()));
+// 先给缓存，同时后台拉新版（下次进入即生效）
+function swr(req) {
+  return caches.open(V).then(c => c.match(req).then(hit => {
+    const net = fetch(req, { cache: 'reload' }).then(res => {
+      if (res && res.ok) c.put(req, res.clone());
+      return res;
+    }).catch(() => hit);
+    return hit || net;
+  }));
 }
 
 self.addEventListener('fetch', e => {
@@ -43,6 +48,6 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (u.pathname.endsWith('/') || /(index\.html|lib\.js|style\.css)$/.test(u.pathname)) {
-    e.respondWith(netFirst(req));
+    e.respondWith(swr(req));
   }
 });
