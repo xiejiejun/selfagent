@@ -4402,15 +4402,66 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     d.innerHTML=`
       <div class="lib-searchrow">
         <div class="search-wrap"><input type="text" id="trSearch" placeholder="搜索动作" autocomplete="off"><button class="search-go" id="libGo" type="button" aria-label="确认搜索"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button><div class="search-sug" id="trSug"></div></div>
+        <button class="lib-iconbtn" id="libAiFind" type="button" aria-label="AI 帮我找">✦</button>
         <button class="lib-funnel" id="libFunnel" type="button" aria-label="筛选"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><em class="dot" id="libFunnelDot" hidden></em></button>
       </div>
-      ${filterBodyHtml('flDropLib')}
-      <div class="lib-airow"><button class="lib-ai" id="libAiFind" type="button">✦ AI 帮我找</button></div>
-      <div class="ex-list lib-list" id="trList"></div>
+      ${filterBodyHtml('flDropLib', true)}
+      <div class="lib-eqrow" id="trEqRow">${eqRowHtml()}</div>
+      <div class="lib-body">
+        <aside class="lib-rail" id="trRail">${railHtml()}</aside>
+        <div class="ex-list lib-list lib-grid" id="trList"></div>
+      </div>
       <div class="lib-curow"><button class="lib-cu" id="cuOpen" type="button">＋ 添加动作</button></div>`;
     if($('libFunnel')) $('libFunnel').onclick=()=>toggleDrop('lib');
     try{ bindDrop(dropEl('lib'), 'lib'); }catch(e){}
     if($('cuOpen')) $('cuOpen').onclick=()=>openCuSheet();
+    if($('libAiFind')) $('libAiFind').onclick=()=>{ try{ openAiFind(); }catch(e){} };
+    bindEqRow(); bindRail();
+    trRenderList();
+  }
+  const RAIL_PARTS=['胸','背','腿','肩','臂','腹','有氧'];
+  function railHtml(){
+    const cur=trState.part||'';
+    const fav=!!trState.libFav;
+    return `<button class="rail-item ${fav?'on':''}" data-rail="fav" type="button">★ 我的</button>
+      <button class="rail-item ${(!cur&&!fav)?'on':''}" data-rail="" type="button">全部</button>
+      ${RAIL_PARTS.map(p=>`<button class="rail-item ${cur===p?'on':''}" data-rail="${p}" type="button">${p}</button>`).join('')}`;
+  }
+  function bindRail(){
+    const el=$('trRail'); if(!el) return;
+    el.querySelectorAll('[data-rail]').forEach(btn=>{
+      btn.onclick=()=>{
+        const k=btn.dataset.rail;
+        if(k==='fav'){ trState.libFav=!trState.libFav; }
+        else { trState.libFav=false; trState.part=k; }
+        el.innerHTML=railHtml(); bindRail();
+        const b2=$('trList'); if(b2) b2.scrollTop=0;
+        trRenderList();
+        trSyncFunnelDot();
+      };
+    });
+  }
+  function eqRowHtml(){
+    const cur=trState.eqs||[];
+    return FL_EQ.map(q=>{
+      const on = q==='全部' ? !cur.length : cur.indexOf(q)>=0;
+      return `<button class="eqchip ${on?'on':''}" data-eqchip="${q}" type="button">${q}</button>`;
+    }).join('');
+  }
+  function bindEqRow(){
+    const el=$('trEqRow'); if(!el) return;
+    el.querySelectorAll('[data-eqchip]').forEach(b=>{
+      b.onclick=()=>{
+        const q=b.dataset.eqchip;
+        if(!trState.eqs) trState.eqs=[];
+        if(q==='全部') trState.eqs=[];
+        else { const i=trState.eqs.indexOf(q); if(i>=0) trState.eqs.splice(i,1); else trState.eqs.push(q); }
+        el.innerHTML=eqRowHtml(); bindEqRow();
+        const s2=$('trList'); if(s2) s2.scrollTop=0;
+        trRenderList();
+        trSyncFunnelDot();
+      };
+    });
   }
   function aiFindEx(name){
     const q=String(name||'').trim().toLowerCase();
@@ -4836,28 +4887,117 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     box.classList.add('on');
     box.querySelectorAll('[data-id]').forEach(it=>it.onmousedown=ev=>{ ev.preventDefault(); $('trSearch').value=''; renderSuggest(); openPlanSheet(it.dataset.id); });
   }
+  const GRID={box:null,list:[],cols:2,colW:160,rowH:210,pad:10,gap:10,r0:-1,r1:-1};
+  function gridList(){
+    let list=trFiltered();
+    if(trState.libFav) list=list.filter(e=>(train.favs||[]).includes(e.id));
+    return list;
+  }
+  function gcardHtml(e,lastMap,c,r){
+    const last=lastMap[e.id];
+    const fav=(train.favs||[]).includes(e.id);
+    const sub = last ? `上次 ${last.weight>0?last.weight+'kg ':''}${last.sets}×${last.reps} · ${trAgo(last.date)}` : '未练过';
+    const g = e.g ? (GIF_BASE + e.g) : '';
+    const left = GRID.pad + c*(GRID.colW+GRID.gap);
+    const top = GRID.pad + r*GRID.rowH;
+    const thumbH = GRID.colW;
+    return `<div class="gcard ${fav?'fav':''} ${g?'':'noimg'}" data-ex="${e.id}" style="left:${left}px;top:${top}px;width:${GRID.colW}px">
+      <div class="gthumb" style="height:${thumbH}px">
+        ${g?`<img loading="lazy" decoding="async" alt="" src="${g}">`:''}
+        <span class="gph">${e.g?'':'无图'}</span>
+        <span class="gfav">★</span>
+      </div>
+      <div class="gname">${ENGINE.esc(e.n)}</div>
+      <div class="gsub ${last?'have':''}">${ENGINE.esc(sub)}</div>
+    </div>`;
+  }
+  function paintGrid(){
+    const box=GRID.box; if(!box) return;
+    const vh=box.clientHeight||320, st=box.scrollTop;
+    const rowsTotal=Math.ceil(GRID.list.length/GRID.cols);
+    const startRow=Math.max(0, Math.floor((st-GRID.pad)/GRID.rowH)-1);
+    const endRow=Math.min(rowsTotal-1, Math.ceil((st+vh-GRID.pad)/GRID.rowH)+1);
+    if(startRow===GRID.r0 && endRow===GRID.r1) return;
+    GRID.r0=startRow; GRID.r1=endRow;
+    const lastMap={}; (train.records||[]).forEach(rr=>{ lastMap[rr.exId]=rr; });
+    const out=[];
+    for(let r=startRow; r<=endRow; r++){
+      for(let c=0;c<GRID.cols;c++){
+        const e=GRID.list[r*GRID.cols+c]; if(!e) continue;
+        out.push(gcardHtml(e,lastMap,c,r));
+      }
+    }
+    const lay=box.querySelector('.lib-gridlay');
+    if(!lay) return;
+    lay.innerHTML=out.join('');
+    bindGridCards(lay);
+  }
+  function bindGridCards(lay){
+    lay.querySelectorAll('.gcard').forEach(card=>{
+      const id=card.dataset.ex;
+      let lpTimer=null, moved=false, sxy=null, lpFired=false;
+      const start=ev=>{
+        if(ev.pointerType==='mouse' && ev.button!==0) return;
+        moved=false; lpFired=false; sxy=[ev.clientX,ev.clientY];
+        lpTimer=setTimeout(()=>{ lpTimer=null; if(!moved){ lpFired=true; try{ quickAddLast(id); }catch(e){} } }, 520);
+      };
+      const cancel=()=>{ if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; } };
+      card.addEventListener('pointerdown',start);
+      card.addEventListener('pointermove',ev=>{ if(sxy && (Math.abs(ev.clientX-sxy[0])>8 || Math.abs(ev.clientY-sxy[1])>8)){ moved=true; cancel(); } });
+      ['pointerup','pointerleave','pointercancel'].forEach(t=>card.addEventListener(t,cancel));
+      card.addEventListener('contextmenu',ev=>ev.preventDefault());
+      card.onclick=()=>{ if(lpFired){ lpFired=false; return; } try{ trSelect(id); }catch(e){} };
+      const img=card.querySelector('img');
+      if(img) img.addEventListener('error',()=>{ card.classList.add('noimg'); const ph=card.querySelector('.gph'); if(ph && !ph.textContent) ph.textContent='图未加载'; });
+    });
+  }
   function trRenderList(append){
     const box=$('trList'); if(!box) return;
-    const list=trFiltered();
-    const from=append?Math.max(0,trState.limit-60):0;
-    const lastMap={};
-    (train.records||[]).forEach(r=>{ lastMap[r.exId]=r; });
-    const html=list.slice(from,trState.limit).map(e=>libRowHtml(e,lastMap)).join('');
-    if(append){ box.insertAdjacentHTML('beforeend', html); }
-    else { box.innerHTML = html || '<div class="ex-item" style="color:var(--tx3);cursor:default">没有匹配的动作，换个更短的关键词试试，或点下方「自定义动作」新增。</div>'; box.scrollTop=0; }
-    box.querySelectorAll('[data-ex]').forEach(it=>{ it.onclick=()=>trSelect(it.dataset.ex); });
-    box.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',ev=>{
-      ev.stopPropagation(); openPlanSheet(b.dataset.plan);
-    }));
-    box.querySelectorAll('[data-favitem]').forEach(b=>b.addEventListener('click',ev=>{
-      ev.stopPropagation();
-      trToggleFav(b.dataset.favitem);
-      const on=(train.favs||[]).includes(b.dataset.favitem);
-      b.textContent=on?'★':'☆'; b.classList.toggle('on',on);
-    }));
-    const c=$('trCount'); if(c) c.textContent = '';
+    const list=gridList();
+    GRID.list=list;
+    const w=box.clientWidth||340;
+    GRID.cols = w>=880?4 : (w>=600?3:2);
+    const innerW=w-2;
+    GRID.colW=Math.floor((innerW-GRID.pad*2-GRID.gap*(GRID.cols-1))/GRID.cols);
+    GRID.rowH=GRID.colW+46+GRID.gap;
+    const rows=Math.max(1,Math.ceil(list.length/GRID.cols));
+    box.style.position='relative';
+    if(!box.querySelector('.lib-gridlay')) box.innerHTML='<div class="lib-gridlay"></div>';
+    const lay=box.querySelector('.lib-gridlay');
+    lay.style.height=(GRID.pad*2+rows*GRID.rowH)+'px';
+    GRID.box=box; GRID.r0=-1; GRID.r1=-1;
+    if(!box.dataset.gridBound){
+      box.dataset.gridBound='1';
+      box.addEventListener('scroll',paintGrid,{passive:true});
+      window.addEventListener('resize',()=>{ try{ trRenderList(); }catch(e){} });
+    }
+    if(!list.length){
+      lay.style.height='0px';
+      lay.innerHTML=`<div class="grid-empty">没有匹配的动作，换个关键词或重置筛选。</div>`;
+      const c=$('trCount'); if(c) c.textContent='';
+      return;
+    }
+    paintGrid();
+    const c=$('trCount'); if(c) c.textContent='';
   }
-
+  function quickAddLast(id){
+    const e=findEx(id); if(!e) return false;
+    const last=trLastRec(id);
+    const timed=isTimedX(e);
+    const sets=last?(last.sets||3):3, reps=last?(last.reps||10):10, wt=last?(last.weight||0):0;
+    const sec=(last&&(last.groups||[]).find(g=>g.sec))?last.groups.find(g=>g.sec).sec:45;
+    try{ trAddPlanned(id, sets, reps, wt, timed?sec:0, true); }catch(err){ console.warn('lp add',err); return false; }
+    try{ trToast('已加入今日 · '+e.n+(timed?' '+sec+'秒/组':' '+sets+'×'+reps+(wt>0?' '+wt+'kg':''))); }catch(err){}
+    try{ trRenderToday(); }catch(err){}
+    try{ trRenderPlan(); }catch(err){}
+    try{
+      if(!localStorage.getItem('selfagent_lib_lp_v1')){
+        localStorage.setItem('selfagent_lib_lp_v1','1');
+        setTimeout(()=>{ try{ trToast('长按卡片 = 按上次参数直接加入今日'); }catch(err){} }, 1600);
+      }
+    }catch(err){}
+    return true;
+  }
   function detailBodyHtml(e){
     const last=trLastRec(e.id);
     const hist=last?`<div class="ex-my-last">你的上次：${groupsDigest(lastGroupsOf(last))} · ${trAgo(last.date)}</div>`
@@ -5315,9 +5455,9 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   }
   const FL_PART=['全部','胸','背','腿','肩','臂','腹','有氧'];
   const FL_EQ=['全部','杠铃','哑铃','绳索','器械','自重','壶铃','史密斯','弹力带'];
-  function filterBodyHtml(dropId){
+  function filterBodyHtml(dropId, skipParts){
     return `<div class="fl-drop" id="${dropId}" hidden>
-      <div class="fl-sec"><span class="fl-lb">部位</span><div class="chip-row">${FL_PART.map(p=>`<button class="fchip" data-flpart="${p==='全部'?'':p}" type="button">${p}</button>`).join('')}</div></div>
+      ${skipParts?'':`<div class="fl-sec"><span class="fl-lb">部位</span><div class="chip-row">${FL_PART.map(p=>`<button class="fchip" data-flpart="${p==='全部'?'':p}" type="button">${p}</button>`).join('')}</div></div>`}
       <div class="fl-sec"><span class="fl-lb">器械</span><div class="chip-row">${FL_EQ.map(q=>`<button class="fchip" data-fleq="${q}" type="button">${q}</button>`).join('')}</div></div>
       <div class="fl-foot"><button class="btn ghost sm" type="button" data-flreset>重置</button><button class="btn sm" type="button" data-fldone>完成</button></div>
     </div>`;
