@@ -50,13 +50,9 @@
   <section class="page page-home" id="pageHome">
     <div class="home-wrap">
       <div id="homeReview"></div>
-      <div class="pt-row">
-        <div class="page-title" id="homeTitle">今天</div>
-        <span class="pt-date" id="homeDate"></span>
-      </div>
       <div class="sub-row">
         <div class="page-desc" id="homeSub">—</div>
-        <button class="tour-entry" id="homeTour" type="button">新手引导</button>
+        <div class="top-right"><span class="pt-date" id="homeDate"></span><button class="tour-entry" id="homeTour" type="button">新手引导</button></div>
       </div>
       <div class="orb-wrap">
         <button class="orb" id="trainOrb" type="button" aria-label="开始训练">
@@ -81,20 +77,11 @@
         </div>
         <div class="hm-foot" id="homeHmFoot"></div>
       </div>
-      <div class="home-actions">
-        <button class="btn sm btn-block" id="homeGoRec">＋ 记录</button>
-      </div>
     </div>
   </section>
 
   <!-- ==================== 页面 01：训练 ==================== -->
   <section class="page page-record" id="pageRecord">
-    <div class="rp-top">
-      <div>
-        <div class="page-title">训练</div>
-        <div class="page-desc wide-only">排好今天的动作，逐组记录</div>
-      </div>
-    </div>
     <div id="recTrainWrap">
     <div class="report-shell sub-zone"><div class="body-slot" id="slotRecord"><div class="md" id="reportBody"></div></div></div>
     </div>
@@ -102,13 +89,7 @@
 
   <!-- ==================== 页面 02：分析（画像 / 规划 / 推演） ==================== -->
   <section class="page page-report" id="pageAgent" hidden>
-    <div class="rp-top">
-      <div>
-        <div class="page-title">分析</div>
-        <div class="page-desc wide-only">基于你的记录，看见自己的模式</div>
-      </div>
-      <button class="btn gen btn-block" id="btnGen">重新分析</button>
-    </div>
+    <div class="rp-top"><button class="btn gen btn-block" id="btnGen">重新分析</button></div>
     <div class="ask">
       <div class="ask-row">
         <input id="askInput" type="text" autocomplete="off" placeholder="问数据，如：本周练了几次">
@@ -132,21 +113,11 @@
 
   <!-- ==================== 页面 03：日志（日志 / 统计） ==================== -->
   <section class="page page-report" id="pageLog" hidden>
-    <div class="rp-top">
-      <div>
-        <div class="page-title">记录</div>
-        <div class="page-desc wide-only">一句话记下今天，自动识别类型与标签</div>
-      </div>
-    </div>
     <div class="log-input" id="logInput">
       <div class="rec-main">
 
-        <div class="quick">
-          <button class="btn ghost sm" id="btnDemo">载入示例</button>
-        </div>
-
         <div class="fast-box" id="fastBox">
-          <div class="fast-cap">快速记录</div>
+          <div class="fast-head"><div class="fast-cap">快速记录</div><button class="btn ghost sm demo" id="btnDemo">载入示例</button></div>
           <textarea id="fastInput" rows="3" placeholder="跑了 5 公里 / 加班到十点，有点焦虑 / 昨晚睡了 6 小时"></textarea>
           <div class="fast-chips" id="fastChips"></div>
           <form class="form" id="logForm">
@@ -201,11 +172,6 @@
 
   <!-- ==================== 页面 04：设置 ==================== -->
   <section class="page page-report" id="pageSetting" hidden>
-    <div class="rp-top">
-      <div>
-        <div class="page-title">我的</div>
-      </div>
-    </div>
     <div class="report-shell"><div class="body-slot" id="slotSet"></div></div>
   </section>
 
@@ -8214,7 +8180,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       const hmEl=$('homeHm'), monEl=$('homeHmMonths');
       const fit=()=>{
         const W=hmEl.clientWidth; if(!W||W<120) return;
-        const c=Math.floor((W-48)/13); if(c<9) return;
+        const c=Math.max(9,Math.min(30,Math.floor((W-48)/13)));
         hmEl.style.gridTemplateColumns='repeat(13,'+c+'px)';
         hmEl.style.gridTemplateRows='repeat(7,'+c+'px)';
         if(monEl) monEl.style.gridTemplateColumns='repeat(13,'+c+'px)';
@@ -9887,7 +9853,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(allDone){ try{ showTrainSummary(); }catch(e){} return; }
     openFocus();
   });
-  ['homeGoRec','homeGoAgent'].forEach((id,i)=>{ const b=$(id); if(b) b.addEventListener('click',()=>openPage(i?'agent':'record')); });
+  ['homeGoAgent'].forEach(id=>{ const b=$(id); if(b) b.addEventListener('click',()=>openPage('agent')); });
   (function bindHomeStat(){
     const w=document.getElementById('homeToday'); if(!w) return;
     w.addEventListener('click',(ev)=>{ const c=ev.target.closest('[data-hs="log"]'); if(c) openPage('record'); });
