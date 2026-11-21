@@ -7298,123 +7298,321 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     sh.hidden=false;
   }
   /* ---------- 统计面板 ---------- */
+  const ST_RANGE_KEY='selfagent_stats_range_v1';
+  let statsRange=(function(){
+    try{ const o=JSON.parse(localStorage.getItem(ST_RANGE_KEY)||'null');
+      if(o&&o.mode) return {mode:String(o.mode), start:o.start||null, end:o.end||null}; }catch(e){}
+    return {mode:'30', start:null, end:null};
+  })();
+  function stSaveRange(){ try{ localStorage.setItem(ST_RANGE_KEY, JSON.stringify(statsRange)); }catch(e){} }
+  const stDayOf=l=> l.date || dayKey(l.time);
+  function stBounds(){
+    const t=new Date(), end=dayKey(t);
+    if(statsRange.mode==='custom' && statsRange.start && statsRange.end){
+      let a=statsRange.start, b=statsRange.end; if(a>b){ const x=a; a=b; b=x; }
+      return {start:a, end:b};
+    }
+    const n=parseInt(statsRange.mode,10)||30;
+    const s2=new Date(t); s2.setDate(s2.getDate()-(n-1));
+    return {start:dayKey(s2), end:end};
+  }
+  function stPrev(start,end){
+    const a=new Date(start+'T00:00:00'), b=new Date(end+'T00:00:00');
+    const len=Math.round((b-a)/86400000)+1;
+    const pe=new Date(a); pe.setDate(pe.getDate()-1);
+    const ps=new Date(pe); ps.setDate(pe.getDate()-(len-1));
+    return {start:dayKey(ps), end:dayKey(pe)};
+  }
+  function stVolOf(r){
+    const gs=Array.isArray(r.groups)?r.groups:[];
+    if(gs.length) return gs.reduce((acc,g)=>acc+(g.warmup?0:(g.weight||0)*(g.reps||0)),0);
+    return (r.sets||0)*(r.reps||0)*(r.weight||0);
+  }
+  function stMinOf(c){
+    if(c.min!=null) return +c.min;
+    if(c.dur!=null) return +c.dur;
+    if(c.sec!=null) return (+c.sec)/60;
+    return 0;
+  }
+  function stMetrics(a,b){
+    const lg=logs.filter(l=>{ const k=stDayOf(l); return k>=a && k<=b; });
+    const rs=(train.records||[]).filter(r=>r.date && r.date>=a && r.date<=b);
+    const cs=(train.cardio||[]).filter(c=>c.date && c.date>=a && c.date<=b && !c.skipped);
+    const done=cs.filter(c=>c.done!==false);
+    const sc=lg.map(l=>+l.score).filter(v=>v>0);
+    const md=lg.map(l=>+l.mood).filter(v=>v>0);
+    return {
+      lg, rs, cs:done, count:lg.length,
+      sets: rs.reduce((acc,r)=>acc+(r.sets||0),0),
+      vol: Math.round(rs.reduce((acc,r)=>acc+stVolOf(r),0)),
+      mins: Math.round(done.reduce((acc,c)=>acc+stMinOf(c),0)),
+      avg: sc.length? sc.reduce((x,y)=>x+y,0)/sc.length : null,
+      mood: md.length? md.reduce((x,y)=>x+y,0)/md.length : null
+    };
+  }
+  function stDelta(cur, prev, kind){
+    if(cur==null) return {txt:'暂无同类数据', cls:'flat'};
+    if(prev==null) return {txt:'首次统计', cls:'flat'};
+    const d=cur-prev;
+    const tiny = kind==='avg' ? 0.05 : 0.5;
+    if(Math.abs(d)<tiny) return {txt:'→ 持平', cls:'flat'};
+    const num = kind==='avg' ? Math.abs(d).toFixed(1) : String(Math.abs(Math.round(d)));
+    return {txt:(d>0?'↑ ':'↓ ')+num, cls:(d>0?'up':'down')};
+  }
+  function stTodayLabel(k){
+    const d=new Date(k+'T00:00:00');
+    return '周'+'日一二三四五六'[d.getDay()]+' '+(d.getMonth()+1)+'/'+d.getDate();
+  }
+  function stHmColor(n){
+    if(!n) return 'rgba(255,255,255,.05)';
+    if(n===1) return '#11453B';
+    if(n<=3) return '#17765F';
+    if(n<=6) return '#21A986';
+    return '#3BDCB4';
+  }
+  function stNum(n){ return (Math.round(n)).toLocaleString('en-US'); }
+  function stDrillSheet(title, items){
+    if(!items || !items.length){ return; }
+    const rows=items.slice(0,120).map(it=>{
+      const tm=it.time||'';
+      return '<div class="st-row"><span class="t">'+(tm||'—')+'</span>'+
+        (it.chip?it.chip:'')+
+        '<span class="tx">'+ENGINE.esc(it.text||'')+'</span></div>';
+    }).join('');
+    openMs('<div class="ms-title">'+ENGINE.esc(title)+'</div>'+
+      '<div class="st-list">'+rows+'</div>'+
+      (items.length>120?'<div class="st-note" style="margin-top:8px">仅显示前 120 条</div>':''),
+      {cls:'stats-drill', label:title});
+  }
+  function stLogItems(list){
+    return list.map(l=>{
+      const d=new Date(l.time);
+      const chip='<span class="ty" style="color:'+colorFor(l.type)+'">'+ENGINE.esc(typeLabel(l.type))+'</span>';
+      return {time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),
+        chip, text:(l.content||'')+((l.tags&&String(l.tags).trim())?' · '+l.tags:'')};
+    });
+  }
   function renderStatsPanel(){
     const body=$('reportBody');
     disposeCharts();
     if(typeof echarts==='undefined'){
-      body.innerHTML=`<div class="intro-empty"><div class="big">图表加载中…</div><p>首次进入统计页需要下载图表库，完成后自动出现。</p></div>`;
+      body.innerHTML='<div class="intro-empty"><div class="big">图表加载中…</div><p>首次进入统计页需要下载图表库，完成后自动出现。</p></div>';
       ensureEcharts(()=>{ if($('reportBody')) renderStatsPanel(); },
-        ()=>{ body.innerHTML=`<div class="intro-empty"><div class="big">图表库未加载</div><p>图表需要联网加载 ECharts，请检查网络后重试。</p></div>`; });
+        ()=>{ body.innerHTML='<div class="intro-empty"><div class="big">图表库未加载</div><p>图表需要联网加载 ECharts，请检查网络后重试。</p></div>'; });
       return;
     }
-    const d30=new Date(); d30.setDate(d30.getDate()-29);
-    gantt.start = gantt.start || dayKey(d30);
-    gantt.end   = gantt.end   || dayKey(new Date());
-    body.innerHTML=`
-      <div class="filter-bar">
-        <span class="tag">甘特区间</span>
-        <input type="date" id="gStart" value="${gantt.start}">
-        <span style="color:var(--tx3)">至</span>
-        <input type="date" id="gEnd" value="${gantt.end}">
-        <button class="btn ghost sm" id="gToday">今天</button>
-        <button class="btn ghost sm" id="gWeek">近7天</button>
-        <span class="fcount" id="gCount"></span>
-      </div>
-      <div class="chart-box gantt-box"><h3>时间戳甘特图 · 记录在一天内的分布</h3><div class="chart-canvas" id="cGantt"></div></div>
-      <div class="chart-grid">
-        <div class="chart-box"><h3>类型分布</h3><div class="chart-canvas" id="cType"></div></div>
-        <div class="chart-box"><h3>标签频次 Top10</h3><div class="chart-canvas" id="cTag"></div></div>
-        <div class="chart-box"><h3>每日平均精力（近30天）</h3><div class="chart-canvas" id="cScore"></div></div>
-        <div class="chart-box"><h3>每日记录数（近30天）</h3><div class="chart-canvas" id="cCount"></div></div>
-      </div>`;
-    $('gStart').onchange=e=>{gantt.start=e.target.value; if(gantt.start>gantt.end) gantt.start=gantt.end; $('gStart').value=gantt.start; renderGantt();};
-    $('gEnd').onchange=e=>{gantt.end=e.target.value; if(gantt.end<gantt.start) gantt.end=gantt.start; $('gEnd').value=gantt.end; renderGantt();};
-    $('gToday').onclick=()=>{ const t=dayKey(new Date()); gantt.start=t; gantt.end=t; $('gStart').value=t; $('gEnd').value=t; renderGantt(); };
-    $('gWeek').onclick=()=>{ const t=dayKey(new Date()); const s=new Date(); s.setDate(s.getDate()-6); gantt.start=dayKey(s); gantt.end=t; $('gStart').value=gantt.start; $('gEnd').value=gantt.end; renderGantt(); };
-    const typeData = settings.types.map(t=>({name:t.label, value:logs.filter(l=>l.type===t.key).length, itemStyle:{color:colorFor(t.key)}})).filter(x=>x.value>0);
-    makeChart('cType',{
-      tooltip:{trigger:'item',formatter:'{b}: {c} 条 ({d}%)'},
-      legend:{bottom:0,textStyle:{color:'#8695A5'}},
-      series:[{type:'pie',radius:['42%','68%'],center:['50%','44%'], data:typeData.length?typeData:[{name:'暂无数据',value:1,itemStyle:{color:'#26323F'}}], label:{color:'#E4EDF4'}}]
-    });
-    const tagCount={};
-    logs.forEach(l=>{ (l.tags||'').split(/[,，、\s]+/).filter(Boolean).forEach(t=>{tagCount[t]=(tagCount[t]||0)+1;}); });
-    const top=Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,10).reverse();
-    makeChart('cTag',{
-      tooltip:{trigger:'axis'},grid:{left:70,right:20,top:10,bottom:20},
-      xAxis:{type:'value',splitLine:{lineStyle:{color:'#1A2431'}}},
-      yAxis:{type:'category',data:top.map(x=>x[0]),axisLabel:{color:'#E4EDF4'}},
-      series:[{type:'bar',data:top.map(x=>x[1]),itemStyle:{color:'#3DDCBF'},barWidth:14}]
-    });
-    const d0=new Date(); d0.setDate(d0.getDate()-29);
-    const days=[...Array(30)].map((_,i)=>{const dt=new Date(d0);dt.setDate(d0.getDate()+i);return dayKey(dt);});
-    const byDay={}; days.forEach(k=>byDay[k]=[]);
-    logs.forEach(l=>{ if(dayKey(l.time) in byDay) byDay[dayKey(l.time)].push(l.score); });
-    const scores=days.map(k=>{const a=byDay[k];return a.length?+(a.reduce((s,x)=>s+x,0)/a.length).toFixed(1):null;});
-    const counts=days.map(k=>byDay[k].length);
-    makeChart('cScore',{
-      tooltip:{trigger:'axis'},grid:{left:40,right:16,top:16,bottom:60},
-      xAxis:{type:'category',data:days.map(k=>k.slice(5)),axisLabel:{color:'#8695A5',interval:4}},
-      yAxis:{type:'value',min:1,max:5,splitLine:{lineStyle:{color:'#1A2431'}}},
-      series:[{type:'line',data:scores,smooth:true,symbol:'circle',symbolSize:5,connectNulls:false,lineStyle:{color:'#5FD3A0',width:2},itemStyle:{color:'#5FD3A0'},areaStyle:{color:'rgba(95,211,160,.14)'}}]
-    });
-    makeChart('cCount',{
-      tooltip:{trigger:'axis'},grid:{left:40,right:16,top:16,bottom:60},
-      xAxis:{type:'category',data:days.map(k=>k.slice(5)),axisLabel:{color:'#8695A5',interval:4}},
-      yAxis:{type:'value',minInterval:1,splitLine:{lineStyle:{color:'#1A2431'}}},
-      series:[{type:'bar',data:counts,itemStyle:{color:'#6D8CFF'},barWidth:'55%'}]
-    });
-    renderGantt();
-  }
-  function renderGantt(){
-    if(typeof echarts==='undefined') return;
-    const el=document.getElementById('cGantt'); if(!el) return;
-    const s=new Date(gantt.start+'T00:00:00');
-    const e=new Date(gantt.end+'T00:00:00');
-    if(isNaN(s)||isNaN(e)||s>e) return;
-    const days=[];
-    for(const dt=new Date(s); dt<=e; dt.setDate(dt.getDate()+1)) days.push(dayKey(dt));
-    if(days.length>120){ days.length=120; }
-    const byDay={}; days.forEach(k=>byDay[k]=[]);
-    logs.forEach(l=>{ const k=dayKey(l.time); if(byDay[k]){ const d=new Date(l.time); byDay[k].push({x:d.getHours()+d.getMinutes()/60, type:l.type}); } });
-    const dates=[...days].reverse();
-    const data=dates.map(d=>({ records: byDay[d].sort((a,b)=>a.x-b.x) }));
-    const gData=data;
-    const total=days.reduce((acc,d)=>acc+byDay[d].length,0);
-    const gc=$('gCount'); if(gc) gc.textContent = `区间 ${days.length} 天 · ${total} 条记录`;
-    if(ganttChart){ try{ ganttChart.dispose(); }catch(e){} }
-    ganttChart=echarts.init(el);
-    ganttChart.setOption({
-      tooltip:{trigger:'item',formatter:p=>{
-        const rec=(gData[p.dataIndex]||{}).records||[];
-        if(!rec.length) return `${dates[p.dataIndex] || ''}<br/>无记录`;
-        return `${dates[p.dataIndex]} · ${rec.length} 条<br/>${rec.map(r=>typeLabel(r.type)+' @ '+String(Math.floor(r.x)).padStart(2,'0')+':'+String(Math.floor((r.x%1)*60)).padStart(2,'0')).join('<br/>')}`;
-      }},
-      grid:{left:96,right:28,top:18,bottom:36},
-      xAxis:{type:'value',min:0,max:24,interval:4,axisLabel:{formatter:v=>`${v}时`,color:'#8695A5'},splitLine:{lineStyle:{color:'#1A2431'}}},
-      yAxis:{type:'category',data:dates,axisLabel:{color:'#8695A5',fontSize:11}},
-      series:[{
-        type:'custom', data:data,
-        renderItem:(params,api)=>{
-          const rec=(gData[params.dataIndex]||{}).records||[];
-          if(!rec.length) return {type:'group',children:[]};
-          const topY=api.coord([0,params.dataIndex])[1];
-          const botY=api.coord([0,params.dataIndex+1])[1];
-          const rowH=Math.abs(botY-topY);
-          const n=rec.length, children=[];
-          rec.forEach((r,i)=>{
-            const px=api.coord([r.x,params.dataIndex]);
-            const slotH=Math.max((rowH-4)/n, 2);
-            const y=topY + (i+0.5)*rowH/n;
-            children.push({type:'rect', shape:{x:px[0]-4, y:y-slotH/2, width:8, height:slotH}, style:{fill:colorFor(r.type), opacity:.85, r:2}});
-          });
-          return {type:'group',children};
-        }
-      }]
-    });
-    chartInsts.push(ganttChart);
-  }
+    const b0=stBounds(), b1=stPrev(b0.start,b0.end);
+    const cur=stMetrics(b0.start,b0.end), prev=stMetrics(b1.start,b1.end);
+    const DAYS=(function(){
+      const a=new Date(b0.start+'T00:00:00'), z=new Date(b0.end+'T00:00:00');
+      const out=[]; for(const d=new Date(a); d<=z; d.setDate(d.getDate()+1)) out.push(dayKey(d));
+      return out;
+    })();
+    if($('stStart')&&$('stEnd')&&statsRange.mode==='custom'){}
 
+    body.innerHTML=
+      '<div class="st-seg" id="stSeg">'+
+        [['7','近7天'],['30','近30天'],['90','近90天'],['custom','自定义']].map(function(x){
+          return '<button type="button" data-stm="'+x[0]+'" class="'+(statsRange.mode===x[0]?'on':'')+'">'+x[1]+'</button>';
+        }).join('')+
+      '</div>'+
+      '<div class="st-custom" id="stCustom"'+(statsRange.mode==='custom'?'':' hidden')+'>'+
+        '<input type="date" id="stStart" value="'+b0.start+'">'+
+        '<span class="st-to">至</span>'+
+        '<input type="date" id="stEnd" value="'+b0.end+'">'+
+        '<span class="fcount" id="stSpan">'+DAYS.length+' 天</span>'+
+      '</div>'+
+      '<div class="st-kpi" id="stKpi"></div>'+
+      '<div class="st-stack" id="stStack"></div>';
+
+    document.querySelectorAll('#stSeg button').forEach(function(btn){
+      btn.onclick=function(){
+        statsRange.mode=btn.dataset.stm;
+        if(statsRange.mode==='custom'&&(!statsRange.start||!statsRange.end)){ const z=stBounds(); statsRange.start=z.start; statsRange.end=z.end; }
+        stSaveRange(); renderStatsPanel();
+      };
+    });
+    if($('stStart')) $('stStart').onchange=function(e){ statsRange.start=e.target.value; statsRange.mode='custom'; stSaveRange(); renderStatsPanel(); };
+    if($('stEnd')) $('stEnd').onchange=function(e){ statsRange.end=e.target.value; statsRange.mode='custom'; stSaveRange(); renderStatsPanel(); };
+
+    /* --- KPI 读数行 --- */
+    const dE=stDelta(cur.avg, prev.avg, 'avg'), dC=stDelta(cur.count, prev.count, 'n'),
+          dS=stDelta(cur.sets, prev.sets, 'n'), dM=stDelta(cur.mins, prev.mins, 'n');
+    $('stKpi').innerHTML=
+      '<div class="k"><div class="k-l">平均精力</div><div class="k-v">'+(cur.avg!=null?cur.avg.toFixed(1):'—')+'<em>/5</em></div><div class="k-d '+dE.cls+'">'+dE.txt+'</div></div>'+
+      '<div class="k"><div class="k-l">记录</div><div class="k-v">'+stNum(cur.count)+'<em>条</em></div><div class="k-d '+dC.cls+'">'+dC.txt+'</div></div>'+
+      '<div class="k"><div class="k-l">训练</div><div class="k-v">'+stNum(cur.sets)+'<em>组</em></div><div class="k-d '+dS.cls+'">'+dS.txt+'</div></div>'+
+      '<div class="k"><div class="k-l">有氧</div><div class="k-v">'+stNum(cur.mins)+'<em>分钟</em></div><div class="k-d '+dM.cls+'">'+dM.txt+'</div></div>';
+
+    const stack=$('stStack');
+    if(!cur.count && !cur.rs.length && !cur.cs.length){
+      stack.innerHTML=emptyState('note','该时段还没有记录','去记一笔','stgo');
+      const g=stack.querySelector('[data-stgo]'); if(g) g.onclick=function(){ goTab('logs'); };
+      return;
+    }
+
+    /* --- 1 精力 & 情绪 --- */
+    const perDay={}; DAYS.forEach(function(k){ perDay[k]={s:[],m:[]}; });
+    cur.lg.forEach(function(l){ const k=stDayOf(l); if(perDay[k]){ if(+l.score>0) perDay[k].s.push(+l.score); if(+l.mood>0) perDay[k].m.push(+l.mood); } });
+    const eData=DAYS.map(function(k){ const a=perDay[k].s; return a.length? +(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1):null; });
+    const mData=DAYS.map(function(k){ const a=perDay[k].m; return a.length? +(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1):null; });
+    const lowIdx=(function(){ let idx=-1, v=99; eData.forEach(function(v0,i2){ if(v0!=null&&v0<v){ v=v0; idx=i2; } }); return idx; })();
+    const corr=(function(){ try{ const c=corrTrainingEnergy(); if(c&&c.n>=3) return '训练日次日精力 '+(c.diff>=0?'+':'')+c.diff.toFixed(1); }catch(e){} return ''; })();
+    const noteE=(cur.avg!=null?('平均精力 <b>'+cur.avg.toFixed(1)+'</b>'):'暂无精力记录')+
+      (lowIdx>=0?('，最低 '+stTodayLabel(DAYS[lowIdx])+' <b>'+eData[lowIdx].toFixed(1)+'</b>'):'')+
+      (cur.mood!=null?(' · 平均情绪 <b>'+cur.mood.toFixed(1)+'</b>'):'')+
+      (corr?(' · '+corr):'');
+
+    stack.innerHTML=
+      '<div class="chart-box"><h3>精力 & 情绪</h3><div class="st-note">'+noteE+'</div><div class="chart-canvas" id="cMood"></div></div>'+
+      '<div class="chart-box"><h3>记录时钟 · 星期 × 时段</h3><div class="st-note" id="noteClock">—</div><div class="chart-canvas st-clock" id="cClock"></div></div>'+
+      '<div class="chart-box"><h3>构成 · 类型与标签</h3><div class="st-note" id="noteComp">—</div><div class="chart-canvas st-comp" id="cComp"></div></div>'+
+      '<div class="chart-box"><h3>训练容量 & 有氧</h3><div class="st-note" id="noteLoad">—</div><div class="chart-canvas" id="cLoad"></div></div>';
+
+    const xInt=Math.max(1,Math.ceil(DAYS.length/8));
+    makeChart('cMood',{
+      tooltip:{trigger:'axis'},
+      legend:{right:6,top:0,itemWidth:10,itemHeight:10,textStyle:{color:'#8695A5',fontSize:11}},
+      grid:{left:30,right:12,top:26,bottom:26},
+      xAxis:{type:'category',data:DAYS.map(k=>k.slice(5)),axisLabel:{color:'#8695A5',fontSize:10,interval:xInt-1},axisLine:{lineStyle:{color:'#1A2431'}}},
+      yAxis:{type:'value',min:1,max:5,splitLine:{lineStyle:{color:'#1A2431'}},axisLabel:{color:'#8695A5',fontSize:10}},
+      series:[
+        {name:'精力',type:'line',data:eData,smooth:true,symbol:'circle',symbolSize:4,connectNulls:true,
+          lineStyle:{color:'#5FD3A0',width:2},itemStyle:{color:'#5FD3A0'},areaStyle:{color:'rgba(95,211,160,.12)'}},
+        {name:'情绪',type:'line',data:mData,smooth:true,symbol:'circle',symbolSize:4,connectNulls:true,
+          lineStyle:{color:'#6D8CFF',width:1.6},itemStyle:{color:'#6D8CFF'}}
+      ]
+    });
+
+    /* --- 2 记录时钟热力 --- */
+    const hmCnt={}, hourTot=new Array(24).fill(0);
+    cur.lg.forEach(function(l){
+      const d=new Date(l.time); if(isNaN(d)) return;
+      const wd=(d.getDay()+6)%7, h=d.getHours();
+      hmCnt[wd+'_'+h]=(hmCnt[wd+'_'+h]||0)+1; hourTot[h]++;
+    });
+    const hmData=[];
+    for(let wd=0;wd<7;wd++) for(let h=0;h<24;h++){
+      const n=hmCnt[wd+'_'+h]||0;
+      hmData.push({value:[h,wd,n], itemStyle:{color:stHmColor(n), borderRadius:2}});
+    }
+    const topH=hourTot.map((n,h)=>({h,n})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n).slice(0,3);
+    let clockNote='该时段还没有记录';
+    if(topH.length){
+      const total=hourTot.reduce((a,b)=>a+b,0);
+      const hs=topH.map(x=>x.h).sort((a,b)=>a-b);
+      const span=(hs[hs.length-1]-hs[0]<=8);
+      const pct=Math.round(topH.reduce((a,x)=>a+x.n,0)/total*100);
+      clockNote='记录集中在 <b>'+(span?(hs[0]+'–'+hs[hs.length-1]+' 点'):(hs.map(h=>h+' 点').join('、')))+'</b>（占 '+pct+'%）';
+    }
+    const noteClock=$('noteClock'); if(noteClock) noteClock.innerHTML=clockNote;
+    const clockChart=makeChart('cClock',{
+      tooltip:{formatter:function(p){
+        const v=p.value; if(!v) return '';
+        return '周'+'一二三四五六日'[v[1]]+' '+String(v[0]).padStart(2,'0')+'–'+String(v[0]+1).padStart(2,'0')+' 点<br/>'+v[2]+' 条记录';
+      }},
+      grid:{left:34,right:8,top:8,bottom:22},
+      xAxis:{type:'category',data:[...Array(24)].map((_,h)=>h),splitArea:{show:false},axisLabel:{color:'#8695A5',fontSize:9,interval:2},axisLine:{lineStyle:{color:'#1A2431'}},axisTick:{show:false}},
+      yAxis:{type:'category',inverse:true,data:['一','二','三','四','五','六','日'],axisLabel:{color:'#8695A5',fontSize:10},axisLine:{lineStyle:{color:'#1A2431'}},axisTick:{show:false}},
+      series:[{type:'heatmap',data:hmData,itemStyle:{borderColor:'rgba(0,0,0,0)',borderWidth:2}}]
+    });
+    if(clockChart){
+      clockChart.on('click',function(p){
+        const h=p.value[0], wd=p.value[1], n=p.value[2];
+        if(!n) return;
+        const sub=cur.lg.filter(function(l){ const d=new Date(l.time); return ((d.getDay()+6)%7)===wd && d.getHours()===h; });
+        stDrillSheet('周'+'一二三四五六日'[wd]+' '+String(h).padStart(2,'0')+'–'+String(h+1).padStart(2,'0')+' 点 · '+sub.length+' 条', stLogItems(sub));
+      });
+    }
+
+    /* --- 3 构成（类型 + 标签 横条） --- */
+    const seenType={};
+    cur.lg.forEach(function(l){ if(l.type) seenType[l.type]=(seenType[l.type]||0)+1; });
+    const typeRows=settings.types.map(function(t){
+      return {key:t.key, label:t.label, n:seenType[t.key]||0, color:colorFor(t.key)};
+    });
+    Object.keys(seenType).forEach(function(k){
+      if(!settings.types.some(function(t){ return t.key===k; })){
+        typeRows.push({key:k, label:'其他', n:seenType[k], color:colorFor(k)});
+      }
+    });
+    const typeList=typeRows.filter(function(x){ return x.n>0; }).sort(function(a,b){ return b.n-a.n; });
+    const tagCnt={};
+    cur.lg.forEach(function(l){ String(l.tags||'').split(/[,，、\s]+/).filter(Boolean).forEach(function(t){ tagCnt[t]=(tagCnt[t]||0)+1; }); });
+    const tagRows=Object.keys(tagCnt).sort((a,b)=>tagCnt[b]-tagCnt[a]).slice(0,5).map(function(t){ return {label:t, n:tagCnt[t], color:'#6D8CFF'}; });
+    const catNames=typeList.map(x=>x.label).concat(tagRows.map(x=>'#'+x.label));
+    const compChart=makeChart('cComp',{
+      tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:function(ps){
+        if(!ps.length) return '';
+        const p=ps[0], i0=p.dataIndex, tot=cur.count||1;
+        const name=catNames[i0], val=p.value||0;
+        return name+': <b>'+val+'</b> 条（'+Math.round(val/tot*100)+'%）';
+      }},
+      grid:{left:76,right:38,top:10,bottom:8},
+      xAxis:{type:'value',splitLine:{lineStyle:{color:'#1A2431'}},axisLabel:{color:'#8695A5',fontSize:10}},
+      yAxis:{type:'category',data:catNames,inverse:true,axisLabel:{color:'#C9D6E2',fontSize:11},axisLine:{show:false},axisTick:{show:false}},
+      series:[
+        {name:'类型',type:'bar',stack:'all',barWidth:11,label:{show:true,position:'right',distance:4,color:'#8695A5',fontSize:10},data:typeList.map((x,i2)=>({value:x.n,itemStyle:{color:x.color,borderRadius:[3,3,3,3]}})).concat(tagRows.map(()=>null))},
+        {name:'标签',type:'bar',stack:'all',barWidth:11,label:{show:true,position:'right',distance:4,color:'#8695A5',fontSize:10},data:typeList.map(()=>null).concat(tagRows.map(x=>({value:x.n,itemStyle:{color:x.color,borderRadius:[3,3,3,3]}})))}
+      ]
+    });
+    const noteComp=$('noteComp');
+    if(noteComp) noteComp.innerHTML='类型 <b>'+typeList.length+'</b> 类 · 标签 <b>'+tagRows.length+'</b> 个，合计 <b>'+cur.count+'</b> 条记录';
+    if(compChart){
+      compChart.on('click',function(p){
+        const idx=p.dataIndex;
+        if(idx<typeList.length){
+          const tr2=typeList[idx];
+          stDrillSheet('类型 · '+tr2.label+'（'+tr2.n+' 条）', stLogItems(cur.lg.filter(l=>l.type===tr2.key)));
+        }else{
+          const tg=tagRows[idx-typeList.length]; if(!tg) return;
+          stDrillSheet('标签 · '+tg.label+'（'+tg.n+' 条）', stLogItems(cur.lg.filter(l=>String(l.tags||'').indexOf(tg.label)>=0)));
+        }
+      });
+    }
+
+    /* --- 4 训练容量 & 有氧 --- */
+    const byWeek=DAYS.length>45;
+    const buckets={}, order=[];
+    DAYS.forEach(function(k){
+      let key=k;
+      if(byWeek){
+        const d=new Date(k+'T00:00:00'); const w=new Date(d); w.setDate(d.getDate()-((d.getDay()+6)%7));
+        key=dayKey(w);
+      }
+      if(!buckets[key]){ buckets[key]={vol:0,min:0,start:key}; order.push(key); }
+    });
+    cur.rs.forEach(function(r){
+      let key=r.date;
+      if(byWeek){ const d=new Date(r.date+'T00:00:00'); const w=new Date(d); w.setDate(d.getDate()-((d.getDay()+6)%7)); key=dayKey(w); }
+      if(buckets[key]) buckets[key].vol+=stVolOf(r);
+    });
+    cur.cs.forEach(function(c){
+      let key=c.date;
+      if(byWeek){ const d=new Date(c.date+'T00:00:00'); const w=new Date(d); w.setDate(d.getDate()-((d.getDay()+6)%7)); key=dayKey(w); }
+      if(buckets[key]) buckets[key].min+=stMinOf(c);
+    });
+    const loadLabels=order.map(k=>byWeek?('周 '+k.slice(5)):k.slice(5));
+    const volData=order.map(k=>Math.round(buckets[k].vol));
+    const minData=order.map(k=>Math.round(buckets[k].min));
+    const noteLoad=$('noteLoad');
+    const dV=stDelta(cur.vol, prev.vol, 'n');
+    if(noteLoad) noteLoad.innerHTML='容量 <b>'+stNum(cur.vol)+'</b> kg（'+dV.txt+'）'+(cur.mins?(' · 有氧 <b>'+stNum(cur.mins)+'</b> 分钟'):'')+(byWeek?' · 按周汇总':'');
+    makeChart('cLoad',{
+      tooltip:{trigger:'axis'},
+      legend:{right:6,top:0,itemWidth:10,itemHeight:10,textStyle:{color:'#8695A5',fontSize:11}},
+      grid:{left:44,right:38,top:44,bottom:26},
+      xAxis:{type:'category',data:loadLabels,axisLabel:{color:'#8695A5',fontSize:10,interval:Math.max(0,Math.ceil(loadLabels.length/8)-1)},axisLine:{lineStyle:{color:'#1A2431'}}},
+      yAxis:[
+        {type:'value',name:'kg',nameTextStyle:{color:'#8695A5',fontSize:10},splitLine:{lineStyle:{color:'#1A2431'}},axisLabel:{color:'#8695A5',fontSize:10}},
+        {type:'value',name:'分',nameTextStyle:{color:'#8695A5',fontSize:10},splitLine:{show:false},axisLabel:{color:'#8695A5',fontSize:10}}
+      ],
+      series:[
+        {name:'容量',type:'bar',data:volData,barWidth:'44%',barGap:'18%',itemStyle:{color:'rgba(61,220,191,.45)',borderRadius:[3,3,0,0]}},
+        {name:'有氧',type:'bar',yAxisIndex:1,data:minData,barWidth:'30%',itemStyle:{color:'rgba(109,140,255,.55)',borderRadius:[3,3,0,0]}}
+      ]
+    });
+  }
   /* ---------- 设置面板（类型 + 标签 + 档案） ---------- */
   const PROFILE_FIELDS = [
     {k:'nick', label:'称呼 / 昵称', type:'text'},
