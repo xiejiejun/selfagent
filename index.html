@@ -4868,7 +4868,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       ${hist}
       ${e.img?`<div class="ex-photo-wrap"><img class="ex-photo" src="${e.img}" alt="${ENGINE.esc(e.n)}" data-shot="${e.id}"></div>${e.imgCap?`<div class="ex-photo-cap">${ENGINE.esc(e.imgCap)}</div>`:''}`:''}
       ${e.en?`<div class="ex-en">${ENGINE.esc(e.en)}</div>`:''}
-      ${e.g?`<div class="ex-media"><div class="gif-ph">动画加载中…</div><img class="ex-gif" alt="${ENGINE.esc(e.n)} 动画"></div>`:''}
+      ${e.g?`<div class="ex-media"><div class="gif-ph">演示加载中…</div><img class="ex-gif" alt="${ENGINE.esc(e.n)} 动画"></div>`:''}
       <h4>动作要领</h4><ol>${(e.s||[]).map(x=>`<li>${ENGINE.esc(x)}</li>`).join('')}</ol>
       ${e.t?`<h4>目标肌群</h4><div class="tip">${ENGINE.esc(e.t)}</div>`:''}
     </div>`;
@@ -4997,7 +4997,10 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     if(!root) return;
     const img=root.querySelector('.ex-gif');
     const ph=root.querySelector('.gif-ph');
-    if(img && e.g){ trLoadGif(img, e.g, ph); }
+    const box=root.querySelector('.ex-media');
+    let mounted=false;
+    if(box && gymClipOf(e.id)){ mounted=trMountClip(box, e, ph); }
+    if(!mounted && img && e.g){ trLoadGif(img, e.g, ph); }
     root.querySelectorAll('[data-sheet-add]').forEach(b=>b.onclick=()=>showAddPlan(b.dataset.sheetAdd, root));
     root.querySelectorAll('[data-sheet-fav]').forEach(b=>b.onclick=()=>{
       trToggleFav(b.dataset.sheetFav);
@@ -5079,6 +5082,7 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
     });
   }
   function openExSheet(e){
+  window.__openEx = (...a)=>openExSheet(...a);
     let sh=document.getElementById('exSheet');
     if(!sh){
       sh=document.createElement('div');
@@ -5096,8 +5100,8 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
       window.__exSheetClose=closeEx;
     }
     sh.querySelector('#exSheetBody').innerHTML=detailBodyHtml(e);
-    bindDetail(sh.querySelector('#exSheetBody'), e);
     sh.classList.add('on');
+    bindDetail(sh.querySelector('#exSheetBody'), e);
     try{ ensureSelVisible(); }catch(e){}
   }
   function trSelect(id){
@@ -5120,6 +5124,55 @@ return { analyze, genPersona, genPlan, genTrend, genEmpty, esc };
   const GIF_PRI=['https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/','https://fastly.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/'];
   const GIF_ALT=['https://gcore.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/','https://testingcf.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main/videos/','https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/'];
   const GIF_OK={};
+  /* ---------- openGym 示范短片（本地 _openGym 同步库 / 线上 CDN 回退） ---------- */
+  const GYM_BASES = (location.protocol === 'file:')
+    ? ['_openGym/media/clip/']
+    : ['https://cdn.jsdelivr.net/gh/DuarteSantos8/openGym@main/catalogue/media/clip/',
+       'https://raw.githubusercontent.com/DuarteSantos8/openGym/main/catalogue/media/clip/'];
+  const gymClipOf = id => (/^\d{4}$/.test(String(id||'')) ? String(id) : '');
+  function trClipErr(v, box, e, ph){
+    let bi = (parseInt(v.dataset.bi, 10) || 0) + 1;
+    if(bi < GYM_BASES.length){
+      v.dataset.bi = String(bi);
+      v.src = GYM_BASES[bi] + v.dataset.vid + '.mp4';
+      try{ v.load(); v.play().catch(function(){}); }catch(err){}
+      return;
+    }
+    const im = document.createElement('img');
+    im.className = 'ex-gif'; im.alt = '';
+    if(v.parentElement) v.parentElement.replaceChild(im, v);
+    if(e.g){ try{ trLoadGif(im, e.g, ph); }catch(err){} }
+    else { im.remove(); if(ph) ph.textContent = '该动作暂无演示'; }
+  }
+  function trMountClip(box, e, ph){
+    const id = gymClipOf(e.id);
+    if(!box || !id) return false;
+    const v = document.createElement('video');
+    v.className = 'ex-gif ex-vid';
+    v.muted = true; v.loop = true; v.autoplay = true; v.preload = 'auto';
+    v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); v.setAttribute('loop', '');
+    v.style.opacity = '0';
+    v.dataset.vid = id; v.dataset.bi = '0'; v.dataset.gif = e.g || '';
+    const reveal = function(){
+      if(v.videoWidth > 0 || v.readyState >= 2){ v.style.opacity = '1'; const p = box.querySelector('.gif-ph'); if(p) p.remove(); }
+    };
+    ['loadedmetadata','loadeddata','canplay','playing'].forEach(function(ev){ v.addEventListener(ev, reveal); });
+    v.addEventListener('error', function(){ trClipErr(v, box, e, ph); });
+    v.src = GYM_BASES[0] + id + '.mp4';
+    const im = box.querySelector('.ex-gif');
+    if(im) box.replaceChild(v, im); else box.appendChild(v);
+    v.play().catch(function(){});
+    setTimeout(reveal, 700);
+    v.onclick = function(){ trToggleClip(v); };
+    return true;
+  }
+  function trToggleClip(video){
+    if(!video) return;
+    try{
+      if(video.paused){ video.play().catch(()=>{}); video.classList.remove('paused'); }
+      else { video.pause(); video.classList.add('paused'); }
+    }catch(e){}
+  }
   function trLoadGif(el,file,placeholder,force){
     const ph=placeholder || $('exGifPh');
     if(!force && GIF_OK[file]){ if(ph) ph.remove(); el.src=GIF_OK[file]; el.style.opacity='1'; return; }
