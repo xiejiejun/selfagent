@@ -79,8 +79,25 @@ Page({
       }
     }).then(r => {
       const res = (r && r.result) || {};
-      this.setData({ asking: false, planText: res.ok ? (res.text || '') : '生成失败：' + (res.error || '') });
-    }).catch(e => this.setData({ asking: false, planText: '生成失败：' + (e && e.errMsg ? e.errMsg : e) }));
+      if (res.ok && res.text) this.setData({ asking: false, planText: res.text });
+      else this.fallbackPlan(parts, tops, res.error || '');
+    }).catch(e => this.fallbackPlan(parts, tops, e && e.errMsg ? e.errMsg : ''));
+  },
+
+  // AI 不可用（超时/未配 Key）时按记录本地生成一份可执行计划
+  fallbackPlan(parts, tops, err) {
+    const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    const days = Math.max(2, Math.min(6, this.data.days || 3));
+    const picks = (tops || []).slice(0, days).map(t => t.name);
+    const fill = ['深蹲', '卧推', '硬拉', '划船', '推举', '引体向上'];
+    while (picks.length < days) picks.push(fill[picks.length % fill.length]);
+    const per = Math.max(3, Math.round((this.data.setsPerDay || 12) / 3));
+    const lines = picks.map((n, i) => dayNames[i] + ' ' + n + ' ' + per + '组×8-12次');
+    const weight = (parts || []).slice(0, 2).map(p => p.part).join('/');
+    const head = '按每周 ' + days + ' 天安排：';
+    const tail = weight ? '注意：' + weight + '为主，隔天练、留 1 天休息。' : '注意：隔天练、留 1 天休息。';
+    this.setData({ asking: false, planText: head + lines.join('；') + '。' + tail + (err ? '' : '') });
+    wx.showToast({ title: 'AI 超时，已用本地计划', icon: 'none' });
   },
 
   subscribe() {
