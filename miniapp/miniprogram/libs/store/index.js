@@ -42,10 +42,25 @@ function dayKey(d) {
 
 module.exports = {
   KEYS, read, write, uid, dayKey,
+
   getLogs() { return read(KEYS.logs, []); },
-  setLogs(v) { return write(KEYS.logs, v); },
+  setLogs(v) { return write(KEYS.logs, Array.isArray(v) ? v : []); },
+
   getTrain() { return read(KEYS.train, {}); },
-  setTrain(v) { return write(KEYS.train, v); },
+  setTrain(v) { return write(KEYS.train, v || {}); },
+
   getTomb() { return read(KEYS.tomb, []); },
-  setTomb(v) { return write(KEYS.tomb, v); }
+  setTomb(v) { return write(KEYS.tomb, Array.isArray(v) ? v : []); },
+
+  getProfile() { return read(KEYS.profile, {}); },
+  setProfile(v) { return write(KEYS.profile, v || {}); },
+
+  getSettings() { return read(KEYS.settings, {}); },
+  setSettings(v) { return write(KEYS.settings, v || {}); },
+
+  getTheme() { return read(KEYS.theme, 'light'); },
+  setTheme(v) { return write(KEYS.theme, v || ''); },
+
+  getSyncState() { return read(KEYS.sync, {}); },
+  setSyncState(v) { return write(KEYS.sync, v || {}); }
 };

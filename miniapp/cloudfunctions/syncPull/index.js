@@ -1,27 +1,54 @@
+// 下行同步：按水位拉增量，返回统一结构给 libs/sync 做 LWW 合并。
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
 
+const PAGE = 1000;
+
+async function fetchAll(coll, where) {
+  const out = [];
+  let skip = 0;
+  for (let i = 0; i < 20; i++) {
+    const r = await db.collection(coll).where(where).skip(skip).limit(PAGE).get();
+    const rows = (r && r.data) || [];
+    out.push.apply(out, rows);
+    if (rows.length < PAGE) break;
+    skip += PAGE;
+  }
+  return out;
+}
+
 exports.main = async (event) => {
   const { OPENID } = cloud.getWXContext();
   const since = event.since || {};
-  const kinds = event.kinds || ['logs', 'train', 'profile', 'settings'];
-  const out = {};
+  const kinds = Array.isArray(event.kinds) && event.kinds.length ? event.kinds : ['logs', 'train', 'profile', 'settings'];
+  const data = {};
 
   for (const kind of kinds) {
-    const sinceTs = since[kind] || 0;
+    const sinceTs = Number(since[kind]) || 0;
+
     if (kind === 'profile' || kind === 'settings') {
-      const r = await db.collection('snapshots')
-        .where({ _openid: OPENID, kind, ts: _.gt(sinceTs) }).limit(1).get();
-      if (r.data && r.data.length) out[kind] = r.data[0].payload;
+      const rows = await fetchAll('snapshots', { _openid: OPENID, kind, ts: _.gt(sinceTs) });
+      if (rows.length) data[kind] = rows[rows.length - 1].payload;
       continue;
     }
-    const r = await db.collection('events')
-      .where({ _openid: OPENID, kind, ts: _.gt(sinceTs) }).limit(1000).get();
-    out[kind] = (r.data || []).map(d => Object.assign({}, d.payload, { ts: d.ts }));
+
+    if (kind === 'logs') {
+      const rows = await fetchAll('events', { _openid: OPENID, kind: 'logs', ts: _.gt(sinceTs) });
+      data.logs = rows.map(d => Object.assign({}, d.payload, { ts: d.ts }));
+      continue;
+    }
+
+    if (kind === 'train') {
+      const rows = await fetchAll('events', { _openid: OPENID, kind: 'train', ts: _.gt(sinceTs) });
+      data.train = {
+        records: rows.filter(d => d.sub !== 'cardio').map(d => Object.assign({}, d.payload, { ts: d.ts })),
+        cardio: rows.filter(d => d.sub === 'cardio').map(d => Object.assign({}, d.payload, { ts: d.ts }))
+      };
+    }
   }
 
   const st = await db.collection('sync_state').doc(OPENID).get().catch(() => ({ data: null }));
-  return { ok: true, serverTs: (st.data && st.data.ts) || Date.now(), data: out };
+  return { ok: true, serverTs: (st.data && st.data.ts) || Date.now(), data };
 };

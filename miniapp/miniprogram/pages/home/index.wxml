@@ -1,10 +1,40 @@
 <view class="page">
   <view class="head">
-    <text class="h1">今天</text>
-    <text class="muted">每日概览：KPIs、训练环、悬浮球</text>
+    <text class="hl">{{todayLabel}}</text>
+    <text class="hs">{{hasToday ? '今天已练 ' + today.done + '/' + today.total + ' 组' : '今天还没开始'}}</text>
   </view>
+
+  <view class="stats">
+    <view class="s"><text class="sv">{{today.volume}}</text><text class="st">总容量 kg</text></view>
+    <view class="s"><text class="sv">{{today.done}}/{{today.total}}</text><text class="st">组数</text></view>
+    <view class="s"><text class="sv">{{today.cardioMin}}′</text><text class="st">有氧</text></view>
+    <view class="s"><text class="sv">{{streak}}</text><text class="st">连续天</text></view>
+  </view>
+
   <view class="card">
-    <text class="row">本地已存记录：{{count}} 条</text>
-    <text class="muted">首页大圆按钮（orb）与 KPI 条（kpi-strip）在这里接入</text>
+    <view class="ch">
+      <text class="ct">近 7 天容量</text>
+      <text class="cm">峰值自动归一</text>
+    </view>
+    <view class="bars">
+      <view class="bwrap" wx:for="{{week}}" wx:key="label">
+        <view class="bar {{item.today ? 'on' : ''}}" style="height: {{item.h}}rpx"></view>
+        <text class="bl">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">今日动作</text></view>
+    <view class="names" wx:if="{{names.length}}">
+      <text class="nm" wx:for="{{names}}" wx:key="*this">{{item}}</text>
+    </view>
+    <text class="empty" wx:else>还没有动作，去训练页加一个</text>
+  </view>
+
+  <view class="acts">
+    <view class="act primary" bindtap="goTrain">开始训练</view>
+    <view class="act" bindtap="goRecord">写一句记录</view>
+    <view class="act" bindtap="goAgent">看分析</view>
   </view>
 </view>

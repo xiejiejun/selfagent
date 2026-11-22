@@ -1,4 +1,39 @@
-.page { padding: 32rpx 28rpx 60rpx; }
-.head { margin-bottom: 22rpx; }
-.h1 { display: block; font-size: 44rpx; font-weight: 600; margin-bottom: 8rpx; }
-.row { display: block; font-size: 28rpx; margin-bottom: 10rpx; }
+.page { padding: 28rpx 24rpx 60rpx; }
+.head { display: flex; align-items: center; justify-content: space-between; padding: 4rpx 6rpx 20rpx; }
+.hl { font-size: 40rpx; font-weight: 600; color: #14181A; }
+
+.ranges { display: flex; gap: 8rpx; }
+.rg { font-size: 22rpx; color: #5B6461; background: #fff; border: 1rpx solid #E3E8E6; border-radius: 10rpx; padding: 8rpx 16rpx; }
+.rg.on { color: #fff; background: #12A594; border-color: #12A594; }
+
+.stats { display: flex; gap: 10rpx; margin-bottom: 18rpx; }
+.s { flex: 1; background: #fff; border-radius: 16rpx; padding: 18rpx 14rpx; }
+.sv { display: block; font-size: 38rpx; font-weight: 600; color: #14181A; }
+.st { display: block; margin-top: 4rpx; font-size: 20rpx; color: #8A9490; }
+
+.card { background: #fff; border-radius: 20rpx; padding: 22rpx; margin-bottom: 18rpx; }
+.ch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14rpx; }
+.ct { font-size: 27rpx; font-weight: 600; color: #14181A; }
+.cm { font-size: 21rpx; color: #A9B3AF; }
+
+.prow { display: flex; align-items: center; gap: 12rpx; margin-bottom: 12rpx; }
+.pname { width: 72rpx; font-size: 24rpx; color: #5B6461; }
+.ptrack { flex: 1; height: 14rpx; background: #EEF2F1; border-radius: 8rpx; overflow: hidden; }
+.pfill { height: 100%; background: #3DDCBF; border-radius: 8rpx; }
+.pval { width: 96rpx; text-align: right; font-size: 20rpx; color: #8A9490; }
+
+.trow { display: flex; align-items: center; gap: 10rpx; padding: 12rpx 0; border-top: 1rpx solid #F3F6F5; }
+.trow:first-child { border-top: 0; }
+.tname { flex: 1; font-size: 25rpx; color: #14181A; }
+.tpart { font-size: 19rpx; color: #8A9490; background: #F4F7F6; border-radius: 8rpx; padding: 2rpx 8rpx; }
+.tval { font-size: 21rpx; color: #5B6461; }
+
+.empty { display: block; font-size: 23rpx; color: #A9B3AF; padding: 6rpx 0; }
+
+.ask .qbox { width: 100%; min-height: 96rpx; font-size: 26rpx; color: #14181A; line-height: 1.5; }
+.sugs { display: flex; flex-wrap: wrap; gap: 10rpx; margin: 10rpx 0 14rpx; }
+.sug { font-size: 21rpx; color: #12A594; background: #EFF9F7; border-radius: 8rpx; padding: 8rpx 14rpx; }
+.askbtn { height: 80rpx; line-height: 80rpx; text-align: center; background: #12A594; color: #fff; border-radius: 14rpx; font-size: 27rpx; }
+.askbtn.off { background: #C9D4D1; }
+.answer { margin-top: 14rpx; background: #F6F9F8; border-radius: 12rpx; padding: 16rpx; }
+.atext { font-size: 25rpx; color: #14181A; line-height: 1.65; }

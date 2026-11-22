@@ -1,0 +1,49 @@
+<view wx:if="{{visible}}" class="mask" catchtap="close" catchtouchmove="noop">
+  <view class="sheet" catchtap="noop">
+    <view class="grab"></view>
+
+    <view class="head">
+      <text class="title">{{isNew ? '添加动作' : (mode === 'cardio' ? '编辑有氧' : '编辑动作')}}</text>
+      <text class="x" catchtap="close">×</text>
+    </view>
+
+    <view class="body">
+      <view class="field">
+        <text class="label">动作名</text>
+        <input class="input" value="{{name}}" bindinput="onName" placeholder="动作名称" />
+      </view>
+
+      <block wx:if="{{mode === 'cardio'}}">
+        <view class="field">
+          <text class="label">时长（分钟）</text>
+          <input class="input" type="number" value="{{min}}" bindinput="onMin" />
+        </view>
+        <view class="field row">
+          <text class="label">已完成</text>
+          <switch checked="{{done}}" color="#12A594" bindchange="onCardioDone" />
+        </view>
+      </block>
+
+      <block wx:else>
+        <view class="rows">
+          <view class="row" wx:for="{{rows}}" wx:key="no">
+            <text class="no">{{item.no}}</text>
+            <input class="num" type="number" value="{{item.reps}}" data-i="{{index}}" bindinput="onReps" />
+            <text class="unit">次 ×</text>
+            <input class="num wide" type="digit" value="{{item.weight}}" data-i="{{index}}" bindinput="onWeight" />
+            <text class="unit">kg</text>
+            <text class="chip {{item.done ? 'on' : ''}}" data-i="{{index}}" catchtap="toggleDone">{{item.done ? '✓' : '待'}}</text>
+            <text class="chip del" data-i="{{index}}" catchtap="delSet">×</text>
+          </view>
+        </view>
+        <text class="ghost" catchtap="addSet">＋ 加一组</text>
+      </block>
+    </view>
+
+    <view class="actions">
+      <text class="btn ghost" catchtap="close">取消</text>
+      <text class="btn danger" catchtap="remove" wx:if="{{!isNew}}">删除</text>
+      <text class="btn primary" catchtap="save">保存</text>
+    </view>
+  </view>
+</view>

@@ -1,10 +1,76 @@
 <view class="page">
-  <view class="head">
-    <text class="h1">记录</text>
-    <text class="muted">快记 + 时间线</text>
+  <!-- 快记 -->
+  <view class="quick">
+    <textarea
+      class="qarea"
+      placeholder="今天怎么样？训练感受、体重、睡眠、状态都能记"
+      value="{{quickText}}"
+      bindinput="onQuickInput"
+      maxlength="600"
+      auto-height
+      show-confirm-bar="{{false}}"
+    />
+    <view class="qfoot">
+      <text class="qtip">训练动作在「训练」页记，这里记文字</text>
+      <text class="qs {{quickText ? '' : 'off'}}" bindtap="saveQuick">保存</text>
+    </view>
   </view>
-  <view class="card">
-    <text class="row">本地已存记录：{{count}} 条</text>
-    <text class="muted">时间线卡片与动作项增删改查在本页落地</text>
+
+  <!-- 时间线 -->
+  <view class="tl" wx:for="{{groups}}" wx:key="date" wx:for-item="grp">
+    <view class="dl">
+      <text class="dname">{{grp.label}}</text>
+      <text class="dnum">{{grp.logs.length}} 条</text>
+    </view>
+
+    <view class="tcard" wx:for="{{grp.logs}}" wx:for-item="lg" wx:key="id">
+      <view class="ch">
+        <text class="ltype {{lg.isTrain ? 'fit' : ''}}">{{lg.isTrain ? '训练' : '记录'}}</text>
+        <text class="ctime">{{lg.timeText}}</text>
+        <text class="cdel" wx:if="{{!lg.isTrain}}" data-id="{{lg.id}}" catchtap="delLog">删除</text>
+      </view>
+
+      <block wx:if="{{lg.isTrain}}">
+        <text class="csum">{{lg.summary}}</text>
+        <view class="ex {{row.open ? 'open' : ''}}" wx:for="{{lg.rows}}" wx:for-item="row" wx:key="key">
+          <view class="eh" data-id="{{lg.id}}" data-key="{{row.key}}" bindtap="toggleRow">
+            <text class="en">{{row.name}}</text>
+            <text class="el">{{row.line}}</text>
+            <text class="more" data-uid="{{row.uid}}" data-cardio="{{row.isCardio}}" data-date="{{grp.date}}" catchtap="editRow">⋯</text>
+          </view>
+          <view class="sets" wx:if="{{row.open}}">
+            <view class="set" wx:for="{{row.groups}}" wx:for-item="g" wx:key="no">
+              <text class="no">{{g.no}}</text>
+              <text class="st {{g.done ? 'on' : ''}}">{{g.txt}}</text>
+              <text class="mk">{{g.done ? '✓' : '待'}}</text>
+            </view>
+            <view class="set" wx:if="{{row.isCardio}}">
+              <text class="no">1</text>
+              <text class="st {{row.done ? 'on' : ''}}">有氧 · 时长训练</text>
+              <text class="mk">{{row.done ? '✓' : '待'}}</text>
+            </view>
+          </view>
+        </view>
+        <text class="addbtn" data-date="{{grp.date}}" bindtap="addToDay">＋ 添加动作</text>
+      </block>
+
+      <block wx:else>
+        <text class="ctext">{{lg.text}}</text>
+        <text class="ctag" wx:if="{{lg.tags}}">{{lg.tags}}</text>
+      </block>
+    </view>
+  </view>
+
+  <view class="empty" wx:if="{{!groups.length}}">
+    <text class="et">还没有记录</text>
+    <text class="es">先在上面写一句，或者去「训练」记动作</text>
   </view>
 </view>
+
+<train-editor
+  visible="{{editorVisible}}"
+  payload="{{payload}}"
+  bind:close="onEditorClose"
+  bind:confirm="onEditorConfirm"
+  bind:delete="onEditorDelete"
+/>

@@ -1,10 +1,47 @@
 <view class="page">
-  <view class="head">
-    <text class="h1">我的</text>
-    <text class="muted">设置 / 数据 / 同步</text>
-  </view>
   <view class="card">
-    <text class="row">本地已存记录：{{count}} 条</text>
-    <text class="muted">存储键迁移、云开发同步开关、订阅消息模板</text>
+    <view class="ch"><text class="ct">个人信息</text></view>
+    <view class="frow">
+      <text class="fl">身高 cm</text>
+      <input class="fi" type="digit" value="{{height}}" data-k="height" bindinput="onField" placeholder="170" />
+    </view>
+    <view class="frow">
+      <text class="fl">体重 kg</text>
+      <input class="fi" type="digit" value="{{weight}}" data-k="weight" bindinput="onField" placeholder="65" />
+    </view>
+    <view class="frow">
+      <text class="fl">目标</text>
+      <input class="fi" value="{{goal}}" data-k="goal" bindinput="onField" placeholder="增肌 / 减脂 / 保持" />
+    </view>
+    <view class="btn" bindtap="saveProfile">保存资料</view>
   </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">数据</text><text class="cm">{{syncText}}</text></view>
+    <view class="nums">
+      <view class="n"><text class="nv">{{logsCount}}</text><text class="nt">日志</text></view>
+      <view class="n"><text class="nv">{{recordsCount}}</text><text class="nt">力量记录</text></view>
+      <view class="n"><text class="nv">{{cardioCount}}</text><text class="nt">有氧记录</text></view>
+    </view>
+    <view class="grid">
+      <view class="gbtn" bindtap="exportData">导出到剪贴板</view>
+      <view class="gbtn" bindtap="importData">从剪贴板导入</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">云同步</text><text class="cm">{{cloudReady ? '云开发已连接' : '云开发未配置'}}</text></view>
+    <view class="grid">
+      <view class="gbtn {{busy ? 'off' : ''}}" bindtap="pushCloud">上传本机</view>
+      <view class="gbtn {{busy ? 'off' : ''}}" bindtap="pullCloud">拉取合并</view>
+    </view>
+    <text class="tip">上传走 syncPush，拉取走 syncPull；两端共用同一份增量水位与墓碑。</text>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">危险操作</text></view>
+    <view class="danger" bindtap="clearAll">清空本机数据</view>
+  </view>
+
+  <text class="foot">SelfAgent 小程序 · 与网页版共用逻辑层</text>
 </view>

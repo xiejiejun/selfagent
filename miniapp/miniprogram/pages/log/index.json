@@ -1,1 +1,6 @@
-{"usingComponents": {}}
+{
+  "navigationBarTitleText": "记录",
+  "usingComponents": {
+    "train-editor": "/components/train-editor/index"
+  }
+}

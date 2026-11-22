@@ -1,4 +1,4 @@
-const CLOUD_ENV = ''; // 云开发环境 ID，开通后填入
+const CLOUD_ENV = 'cloud1-d2g3r78mffbe3ca36'; // 云开发环境 ID
 
 App({
   globalData: {

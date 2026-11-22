@@ -1,10 +1,70 @@
 <view class="page">
   <view class="head">
-    <text class="h1">训练</text>
-    <text class="muted">今日训练 + 专注模式</text>
+    <view class="datebar">
+      <text class="arrow" bindtap="prevDay">‹</text>
+      <text class="dlabel">{{dateLabel}}</text>
+      <text class="arrow {{isToday ? 'off' : ''}}" bindtap="nextDay">›</text>
+      <text class="todaybtn" wx:if="{{!isToday}}" bindtap="backToday">回到今天</text>
+    </view>
+    <text class="sum">{{summary}}</text>
+    <view class="kpis">
+      <view class="kpi"><text class="kv">{{weekDone}}</text><text class="kt">本周组数</text></view>
+      <view class="kpi"><text class="kv">{{streak}}</text><text class="kt">连续天数</text></view>
+      <view class="kpi"><text class="kv">{{list.length}}</text><text class="kt">今日动作</text></view>
+    </view>
   </view>
-  <view class="card">
-    <text class="row">本地已存记录：{{count}} 条</text>
-    <text class="muted">动作库网格、组行编辑、三环计时（ring-set）、专注分幕（focus-view）</text>
+
+  <view class="card" wx:if="{{!empty}}">
+    <view class="ex {{item.open ? 'open' : ''}}" wx:for="{{list}}" wx:key="uid">
+      <view class="ex-head" data-uid="{{item.uid}}" bindtap="toggleRow">
+        <view class="ex-main">
+          <text class="nm">{{item.name}}</text>
+          <text class="line">{{item.line}}</text>
+        </view>
+        <view class="dots" wx:if="{{!item.isCardio}}">
+          <text class="dot {{idx < item.doneN ? 'on' : ''}}" wx:for="{{item.groups}}" wx:for-item="g" wx:for-index="idx" wx:key="no"></text>
+        </view>
+        <text class="cdmark" wx:if="{{item.isCardio}}">{{item.done ? '✓' : '—'}}</text>
+        <text class="more" data-uid="{{item.uid}}" data-cardio="{{item.isCardio}}" catchtap="openEdit">⋯</text>
+        <text class="ar">▸</text>
+      </view>
+
+      <view class="sets" wx:if="{{item.open && !item.isCardio}}">
+        <view class="set" wx:for="{{item.groups}}" wx:for-item="g" wx:for-index="gi" wx:key="no"
+              data-uid="{{item.uid}}" data-i="{{gi}}" bindtap="tapGroup">
+          <text class="no {{g.warmup ? 'warm' : ''}}">{{g.no}}</text>
+          <text class="txt {{g.done ? 'done' : ''}}">{{g.txt}}</text>
+          <text class="mark">{{g.done ? '✓' : '待'}}</text>
+        </view>
+        <text class="hint">点某组即可打卡；点 ⋯ 编辑重量与次数</text>
+      </view>
+
+      <view class="sets" wx:if="{{item.open && item.isCardio}}">
+        <view class="set" data-uid="{{item.uid}}" data-cardio="1" bindtap="openEdit">
+          <text class="no">1</text>
+          <text class="txt {{item.done ? 'done' : ''}}">有氧 · 时长训练</text>
+          <text class="mark">{{item.done ? '✓' : '待'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:else>
+    <text class="et">这个日期还没有训练</text>
+    <text class="es">从动作库挑一个开始，或者先记一条有氧</text>
+  </view>
+
+  <view class="bar">
+    <text class="act" bindtap="addExercise">＋ 添加动作</text>
+    <text class="act ghost" bindtap="addCardio">＋ 有氧</text>
+    <text class="act ghost" bindtap="goLog">查看记录</text>
   </view>
 </view>
+
+<train-editor
+  visible="{{editorVisible}}"
+  payload="{{payload}}"
+  bind:close="onEditorClose"
+  bind:confirm="onEditorConfirm"
+  bind:delete="onEditorDelete"
+/>

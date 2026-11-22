@@ -1,1 +1,6 @@
-{"usingComponents": {}}
+{
+  "navigationBarTitleText": "训练",
+  "usingComponents": {
+    "train-editor": "/components/train-editor/index"
+  }
+}
