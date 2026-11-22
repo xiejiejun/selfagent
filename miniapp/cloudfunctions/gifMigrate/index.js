@@ -1,15 +1,17 @@
 // 动作缩略图迁移：把 GitHub 上的 webp 缩略图搬到云存储，回写 media_map 映射。
-// 客户端按 20~40 个一批调用，直到全部完成。
+// 客户端按 20~40 个一批调用；单批并发 16，超预算或失败的 id 返回给客户端重试。
 const https = require('https');
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
 const BASE = 'https://raw.githubusercontent.com/xiejiejun/selfagent/main/media/thumb/';
+const CONC = 16;
+const BUDGET = 8000; // 单次调用内的总预算(ms)，超出的 id 直接返回 failed 让客户端重试
 
 function fetchBuf(url) {
   return new Promise((resolve, reject) => {
-    const req = https.get(url, { timeout: 15000 }, res => {
+    const req = https.get(url, { timeout: 7000 }, res => {
       if (res.statusCode !== 200) { res.resume(); reject(new Error('http ' + res.statusCode)); return; }
       const chunks = [];
       res.on('data', c => chunks.push(c));
@@ -34,19 +36,30 @@ async function putMap(id, fileID, part) {
 
 exports.main = async (event) => {
   await ensure('media_map');
-  const ids = Array.isArray(event.ids) ? event.ids.filter(x => /^\d{4}$/.test(String(x))) : [];
+  const t0 = Date.now();
+  const ids = Array.isArray(event.ids) ? event.ids.map(String).filter(x => /^\d{4}$/.test(x)) : [];
   const parts = event.parts || {};
-  let ok = 0;
-  const fail = [];
-  for (const id of ids.slice(0, 40)) {
-    try {
-      const buf = await fetchBuf(BASE + id + '.webp');
-      const up = await cloud.uploadFile({ cloudPath: 'media/thumb/' + id + '.webp', fileContent: buf });
-      await putMap(id, up.fileID, parts[id]);
-      ok++;
-    } catch (e) {
-      fail.push(id);
+  const list = ids.slice(0, 40);
+  const failed = [];
+  let migrated = 0;
+
+  let cursor = 0;
+  async function worker() {
+    while (cursor < list.length) {
+      if (Date.now() - t0 > BUDGET) return;
+      const id = list[cursor++];
+      try {
+        const buf = await fetchBuf(BASE + id + '.webp');
+        const up = await cloud.uploadFile({ cloudPath: 'media/thumb/' + id + '.webp', fileContent: buf });
+        await putMap(id, up.fileID, parts[id]);
+        migrated++;
+      } catch (e) {
+        failed.push(id);
+      }
     }
   }
-  return { ok: true, migrated: ok, failed: fail, total: ids.length };
+
+  await Promise.all(Array.from({ length: Math.min(CONC, list.length) }, worker));
+  const skipped = list.slice(cursor);
+  return { ok: true, migrated, failed: failed.concat(skipped), skipped: skipped.length, total: list.length, ms: Date.now() - t0 };
 };
