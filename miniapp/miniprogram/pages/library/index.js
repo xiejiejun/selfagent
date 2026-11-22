@@ -22,6 +22,7 @@ Page({
     const app = getApp();
     this.media = {};
     this.all = [];
+    this.migRound = 0;
     this.setData({ cloudReady: !!(app && app.globalData && app.globalData.cloudReady), total: data.total });
     this.refresh();
   },
@@ -68,19 +69,31 @@ Page({
       .catch(err => console.warn('[library] media_map', err));
   },
 
-  // 云端还没有缩略图时，后台按批搬运（gifMigrate），完成后回填
+  // 云端还没有缩略图时，后台分批搬运（gifMigrate）；函数单次 3 秒上限，故小批多轮
   migrateMissing() {
-    if (!this.data.cloudReady || !wx.cloud || this.migrating) return;
-    const missing = (this.data.list || []).filter(c => !c.fileID).map(c => c.id).slice(0, 20);
+    if (!this.data.cloudReady || !wx.cloud) return;
+    if (this.migRound >= 10) return;
+    const missing = (this.data.list || []).filter(c => !c.fileID).map(c => c.id).slice(0, 8);
     if (!missing.length) return;
-    this.migrating = true;
+    this.migRound = (this.migRound || 0) + 1;
     wx.cloud.callFunction({ name: 'gifMigrate', data: { ids: missing } })
       .then(r => {
         const res = (r && r.result) || {};
-        if (res.migrated > 0) this.fillImages(missing);
+        if (res.migrated > 0) {
+          const db = wx.cloud.database();
+          db.collection('media_map').where({ _id: db.command.in(missing) }).limit(20).get()
+            .then(q => {
+              (q.data || []).forEach(d => { if (d && d.fileID) this.media[d._id] = d.fileID; });
+              const favs = (store.getTrain() || {}).favs || [];
+              const visible = this.all.slice(0, this.data.shown).map(e => this.card(e, favs));
+              this.setData({ list: visible, noImg: visible.filter(c => !c.fileID).length });
+              setTimeout(() => this.migrateMissing(), 400);
+            }).catch(() => setTimeout(() => this.migrateMissing(), 800));
+          return;
+        }
+        setTimeout(() => this.migrateMissing(), 800);
       })
-      .catch(err => console.warn('[library] gifMigrate', err))
-      .then(() => { this.migrating = false; });
+      .catch(err => { console.warn('[library] gifMigrate', err); setTimeout(() => this.migrateMissing(), 1500); });
   },
 
   onInput(e) {

@@ -9,8 +9,8 @@ const SOURCES = [
   'https://cdn.jsdelivr.net/gh/xiejiejun/selfagent@main/media/thumb/',
   'https://raw.githubusercontent.com/xiejiejun/selfagent/main/media/thumb/'
 ];
-const CONC = 16;
-const BUDGET = 8000; // 单次调用内的总预算(ms)，超出的 id 直接返回 failed 让客户端重试
+const CONC = 6;
+const BUDGET = 2200; // 单次调用内的总预算(ms)，超出的 id 直接返回 failed 让客户端重试
 
 function fetchBuf(url) {
   return new Promise((resolve, reject) => {
@@ -42,7 +42,7 @@ exports.main = async (event) => {
   const t0 = Date.now();
   const ids = Array.isArray(event.ids) ? event.ids.map(String).filter(x => /^\d{4}$/.test(x)) : [];
   const parts = event.parts || {};
-  const list = ids.slice(0, 40);
+  const list = ids.slice(0, 12);
   const failed = [];
   let migrated = 0;
 
