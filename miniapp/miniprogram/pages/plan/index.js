@@ -43,7 +43,7 @@ Page({
     });
   },
 
-  pickDays(e) { this.setData({ days: Number(e.currentTarget.dataset.n) }); },
+  pickDays(e) { const n = Number(e.currentTarget.dataset.n); if (n >= 1 && n <= 7) this.setData({ days: n }); },
   onSets(e) { this.setData({ setsPerDay: Math.max(1, parseInt(e.detail.value, 10) || 12) }); },
   onRemind(e) { this.setData({ remind: e.detail.value }); },
 
