@@ -32,8 +32,10 @@ async function ensure(name) {
 async function putMap(id, fileID, part) {
   try {
     await db.collection('media_map').doc(id).set({ data: { fileID, part: part || '', ts: Date.now() } });
+    return null;
   } catch (e) {
-    try { await db.collection('media_map').add({ data: Object.assign({ _id: id }, { fileID, part: part || '', ts: Date.now() }) }); } catch (e2) {}
+    try { await db.collection('media_map').add({ data: Object.assign({ _id: id }, { fileID, part: part || '', ts: Date.now() }) }); return null; }
+    catch (e2) { return String((e2 && (e2.errMsg || e2.message)) || e && (e.errMsg || e.message)); }
   }
 }
 
@@ -44,6 +46,7 @@ exports.main = async (event) => {
   const parts = event.parts || {};
   const list = ids.slice(0, 12);
   const failed = [];
+  const mapFail = [];
   let migrated = 0;
 
   let cursor = 0;
@@ -58,7 +61,8 @@ exports.main = async (event) => {
         }
         if (!buf) throw new Error(errs.join('|'));
         const up = await cloud.uploadFile({ cloudPath: 'media/thumb/' + id + '.webp', fileContent: buf });
-        await putMap(id, up.fileID, parts[id]);
+        const mapErr = await putMap(id, up.fileID, parts[id]);
+        if (mapErr) mapFail.push(id + ':' + mapErr.slice(0, 60));
         migrated++;
       } catch (e) {
         failed.push(id);
@@ -70,5 +74,5 @@ exports.main = async (event) => {
   await Promise.all(Array.from({ length: Math.min(CONC, list.length) }, worker));
   const skipped = list.slice(cursor);
   return { ok: true, migrated, failed: failed.concat(skipped), skipped: skipped.length, total: list.length, ms: Date.now() - t0,
-    failDetail: event.debug ? failed.slice(0, 3) : undefined };
+    mapFail: mapFail.slice(0, 3) };
 };
