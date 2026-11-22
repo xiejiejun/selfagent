@@ -5,13 +5,16 @@ const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
-const BASE = 'https://raw.githubusercontent.com/xiejiejun/selfagent/main/media/thumb/';
+const SOURCES = [
+  'https://cdn.jsdelivr.net/gh/xiejiejun/selfagent@main/media/thumb/',
+  'https://raw.githubusercontent.com/xiejiejun/selfagent/main/media/thumb/'
+];
 const CONC = 16;
 const BUDGET = 8000; // 单次调用内的总预算(ms)，超出的 id 直接返回 failed 让客户端重试
 
 function fetchBuf(url) {
   return new Promise((resolve, reject) => {
-    const req = https.get(url, { timeout: 7000 }, res => {
+    const req = https.get(url, { timeout: 1600 }, res => {
       if (res.statusCode !== 200) { res.resume(); reject(new Error('http ' + res.statusCode)); return; }
       const chunks = [];
       res.on('data', c => chunks.push(c));
@@ -49,17 +52,23 @@ exports.main = async (event) => {
       if (Date.now() - t0 > BUDGET) return;
       const id = list[cursor++];
       try {
-        const buf = await fetchBuf(BASE + id + '.webp');
+        let buf = null, errs = [];
+        for (const base of SOURCES) {
+          try { buf = await fetchBuf(base + id + '.webp'); break; } catch (e) { errs.push(base.slice(8, 28) + ':' + e.message); }
+        }
+        if (!buf) throw new Error(errs.join('|'));
         const up = await cloud.uploadFile({ cloudPath: 'media/thumb/' + id + '.webp', fileContent: buf });
         await putMap(id, up.fileID, parts[id]);
         migrated++;
       } catch (e) {
         failed.push(id);
+        if (event.debug) console.log('[gifMigrate]', id, String(e.message).slice(0, 120));
       }
     }
   }
 
   await Promise.all(Array.from({ length: Math.min(CONC, list.length) }, worker));
   const skipped = list.slice(cursor);
-  return { ok: true, migrated, failed: failed.concat(skipped), skipped: skipped.length, total: list.length, ms: Date.now() - t0 };
+  return { ok: true, migrated, failed: failed.concat(skipped), skipped: skipped.length, total: list.length, ms: Date.now() - t0,
+    failDetail: event.debug ? failed.slice(0, 3) : undefined };
 };
