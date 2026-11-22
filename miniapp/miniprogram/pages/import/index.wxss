@@ -22,11 +22,12 @@
 
 .ta {
   width: 100%;
-  min-height: 320rpx;
+  height: 340rpx;
   box-sizing: border-box;
   background: #F6F9F8;
   border-radius: 14rpx;
   padding: 18rpx;
+  margin-top: 6rpx;
   font-size: 24rpx;
   line-height: 1.55;
   color: #14181A;
@@ -36,7 +37,7 @@
 .sum { display: block; margin-top: 8rpx; font-size: 24rpx; color: #12A594; padding: 0 6rpx; }
 
 .do {
-  margin-top: 20rpx;
+  margin-top: 18rpx;
   height: 92rpx;
   line-height: 92rpx;
   text-align: center;

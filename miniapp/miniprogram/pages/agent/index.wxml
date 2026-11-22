@@ -66,12 +66,14 @@
 
       <view class="card">
         <view class="ch"><text class="ct">部位分布</text><text class="cm">按容量占比</text></view>
-        <view class="prow" wx:for="{{parts}}" wx:key="part">
-          <text class="pname">{{item.part}}</text>
-          <view class="ptrack"><view class="pfill" style="width: {{item.w}}%"></view></view>
-          <text class="pval">{{item.volume}}</text>
-        </view>
-        <view class="unlock" wx:if="{{!parts.length}}">
+        <block wx:if="{{unlocked}}">
+          <view class="prow" wx:for="{{parts}}" wx:key="part">
+            <text class="pname">{{item.part}}</text>
+            <view class="ptrack"><view class="pfill" style="width: {{item.w}}%"></view></view>
+            <text class="pval">{{item.volume}}</text>
+          </view>
+        </block>
+        <view class="unlock" wx:else>
           <text class="empty">记录满 3 次训练可解锁部位分布</text>
           <view class="empty-cta" bindtap="goLog">先记一次</view>
         </view>
@@ -84,7 +86,10 @@
           <text class="tpart">{{item.part}}</text>
           <text class="tval">{{item.sets}} 组 / {{item.volume}}kg</text>
         </view>
-        <text class="empty" wx:if="{{!tops.length}}">还没有训练数据</text>
+        <view class="unlock" wx:if="{{!tops.length}}">
+          <text class="empty">还没有训练数据</text>
+          <view class="empty-cta" bindtap="goTrain">去训练页挑个动作</view>
+        </view>
       </view>
     </block>
 
@@ -101,7 +106,10 @@
             <text class="hn" wx:if="{{c.n}}">{{c.n}}</text>
           </view>
         </view>
-        <text class="hfoot" wx:if="{{!hasNotes}}">还没有记录，热力图是空的 — 写一条就会亮</text>
+        <view class="unlock" wx:if="{{!hasNotes}}">
+          <text class="empty">还没有记录，热力图是空的 — 写一条就会亮</text>
+          <view class="empty-cta" bindtap="goLog">去记录页写一条</view>
+        </view>
       </view>
 
       <view class="feed" wx:if="{{restNotes.length}}">

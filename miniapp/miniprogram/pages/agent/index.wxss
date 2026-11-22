@@ -39,7 +39,7 @@
 .ai-t { font-size: 20rpx; color: #8A9490; }
 .ai-line { display: block; margin-bottom: 12rpx; font-size: 23rpx; color: #12A594; }
 
-.askrow { display: flex; align-items: flex-end; gap: 12rpx; }
+.askrow { display: flex; align-items: flex-end; gap: 12rpx; padding-right: 96rpx; }
 .qbox {
   flex: 1;
   min-height: 84rpx;

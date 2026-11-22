@@ -119,7 +119,8 @@ Page({
       heatMax: heat.max,
       restNotes: heat.notes,
       hasData: trained > 0,
-      hasNotes: notes.length > 0
+      hasNotes: notes.length > 0,
+      unlocked: trained >= 3
     });
   },
 
@@ -217,6 +218,10 @@ Page({
 
   goLog() {
     wx.switchTab({ url: '/pages/log/index' });
+  },
+
+  goTrain() {
+    wx.switchTab({ url: '/pages/train/index' });
   },
 
   orbFocus() {
