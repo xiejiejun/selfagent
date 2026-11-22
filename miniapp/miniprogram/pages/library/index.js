@@ -63,8 +63,24 @@ Page({
         }
         const rest = ids.slice(20);
         if (rest.length) this.fillImages(rest);
+        else this.migrateMissing();
       })
       .catch(err => console.warn('[library] media_map', err));
+  },
+
+  // 云端还没有缩略图时，后台按批搬运（gifMigrate），完成后回填
+  migrateMissing() {
+    if (!this.data.cloudReady || !wx.cloud || this.migrating) return;
+    const missing = (this.data.list || []).filter(c => !c.fileID).map(c => c.id).slice(0, 20);
+    if (!missing.length) return;
+    this.migrating = true;
+    wx.cloud.callFunction({ name: 'gifMigrate', data: { ids: missing } })
+      .then(r => {
+        const res = (r && r.result) || {};
+        if (res.migrated > 0) this.fillImages(missing);
+      })
+      .catch(err => console.warn('[library] gifMigrate', err))
+      .then(() => { this.migrating = false; });
   },
 
   onInput(e) {
