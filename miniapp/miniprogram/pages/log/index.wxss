@@ -1,0 +1,4 @@
+.page { padding: 32rpx 28rpx 60rpx; }
+.head { margin-bottom: 22rpx; }
+.h1 { display: block; font-size: 44rpx; font-weight: 600; margin-bottom: 8rpx; }
+.row { display: block; font-size: 28rpx; margin-bottom: 10rpx; }

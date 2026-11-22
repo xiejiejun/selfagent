@@ -1,0 +1,25 @@
+page {
+  --bg: #F5F7F7;
+  --panel: #FFFFFF;
+  --tx: #14181A;
+  --tx2: #5B6461;
+  --tx3: #8A9490;
+  --line: #E3E8E6;
+  --accent: #12A594;
+  --accent-2: #3DDCBF;
+  --danger: #E06E78;
+  --warning: #E3B341;
+  background: var(--bg);
+  color: var(--tx);
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  --r-card: 18rpx;
+  --gap: 24rpx;
+}
+
+.card {
+  background: var(--panel);
+  border-radius: var(--r-card);
+  padding: 28rpx;
+}
+
+.muted { color: var(--tx3); font-size: 24rpx; }

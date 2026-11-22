@@ -1,0 +1,47 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/train/index",
+    "pages/agent/index",
+    "pages/log/index",
+    "pages/setting/index"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "backgroundColor": "#F5F7F7",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTitleText": "SelfAgent",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#8A9490",
+    "selectedColor": "#12A594",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "今天"
+      },
+      {
+        "pagePath": "pages/train/index",
+        "text": "训练"
+      },
+      {
+        "pagePath": "pages/agent/index",
+        "text": "分析"
+      },
+      {
+        "pagePath": "pages/log/index",
+        "text": "记录"
+      },
+      {
+        "pagePath": "pages/setting/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

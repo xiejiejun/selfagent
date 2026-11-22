@@ -1,0 +1,10 @@
+<view class="page">
+  <view class="head">
+    <text class="h1">训练</text>
+    <text class="muted">今日训练 + 专注模式</text>
+  </view>
+  <view class="card">
+    <text class="row">本地已存记录：{{count}} 条</text>
+    <text class="muted">动作库网格、组行编辑、三环计时（ring-set）、专注分幕（focus-view）</text>
+  </view>
+</view>

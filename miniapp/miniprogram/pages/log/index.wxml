@@ -1,0 +1,10 @@
+<view class="page">
+  <view class="head">
+    <text class="h1">记录</text>
+    <text class="muted">快记 + 时间线</text>
+  </view>
+  <view class="card">
+    <text class="row">本地已存记录：{{count}} 条</text>
+    <text class="muted">时间线卡片与动作项增删改查在本页落地</text>
+  </view>
+</view>
