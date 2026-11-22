@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="bar">
+    <input class="q" value="{{q}}" bindinput="onInput" placeholder="搜索动作，如 卧推 / 深蹲" confirm-type="search" />
+    <view class="fav {{favOnly ? 'on' : ''}}" bindtap="toggleFavView">★</view>
+  </view>
+
+  <scroll-view class="chips" scroll-x="true" enhanced="true" show-scrollbar="false">
+    <text class="chip {{part === item ? 'on' : ''}}" wx:for="{{parts}}" wx:key="*this" data-p="{{item}}" bindtap="onPart">{{item || '全部'}}</text>
+  </scroll-view>
+
+  <view class="meta">
+    <text>共 {{total}} 个动作 · 已显示 {{shown}}</text>
+    <text wx:if="{{noImg > 0}}" class="warn">{{noImg}} 个无图</text>
+  </view>
+
+  <view class="grid">
+    <view class="card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="pick">
+      <image wx:if="{{item.fileID}}" class="thumb" src="{{item.fileID}}" mode="aspectFill" lazy-load="true" />
+      <view wx:else class="thumb ph">
+        <text class="phn">{{item.n[0]}}</text>
+      </view>
+      <text class="star {{item.fav ? 'on' : ''}}" data-id="{{item.id}}" catchtap="star">{{item.fav ? '★' : '☆'}}</text>
+      <view class="cover">
+        <text class="n">{{item.n}}</text>
+        <text class="p">{{item.p}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="more" wx:if="{{hasMore}}" bindtap="more">加载更多</view>
+  <text class="empty" wx:if="{{!list.length}}">没有匹配的动作</text>
+</view>

@@ -1,0 +1,26 @@
+.page { padding: 26rpx 24rpx 60rpx; }
+.card { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 18rpx; }
+.ch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
+.ct { font-size: 27rpx; font-weight: 600; color: #14181A; }
+.cm { font-size: 21rpx; color: #A9B3AF; }
+
+.bars { display: flex; align-items: flex-end; gap: 10rpx; height: 150rpx; }
+.bw { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.bar { width: 26rpx; background: #D9E7E3; border-radius: 6rpx; }
+.bar.ok { background: #12A594; }
+.bl { margin-top: 8rpx; font-size: 19rpx; color: #A9B3AF; }
+
+.frow { display: flex; align-items: center; justify-content: space-between; padding: 14rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.fl { font-size: 24rpx; color: #5B6461; }
+.fi { width: 220rpx; text-align: right; font-size: 26rpx; color: #14181A; }
+.right { text-align: right; }
+.chips { display: flex; gap: 8rpx; flex-wrap: wrap; justify-content: flex-end; }
+.chip { padding: 8rpx 18rpx; background: #F4F7F6; border-radius: 22rpx; font-size: 21rpx; color: #5B6461; }
+.chip.on { background: #12A594; color: #fff; }
+
+.btn { margin-top: 18rpx; height: 82rpx; line-height: 82rpx; text-align: center; border-radius: 14rpx; background: #12A594; color: #fff; font-size: 27rpx; }
+.btn.ghost { background: #F4F7F6; color: #5B6461; }
+
+.ptext { display: block; font-size: 24rpx; line-height: 1.7; color: #14181A; white-space: pre-wrap; }
+.empty { display: block; font-size: 23rpx; color: #A9B3AF; }
+.tip { display: block; font-size: 21rpx; color: #A9B3AF; line-height: 1.6; }

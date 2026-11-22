@@ -114,6 +114,16 @@ function removeLog(id) {
   commit(c, engine.dayKey(), { sync: false });
 }
 
+/* 动作库收藏 */
+function toggleFav(id) {
+  const c = ctx();
+  const favs = c.train.favs || (c.train.favs = []);
+  const i = favs.indexOf(id);
+  if (i >= 0) favs.splice(i, 1); else favs.push(id);
+  store.setTrain(c.train);
+  return i < 0;
+}
+
 /* 只重建某天（导入/迁移后用） */
 function rebuildDay(date) {
   const c = ctx();
@@ -122,5 +132,5 @@ function rebuildDay(date) {
 
 module.exports = {
   ctx, saveStrength, deleteStrength, saveCardio, deleteCardio,
-  toggleGroup, addNote, removeLog, rebuildDay
+  toggleGroup, addNote, removeLog, rebuildDay, toggleFav
 };

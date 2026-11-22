@@ -147,6 +147,44 @@ Page({
     });
   },
 
+  openLibrary() {
+    wx.navigateTo({
+      url: '/pages/library/index',
+      events: {
+        pick: (ex) => {
+          if (!ex) return;
+          this.setData({
+            editorVisible: true,
+            payload: {
+              mode: 'strength', isNew: true, name: ex.n, part: ex.p, exId: ex.id, date: this.data.date,
+              groups: [{ no: 1, reps: 10, weight: 0, done: false }]
+            }
+          });
+        }
+      }
+    });
+  },
+
+  focus(e) {
+    const uid = e.currentTarget.dataset.uid;
+    const train = engine.ensureTrain(store.getTrain());
+    const r = (train.records || []).find(x => x && x.uid === uid);
+    if (!r) return;
+    const gs = engine.ensureGroups(r);
+    const reps = gs[0] ? gs[0].reps : (r.reps || 10);
+    const weight = gs[0] ? gs[0].weight : (r.weight || 0);
+    wx.navigateTo({
+      url: '/pages/focus/index?name=' + encodeURIComponent(r.name || '') +
+        '&part=' + encodeURIComponent(r.part || '') + '&exId=' + (r.exId || '') +
+        '&sets=' + (gs.length || 3) + '&reps=' + (reps || 10) + '&weight=' + (weight || 0) +
+        '&date=' + this.data.date + '&uid=' + uid
+    });
+  },
+
+  goPlan() {
+    wx.navigateTo({ url: '/pages/plan/index' });
+  },
+
   addExercise() {
     wx.navigateTo({
       url: '/pages/picker/index',

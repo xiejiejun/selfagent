@@ -62,3 +62,5 @@
   background: #12A594; color: #fff; border-radius: 14rpx; font-size: 28rpx;
 }
 .act.ghost { flex: 0 0 160rpx; background: #fff; color: #5B6461; border: 1rpx solid #E3E8E6; }
+
+.focusbtn { margin-top: 14rpx; text-align: center; font-size: 23rpx; color: #12A594; }

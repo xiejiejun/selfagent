@@ -5,6 +5,9 @@
     "pages/agent/index",
     "pages/log/index",
     "pages/setting/index",
+    "pages/library/index",
+    "pages/focus/index",
+    "pages/plan/index",
     "pages/picker/index"
   ],
   "window": {

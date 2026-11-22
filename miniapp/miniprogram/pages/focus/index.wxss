@@ -1,0 +1,35 @@
+.page { min-height: 100vh; background: #101615; padding: 30rpx 30rpx 60rpx; color: #E8F2EE; }
+
+.head { text-align: center; }
+.name { display: block; font-size: 36rpx; font-weight: 600; }
+.part { display: block; margin-top: 6rpx; font-size: 22rpx; color: #7F8C88; }
+
+.stage { position: relative; width: 560rpx; height: 560rpx; margin: 30rpx auto 0; }
+.rings { width: 560rpx; height: 560rpx; }
+.ctr { position: absolute; left: 0; right: 0; top: 52%; transform: translateY(-50%); text-align: center; }
+.big { font-size: 76rpx; font-weight: 700; color: #fff; }
+.unit { font-size: 22rpx; color: #7F8C88; margin-left: 6rpx; }
+.meta { position: absolute; left: 0; right: 0; bottom: 96rpx; display: flex; justify-content: center; gap: 40rpx; font-size: 22rpx; color: #A9B7B2; }
+
+.hint { display: block; text-align: center; font-size: 25rpx; color: #9FB0AB; margin-top: 10rpx; }
+
+.reps { display: flex; align-items: center; justify-content: center; gap: 40rpx; margin-top: 24rpx; }
+.rbtn { width: 84rpx; height: 84rpx; line-height: 78rpx; text-align: center; border-radius: 50%; background: #1C2725; color: #CFF3EA; font-size: 36rpx; }
+.rnum { font-size: 34rpx; font-weight: 600; }
+
+.rest { text-align: center; margin-top: 18rpx; }
+.rleft { font-size: 64rpx; font-weight: 700; color: #3DDCBF; }
+.rtxt { display: block; font-size: 22rpx; color: #7F8C88; }
+.skip { display: inline-block; margin-top: 14rpx; padding: 12rpx 32rpx; border-radius: 30rpx; background: #1C2725; font-size: 23rpx; color: #CFF3EA; }
+
+.main { margin-top: 34rpx; }
+.go { height: 104rpx; line-height: 104rpx; text-align: center; border-radius: 52rpx; font-size: 30rpx; font-weight: 600; }
+.primary { background: #12A594; color: #fff; }
+
+.list { margin-top: 36rpx; background: #172220; border-radius: 20rpx; padding: 10rpx 22rpx; }
+.row { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 0; border-bottom: 1rpx solid #202C2A; font-size: 24rpx; color: #9FB0AB; }
+.row:last-child { border-bottom: none; }
+.row.ok { color: #E8F2EE; }
+.no { width: 48rpx; }
+.detail { flex: 1; }
+.mark { color: #3DDCBF; }

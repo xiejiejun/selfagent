@@ -1,0 +1,47 @@
+<view class="page">
+  <view class="head">
+    <text class="name">{{name || '专注训练'}}</text>
+    <text class="part">{{part}}</text>
+  </view>
+
+  <view class="stage">
+    <canvas type="2d" id="rings" class="rings"></canvas>
+    <view class="ctr">
+      <text class="big">{{elapsed}}</text>
+      <text class="unit">秒</text>
+    </view>
+    <view class="meta">
+      <text>{{done}}/{{total}} 组</text>
+      <text>{{volume}} kg</text>
+    </view>
+  </view>
+
+  <text class="hint">{{hint}}</text>
+
+  <view class="reps" wx:if="{{stage === 'work'}}">
+    <view class="rbtn" bindtap="subRep">−</view>
+    <text class="rnum">{{rows[done].reps}} 次</text>
+    <view class="rbtn" bindtap="addRep">＋</view>
+  </view>
+
+  <view class="rest" wx:if="{{stage === 'rest'}}">
+    <text class="rleft">{{left}}</text>
+    <text class="rtxt">休息中</text>
+    <view class="skip" bindtap="skipRest">跳过休息</view>
+  </view>
+
+  <view class="main">
+    <view class="go primary" wx:if="{{stage === 'ready'}}" bindtap="start">开始</view>
+    <view class="go primary" wx:if="{{stage === 'work'}}" bindtap="setDone">这组完成</view>
+    <view class="go primary" wx:if="{{stage === 'rest'}}" bindtap="skipRest">开始下一组</view>
+    <view class="go primary" wx:if="{{stage === 'finish'}}" bindtap="finish">完成并保存</view>
+  </view>
+
+  <view class="list">
+    <view class="row {{item.done ? 'ok' : ''}}" wx:for="{{rows}}" wx:key="no">
+      <text class="no">{{item.no}}</text>
+      <text class="detail">{{item.weight > 0 ? item.weight + 'kg' : '自重'}} × {{item.reps}}</text>
+      <text class="mark">{{item.done ? '✓' : ''}}</text>
+    </view>
+  </view>
+</view>

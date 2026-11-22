@@ -17,6 +17,14 @@
   </view>
 
   <view class="card">
+    <view class="ch"><text class="ct">训练计划</text><text class="cm">目标 + 提醒</text></view>
+    <view class="grid">
+      <view class="gbtn" bindtap="goPlan">打开计划页</view>
+      <view class="gbtn" bindtap="goLibrary">动作库图卡</view>
+    </view>
+  </view>
+
+  <view class="card">
     <view class="ch"><text class="ct">数据</text><text class="cm">{{syncText}}</text></view>
     <view class="nums">
       <view class="n"><text class="nv">{{logsCount}}</text><text class="nt">日志</text></view>

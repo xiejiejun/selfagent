@@ -37,6 +37,7 @@
           <text class="mark">{{g.done ? '✓' : '待'}}</text>
         </view>
         <text class="hint">点某组即可打卡；点 ⋯ 编辑重量与次数</text>
+        <view class="focusbtn" data-uid="{{item.uid}}" catchtap="focus">进入专注模式 ›</view>
       </view>
 
       <view class="sets" wx:if="{{item.open && item.isCardio}}">
@@ -55,9 +56,11 @@
   </view>
 
   <view class="bar">
-    <text class="act" bindtap="addExercise">＋ 添加动作</text>
+    <text class="act" bindtap="openLibrary">动作库</text>
+    <text class="act ghost" bindtap="addExercise">＋ 添加动作</text>
     <text class="act ghost" bindtap="addCardio">＋ 有氧</text>
-    <text class="act ghost" bindtap="goLog">查看记录</text>
+    <text class="act ghost" bindtap="goPlan">计划</text>
+    <text class="act ghost" bindtap="goLog">记录</text>
   </view>
 </view>
 

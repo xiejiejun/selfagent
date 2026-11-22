@@ -132,6 +132,14 @@ Page({
       });
   },
 
+  goPlan() {
+    wx.navigateTo({ url: '/pages/plan/index' });
+  },
+
+  goLibrary() {
+    wx.navigateTo({ url: '/pages/library/index' });
+  },
+
   clearAll() {
     wx.showModal({
       title: '清空本机数据',
