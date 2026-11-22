@@ -41,6 +41,19 @@ async function putMap(id, fileID, part) {
 
 exports.main = async (event) => {
   await ensure('media_map');
+
+  // 读取模式：客户端不直连数据库（media_map 为云函数写入，客户端无读权限时也能用）
+  if (event.action === 'map') {
+    const qids = Array.isArray(event.ids) ? event.ids.map(String).filter(x => /^\d{4}$/.test(x)).slice(0, 40) : [];
+    const map = {};
+    if (qids.length) {
+      try {
+        const r = await db.collection('media_map').where({ _id: db.command.in(qids) }).limit(40).get();
+        (r.data || []).forEach(d => { if (d && d.fileID) map[d._id] = d.fileID; });
+      } catch (e) {}
+    }
+    return { ok: true, map };
+  }
   const t0 = Date.now();
   const ids = Array.isArray(event.ids) ? event.ids.map(String).filter(x => /^\d{4}$/.test(x)) : [];
   const parts = event.parts || {};

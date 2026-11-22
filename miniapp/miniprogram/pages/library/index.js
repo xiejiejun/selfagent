@@ -49,14 +49,14 @@ Page({
     };
   },
 
-  // 图卡：先查 media_map（云存储 fileID），没有就显示文字占位
+  // 图卡：先查 media_map（经云函数读，避开集合读权限），没有就显示文字占位
   fillImages(ids) {
     if (!ids.length || !this.data.cloudReady || !wx.cloud) return;
-    const db = wx.cloud.database();
     const chunk = ids.slice(0, 20);
-    db.collection('media_map').where({ _id: db.command.in(chunk) }).limit(20).get()
+    wx.cloud.callFunction({ name: 'gifMigrate', data: { action: 'map', ids: chunk } })
       .then(r => {
-        (r.data || []).forEach(d => { if (d && d.fileID) this.media[d._id] = d.fileID; });
+        const map = ((r && r.result) || {}).map || {};
+        Object.keys(map).forEach(k => { this.media[k] = map[k]; });
         if (Object.keys(this.media).length) {
           const favs = (store.getTrain() || {}).favs || [];
           const visible = this.all.slice(0, this.data.shown).map(e => this.card(e, favs));
@@ -80,10 +80,10 @@ Page({
       .then(r => {
         const res = (r && r.result) || {};
         if (res.migrated > 0) {
-          const db = wx.cloud.database();
-          db.collection('media_map').where({ _id: db.command.in(missing) }).limit(20).get()
+          wx.cloud.callFunction({ name: 'gifMigrate', data: { action: 'map', ids: missing } })
             .then(q => {
-              (q.data || []).forEach(d => { if (d && d.fileID) this.media[d._id] = d.fileID; });
+              const map = ((q && q.result) || {}).map || {};
+              Object.keys(map).forEach(k => { this.media[k] = map[k]; });
               const favs = (store.getTrain() || {}).favs || [];
               const visible = this.all.slice(0, this.data.shown).map(e => this.card(e, favs));
               this.setData({ list: visible, noImg: visible.filter(c => !c.fileID).length });
