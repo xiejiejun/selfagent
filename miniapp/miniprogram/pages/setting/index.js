@@ -25,7 +25,8 @@ Page({
     const p = store.getProfile() || {};
     const train = engine.ensureTrain(store.getTrain());
     const st = store.getSyncState() || {};
-    const last = st.lastSync ? engine.fmtTime(new Date(st.lastSync).toISOString()) + ' 同步过' : '未同步';
+    const ts = ['logs', 'train', 'profile', 'settings'].reduce((a, k) => Math.max(a, Number(st[k]) || 0), 0);
+    const last = ts ? engine.fmtTime(new Date(ts).toISOString()) + ' 同步过' : '未同步';
     this.setData({
       height: p.height || '',
       weight: p.weight || '',

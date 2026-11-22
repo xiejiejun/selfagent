@@ -73,7 +73,9 @@ miniapp/
 - 全部 `.js` `node --check` 通过；全部 `.json` `json.load` 通过。
 - 用 `wx` 桩离线跑通：页面 `onLoad/onShow` 无异常；点组打卡、编辑器保存/删除、有氧保存、快记落库、日志删除、分析统计、词库搜索/筛选均返回预期结果。
 - `syncPush` / `syncPull` 用内存版 `wx-server-sdk` 桩跑通：推送实体、按水位增量、墓碑删除、LWW 合并、train 还原成对象结构。
-- 尚未做：微信开发者工具/真机联调（需要扫码登录你的开发者账号）。
+- 模拟器联调（微信开发者工具 + miniprogram-automator，端口 9420）：五页 `onShow` 无报警、无 console error；快记落库、新增有氧、编辑器事件返回结构正确。
+- 云函数真机链路：`syncPush` 返回 `{ok:true,pushed:[logs,train,profile,settings]}`，`syncPull` 回读到 2 条日志（含 `autotr-<date>` 训练卡）与 1 条有氧；`aiProxy` 返回真实回答文本。
+- 待验：真机扫码（预览/体验版）与多设备异地拉取。
 
 ## 还没做（下一步）
 
