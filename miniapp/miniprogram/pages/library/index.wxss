@@ -13,7 +13,7 @@
 .warn { color: #D8A23E; }
 
 .grid { display: flex; flex-wrap: wrap; gap: 14rpx; }
-.card { position: relative; width: calc((100% - 14rpx) / 2); background: #fff; border-radius: 18rpx; overflow: hidden; }
+.ex-card { position: relative; width: calc((100% - 14rpx) / 2); background: #fff; border-radius: 18rpx; overflow: hidden; }
 .thumb { width: 100%; height: 300rpx; background: #EDF2F0; }
 .ph { display: flex; align-items: center; justify-content: center; }
 .phn { font-size: 64rpx; color: #B9C6C0; font-weight: 600; }

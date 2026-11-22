@@ -14,7 +14,7 @@
   </view>
 
   <view class="grid">
-    <view class="card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="pick">
+    <view class="ex-card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="pick">
       <image wx:if="{{item.fileID}}" class="thumb" src="{{item.fileID}}" mode="aspectFill" lazy-load="true" />
       <view wx:else class="thumb ph">
         <text class="phn">{{item.n[0]}}</text>
