@@ -1,0 +1,51 @@
+.page { padding: 24rpx 24rpx 60rpx; }
+
+.card { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 20rpx; }
+.ch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
+.ct { font-size: 28rpx; font-weight: 600; color: #14181A; }
+.cm { font-size: 21rpx; color: #A9B3AF; }
+
+.tip { display: block; font-size: 22rpx; color: #8A9490; line-height: 1.6; margin-bottom: 16rpx; }
+
+.btns { display: flex; gap: 12rpx; margin-bottom: 16rpx; }
+.btn {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  border-radius: 14rpx;
+  font-size: 25rpx;
+  color: #fff;
+  background: #12A594;
+}
+.btn.ghost { background: #fff; color: #5B6461; border: 1rpx solid #E3E8E6; }
+
+.ta {
+  width: 100%;
+  min-height: 320rpx;
+  box-sizing: border-box;
+  background: #F6F9F8;
+  border-radius: 14rpx;
+  padding: 18rpx;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: #14181A;
+}
+
+.msg { display: block; font-size: 23rpx; color: #5B6461; padding: 0 6rpx; }
+.sum { display: block; margin-top: 8rpx; font-size: 24rpx; color: #12A594; padding: 0 6rpx; }
+
+.do {
+  margin-top: 20rpx;
+  height: 92rpx;
+  line-height: 92rpx;
+  text-align: center;
+  border-radius: 16rpx;
+  background: #12A594;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.do.off { background: #C9D4D1; }
+
+.note .nt { font-size: 22rpx; color: #8A9490; line-height: 1.65; }

@@ -35,6 +35,9 @@
       <view class="gbtn" bindtap="exportData">导出到剪贴板</view>
       <view class="gbtn" bindtap="importData">从剪贴板导入</view>
     </view>
+    <view class="grid mdrow">
+      <view class="gbtn" bindtap="goImport">从 Markdown 导入训练笔记</view>
+    </view>
   </view>
 
   <view class="card">

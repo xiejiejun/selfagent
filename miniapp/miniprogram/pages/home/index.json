@@ -1,4 +1,8 @@
 {
   "navigationBarTitleText": "今天",
-  "usingComponents": {}
+  "usingComponents": {
+    "train-editor": "/components/train-editor/index",
+    "float-orb": "/components/float-orb/index",
+    "kpi-strip": "/components/kpi-strip/index"
+  }
 }

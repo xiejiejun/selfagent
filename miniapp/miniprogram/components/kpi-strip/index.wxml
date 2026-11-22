@@ -1,0 +1,7 @@
+<view class="strip">
+  <view class="cell" wx:for="{{items}}" wx:key="l">
+    <text class="v">{{item.v}}</text>
+    <text class="l">{{item.l}}</text>
+    <text class="n" wx:if="{{item.n}}">{{item.n}}</text>
+  </view>
+</view>

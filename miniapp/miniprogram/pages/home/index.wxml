@@ -4,12 +4,7 @@
     <text class="hs">{{hasToday ? '今天已练 ' + today.done + '/' + today.total + ' 组' : '今天还没开始'}}</text>
   </view>
 
-  <view class="stats">
-    <view class="s"><text class="sv">{{today.volume}}</text><text class="st">总容量 kg</text></view>
-    <view class="s"><text class="sv">{{today.done}}/{{today.total}}</text><text class="st">组数</text></view>
-    <view class="s"><text class="sv">{{today.cardioMin}}′</text><text class="st">有氧</text></view>
-    <view class="s"><text class="sv">{{streak}}</text><text class="st">连续天</text></view>
-  </view>
+  <kpi-strip items="{{kpis}}" />
 
   <view class="card">
     <view class="ch">
@@ -18,7 +13,7 @@
     </view>
     <view class="bars">
       <view class="bwrap" wx:for="{{week}}" wx:key="label">
-        <view class="bar {{item.today ? 'on' : ''}}" style="height: {{item.h}}rpx"></view>
+        <view class="bar {{item.today ? 'on' : ''}} {{item.volume ? '' : 'zero'}}" style="height: {{item.h}}rpx"></view>
         <text class="bl">{{item.label}}</text>
       </view>
     </view>
@@ -29,12 +24,23 @@
     <view class="names" wx:if="{{names.length}}">
       <text class="nm" wx:for="{{names}}" wx:key="*this">{{item}}</text>
     </view>
-    <text class="empty" wx:else>还没有动作，去训练页加一个</text>
+    <view class="empty" wx:else>
+      <text class="empty-t">今天还没有安排动作</text>
+      <view class="empty-cta" bindtap="openLibrary">从动作库挑一个开始</view>
+    </view>
   </view>
 
   <view class="acts">
-    <view class="act primary" bindtap="goTrain">开始训练</view>
-    <view class="act" bindtap="goRecord">写一句记录</view>
-    <view class="act" bindtap="goAgent">看分析</view>
+    <view class="act primary" bindtap="mainCta">{{canStart ? '开始训练' : '先挑今天的动作'}}</view>
   </view>
 </view>
+
+<float-orb bottom="{{190}}" bind:focus="orbFocus" bind:noted="refresh" />
+
+<train-editor
+  visible="{{editorVisible}}"
+  payload="{{payload}}"
+  bind:close="onEditorClose"
+  bind:confirm="onEditorConfirm"
+  bind:delete="onEditorDelete"
+/>

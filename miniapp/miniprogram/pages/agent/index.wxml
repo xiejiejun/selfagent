@@ -1,48 +1,118 @@
 <view class="page">
   <view class="head">
-    <text class="hl">训练分析</text>
-    <view class="ranges">
+    <text class="hl">分析</text>
+    <view class="ranges" wx:if="{{tab === 'train'}}">
       <text class="rg {{range === 7 ? 'on' : ''}}" data-n="7" bindtap="switchRange">7 天</text>
       <text class="rg {{range === 30 ? 'on' : ''}}" data-n="30" bindtap="switchRange">30 天</text>
       <text class="rg {{range === 90 ? 'on' : ''}}" data-n="90" bindtap="switchRange">90 天</text>
     </view>
   </view>
 
-  <view class="stats">
-    <view class="s"><text class="sv">{{days}}</text><text class="st">训练天数</text></view>
-    <view class="s"><text class="sv">{{volume}}</text><text class="st">总容量 kg</text></view>
-    <view class="s"><text class="sv">{{avgVolume}}</text><text class="st">日均 kg</text></view>
+  <view class="seg">
+    <text class="sg {{tab === 'overview' ? 'on' : ''}}" data-t="overview" bindtap="switchTab">概览</text>
+    <text class="sg {{tab === 'train' ? 'on' : ''}}" data-t="train" bindtap="switchTab">训练</text>
+    <text class="sg {{tab === 'rest' ? 'on' : ''}}" data-t="rest" bindtap="switchTab">作息</text>
   </view>
 
-  <view class="card">
-    <view class="ch"><text class="ct">部位分布</text><text class="cm">按容量占比</text></view>
-    <view class="prow" wx:for="{{parts}}" wx:key="part">
-      <text class="pname">{{item.part}}</text>
-      <view class="ptrack"><view class="pfill" style="width: {{item.w}}%"></view></view>
-      <text class="pval">{{item.volume}}</text>
+  <view class="body">
+    <view class="card ask" style="order: {{tab === 'overview' && !hasData ? -1 : 9}}">
+      <view class="ch">
+        <text class="ct">问 AI</text>
+        <view class="ai-state">
+          <view class="dot {{cloudReady ? 'on' : ''}}"></view>
+          <text class="ai-t">{{cloudReady ? 'AI 已连接' : 'AI 未连接'}}</text>
+        </view>
+      </view>
+      <text class="ai-line" wx:if="{{!hasData}}">记一次训练，我就能开始分析你</text>
+      <view class="askrow">
+        <textarea
+          class="qbox"
+          placeholder="问任何训练或作息问题"
+          value="{{q}}"
+          bindinput="onInput"
+          auto-height
+          maxlength="300"
+          confirm-type="send"
+          bindconfirm="ask"
+          show-confirm-bar="{{false}}"
+        />
+        <view class="send {{asking || !q ? 'off' : ''}}" bindtap="ask">{{asking ? '…' : '发送'}}</view>
+      </view>
+      <view class="sugs">
+        <text class="sug" wx:for="{{suggest}}" wx:key="*this" data-t="{{item}}" bindtap="useSuggest">{{item}}</text>
+      </view>
+      <view class="answer" wx:if="{{answer}}">
+        <text class="atext">{{answer}}</text>
+      </view>
     </view>
-    <text class="empty" wx:if="{{!parts.length}}">还没有训练数据</text>
-  </view>
 
-  <view class="card">
-    <view class="ch"><text class="ct">高频动作</text></view>
-    <view class="trow" wx:for="{{tops}}" wx:key="name">
-      <text class="tname">{{item.name}}</text>
-      <text class="tpart">{{item.part}}</text>
-      <text class="tval">{{item.sets}} 组 / {{item.volume}}kg</text>
-    </view>
-    <text class="empty" wx:if="{{!tops.length}}">还没有训练数据</text>
-  </view>
+    <block wx:if="{{tab === 'overview'}}">
+      <view class="feed" wx:if="{{insights.length}}">
+        <view class="ins {{item.k}}" wx:for="{{insights}}" wx:key="t">
+          <text class="ins-tt">{{item.t}}</text>
+          <text class="ins-v">{{item.v}}</text>
+          <text class="ins-s">{{item.sub}}</text>
+        </view>
+      </view>
+      <view class="card emptycard" wx:if="{{!hasNotes}}">
+        <text class="empty-t">还没有生活记录，洞察流是空的</text>
+        <text class="empty-s">用右下角悬浮球随手记一句，精力/情绪/作息就会开始累积</text>
+        <view class="empty-cta" bindtap="goLog">去记录页写一条</view>
+      </view>
+    </block>
 
-  <view class="card ask">
-    <view class="ch"><text class="ct">问 AI</text><text class="cm">{{cloudReady ? '云函数已就绪' : '云开发未配置'}}</text></view>
-    <textarea class="qbox" placeholder="问任何训练问题，会带上你的记录" value="{{q}}" bindinput="onInput" auto-height maxlength="300" show-confirm-bar="{{false}}" />
-    <view class="sugs">
-      <text class="sug" wx:for="{{suggest}}" wx:key="*this" data-t="{{item}}" bindtap="useSuggest">{{item}}</text>
-    </view>
-    <view class="askbtn {{asking ? 'off' : ''}}" bindtap="ask">{{asking ? '思考中…' : '回答我'}}</view>
-    <view class="answer" wx:if="{{answer}}">
-      <text class="atext">{{answer}}</text>
-    </view>
+    <block wx:if="{{tab === 'train'}}">
+      <kpi-strip items="{{kpis}}" />
+
+      <view class="card">
+        <view class="ch"><text class="ct">部位分布</text><text class="cm">按容量占比</text></view>
+        <view class="prow" wx:for="{{parts}}" wx:key="part">
+          <text class="pname">{{item.part}}</text>
+          <view class="ptrack"><view class="pfill" style="width: {{item.w}}%"></view></view>
+          <text class="pval">{{item.volume}}</text>
+        </view>
+        <view class="unlock" wx:if="{{!parts.length}}">
+          <text class="empty">记录满 3 次训练可解锁部位分布</text>
+          <view class="empty-cta" bindtap="goLog">先记一次</view>
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="ch"><text class="ct">高频动作</text></view>
+        <view class="trow" wx:for="{{tops}}" wx:key="name">
+          <text class="tname">{{item.name}}</text>
+          <text class="tpart">{{item.part}}</text>
+          <text class="tval">{{item.sets}} 组 / {{item.volume}}kg</text>
+        </view>
+        <text class="empty" wx:if="{{!tops.length}}">还没有训练数据</text>
+      </view>
+    </block>
+
+    <block wx:if="{{tab === 'rest'}}">
+      <view class="card">
+        <view class="ch"><text class="ct">时钟热力</text><text class="cm">星期 × 时段</text></view>
+        <view class="hrow head-row">
+          <text class="hlab"></text>
+          <text class="hslot" wx:for="{{['0-4','4-8','8-12','12-16','16-20','20-24']}}" wx:key="*this">{{item}}</text>
+        </view>
+        <view class="hrow" wx:for="{{heat}}" wx:key="label" wx:for-item="row">
+          <text class="hlab">{{row.label}}</text>
+          <view class="hcell w{{c.w}}" wx:for="{{row.cells}}" wx:for-item="c" wx:for-index="ci" wx:key="ci">
+            <text class="hn" wx:if="{{c.n}}">{{c.n}}</text>
+          </view>
+        </view>
+        <text class="hfoot" wx:if="{{!hasNotes}}">还没有记录，热力图是空的 — 写一条就会亮</text>
+      </view>
+
+      <view class="feed" wx:if="{{restNotes.length}}">
+        <view class="ins rest" wx:for="{{restNotes}}" wx:key="t">
+          <text class="ins-tt">{{item.t}}</text>
+          <text class="ins-v">{{item.v}}</text>
+          <text class="ins-s">{{item.sub}}</text>
+        </view>
+      </view>
+    </block>
   </view>
 </view>
+
+<float-orb bottom="{{190}}" bind:focus="orbFocus" bind:noted="orbNoted" />

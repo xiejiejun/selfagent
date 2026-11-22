@@ -1,0 +1,139 @@
+.orb {
+  position: fixed;
+  z-index: 90;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #12A594;
+  box-shadow: 0 8rpx 24rpx rgba(18, 165, 148, .34);
+  overflow: visible;
+}
+
+.orb.is-focus {
+  background: #14181A;
+  box-shadow: 0 8rpx 24rpx rgba(20, 24, 26, .3);
+}
+
+.orb.pressing {
+  transform: scale(.94);
+}
+
+.orb-ch {
+  display: block;
+  width: 100%;
+  font-size: 34rpx;
+  line-height: 1;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.orb-badge {
+  position: absolute;
+  right: 6rpx;
+  bottom: 8rpx;
+  min-width: 36rpx;
+  padding: 0 8rpx;
+  height: 28rpx;
+  line-height: 28rpx;
+  font-size: 18rpx;
+  color: #14181A;
+  background: #3DDCBF;
+  border-radius: 14rpx;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.orb-menu {
+  position: fixed;
+  transform: translateY(calc(-100% - 16rpx));
+  display: flex;
+  gap: 8rpx;
+  padding: 8rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 8rpx 24rpx rgba(20, 24, 26, .16);
+  z-index: 95;
+  white-space: nowrap;
+}
+
+.mopt {
+  padding: 12rpx 22rpx;
+  font-size: 24rpx;
+  color: #5B6461;
+  border-radius: 10rpx;
+  background: #F4F7F6;
+}
+
+.mopt.on {
+  color: #fff;
+  background: #12A594;
+}
+
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(20, 24, 26, .42);
+  z-index: 96;
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 28rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
+}
+
+.sh-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.sh-t { font-size: 30rpx; font-weight: 600; color: #14181A; }
+.sh-x { font-size: 24rpx; color: #8A9490; }
+
+.ta {
+  width: 100%;
+  min-height: 140rpx;
+  box-sizing: border-box;
+  background: #F6F9F8;
+  border-radius: 14rpx;
+  padding: 18rpx;
+  font-size: 26rpx;
+  color: #14181A;
+  line-height: 1.55;
+}
+
+.sh-btns {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.sh-btn {
+  flex: 1;
+  height: 84rpx;
+  line-height: 84rpx;
+  text-align: center;
+  border-radius: 14rpx;
+  font-size: 27rpx;
+  color: #fff;
+  background: #12A594;
+}
+
+.sh-btn.ghost {
+  background: #fff;
+  color: #5B6461;
+  border: 1rpx solid #E3E8E6;
+}

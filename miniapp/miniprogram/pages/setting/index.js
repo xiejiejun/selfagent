@@ -140,6 +140,10 @@ Page({
     wx.navigateTo({ url: '/pages/library/index' });
   },
 
+  goImport() {
+    wx.navigateTo({ url: '/pages/import/index' });
+  },
+
   clearAll() {
     wx.showModal({
       title: '清空本机数据',

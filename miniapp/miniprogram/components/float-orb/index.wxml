@@ -1,0 +1,40 @@
+<view class="orb-menu" wx:if="{{menuOn}}" style="left: {{left}}px; top: {{top}}px;">
+  <view class="mopt {{mode === 'record' ? 'on' : ''}}" catchtap="pickRecord">随手记</view>
+  <view class="mopt {{mode === 'focus' ? 'on' : ''}}" catchtap="pickFocus">专注</view>
+</view>
+
+<view
+  class="orb {{mode === 'focus' ? 'is-focus' : ''}} {{pressing ? 'pressing' : ''}}"
+  style="left: {{left}}px; top: {{top}}px; width: {{sizeRpx}}rpx; height: {{sizeRpx}}rpx;"
+  catchtouchstart="onStart"
+  catchtouchmove="onMove"
+  catchtouchend="onEnd"
+  bindtap="onTap"
+  bindlongpress="onLong"
+>
+  <text class="orb-ch">{{mode === 'focus' ? '练' : '记'}}</text>
+  <text class="orb-badge" wx:if="{{mode === 'focus' && countText}}">{{countText}}</text>
+</view>
+
+<view class="mask" wx:if="{{noteOn}}" catchtap="closeNote">
+  <view class="sheet" catchtap="noop">
+    <view class="sh-head">
+      <text class="sh-t">随手记</text>
+      <text class="sh-x" catchtap="closeNote">关闭</text>
+    </view>
+    <textarea
+      class="ta"
+      value="{{noteText}}"
+      bindinput="onNoteInput"
+      placeholder="跑了5公里 / 卧推 60 5×5 / 加班到十点，很焦虑"
+      auto-height
+      maxlength="500"
+      show-confirm-bar="{{false}}"
+      focus="{{noteOn}}"
+    />
+    <view class="sh-btns">
+      <view class="sh-btn ghost" catchtap="closeNote">取消</view>
+      <view class="sh-btn" catchtap="saveNote">保存</view>
+    </view>
+  </view>
+</view>

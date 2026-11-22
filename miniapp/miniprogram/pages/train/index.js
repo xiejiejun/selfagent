@@ -55,7 +55,8 @@ Page({
     editorVisible: false,
     payload: null,
     streak: 0,
-    weekDone: 0
+    weekDone: 0,
+    kpis: []
   },
 
   onLoad() {
@@ -71,14 +72,21 @@ Page({
     const date = this.data.date || engine.dayKey();
     const v = buildView(date);
     const week = engine.lastNDays(store.getTrain(), 7);
+    const weekDone = week.reduce((a, d) => a + d.done, 0);
+    const streak = engine.streakDays(store.getTrain());
     this.setData({
       dateLabel: engine.dateLabel(date),
       isToday: date === engine.dayKey(),
       list: v.list,
       summary: v.summary,
       empty: v.empty,
-      streak: engine.streakDays(store.getTrain()),
-      weekDone: week.reduce((a, d) => a + d.done, 0)
+      streak,
+      weekDone,
+      kpis: [
+        { v: weekDone, l: '本周组数' },
+        { v: streak, l: '连续天数' },
+        { v: v.list.length, l: '当天动作' }
+      ]
     });
   },
 
@@ -166,7 +174,10 @@ Page({
   },
 
   focus(e) {
-    const uid = e.currentTarget.dataset.uid;
+    this.openFocusByUid(e.currentTarget.dataset.uid);
+  },
+
+  openFocusByUid(uid) {
     const train = engine.ensureTrain(store.getTrain());
     const r = (train.records || []).find(x => x && x.uid === uid);
     if (!r) return;
@@ -177,7 +188,38 @@ Page({
       url: '/pages/focus/index?name=' + encodeURIComponent(r.name || '') +
         '&part=' + encodeURIComponent(r.part || '') + '&exId=' + (r.exId || '') +
         '&sets=' + (gs.length || 3) + '&reps=' + (reps || 10) + '&weight=' + (weight || 0) +
-        '&date=' + this.data.date + '&uid=' + uid
+        '&date=' + (r.date || this.data.date) + '&uid=' + uid
+    });
+  },
+
+  // 悬浮球「专注」：优先开当天第一个没练完的动作
+  orbFocus() {
+    const items = engine.dayItems(engine.ensureTrain(store.getTrain()), this.data.date);
+    const st = items.filter(it => it.type !== 'cardio');
+    const undone = st.filter(it => (it.groups || []).some(g => !g.done));
+    const target = undone[0] || st[0];
+    if (!target) {
+      wx.showToast({ title: '先添加一个动作再开专注', icon: 'none' });
+      return;
+    }
+    this.openFocusByUid(target.uid);
+  },
+
+  afterNote() {
+    this.refresh();
+  },
+
+  // 底部唯一的动作入口：动作库 / 有氧 / 拍照识别
+  openAddSheet() {
+    wx.showActionSheet({
+      itemList: ['从动作库添加', '添加有氧', '拍照识别'],
+      success: (r) => {
+        if (r.tapIndex === 0) this.openLibrary();
+        else if (r.tapIndex === 1) this.addCardio();
+        else if (r.tapIndex === 2) {
+          wx.showToast({ title: '拍照识别还在接入，先用动作库', icon: 'none' });
+        }
+      }
     });
   },
 

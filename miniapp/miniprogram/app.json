@@ -8,7 +8,8 @@
     "pages/library/index",
     "pages/focus/index",
     "pages/plan/index",
-    "pages/picker/index"
+    "pages/picker/index",
+    "pages/import/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

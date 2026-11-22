@@ -1,18 +1,32 @@
-.page { padding: 24rpx 24rpx 190rpx; }
+.page { padding: 24rpx 24rpx 220rpx; }
 
 .head { padding: 4rpx 6rpx 18rpx; }
+
+.seg {
+  display: inline-flex;
+  padding: 4rpx;
+  background: #EAEFED;
+  border-radius: 14rpx;
+  margin-bottom: 16rpx;
+}
+.sg {
+  min-width: 112rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  font-size: 23rpx;
+  color: #5B6461;
+  border-radius: 10rpx;
+}
+.sg.on { background: #fff; color: #14181A; font-weight: 600; }
+
 .datebar { display: flex; align-items: center; gap: 14rpx; }
 .arrow { font-size: 36rpx; color: #5B6461; padding: 0 10rpx; }
 .arrow.off { opacity: .28; }
 .dlabel { font-size: 38rpx; font-weight: 600; color: #14181A; }
 .todaybtn { margin-left: auto; font-size: 24rpx; color: #12A594; }
 
-.sum { display: block; margin-top: 10rpx; font-size: 25rpx; color: #5B6461; }
-
-.kpis { display: flex; gap: 12rpx; margin-top: 18rpx; }
-.kpi { flex: 1; background: #fff; border-radius: 16rpx; padding: 16rpx 18rpx; }
-.kv { display: block; font-size: 38rpx; font-weight: 600; color: #14181A; }
-.kt { font-size: 22rpx; color: #8A9490; }
+.sum { display: block; margin: 10rpx 0 18rpx; font-size: 25rpx; color: #5B6461; }
 
 .card { background: #fff; border-radius: 20rpx; padding: 10rpx 20rpx; }
 
@@ -46,21 +60,44 @@
 .mark { font-size: 22rpx; color: #C9D0CD; }
 .hint { display: block; padding: 4rpx 10rpx 0; font-size: 21rpx; color: #A9B3AF; }
 
-.empty { text-align: center; padding: 80rpx 0 40rpx; }
-.et { display: block; font-size: 30rpx; color: #14181A; margin-bottom: 10rpx; }
-.es { font-size: 24rpx; color: #8A9490; }
+.empty {
+  text-align: center;
+  padding: 56rpx 32rpx 40rpx;
+  background: #fff;
+  border-radius: 20rpx;
+}
+.et { display: block; font-size: 30rpx; color: #14181A; }
+.es { display: block; margin-top: 10rpx; font-size: 24rpx; color: #8A9490; }
+.cta {
+  margin: 32rpx auto 0;
+  width: 460rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 16rpx;
+  background: #12A594;
+  color: #fff;
+  font-size: 27rpx;
+}
+.cta-sub { display: block; margin-top: 18rpx; font-size: 23rpx; color: #12A594; }
 
-.bar {
+.addbar {
   position: fixed; left: 0; right: 0; bottom: 0;
-  display: flex; gap: 12rpx;
   padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
   background: rgba(245, 247, 247, .96);
   border-top: 1rpx solid #E9EEEB;
+  display: flex;
+  align-items: center;
 }
-.act {
-  flex: 1; height: 84rpx; line-height: 84rpx; text-align: center;
-  background: #12A594; color: #fff; border-radius: 14rpx; font-size: 28rpx;
+.addbtn {
+  width: 300rpx;
+  height: 84rpx;
+  line-height: 84rpx;
+  text-align: center;
+  background: #12A594;
+  color: #fff;
+  border-radius: 14rpx;
+  font-size: 28rpx;
+  font-weight: 600;
 }
-.act.ghost { flex: 0 0 160rpx; background: #fff; color: #5B6461; border: 1rpx solid #E3E8E6; }
 
 .focusbtn { margin-top: 14rpx; text-align: center; font-size: 23rpx; color: #12A594; }
