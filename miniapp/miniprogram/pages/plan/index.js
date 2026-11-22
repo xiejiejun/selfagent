@@ -71,9 +71,11 @@ Page({
       name: 'aiProxy',
       data: {
         messages: [
-          { role: 'system', content: '你是健身教练。依据目标和历史记录输出一周计划：每天一行写动作/组数/次数，最后一句注意点。中文，120 字内，不用分点符号。' },
+          { role: 'system', content: '健身教练。按目标与记录给一周计划：每天一行“周几 动作 组×次”，最后一句注意点。中文 100 字内。' },
           { role: 'user', content: '目标：每周 ' + this.data.days + ' 天、每天 ' + this.data.setsPerDay + ' 组。\n近30天部位容量：' + parts.map(p => p.part + p.volume + 'kg').join('，') + '\n高频动作：' + tops.map(t => t.name).join('、') }
-        ]
+        ],
+        max_tokens: 220,
+        temperature: 0.3
       }
     }).then(r => {
       const res = (r && r.result) || {};

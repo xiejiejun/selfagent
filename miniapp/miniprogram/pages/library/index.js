@@ -72,8 +72,8 @@ Page({
   // 云端还没有缩略图时，后台分批搬运（gifMigrate）；函数单次 3 秒上限，故小批多轮
   migrateMissing() {
     if (!this.data.cloudReady || !wx.cloud) return;
-    if (this.migRound >= 10) return;
-    const missing = (this.data.list || []).filter(c => !c.fileID).map(c => c.id).slice(0, 8);
+    if (this.migRound >= 30) return;
+    const missing = (this.data.list || []).filter(c => !c.fileID).map(c => c.id).slice(0, 6);
     if (!missing.length) return;
     this.migRound = (this.migRound || 0) + 1;
     wx.cloud.callFunction({ name: 'gifMigrate', data: { ids: missing } })

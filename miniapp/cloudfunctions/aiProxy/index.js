@@ -39,7 +39,8 @@ exports.main = async (event) => {
   try {
     const r = await post(base.replace(/\/$/, '') + '/chat/completions',
       { Authorization: 'Bearer ' + key },
-      { model, messages, stream: false, temperature: event.temperature == null ? 0.4 : event.temperature });
+      { model, messages, stream: false, temperature: event.temperature == null ? 0.4 : event.temperature,
+        max_tokens: event.max_tokens || 400 });
     const text = (((r.choices || [])[0] || {}).message || {}).content || '';
     return { ok: true, text, usage: r.usage || null };
   } catch (e) {
