@@ -2,6 +2,7 @@
   <view class="hd">
     <text class="t">✦ 拍照识别</text>
     <text class="s">拍器械或训练场景，识别成动作库里的动作，直接加入今天</text>
+    <text class="ch" wx:if="{{channel}}">通道：{{channel}}</text>
   </view>
 
   <view class="shot" wx:if="{{!img}}">
@@ -39,8 +40,11 @@
 
   <view class="card" wx:if="{{!aiReady}}">
     <text class="ct">先看得到的东西</text>
-    <text class="hint">识图需要云端 AI（aiProxy 的 AI_BASE_URL / AI_API_KEY / AI_MODEL）。没配也可以先用动作库手动挑，两边数据是同一套。</text>
-    <view class="tb primary" bindtap="toLib">去动作库手动挑</view>
+    <text class="hint">识图要有可用的视觉模型：在设置里配自定义 API（如 agnes-3.0-flash）直连，或给云函数 aiProxy 配 AI_BASE_URL / AI_API_KEY / AI_MODEL 并把云端超时调到 45 秒。没配也可以先用动作库手动挑，两边数据是同一套。</text>
+    <view class="two">
+      <view class="tb ghost" bindtap="goApi">去设置 API</view>
+      <view class="tb primary" bindtap="toLib">去动作库手动挑</view>
+    </view>
   </view>
 </view>
 

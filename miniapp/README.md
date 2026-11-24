@@ -348,6 +348,34 @@ DECISION_POINTS = [
 - 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
+## 体验版 1.0.22：拍照识图链路修复（多模态 + 通道诊断）
+
+### 一、报错根因
+
+- 现象 `cloud.callFunction:fail errCode -504003 Invoking task timed out after 3 seconds`：调用走到云函数 `aiProxy`，而该函数云端超时仍是 3 秒（IDE 部署改不了，需控制台手动改），带图片的请求必然超时。
+- 走到云函数的原因：`ai.ask` 只有在读得到 `settings.ai.baseUrl + apiKey` 时才直连；配置只存在做过设置的那台设备的本地存储里，手机体验版读不到就回落。
+- 另一个硬伤：`maskMessages` 把多模态 `content` 数组当字符串匿名化，`image_url` 块被拍平，模型收不到图（即使直连也认不出）。
+
+### 二、改法
+
+- `maskMessages` 改为按块处理：`text` 块走 `maskText`，`image_url` 原样保留；非数组仍整体匿名化。
+- 预览用 `previewContent()`、字符统计用 `contentChars()`，数组只写文字 + `[图片]`，不再把 base64 存进 `settings.ai.preview`。
+- 新增 `ai.usingCustom()`；`pages/scan` 首屏显示「通道：…」。
+- `pages/scan` 的 `fail()` 分类提示：域名未白名单 → 给出要加的域名；`-504003/3 seconds` → 给出两条解法；401/403 → 查 Key；并附当前通道与原始错误。
+- `pages/apiconfig` 增「识图测试」：1×1 红图 + 提示词，返回「红色」即通。
+
+### 三、实测
+
+- 接口直连（PowerShell 复现页面请求）：`agnes-3.0-flash` 文本 200；1×1 红图回答「红色」，151 tokens。
+- 真实健身房龙门架照片（640px q60，2.6s，583 tokens）→ `["高位下拉","绳索夹胸","绳索卷腹","平板卧推","窄距划船","站姿绳索侧平举"]`。
+- IDE + automator 端到端：apiconfig 保存后 `CHANNEL 直连 apihub.agnes-ai.com/v1 · agnes-3.0-flash`；`callAI` 320px 图 12s 内返回，动作库命中 `绳索高位下拉全程幅度 / 弹力带站姿划船 / 绳索面拉（外旋旋转）`，未匹配项列在「未匹配」。截图 `t9/v2-scan.png`。
+
+### 四、手机端需要做的两件事
+
+1. 设置 → 动作与 AI → 高级 → 「Agent API 配置」（`pages/apiconfig`）填 `https://apihub.agnes-ai.com/v1`、Key、`agnes-3.0-flash` 并保存（配置只在本机）。
+2. 小程序后台「开发管理 → 服务器域名 → request 合法域名」加 `https://apihub.agnes-ai.com`；开发阶段可在开发者工具勾「不校验合法域名」。
+3. 若还想保留云端兜底：云开发控制台把 `aiProxy` 超时从 3s 改成 45s。
+
 ## 体验版 1.0.21：本组计时暂停 / 继续、重置
 
 ### 一、交互

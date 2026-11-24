@@ -24,10 +24,20 @@ Page({
     raw: '',
     list: [],
     detail: null,
-    aiReady: true
+    aiReady: true,
+    channel: ''
   },
 
-  onLoad() {},
+  onLoad() {
+    const c = ai.cfg();
+    
+    const custom = ai.usingCustom();
+    this.setData({
+      channel: custom
+        ? ('直连 ' + (c.baseUrl || '').replace(/^https?:\/\//, '') + ' · ' + (c.model || '默认模型'))
+        : '云端 aiProxy（未配自定义 API）'
+    });
+  },
 
   shoot() { this.choose('camera'); },
   album() { this.choose('album'); },
@@ -120,10 +130,23 @@ Page({
   },
 
   fail(msg, dev) {
+    const raw = String(msg || '');
+    let err = raw;
+    let tip = '';
+    if (/domain list|合法域名|url not in/i.test(raw)) {
+      err = '自定义 API 域名没有加白名单，请求被小程序拦截';
+      tip = '把 ' + (ai.cfg().baseUrl || 'API 域名') + ' 加进后台「服务器域名 → request 合法域名」；开发阶段可在开发者工具勾选「不校验合法域名」。';
+    } else if (/-504003|timed out after 3 seconds/i.test(raw)) {
+      err = '云端 aiProxy 3 秒超时（云端函数超时仍是 3s，IDE 部署改不动）';
+      tip = '两种解法：① 在设置里配好自定义 API（已配就不走云函数）；② 云开发控制台把 aiProxy 超时改成 45 秒。';
+    } else if (/401|403|invalid api key|unauthorized/i.test(raw)) {
+      err = 'API Key 被拒绝（401/403）';
+      tip = '检查 Key 是否过期、是否带多余空格，或模型名是否可用。';
+    }
     this.setData({
-      busy: false, hint: '', err: msg,
+      busy: false, hint: '', err,
       aiReady: false,
-      raw: dev ? '需要在云函数 aiProxy 配置 AI_BASE_URL / AI_API_KEY / AI_MODEL 才能识图；未配置时请用动作库搜索。' : ''
+      raw: (tip ? tip + ' ' : '') + '当前通道：' + (this.data.channel || '') + (dev ? '（' + raw + '）' : '')
     });
   },
 
@@ -156,6 +179,8 @@ Page({
   },
 
   toLib() { wx.navigateTo({ url: '/pages/library/index' }); },
+
+  goApi() { wx.navigateTo({ url: '/pages/apiconfig/index' }); },
 
   noop() {}
 });

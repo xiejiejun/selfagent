@@ -22,6 +22,7 @@
 
     <view class="acts">
       <view class="ab ghost {{testing ? 'off' : ''}}" bindtap="test">{{testing ? '测试中…' : '连通测试'}}</view>
+      <view class="ab ghost {{testing ? 'off' : ''}}" bindtap="testVision">识图测试</view>
     </view>
     <text class="res" wx:if="{{testResult}}">{{testResult}}</text>
   </view>

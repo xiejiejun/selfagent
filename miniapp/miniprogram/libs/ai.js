@@ -39,12 +39,46 @@ function maskText(t) {
 
 function maskMessages(messages, anon) {
   if (anon === false) return messages;
-  return (messages || []).map(m => Object.assign({}, m, { content: maskText(m.content) }));
+  return (messages || []).map(m => {
+    if (!m || !Array.isArray(m.content)) {
+      return Object.assign({}, m, { content: maskText(m && m.content) });
+    }
+    // 多模态：只对文字做匿名化，图片块原样保留（一旦被拼成字符串，模型就看不到图了）
+    return Object.assign({}, m, {
+      content: m.content.map(p => {
+        if (!p || typeof p !== 'object') return p;
+        if (p.type === 'text') return Object.assign({}, p, { text: maskText(p.text) });
+        return p;
+      })
+    });
+  });
+}
+
+// 预览用：数组 content 只写文字 + [图片]，避免把 base64 存进设置
+function previewContent(c) {
+  if (!Array.isArray(c)) return String(c || '');
+  return c.map(p => {
+    if (!p || typeof p !== 'object') return String(p || '');
+    if (p.type === 'text') return String(p.text || '');
+    if (p.type === 'image_url') return '[图片]';
+    return '[' + (p.type || 'part') + ']';
+  }).join('\n');
+}
+
+function contentChars(c) {
+  if (!Array.isArray(c)) return String(c || '').length;
+  return c.reduce((a, p) => a + ((p && p.type === 'text') ? String(p.text || '').length : 0), 0);
 }
 
 function lastRequest() {
   const s = store.getSettings() || {};
   return (s.ai && s.ai.preview) || '';
+}
+
+// 是否已配自定义 Agent（配了就直连，不再走云函数）
+function usingCustom() {
+  const c = cfg();
+  return !!(c.apiKey && c.baseUrl);
 }
 
 function usageText() {
@@ -70,9 +104,9 @@ function ask(opts) {
   const messages = Array.isArray(o.messages) ? maskMessages(o.messages, c.anon) : [];
   if (!messages.length) return Promise.resolve({ ok: false, error: 'messages 为空' });
 
-  const chars = messages.reduce((a, m) => a + String(m.content || '').length, 0);
+  const chars = messages.reduce((a, m) => a + contentChars(m.content), 0);
   // 发送的内容留一份预览，设置页可看
-  saveCfg({ preview: messages.map(m => (m.role || '') + '：' + String(m.content || '').slice(0, 600)).join('\n').slice(0, 2000) });
+  saveCfg({ preview: messages.map(m => (m.role || '') + '：' + previewContent(m.content).slice(0, 600)).join('\n').slice(0, 2000) });
 
   if (c.apiKey && c.baseUrl) {
     return new Promise((resolve) => {
@@ -117,4 +151,4 @@ function ask(opts) {
   }).catch(err => ({ ok: false, error: (err && err.errMsg) || String(err) }));
 }
 
-module.exports = { ask, cfg, saveCfg, maskText, maskMessages, usageText, lastRequest };
+module.exports = { ask, cfg, saveCfg, maskText, maskMessages, usageText, lastRequest, usingCustom };

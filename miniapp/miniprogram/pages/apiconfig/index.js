@@ -76,5 +76,31 @@ Page({
     }).then(r => {
       this.setData({ testing: false, testResult: r.ok ? '连接正常：' + (r.text || '').slice(0, 60) : '失败：' + (r.error || '未知') });
     });
+  },
+
+  // 识图连通测试：1×1 红色 PNG，能答「红色」说明模型与图片块都通了
+  testVision() {
+    if (!this.data.usingCustom) {
+      wx.showToast({ title: '先保存自定义 API 再测识图', icon: 'none' });
+      return;
+    }
+    this.setData({ testing: true, testResult: '' });
+    const red = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    ai.ask({
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: '这张图是什么颜色？只回复颜色词' },
+          { type: 'image_url', image_url: { url: red } }
+        ]
+      }],
+      max_tokens: 30,
+      temperature: 0.1
+    }).then(r => {
+      this.setData({
+        testing: false,
+        testResult: r.ok ? '识图正常（模型回复「' + String(r.text || '').trim().slice(0, 20) + '」）' : '识图失败：' + (r.error || '未知')
+      });
+    });
   }
 });
