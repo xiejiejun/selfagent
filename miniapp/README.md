@@ -348,6 +348,38 @@ DECISION_POINTS = [
 - 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
+## 体验版 1.0.19：专注模式每组自动计时 + 每组时长进日志
+
+### 一、每组自动计时（`pages/focus`）
+
+- `prepare()` 对力量动作直接进入 `stage: 'work'` 并 `_workStart = Date.now()`，圆环中间即 `m:ss`（`tick` 每 500ms 刷新）；不再有「开始第 N 组」这一步。
+- `elapsedSec()`：`Math.max(1, round((now - _workStart)/1000))`；`finishSet` / `doneCurrent` / `tapRow` / `completeGroup` 统一用它，完成即写 `g.sec`。
+- `completeGroup` 落库顺序：写 `sec` → `saveStrength` → `persistFocus`；组行 `rowsOf` 的 `sec` 用 `secText`（`45″` / `1′05″`）。
+- 切后台：`onHide` 记 `_hideAt`，`onShow` 执行 `_workStart += Date.now() - _hideAt`，锁屏时间不计入本组。
+- 休息中点组行：改为 `beginSet(true)`（结束休息、开始计时），不再把未做的一组记成 0 秒。
+- 点非当前组（前面的空组）：只写该组完成与时长，`if (!isCur) { ...; return; }` 提前返回，不清 `_workStart`、不触发休息。
+- 重做 `redoRow`：`sec=0` 且 `_sessionSec` 扣回原 `wasSec`，`prepare` 重新计时；收工页 `finishTime` 取真实累计 `_sessionSec`。
+- 修复 `saveStrength` 中 `rpe: 0` 的硬编码（改为 `g.rpe || 0`）。
+- 设置页删除「组内计时」开关与旧说明，改为「专注训练里每组自动计时」一句话；`libs/settings` 的 `groupTimer` 字段保留兼容，页面不再读取。
+
+### 二、日志里的每组时长
+
+- 记录页展开动作后每行：`1 | 自重 × 10 | 45″ | ✓`（`pages/log/index.wxml` 的 `.gsec`）。
+- 动作标题行追加总时长：`engine.groupLine` 汇总 `sec > 0` 的组，`自重 3×10 · 1′35″`。
+- 链路：`records[].groups[].sec` → `engine.syncTrainLog` → `logs[].meta.items[].groups[].sec` → `log/buildTimeline`，无新增存储键。
+
+### 三、验证（无本机 IDE 时用 Node 逻辑桩）
+
+本机（Windows IDE）离线，改为在云主机用 Node 桩跑页面逻辑（`wx` storage / toast / selectorQuery 全打桩，`Page` 捕获配置），脚本 `harness/focus_timer_check.js`、`focus_timer_check2.js`：
+
+- 三组分别模拟 45s / 32s / 18s → `RECORD_GROUPS [[1,true,45],[2,true,32],[3,true,18]]`。
+- 日志 `LOG_ITEMS` 每组 sec 为 45/32/18，`LOG_LINE = 自重 3×10 · 1′35″`。
+- `redoRow` 第 2 组：`done=false, sec=0`，会话 95→63，`stage work setNo 2`。
+- 非当前组点勾：`_workStart` 仍在；随后完成当前组 `sec=10`，会话 73。
+- 收工：`finishText 3 组 · 0 kg`，`finishTime 1 分钟`。
+
+未覆盖：真机/IDE 上的圆环渲染与触摸时序（Windows 环境离线，未跑 automator）。
+
 ## 体验版 1.0.18：专注页运动项增删查改 + 重做某一组 + 休息圆环修复
 
 包体 1,325,907 B（`__FULL__ size`），`getCodeFiles count: 104`；上传成功，版本号 `1.0.18`，描述「专注页运动项增删查改 + 重做某一组 + 休息圆环修复」。

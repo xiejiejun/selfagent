@@ -67,7 +67,7 @@ Page({
     setsDone: 0,
     setsTotal: 0,
     mmss: '0:00',
-    setTimer: false,
+    setTimer: true,
     restPct: 0,
     restLeft: 0,
     restTotal: 60,
@@ -120,7 +120,7 @@ Page({
       setTimeout(() => wx.navigateBack(), 600);
       return;
     }
-    this.setData({ date: this.date, setTimer: settings.trainCfg().groupTimer });
+    this.setData({ date: this.date, setTimer: true });
     this.restoreFocus();
     this.refreshQueue();
     this.prepare();
@@ -155,6 +155,18 @@ Page({
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
     wx.setKeepScreenOn({ keepScreenOn: false });
     if (this.data.stage !== 'finish') this.saveCurrentIfNeeded();
+  },
+
+  // 切后台/锁屏不把时间算进本组用时
+  onHide() {
+    if (this._workStart) this._hideAt = Date.now();
+  },
+
+  onShow() {
+    if (this._workStart && this._hideAt) {
+      this._workStart += Date.now() - this._hideAt;
+    }
+    this._hideAt = 0;
   },
 
   onReady() {
@@ -417,17 +429,17 @@ Page({
     if (gi < 0) { this.idx++; return this.prepare(); }
     this._gi = gi;
     const g = it.groups[gi];
+    // 每组一进入就开始计时：完成时把本组实际用时写进该组 sec
+    this._workStart = Date.now();
     this.setData({
-      stage: 'ready', curType: 'strength', curName: it.name, curPart: it.part || '',
+      stage: 'work', curType: 'strength', curName: it.name, curPart: it.part || '',
       curCardio: !!it.isCardio,
       setNo: gi + 1, setsDone: it.groups.filter(x => x.done).length, setsTotal: it.groups.length,
       reps: g.reps || 0, weight: g.weight || 0, mmss: '0:00',
       rpe: g.rpe || 0, warmup: !!g.warmup,
       detailVisible: false, detail: null,
       rows: this.rowsOf(it),
-      hint: this.data.setTimer
-        ? ('第 ' + (gi + 1) + ' 组，准备好点开始')
-        : ('点「完成第 ' + (gi + 1) + ' 组」，或直接点组行打勾')
+      hint: '第 ' + (gi + 1) + ' 组计时中，做完点「完成本组」'
     });
     this.refreshQueue();
     this.draw();
@@ -476,6 +488,12 @@ Page({
   },
 
   /* ---------- 力量 ---------- */
+  // 当前组已运动秒数：从进入该组开始算，至少 1 秒
+  elapsedSec() {
+    if (!this._workStart) return 0;
+    return Math.max(1, Math.round((Date.now() - this._workStart) / 1000));
+  },
+
   // 组内计时关闭时（默认）：点一下 = 记一组，然后自动进组间休息
   start() {
     const it = this.items[this.idx];
@@ -510,7 +528,7 @@ Page({
     const it = this.items[this.idx];
     if (!it || it.type !== 'strength') return;
     if (this.data.stage === 'rest') this._restEnd = 0;
-    this.completeGroup(this._gi, 0);
+    this.completeGroup(this._gi, this.elapsedSec());
   },
 
   // 点组行直接打勾（训练页同款交互）
@@ -521,8 +539,14 @@ Page({
     const gi = Number(e.currentTarget.dataset.i);
     const g = it.groups[gi];
     if (!g || g.done) return;
-    if (this.data.stage === 'rest') this._restEnd = 0;
-    this.completeGroup(gi, 0);
+    // 休息中点到组行 = 结束休息、开始下一组的计时（没做过的一组不能没有时长就记完成）
+    if (this.data.stage === 'rest') {
+      this._restEnd = 0;
+      this.beginSet(true);
+      this.setData({ restLeft: 0, restPct: 0 });
+      return;
+    }
+    this.completeGroup(gi, this.elapsedSec());
   },
 
   // 智能单按钮：ready=开始/直接记组，work=完成，rest=下一组，between=下一个动作
@@ -547,8 +571,7 @@ Page({
       wx.showToast({ title: this.data.stage === 'rest' ? '先跳过休息，再记本组' : '本组还没开始', icon: 'none' });
       return;
     }
-    const sec = Math.max(1, Math.round((Date.now() - (this._workStart || Date.now())) / 1000));
-    this.completeGroup(this._gi, sec);
+    this.completeGroup(this._gi, this.elapsedSec());
   },
 
   // 记一组 → 保存 → 组间休息倒计时（最后一组则进入动作收尾）
@@ -557,16 +580,28 @@ Page({
     if (!it || it.type !== 'strength') return;
     const g = it.groups[gi];
     if (!g || g.done) return;
-    const dur = Math.max(0, sec || 0);
+    const dur = Math.max(0, sec > 0 ? sec : this.elapsedSec());
+    const isCur = gi === this._gi;
     g.sec = dur;
     g.done = true;
-    g.rpe = this.data.rpe || 0;
+    g.rpe = isCur ? (this.data.rpe || 0) : (g.rpe || 0);
     this._sessionSec = (this._sessionSec || 0) + dur;
-    this._workStart = 0;
+    if (isCur) this._workStart = 0;
     this.saveStrength(it);
     this.persistFocus();
     wx.vibrateShort({ type: 'medium' });
     this.checkPR(it, g);
+    // 点的是非当前组（手点前面的空组）：只记完成与该组时长，不打断当前组的计时与休息
+    if (!isCur) {
+      const stat0 = this.setsStat();
+      this.setData({
+        rows: this.rowsOf(it),
+        setsDone: it.groups.filter(x => x.done).length,
+        doneSets: stat0.done, doneVolume: stat0.vol
+      });
+      this.refreshQueue();
+      return;
+    }
 
     const next = it.groups.findIndex(x => !x.done);
     const rows = this.rowsOf(it);
@@ -767,7 +802,7 @@ Page({
     if (!it) return;
     const groups = it.groups.map((g, i) => ({
       no: g.warmup ? 'W' : (i + 1), reps: g.reps || 0, weight: g.weight || 0,
-      done: !!g.done, warmup: !!g.warmup, rpe: 0, sec: g.sec || 0, tag: g.tag || (g.warmup ? 'warm' : '')
+      done: !!g.done, warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, tag: g.tag || (g.warmup ? 'warm' : '')
     }));
     const g0 = groups.find(g => g.done) || groups[0] || {};
     if (it.isCardio) {

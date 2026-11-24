@@ -126,11 +126,7 @@
         <text class="sl">自动进入下一组</text>
         <switch checked="{{autoNext}}" color="#12A594" bindchange="toggleAuto" />
       </view>
-      <view class="srow">
-        <text class="sl">组内计时</text>
-        <switch checked="{{groupTimer}}" color="#12A594" bindchange="toggleGroupTimer" />
-      </view>
-      <text class="tip">关着：组行打勾即完成，自动进组间休息倒计时，跟训练页一致。开了才显示「本组用时」，适合记录力竭组时长。</text>
+      <text class="tip">专注训练里每组自动计时：进入该组即开始计时，完成后本组用时自动记入该组并写进训练日志。</text>
       <view class="frow">
         <text class="fl">重量步进</text>
         <input class="fi" type="digit" value="{{wStep}}" bindinput="onStep" placeholder="2.5" />

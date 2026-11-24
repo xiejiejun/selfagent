@@ -16,7 +16,7 @@ Page({
     syncText: '未同步', syncOn: false, syncAuto: true, cloudReady: false, busy: false,
     typesView: [],
     newTag: '', newType: '',
-    restSec: 90, autoNext: false, wStep: 2.5, groupTimer: false, pureData: false, agentAuto: false,
+    restSec: 90, autoNext: false, wStep: 2.5, pureData: false, agentAuto: false,
     memList: [],
     opList: [],
     activeType: '',
@@ -91,7 +91,6 @@ Page({
       restSec: cfg.rest || 90,
       autoNext: cfg.autoNext,
       wStep: cfg.step,
-      groupTimer: cfg.groupTimer,
       pureData: !polish.enabled(),
       agentAuto: decision.autoOn(),
       memList,
@@ -207,13 +206,6 @@ Page({
     const v = !!e.detail.value;
     this.setData({ autoNext: v });
     settings.setTrainCfg({ autoNext: v });
-  },
-
-  // 组内计时：默认关。开了力量组才有「本组用时」计时环，关着就是打勾 + 组间休息
-  toggleGroupTimer(e) {
-    const v = !!e.detail.value;
-    this.setData({ groupTimer: v });
-    settings.setTrainCfg({ groupTimer: v });
   },
 
   togglePure(e) {
