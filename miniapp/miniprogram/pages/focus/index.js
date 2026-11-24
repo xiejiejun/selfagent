@@ -69,6 +69,7 @@ Page({
     mmss: '0:00',
     setTimer: true,
     timerPaused: false,
+    chargePct: 0,
     restPct: 0,
     restLeft: 0,
     restTotal: 60,
@@ -454,6 +455,7 @@ Page({
     this._resumeWorkStart = 0;
     this._resumePause = null;
     this._workStart = (ws && ws > 0 && Date.now() - ws < 6 * 3600 * 1000) ? ws : Date.now();
+    this._lastMin = Math.floor(this.elapsedMs() / 60000);
     this._pauseAcc = rp ? rp.acc : 0;
     this._pauseAt = rp && rp.paused ? (rp.at || Date.now()) : 0;
     const elapsed = Math.max(0, Math.round(this.elapsedMs() / 1000));
@@ -492,6 +494,13 @@ Page({
     const d = {};
     if (this.data.stage === 'work' && this._workStart && !this.data.timerPaused) {
       d.mmss = mmss(this.elapsedMs() / 1000);
+      // 满 1 分钟：白光脉冲，弧重新从 0 起
+      const curMin = Math.floor(this.elapsedMs() / 60000);
+      if (curMin > (this._lastMin || 0)) {
+        this._lastMin = curMin;
+        this._flash = now + 240;
+        wx.vibrateShort({ type: 'light' });
+      }
     }
     if (this.data.stage === 'rest' && this._restEnd) {
       const left = Math.max(0, Math.round((this._restEnd - now) / 1000));
@@ -511,7 +520,7 @@ Page({
       d.mmss = mmss(s);
     }
     if (Object.keys(d).length) this.setData(d);
-    if (this.data.stage === 'work' || this.data.stage === 'rest') this.draw();
+    if (this.data.stage === 'work' || this.data.stage === 'rest' || this.data.stage === 'ready') this.draw();
   },
 
   /* ---------- 力量 ---------- */
@@ -552,9 +561,13 @@ Page({
     this._workStart = Date.now();
     this._pauseAcc = 0;
     this._pauseAt = 0;
+    this._lastMin = 0;
+    this._flash = 0;
     this.setData({ mmss: '0:00', timerPaused: false });
     this.persistFocus();
+    wx.vibrateShort({ type: 'medium' });
     wx.showToast({ title: '本组计时已重置', icon: 'none' });
+    this.draw();
   },
 
   // 组内计时关闭时（默认）：点一下 = 记一组，然后自动进组间休息
@@ -1090,7 +1103,7 @@ Page({
     });
   },
 
-  /* ---------- 圆环：只在组间休息时画倒计时环 ---------- */
+  /* ---------- 圆环：work/ready = 计时器本体（一分钟一圈 + 5 分钟刻度）；rest = 倒计时 ---------- */
   draw() {
     if (!this.cv) { this.initCanvas(); return; }
     const cv = this.cv;
@@ -1098,23 +1111,130 @@ Page({
     const w = cv.w, h = cv.h;
     const cx = w / 2, cy = h / 2;
     ctx.clearRect(0, 0, w, h);
-    if (this.data.stage !== 'rest') return;
-    const p = Math.max(0, Math.min(1, (this.data.restLeft || 0) / (this.data.restTotal || 1)));
+    const s = this.data.stage;
+    if (s !== 'rest' && s !== 'work' && s !== 'ready') return;
     const r = Math.min(w, h) / 2 - 26;
     if (r <= 10) return;
+
+    // 轨道
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-    ctx.lineWidth = 7;
+    ctx.strokeStyle = s === 'rest' ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.09)';
+    ctx.lineWidth = s === 'rest' ? 7 : 8;
     ctx.stroke();
-    if (p > 0) {
+
+    if (s === 'rest') {
+      const p = Math.max(0, Math.min(1, (this.data.restLeft || 0) / (this.data.restTotal || 1)));
+      if (p > 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p);
+        ctx.strokeStyle = '#3DDCBF';
+        ctx.lineWidth = 7;
+        ctx.stroke();
+      }
+      return;
+    }
+
+    const sec = s === 'ready' ? 0 : this.elapsedMs() / 1000;
+    const minDone = Math.floor(sec / 300); // 每 5 分钟点亮 1 个刻度
+    // 12 个刻度
+    for (let i = 0; i < 12; i++) {
+      const a = -Math.PI / 2 + i * (Math.PI * 2 / 12);
+      const lit = i < minDone;
+      const r1 = r - 15, r2 = r - 5;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+      ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
+      ctx.strokeStyle = lit ? 'rgba(61,220,191,0.95)' : 'rgba(255,255,255,0.16)';
+      ctx.lineWidth = lit ? 3.5 : 2.5;
+      ctx.stroke();
+    }
+
+    // 一分钟进度弧：每秒推进 1/60 圈，满圈回到 0，并有一次白光脉冲
+    if (s === 'ready') {
+      // 顶部呼吸光点，提示「点我」
+      const t = (Date.now() % 1600) / 1600;
+      const al = 0.35 + 0.5 * Math.abs(1 - 2 * t);
+      ctx.beginPath();
+      ctx.arc(cx, cy - r, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(61,220,191,' + al.toFixed(3) + ')';
+      ctx.fill();
+    } else {
+      const p = (sec % 60) / 60;
       ctx.beginPath();
       ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p);
-      ctx.strokeStyle = '#3DDCBF';
-      ctx.lineWidth = 7;
+      ctx.strokeStyle = s === 'work' && this.data.timerPaused ? 'rgba(61,220,191,0.55)' : '#3DDCBF';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+    }
+
+    // 满 1 分钟的白光脉冲
+    if (this._flash && Date.now() < this._flash) {
+      const k = Math.max(0, (this._flash - Date.now()) / 240);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,' + (0.55 * k).toFixed(3) + ')';
+      ctx.lineWidth = 12;
+      ctx.stroke();
+    }
+
+    // 长按蓄能：白色弧从 0 长到整圈
+    const charge = this.data.chargePct || 0;
+    if (charge > 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, charge));
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 10;
       ctx.stroke();
     }
   },
+
+  /* ---------- 环手势：单击开始/暂停/继续；长按 800ms 完成本组；双击重置 ---------- */
+  ringTap() {
+    if (this._suppressTap) { this._suppressTap = false; return; }
+    const now = Date.now();
+    if (this._workStart && now - (this._lastTap || 0) < 320 && this.data.stage === 'work') {
+      this._lastTap = 0;
+      this.resetTimer();
+      return;
+    }
+    this._lastTap = now;
+    if (this.data.stage === 'ready' && this.data.setTimer) {
+      this.beginSet(false);
+      wx.vibrateShort({ type: 'light' });
+      return;
+    }
+    if (this.data.stage === 'work') this.togglePause();
+  },
+
+  ringHoldStart() {
+    if (this.data.stage !== 'work') return;
+    this._holdDone = false;
+    this._holdT0 = Date.now();
+    if (this._chargeTimer) clearInterval(this._chargeTimer);
+    this._chargeTimer = setInterval(() => {
+      const p = Math.min(1, (Date.now() - this._holdT0) / 800);
+      this.setData({ chargePct: p });
+      this.draw();
+      if (p >= 1) {
+        this._holdDone = true;
+        this._suppressTap = true;
+        this.stopHold();
+        wx.vibrateShort({ type: 'heavy' });
+        wx.showToast({ title: '本组完成', icon: 'none' });
+        this.finishSet();
+        setTimeout(() => { this._suppressTap = false; }, 400);
+      }
+    }, 50);
+  },
+
+  stopHold() {
+    if (this._chargeTimer) { clearInterval(this._chargeTimer); this._chargeTimer = null; }
+    if (this.data.chargePct) { this.setData({ chargePct: 0 }); this.draw(); }
+  },
+
+  ringHoldEnd() { this.stopHold(); },
+  ringHoldCancel() { this.stopHold(); },
 
   noop() {}
 });

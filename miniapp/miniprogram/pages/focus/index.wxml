@@ -54,9 +54,11 @@
       <text class="part">{{curPart}} · 第 {{setNo}}/{{setsTotal}} 组 · 已完成 {{setsDone}} 组</text>
     </view>
 
-    <view class="stage {{stage === 'rest' ? 'resting' : ''}} {{!setTimer && stage !== 'rest' ? 'lite' : ''}}">
+    <view class="stage {{stage === 'rest' ? 'resting' : ''}} {{timerPaused ? 'paused' : ''}} {{!setTimer && stage !== 'rest' ? 'lite' : ''}}">
       <canvas type="2d" id="rings" class="rings" disable-scroll="true"></canvas>
       <view class="dial"></view>
+      <view class="ring-hit" wx:if="{{stage === 'work' || (stage === 'ready' && setTimer)}}"
+        bindtap="ringTap" bindtouchstart="ringHoldStart" bindtouchend="ringHoldEnd" bindtouchcancel="ringHoldCancel"></view>
       <block wx:if="{{stage === 'rest'}}">
         <view class="ctr">
           <text class="big">{{restLeft}}</text>
@@ -66,7 +68,7 @@
       <block wx:elif="{{setTimer}}">
         <view class="ctr">
           <text class="big">{{mmss}}</text>
-          <text class="unit">{{timerPaused ? '已暂停' : '本组用时'}}</text>
+          <text class="unit">{{stage === 'ready' ? '点击开始' : (timerPaused ? '已暂停 · 点击继续' : '本组用时')}}</text>
         </view>
       </block>
       <block wx:else>
@@ -78,14 +80,6 @@
       <view class="meta">
         <text>{{setsDoneAll}}/{{setsTotalAll}} 组 · {{doneVolume}} kg</text>
       </view>
-    </view>
-
-    <text class="hint">{{hint}}</text>
-
-    <!-- 本组计时：暂停 / 继续、重置 -->
-    <view class="tctrl" wx:if="{{stage === 'work'}}">
-      <text class="tc {{timerPaused ? 'on' : ''}}" bindtap="togglePause">{{timerPaused ? '继续计时' : '暂停计时'}}</text>
-      <text class="tc" bindtap="resetTimer">重置本组</text>
     </view>
 
     <!-- 组间决策：规则算重量，AI 一句话 -->

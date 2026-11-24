@@ -56,6 +56,14 @@
 .rings { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 .dial { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 50% 40%, #18231F 0%, #101615 72%); border: 3rpx solid #22302D; box-shadow: inset 0 0 0 12rpx rgba(18,165,148,.06); }
 .stage.resting .dial { border-color: #3A5E55; box-shadow: inset 0 0 60rpx rgba(61,220,191,.12); }
+.stage.paused .dial { animation: ringBreath 2.2s ease-in-out infinite; }
+@keyframes ringBreath {
+  0% { box-shadow: inset 0 0 0 12rpx rgba(18,165,148,.06); border-color: #22302D; }
+  50% { box-shadow: inset 0 0 50rpx rgba(61,220,191,.20); border-color: #3DDCBF; }
+  100% { box-shadow: inset 0 0 0 12rpx rgba(18,165,148,.06); border-color: #22302D; }
+}
+/* 环是可点区域：单击开始/暂停，长按 800ms 完成，双击重置 */
+.ring-hit { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 50%; z-index: 6; }
 .ctr { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-58%); text-align: center; }
 .ctr.cardio { transform: translateY(-50%); }
 .big { display: block; font-size: 92rpx; font-weight: 700; color: #fff; letter-spacing: 2rpx; }
@@ -63,11 +71,6 @@
 .meta { position: absolute; left: 0; right: 0; bottom: 76rpx; text-align: center; font-size: 21rpx; color: #A9B7B2; }
 
 .hint { display: block; text-align: center; font-size: 25rpx; color: #9FB0AB; margin-top: 20rpx; }
-
-/* 本组计时控制：暂停/继续、重置 */
-.tctrl { display: flex; justify-content: center; gap: 16rpx; margin-top: 16rpx; }
-.tc { font-size: 23rpx; color: #9FB0AB; background: #16211F; border: 1rpx solid #22302D; border-radius: 999rpx; padding: 10rpx 26rpx; }
-.tc.on { color: #3DDCBF; border-color: #3DDCBF; background: #10211D; }
 
 /* 组间决策行 */
 .rest-dec {

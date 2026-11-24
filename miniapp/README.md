@@ -348,6 +348,30 @@ DECISION_POINTS = [
 - 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
+## 体验版 1.0.25：专注圆环 = 计时器本体
+
+### 一、问题
+
+环原来只是显示器，开始/暂停/重置/完成分散在环外四个控件里，一屏四行按钮，状态文案另起一行。计时器类 App（Apple Watch 秒表、Interval Timer、Stretch）的一致语言是「环就是按钮」。
+
+### 二、三态一手势
+
+| 状态 | 环 | 中央 | 单击环 | 长按环 800ms | 双击环 |
+|---|---|---|---|---|---|
+| ready | 暗灰轨道 + 顶部呼吸光点 | `0:00` +「点击开始」 | 开始计时 | — | — |
+| running | 每秒推进 1/60 圈，满分钟白光脉冲后归零；12 个 5 分钟刻度按完成时长点亮 | `mm:ss` +「本组用时」 | 暂停 | 完成本组（白色蓄能弧长满 + 震动） | 重置本组计时 |
+| paused | 弧冻结 + 环呼吸 | `已暂停 · 点击继续` | 继续 | 完成本组 | 重置 |
+
+- 完成本组大按钮保留为主路径（12 组就要点 12 次，单击最省事）；长按环是给老手的快捷补充，双路径并存。
+- 「暂停计时 / 重置本组」两个胶囊按钮与 `hint` 状态行删除，垂直空间省约 80px；控件区只剩 steppers + RPE + 完成按钮。
+- 实现：`ringTap` 按 `stage` 分发（ready→`beginSet`、work→`togglePause`、双击→`resetTimer`）；`ringHoldStart` 用 50ms 定时器把 `chargePct` 推到 1 再 `finishSet`，`touchend/touchcancel` 取消；canvas 仍 `pointer-events:none`，上面盖一层等尺寸圆形 `.ring-hit` 收手势。
+- 数据层零改动：`_workStart/_pauseAcc/_pauseAt` + `elapsedMs()`；暂停时 `mmss` 冻结，续跑从冻结值继续；组间休息仍走倒计时环。
+
+### 三、验证
+
+- IDE 冷启动 + automator：ready 渲染（`0:00`/呼吸点）→ 单击进 work → 单击 pause（`mmss` 冻住）→ 单击续跑 → 双击归零 → 长按 800ms 记组并进入 rest（组行 `✓` 带用时）→ 跨 1 分钟满圈归零。
+- 截图：`t9/z8-ready-force.png`、`t9/z7-pause.png`、`t9/z10-rest.png`、`t9/z11-min1.png`。
+
 ## 体验版 1.0.24：AI 找动作 / 拍照识别改为「解析 → 全库召回 → 重排 → 反问」
 
 ### 一、旧链路的问题
