@@ -348,6 +348,29 @@ DECISION_POINTS = [
 - 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
+## 体验版 1.0.21：本组计时暂停 / 继续、重置
+
+### 一、交互
+
+- 做组态（`stage === 'work'`）在 `hint` 下方出现两个胶囊按钮：`.tc`「暂停计时」/「继续计时」、`.tc`「重置本组」；其余状态不显示。
+- 暂停后圆环下方 unit 文案变「已暂停」，chip 高亮为青绿（`.tc.on`），主按钮仍是「完成本组」。
+
+### 二、实现
+
+- 时间基准仍是 `_workStart`；`elapsedMs() = now - _workStart - _pauseAcc - (_pauseAt ? now - _pauseAt : 0)`，`elapsedSec()` 至少 1 秒。
+- `togglePause()`：暂停时 `_pauseAt = Date.now()`，`setData({ timerPaused: true, mmss: 冻结值 })`；继续时 `_pauseAcc += now - _pauseAt`、`_pauseAt = 0`，`tick()` 立即补帧。
+- `resetTimer()`：`_workStart = Date.now()`、`_pauseAcc = 0`、`_pauseAt = 0`、`mmss '0:00'`、`timerPaused false`，从零重计。
+- `tick()` 在 `timerPaused` 时不再更新 `mmss`；休息/有氧分支不受影响。
+- 落盘：`persistFocus` 增 `pauseAcc/pauseAt/timerPaused`；`restoreFocus` 读回，`prepare` 恢复暂停态，重开页面仍是冻结秒数。
+- `beginSet` / `completeGroup` 进入新组或收组时清空暂停累计。
+
+### 三、实测（本机 IDE + automator 冷启动）
+
+- `RUN 0:06` → 暂停 → 5 秒后仍 `0:06(暂停)` → 继续 → 2 秒后 `0:08`。
+- 重置 → `0:00` → 3 秒后 `0:03`。
+- 暂停态落盘后退出重进：`0:04 → 0:04 paused=true stage=work`。
+- 继续 2.5 秒后完成：该组入账 `7″`（4 秒冻结 + 2.5 秒新增，扣暂停）。截图 `t9/s1-work-controls.png`。
+
 ## 体验版 1.0.20：息屏/切后台后本组计时继续走
 
 ### 一、问题与根因
@@ -372,14 +395,14 @@ DECISION_POINTS = [
 - 模拟息屏：`onHide` → 6 秒 → `onShow`，`mmss 0:13`，完成该组记 `13″`。
 - 页面销毁重开：练 3 秒 → `persistFocus` → `navigateBack` → 3.2 秒 → 重进，`stage work setNo 1 mmss 0:09`，完成后该组 `9″`（截图 `t9/r2-rest.png`：组行显示 `13″`）。
 
-
+## 体验版 1.0.19：专注模式每组自动计时 + 每组时长进日志
 
 ### 一、每组自动计时（`pages/focus`）
 
 - `prepare()` 对力量动作直接进入 `stage: 'work'` 并 `_workStart = Date.now()`，圆环中间即 `m:ss`（`tick` 每 500ms 刷新）；不再有「开始第 N 组」这一步。
 - `elapsedSec()`：`Math.max(1, round((now - _workStart)/1000))`；`finishSet` / `doneCurrent` / `tapRow` / `completeGroup` 统一用它，完成即写 `g.sec`。
 - `completeGroup` 落库顺序：写 `sec` → `saveStrength` → `persistFocus`；组行 `rowsOf` 的 `sec` 用 `secText`（`45″` / `1′05″`）。
-- 切后台：`onHide` 记 `_hideAt`，`onShow` 执行 `_workStart += Date.now() - _hideAt`，锁屏时间不计入本组。
+- 切后台：`onHide` 记 `_hideAt`，`onShow` 执行 `_workStart += Date.now() - _hideAt`，锁屏时间不计入本组（此行为与诉求相反，已在 1.0.20 移除）。
 - 休息中点组行：改为 `beginSet(true)`（结束休息、开始计时），不再把未做的一组记成 0 秒。
 - 点非当前组（前面的空组）：只写该组完成与时长，`if (!isCur) { ...; return; }` 提前返回，不清 `_workStart`、不触发休息。
 - 重做 `redoRow`：`sec=0` 且 `_sessionSec` 扣回原 `wasSec`，`prepare` 重新计时；收工页 `finishTime` 取真实累计 `_sessionSec`。

@@ -64,6 +64,11 @@
 
 .hint { display: block; text-align: center; font-size: 25rpx; color: #9FB0AB; margin-top: 20rpx; }
 
+/* 本组计时控制：暂停/继续、重置 */
+.tctrl { display: flex; justify-content: center; gap: 16rpx; margin-top: 16rpx; }
+.tc { font-size: 23rpx; color: #9FB0AB; background: #16211F; border: 1rpx solid #22302D; border-radius: 999rpx; padding: 10rpx 26rpx; }
+.tc.on { color: #3DDCBF; border-color: #3DDCBF; background: #10211D; }
+
 /* 组间决策行 */
 .rest-dec {
   display: flex; align-items: flex-start; gap: 10rpx; margin-top: 16rpx;

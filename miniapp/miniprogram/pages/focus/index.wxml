@@ -66,7 +66,7 @@
       <block wx:elif="{{setTimer}}">
         <view class="ctr">
           <text class="big">{{mmss}}</text>
-          <text class="unit">本组用时</text>
+          <text class="unit">{{timerPaused ? '已暂停' : '本组用时'}}</text>
         </view>
       </block>
       <block wx:else>
@@ -81,6 +81,12 @@
     </view>
 
     <text class="hint">{{hint}}</text>
+
+    <!-- 本组计时：暂停 / 继续、重置 -->
+    <view class="tctrl" wx:if="{{stage === 'work'}}">
+      <text class="tc {{timerPaused ? 'on' : ''}}" bindtap="togglePause">{{timerPaused ? '继续计时' : '暂停计时'}}</text>
+      <text class="tc" bindtap="resetTimer">重置本组</text>
+    </view>
 
     <!-- 组间决策：规则算重量，AI 一句话 -->
     <view class="rest-dec" wx:if="{{stage === 'rest'}}">

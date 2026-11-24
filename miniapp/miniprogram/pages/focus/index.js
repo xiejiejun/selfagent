@@ -68,6 +68,7 @@ Page({
     setsTotal: 0,
     mmss: '0:00',
     setTimer: true,
+    timerPaused: false,
     restPct: 0,
     restLeft: 0,
     restTotal: 60,
@@ -140,7 +141,14 @@ Page({
     this.idx = Math.min(st.idx || 0, this.items.length - 1);
     // 上次是在做某一组时离开的：把这组的起始时刻带回来，息屏/被杀进程也接着算
     const ws = Number(st.workStart || 0);
-    if (ws > 0 && Date.now() - ws < 6 * 3600 * 1000) this._resumeWorkStart = ws;
+    if (ws > 0 && Date.now() - ws < 6 * 3600 * 1000) {
+      this._resumeWorkStart = ws;
+      this._resumePause = {
+        acc: Number(st.pauseAcc || 0),
+        at: Number(st.pauseAt || 0),
+        paused: !!st.timerPaused
+      };
+    }
     wx.showToast({ title: '已恢复上次进度', icon: 'none' });
   },
 
@@ -148,7 +156,10 @@ Page({
     try {
       wx.setStorageSync(FOCUS_KEY, {
         date: this.date, idx: this.idx, items: this.items,
-        workStart: this._workStart || 0
+        workStart: this._workStart || 0,
+        pauseAcc: this._pauseAcc || 0,
+        pauseAt: this._pauseAt || 0,
+        timerPaused: !!this.data.timerPaused
       });
     } catch (e) {}
   },
@@ -434,14 +445,19 @@ Page({
     const g = it.groups[gi];
     // 每组一进入就开始计时：耗时按系统时间算，息屏后台也继续走
     const ws = this._resumeWorkStart;
+    const rp = this._resumePause || null;
     this._resumeWorkStart = 0;
+    this._resumePause = null;
     this._workStart = (ws && ws > 0 && Date.now() - ws < 6 * 3600 * 1000) ? ws : Date.now();
-    const elapsed = Math.max(0, Math.round((Date.now() - this._workStart) / 1000));
+    this._pauseAcc = rp ? rp.acc : 0;
+    this._pauseAt = rp && rp.paused ? (rp.at || Date.now()) : 0;
+    const elapsed = Math.max(0, Math.round(this.elapsedMs() / 1000));
     this.setData({
       stage: 'work', curType: 'strength', curName: it.name, curPart: it.part || '',
       curCardio: !!it.isCardio,
       setNo: gi + 1, setsDone: it.groups.filter(x => x.done).length, setsTotal: it.groups.length,
       reps: g.reps || 0, weight: g.weight || 0, mmss: mmss(elapsed),
+      timerPaused: !!(rp && rp.paused),
       rpe: g.rpe || 0, warmup: !!g.warmup,
       detailVisible: false, detail: null,
       rows: this.rowsOf(it),
@@ -469,8 +485,8 @@ Page({
   tick() {
     const now = Date.now();
     const d = {};
-    if (this.data.stage === 'work' && this._workStart) {
-      d.mmss = mmss((now - this._workStart) / 1000);
+    if (this.data.stage === 'work' && this._workStart && !this.data.timerPaused) {
+      d.mmss = mmss(this.elapsedMs() / 1000);
     }
     if (this.data.stage === 'rest' && this._restEnd) {
       const left = Math.max(0, Math.round((this._restEnd - now) / 1000));
@@ -494,10 +510,46 @@ Page({
   },
 
   /* ---------- 力量 ---------- */
-  // 当前组已运动秒数：从进入该组开始算，至少 1 秒
+  // 当前组已运动毫秒：起始时刻起算，扣掉累计暂停与当前暂停时长
+  elapsedMs() {
+    if (!this._workStart) return 0;
+    const now = Date.now();
+    const pausing = this._pauseAt ? (now - this._pauseAt) : 0;
+    return Math.max(0, now - this._workStart - (this._pauseAcc || 0) - pausing);
+  },
+
+  // 当前组已运动秒数：至少 1 秒
   elapsedSec() {
     if (!this._workStart) return 0;
-    return Math.max(1, Math.round((Date.now() - this._workStart) / 1000));
+    return Math.max(1, Math.round(this.elapsedMs() / 1000));
+  },
+
+  // 暂停 / 继续：只影响本组计时，不改变已累计的时长
+  togglePause() {
+    if (this.data.stage !== 'work') return;
+    if (this.data.timerPaused) {
+      if (this._pauseAt) this._pauseAcc = (this._pauseAcc || 0) + (Date.now() - this._pauseAt);
+      this._pauseAt = 0;
+      this.setData({ timerPaused: false });
+      this.tick();
+      wx.showToast({ title: '继续计时', icon: 'none' });
+    } else {
+      this._pauseAt = Date.now();
+      this.setData({ timerPaused: true, mmss: mmss(this.elapsedMs() / 1000) });
+      this.persistFocus();
+      wx.showToast({ title: '已暂停', icon: 'none' });
+    }
+  },
+
+  // 重置本组计时：从 0 重新开始
+  resetTimer() {
+    if (this.data.stage !== 'work') return;
+    this._workStart = Date.now();
+    this._pauseAcc = 0;
+    this._pauseAt = 0;
+    this.setData({ mmss: '0:00', timerPaused: false });
+    this.persistFocus();
+    wx.showToast({ title: '本组计时已重置', icon: 'none' });
   },
 
   // 组内计时关闭时（默认）：点一下 = 记一组，然后自动进组间休息
@@ -517,11 +569,14 @@ Page({
     const it = this.items[this.idx];
     if (!it || it.type !== 'strength') return;
     this._workStart = Date.now();
+    this._pauseAcc = 0;
+    this._pauseAt = 0;
     const gi = this._gi;
     const g = it.groups[gi];
     this.setData({
       stage: 'work',
       mmss: '0:00',
+      timerPaused: false,
       setNo: gi + 1,
       reps: g.reps || 0,
       weight: g.weight || 0,
@@ -592,7 +647,11 @@ Page({
     g.done = true;
     g.rpe = isCur ? (this.data.rpe || 0) : (g.rpe || 0);
     this._sessionSec = (this._sessionSec || 0) + dur;
-    if (isCur) this._workStart = 0;
+    if (isCur) {
+      this._workStart = 0;
+      this._pauseAcc = 0;
+      this._pauseAt = 0;
+    }
     this.saveStrength(it);
     this.persistFocus();
     wx.vibrateShort({ type: 'medium' });
