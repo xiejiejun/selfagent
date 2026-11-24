@@ -7,7 +7,9 @@ Component({
   properties: {
     visible: { type: Boolean, value: false },
     // { name, part, exId, date, uid, groups, isNew, mode:'strength'|'cardio', min, done }
-    payload: { type: Object, value: null }
+    payload: { type: Object, value: null },
+    // 'dark'：嵌在专注训练这类深色页面时用，默认浅色
+    theme: { type: String, value: '' }
   },
 
   data: {

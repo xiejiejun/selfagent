@@ -139,3 +139,28 @@
 .btn.ghost { background: #F2F5F4; color: #5B6461; }
 .btn.primary { background: #12A594; color: #fff; font-weight: 600; }
 .btn.danger { background: #FDF1F2; color: #E06E78; }
+
+/* 深色（专注训练页内嵌） */
+.sheet.dark { background: #16211F; }
+.sheet.dark .grab { background: #2C3A36; }
+.sheet.dark .title { color: #E8F2EE; }
+.sheet.dark .x { color: #7F8C88; }
+.sheet.dark .label { color: #9FB0AB; }
+.sheet.dark .input { background: #101615; border-color: #22302D; color: #E8F2EE; }
+.sheet.dark .row { background: #172220; }
+.sheet.dark .no { color: #7F8C88; }
+.sheet.dark .tag { background: #1E2A28; color: #9FB0AB; }
+.sheet.dark .tag.warm { color: #D8A23E; background: #2B2318; }
+.sheet.dark .tag.drop { color: #7FA6E8; background: #1B2536; }
+.sheet.dark .tag.side { color: #A792E8; background: #211C33; }
+.sheet.dark .tag.super { color: #E28AB7; background: #2E1B26; }
+.sheet.dark .num { background: #101615; border-color: #22302D; color: #E8F2EE; }
+.sheet.dark .unit { color: #8FA09B; }
+.sheet.dark .chip { background: #101615; border-color: #22302D; color: #9FB0AB; }
+.sheet.dark .chip.on { color: #3DDCBF; border-color: #3DDCBF; background: #12201D; }
+.sheet.dark .chip.del { background: #1A2321; color: #7F8C88; border-color: transparent; }
+.sheet.dark .addset { color: #3DDCBF; background: #12201D; }
+.sheet.dark .actions { border-top-color: #202C2A; }
+.sheet.dark .btn.ghost { background: #1A2321; color: #9FB0AB; }
+.sheet.dark .btn.danger { background: #2A1B1D; color: #E06E78; }
+.sheet.dark .btn.primary { background: #12A594; color: #fff; }

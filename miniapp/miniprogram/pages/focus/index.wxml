@@ -32,8 +32,15 @@
         <text class="ls-n">{{item.name}}</text>
         <text class="ls-cd" wx:if="{{item.cd}}">有氧</text>
         <text class="ls-st">{{item.done ? '✓ 已完成' : (item.cur ? '进行中' : '未开始')}}</text>
+        <view class="ls-ops">
+          <text class="ls-op" data-i="{{item.i}}" catchtap="openItemDetail">详情</text>
+          <text class="ls-op" data-i="{{item.i}}" catchtap="openItemEdit">改</text>
+          <text class="ls-op del" data-i="{{item.i}}" catchtap="openItemDelete">删</text>
+        </view>
       </view>
     </scroll-view>
+    <view class="ls-add" wx:if="{{stage !== 'finish'}}" catchtap="addMore">＋ 中途加个动作</view>
+    <view class="ls-tip" wx:else>点任意一项回到该动作；组行点「重做」可重做某一组</view>
   </view>
 
   <!-- 训练中 / 休息 / 准备 -->
@@ -69,7 +76,7 @@
         </view>
       </block>
       <view class="meta">
-        <text>{{doneSets}}/{{total}} 组 · {{doneVolume}} kg</text>
+        <text>{{setsDoneAll}}/{{setsTotalAll}} 组 · {{doneVolume}} kg</text>
       </view>
     </view>
 
@@ -121,7 +128,8 @@
         <text class="rtag" wx:if="{{item.tag === 'super'}}">超级</text>
         <text class="rtag rpe" wx:if="{{item.rpe}}">RPE {{item.rpe}}</text>
         <text class="sec">{{item.sec}}</text>
-        <text class="mark">{{item.done ? '✓' : ''}}</text>
+        <text class="mark" wx:if="{{item.done}}">✓</text>
+        <text class="redo" wx:if="{{item.done}}" data-i="{{index}}" catchtap="redoRow">重做</text>
       </view>
     </view>
     <view class="addq" bindtap="addMore">＋ 中途加个动作</view>
@@ -160,6 +168,7 @@
   </block>
 
   <ex-sheet visible="{{exSheetVisible}}" ex-id="{{exSheetId}}" ex-name="{{exSheetName}}" theme="dark" bind:close="closeExSheet" />
+  <train-editor visible="{{editorVisible}}" payload="{{editorPayload}}" theme="dark" bind:close="onEditorClose" bind:confirm="onEditorConfirm" bind:delete="onEditorDelete" />
 
   <!-- 收工 -->
   <block wx:if="{{stage === 'finish'}}">
@@ -181,6 +190,11 @@
         <text class="fd-k">✦ 明天</text>
         <text class="fd-v">{{finTomorrow.part ? finTomorrow.part + ' 日' : '休息或轻有氧'}}</text>
         <text class="fd-s">{{finTomorrow.text}}{{finGoal ? '（周目标已到 ' + finGoal.pct + '%）' : ''}}</text>
+      </view>
+
+      <view class="fin-mgr" bindtap="openList">
+        <text class="fm-t">本次 {{total}} 个动作 · {{doneSets}}/{{setsTotalAll}} 组</text>
+        <text class="fm-a">管理 ⌄</text>
       </view>
 
       <view class="main">

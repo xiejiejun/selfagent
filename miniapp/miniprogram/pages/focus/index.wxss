@@ -19,13 +19,20 @@
 .ls-body { max-height: 58vh; }
 .ls-t { font-size: 24rpx; color: #9FB0AB; }
 .ls-x { font-size: 30rpx; color: #7F8C88; padding: 0 10rpx; }
-.ls-row { display: flex; align-items: center; gap: 16rpx; padding: 22rpx 12rpx; border-bottom: 1rpx solid #1E2A28; font-size: 26rpx; color: #C7D6D1; }
+.ls-row { display: flex; align-items: center; gap: 16rpx; padding: 18rpx 12rpx; border-bottom: 1rpx solid #1E2A28; font-size: 26rpx; color: #C7D6D1; flex-wrap: wrap; }
 .ls-row.cur { background: rgba(18,165,148,.12); border-radius: 12rpx; }
 .ls-row.done { color: #6E8079; }
 .ls-i { width: 44rpx; color: #7F8C88; font-size: 22rpx; }
 .ls-n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ls-cd { font-size: 18rpx; color: #E8A93D; }
 .ls-st { font-size: 21rpx; color: #8FA09B; }
+.ls-ops { width: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 10rpx; margin-top: 10rpx; }
+.ls-op {
+  font-size: 20rpx; color: #9FB0AB; padding: 8rpx 18rpx; border: 1rpx solid #2A3835; border-radius: 10rpx;
+}
+.ls-op.del { color: #E06E78; border-color: #4A3036; }
+.ls-add { margin-top: 16rpx; text-align: center; font-size: 22rpx; color: #3DDCBF; border: 1rpx dashed #2C403B; border-radius: 12rpx; padding: 16rpx 0; }
+.ls-tip { margin-top: 16rpx; text-align: center; font-size: 21rpx; color: #7F8C88; line-height: 1.5; }
 .qitem { display: inline-flex; align-items: center; gap: 10rpx; padding: 10rpx 18rpx; margin-right: 12rpx; border-radius: 26rpx; background: #1A2422; font-size: 22rpx; color: #8FA09B; }
 .qitem.cur { background: #123D38; color: #CFF3EA; border: 1rpx solid #12A594; }
 .qitem.done { color: #3DDCBF; }
@@ -41,6 +48,8 @@
 
 .stage { position: relative; width: 520rpx; height: 520rpx; margin: 26rpx auto 0; }
 .stage.lite { height: 336rpx; }
+/* 准备态是短卡：环只用于组间休息，先隐藏，避免在 520×336 里量出非正方形画成椭圆 */
+.stage.lite .rings { display: none; }
 .stage.lite .dial { width: 300rpx; height: 300rpx; left: 110rpx; top: 6rpx; }
 .stage.lite .big { font-size: 64rpx; }
 .stage.lite .meta { display: none; }
@@ -85,6 +94,10 @@
 .detail { flex: 1; }
 .sec { font-size: 21rpx; color: #3DDCBF; }
 .mark { width: 30rpx; color: #3DDCBF; text-align: right; }
+.redo {
+  font-size: 19rpx; color: #3DDCBF; padding: 4rpx 12rpx; border: 1rpx solid #2C403B;
+  border-radius: 8rpx; background: rgba(61,220,191,.08);
+}
 
 .fin { text-align: center; padding-top: 120rpx; }
 .fin-t { display: block; font-size: 46rpx; font-weight: 700; color: #fff; }
@@ -106,6 +119,13 @@
 .rtag.rpe { color: #D8A23E; border-color: #4A3C22; }
 .addq { margin-top: 18rpx; text-align: center; font-size: 22rpx; color: #3DDCBF; border: 1rpx dashed #2C403B; border-radius: 12rpx; padding: 16rpx 0; }
 .go.hold { letter-spacing: 1rpx; }
+.fin-mgr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 26rpx 0 6rpx; padding: 20rpx 24rpx; border-radius: 14rpx;
+  background: #172220; border: 1rpx solid #202C2A;
+}
+.fin-mgr .fm-t { font-size: 24rpx; color: #9FB0AB; }
+.fin-mgr .fm-a { font-size: 24rpx; color: #3DDCBF; }
 /* 小结 AI 复盘 */
 .fin-ai { display: flex; align-items: flex-start; gap: 8rpx; margin-top: 20rpx; background: rgba(61,220,191,0.10); border-left: 4rpx solid #3DDCBF; border-radius: 10rpx; padding: 14rpx 16rpx; }
 .fin-ai-sp { font-size: 22rpx; color: #3DDCBF; }

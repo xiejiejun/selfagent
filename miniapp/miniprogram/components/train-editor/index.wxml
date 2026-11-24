@@ -1,5 +1,5 @@
 <view wx:if="{{visible}}" class="mask" catchtap="close" catchtouchmove="noop">
-  <view class="sheet" catchtap="noop">
+  <view class="sheet {{theme === 'dark' ? 'dark' : ''}}" catchtap="noop">
     <view class="grab"></view>
 
     <view class="head">

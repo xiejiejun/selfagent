@@ -4,6 +4,7 @@
   "navigationBarBackgroundColor": "#101615",
   "backgroundColor": "#101615",
   "usingComponents": {
-    "ex-sheet": "/components/ex-sheet/index"
+    "ex-sheet": "/components/ex-sheet/index",
+    "train-editor": "/components/train-editor/index"
   }
 }

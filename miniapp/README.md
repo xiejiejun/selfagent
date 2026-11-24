@@ -348,6 +348,41 @@ DECISION_POINTS = [
 - 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
+## 体验版 1.0.18：专注页运动项增删查改 + 重做某一组 + 休息圆环修复
+
+包体 1,325,907 B（`__FULL__ size`），`getCodeFiles count: 104`；上传成功，版本号 `1.0.18`，描述「专注页运动项增删查改 + 重做某一组 + 休息圆环修复」。
+
+### 一、运动项增删查改（`pages/focus`）
+
+- 动作清单（`.listsheet`）每行两行式排版：首行 `序号 · 名称 · 有氧标记 · 状态`，次行右对齐「详情 / 改 / 删」三个 `.ls-op`。
+- 详情 `openItemDetail`：打开 `ex-sheet`（动图 + 部位/器械/要领）；条目无 `exId` 时按名称匹配兜底，仍无则 toast。
+- 改 `openItemEdit`：复用 `components/train-editor`，payload 带 `mode/uid/name/part/exId/date/groups`；确认后回写 `it.groups`，有氧计组型走 `actions.saveCardio({mode:'sets'})`，力量走 `saveStrength`；非当前项编辑后仍 `prepare()` 刷新。
+- 删 `openItemDelete`：`wx.showModal` 二次确认 → `removeItem(i)`，按 `isCardio/type` 调 `deleteCardio`/`deleteStrength`，移除、重排序号、`persistFocus`、`refreshQueue`；删空自动 `showFinish()`。
+- 加：非收工态清单底部「＋ 中途加个动作」（`addMore`）；收工页新增「本次 N 个动作 · X/Y 组 管理 ⌄」（`.fin-mgr` → `openList`）。
+
+### 二、重做某一组
+
+- 组行中已完成的组出现 `.redo` chip（`redoRow`）：`done=false`、`sec=0`、`rpe=0`，先存 `wasSec` 再从 `_sessionSec` 扣回，同步 `saveStrength`、`persistFocus`、`refreshQueue`、`doneSets/doneVolume`，并 `prepare()` 定位到该组。
+- 收工页可经「管理」清单点任意一项回到该动作（`jumpTo` 在 `stage==='finish'` 时允许回跳当前项），再在组行点「重做」。
+
+### 三、组间休息圆环
+
+- 根因：`initCanvas` 只在 `onReady` 量一次 canvas；准备态容器 520×336rpx 时量到位图 520×336，却按宽 520 的正方形算圆心半径，进入休息态（520×520）后位图被竖向拉伸 → 椭圆、弧线冲出 `.dial`。
+- 修复：记录 `w/h` 两维，位图 `round(w*dpr) × round(h*dpr)`；尺寸为 0 时 250ms 重试最多 6 次；`draw()` 用 `w/h` 各自算 `cx/cy`，半径 `min(w,h)/2 - 26`，`r<=10` 直接返回；`.stage.lite .rings{display:none}`。
+- 环内 meta 口径：`setsDoneAll/setsTotalAll`（原为动作组数，出现「1/1 组」与页头「1/4 组」冲突）。
+
+### 四、编辑弹层深色
+
+- `train-editor` 新增 `theme` 属性，root `sheet {{theme==='dark'?'dark':''}}`，补一整套 `.sheet.dark`（背景 #16211F、输入 #101615/边框 #22302D、文字 #E8F2EE/#9FB0AB、`chip.on` #3DDCBF）；专注页传 `theme="dark"`，log 页保持浅色。
+
+### 五、实测（automator 冷启动）
+
+- 环：`t9/q1-rest.png` 正圆、与 `.dial` 对齐、弧线在圆内，meta `3/34 组 · 900 kg`。
+- 重做：`doneCurrent` 后 `3/34`，`redoRow(i=1)` 后 `rows 1✓,2-,3-`、`doneSets 3→2`、meta 回到 `2/34`。
+- 收工回跳：`showFinish` → `openList` → `jumpTo(3)` → `stage ready · 椭圆机 · cardio`。
+- 删除：`removeItem(11)` 后 `total 12→11`，meta `2/34→2/31`。
+- 编辑弹层：`t9/p1-edit-dark.png` 深色下与页面一致；清单 `t9/p3-finish-list.png` 两行式 + 三操作右对齐。
+
 ## 体验版 1.0.17：AI 找动作接意图分析 + 编辑动作弹层统一
 
 包体 1,318,431 B（`__FULL__ size`），`getCodeFiles count: 104`；上传成功，版本号 `1.0.17`，描述「AI 找动作接 AI 意图分析 + 编辑动作弹层按钮统一」。

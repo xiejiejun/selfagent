@@ -93,6 +93,8 @@ Page({
     setsTotalAll: 0,
     setsPct: 0,
     listVisible: false,
+    editorVisible: false,
+    editorPayload: null,
     hint: '',
     restTip: '',
     restAi: '',
@@ -159,21 +161,28 @@ Page({
     this.initCanvas();
   },
 
-  // canvas 只在力量卡里渲染，页面初次 onReady 时可能还没挂载 → 惰性重试
-  initCanvas() {
-    if (this.cv || this._cvReq) return;
+  // canvas 只在组间休息时画环；准备态是「lite」短卡，量到的不是正方形，先隐藏再量
+  initCanvas(attempt) {
+    if (this.cv) return;
+    attempt = attempt || 0;
+    if (this._cvReq && attempt === 0) return;
     this._cvReq = true;
     wx.createSelectorQuery().in(this).select('#rings').fields({ node: true, size: true }).exec(res => {
       this._cvReq = false;
       const r = res && res[0];
-      if (!r || !r.node || !r.width) return;
+      // 布局还没落定（宽高为 0）就等下一帧再量，最多 6 次
+      if (!r || !r.node || !r.width || !r.height) {
+        if (attempt < 6) setTimeout(() => this.initCanvas(attempt + 1), 250);
+        return;
+      }
       const c = r.node;
       const dpr = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 2;
-      c.width = r.width * dpr;
-      c.height = r.height * dpr;
+      c.width = Math.round(r.width * dpr);
+      c.height = Math.round(r.height * dpr);
       const ctx = c.getContext('2d');
       ctx.scale(dpr, dpr);
-      this.cv = { node: c, ctx, size: r.width };
+      // 宽高都记下来：只按宽算半径，非正方形会画成椭圆
+      this.cv = { node: c, ctx, w: r.width, h: r.height };
       this.draw();
     });
   },
@@ -205,11 +214,175 @@ Page({
   openList() { this.setData({ listVisible: true }); },
   closeList() { this.setData({ listVisible: false }); },
 
+  itemAt(e) {
+    const i = Number(e.currentTarget.dataset.i) - 1;
+    if (!(i >= 0 && i < this.items.length)) return null;
+    return this.items[i];
+  },
+
+  // 查：任意一项的动作详情（动图 + 部位/器械/要领）
+  openItemDetail(e) {
+    const it = this.itemAt(e);
+    if (!it) return;
+    if (it.type === 'cardio') {
+      wx.showModal({ title: it.name, content: '有氧动作 · 计划 ' + (it.min || 30) + ' 分钟\n保持中等强度，能说话但不能唱歌。', showCancel: false });
+      return;
+    }
+    let id = it.exId;
+    if (!id) {
+      const ex = data.matchByName(it.name);
+      if (ex) id = ex.id;
+    }
+    if (!id) {
+      wx.showModal({ title: it.name, content: '这个动作没有动作库条目', showCancel: false, confirmText: '知道了' });
+      return;
+    }
+    this.setData({ listVisible: false, exSheetId: String(id), exSheetName: it.name || '', exSheetVisible: true });
+  },
+
+  // 改：复用编辑动作弹层（组数/次数/重量/组类型/改名）
+  openItemEdit(e) {
+    const i = Number(e.currentTarget.dataset.i) - 1;
+    const it = this.itemAt(e);
+    if (!it) return;
+    this._editIdx = i;
+    if (it.type === 'cardio') {
+      this.setData({
+        listVisible: false,
+        editorVisible: true,
+        editorPayload: { mode: 'cardio', uid: it.uid, name: it.name, min: it.min || 30, done: !!it.done, date: this.date }
+      });
+      return;
+    }
+    this.setData({
+      listVisible: false,
+      editorVisible: true,
+      editorPayload: {
+        mode: 'strength', uid: it.uid, name: it.name, part: it.part || '', exId: it.exId || '',
+        date: this.date,
+        groups: (it.groups || []).map(g => ({
+          no: g.no, reps: g.reps || 0, weight: g.weight || 0, done: !!g.done,
+          warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, tag: g.tag || ''
+        }))
+      }
+    });
+  },
+
+  onEditorClose() { this.setData({ editorVisible: false, editorPayload: null }); },
+
+  onEditorConfirm(e) {
+    const d = e.detail || {};
+    const i = (this._editIdx == null ? this.idx : this._editIdx);
+    const it = this.items[i];
+    if (!it) { this.onEditorClose(); return; }
+    const rec = d.record || {};
+    if (d.mode === 'cardio' || it.type === 'cardio') {
+      it.name = rec.name || it.name;
+      it.min = rec.min || it.min;
+      it.done = rec.done !== false;
+      if (it.uid) actions.saveCardio(Object.assign({}, rec, { uid: it.uid, date: this.date }));
+    } else {
+      it.name = rec.name || it.name;
+      it.groups = (rec.groups || []).map((g, k) => ({
+        no: g.warmup ? 'W' : (k + 1), reps: g.reps || 0, weight: g.weight || 0,
+        warmup: !!g.warmup, tag: g.tag || (g.warmup ? 'warm' : ''), done: !!g.done,
+        rpe: g.rpe || 0, sec: g.sec || 0
+      }));
+      if (it.uid) {
+        if (it.isCardio) {
+          actions.saveCardio({
+            uid: it.uid, date: this.date, exId: it.exId || '', name: it.name, modal: it.name,
+            part: '有氧', mode: 'sets', min: it.min || 0, groups: rec.groups,
+            done: (rec.groups || []).length > 0 && (rec.groups || []).every(g => g.done)
+          });
+        } else {
+          actions.saveStrength(Object.assign({}, rec, { uid: it.uid, date: this.date, groups: rec.groups }));
+        }
+      }
+    }
+    this.onEditorClose();
+    this.refreshQueue();
+    const stat = this.setsStat();
+    this.setData({ doneSets: stat.done, doneVolume: stat.vol });
+    if (this.data.stage === 'ready' || this.data.stage === 'between') this.prepare();
+    else if (i === this.idx) this.setData({ rows: this.rowsOf(it), setsDone: (it.groups || []).filter(g => g.done).length, setsTotal: (it.groups || []).length });
+    this.persistFocus();
+    wx.showToast({ title: '已保存', icon: 'none' });
+  },
+
+  // 删：动作整项移除（当天记录一并删除）
+  openItemDelete(e) {
+    const i = Number(e.currentTarget.dataset.i) - 1;
+    const it = this.itemAt(e);
+    if (!it) return;
+    const isCur = i === this.idx;
+    wx.showModal({
+      title: '删除「' + it.name + '」',
+      content: (isCur ? '当前这一项' : '这一项') + '会从本次训练移除，已记录的组也一起删掉。',
+      confirmText: '删除',
+      confirmColor: '#E06E78',
+      success: (r) => {
+        if (!r.confirm) return;
+        this.removeItem(i);
+      }
+    });
+  },
+
+  onEditorDelete(e) {
+    const i = this._editIdx;
+    this.onEditorClose();
+    if (i == null) return;
+    this.removeItem(i);
+  },
+
+  removeItem(i) {
+    const it = this.items[i];
+    if (!it) return;
+    try {
+      if (it.type === 'cardio' || it.isCardio) actions.deleteCardio(it.uid, this.date);
+      else actions.deleteStrength(it.uid, this.date);
+    } catch (err) {}
+    this.items.splice(i, 1);
+    if (this.idx >= this.items.length) this.idx = Math.max(0, this.items.length - 1);
+    else if (i < this.idx) this.idx--;
+    this._restEnd = 0;
+    this.persistFocus();
+    this.refreshQueue();
+    this.setData({ listVisible: false });
+    if (!this.items.length) { this.showFinish(); return; }
+    this.prepare();
+    wx.showToast({ title: '已删除', icon: 'none' });
+  },
+
+  // 重做某一组：勾掉该组 → 回到这一组重新做（已记录的组数/容量同步扣回）
+  redoRow(e) {
+    const it = this.items[this.idx];
+    if (!it || it.type !== 'strength') return;
+    const gi = Number(e.currentTarget.dataset.i);
+    const g = it.groups[gi];
+    if (!g || !g.done) return;
+    const wasSec = g.sec || 0;
+    g.done = false;
+    g.sec = 0;
+    g.rpe = 0;
+    this._sessionSec = Math.max(0, (this._sessionSec || 0) - wasSec);
+    this._restEnd = 0;
+    this._workStart = 0;
+    this.saveStrength(it);
+    this.persistFocus();
+    this.refreshQueue();
+    const stat = this.setsStat();
+    this.setData({ doneSets: stat.done, doneVolume: stat.vol });
+    this.prepare();
+    wx.vibrateShort({ type: 'light' });
+    wx.showToast({ title: '第 ' + (gi + 1) + ' 组已重置，重做吧', icon: 'none' });
+  },
+
   jumpTo(e) {
     const i = Number(e.currentTarget.dataset.i) - 1;
     if (!(i >= 0 && i < this.items.length)) return;
     if (this.data.listVisible) this.setData({ listVisible: false });
-    if (i === this.idx) return;
+    if (i === this.idx && this.data.stage !== 'finish') return;
     this._restEnd = 0;
     this.idx = i;
     this.prepare();
@@ -797,12 +970,13 @@ Page({
     if (!this.cv) { this.initCanvas(); return; }
     const cv = this.cv;
     const ctx = cv.ctx;
-    const s = cv.size;
-    const cx = s / 2, cy = s / 2;
-    ctx.clearRect(0, 0, s, s);
+    const w = cv.w, h = cv.h;
+    const cx = w / 2, cy = h / 2;
+    ctx.clearRect(0, 0, w, h);
     if (this.data.stage !== 'rest') return;
     const p = Math.max(0, Math.min(1, (this.data.restLeft || 0) / (this.data.restTotal || 1)));
-    const r = s / 2 - 26;
+    const r = Math.min(w, h) / 2 - 26;
+    if (r <= 10) return;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(255,255,255,0.14)';
