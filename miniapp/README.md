@@ -348,7 +348,31 @@ DECISION_POINTS = [
 - 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
-## 体验版 1.0.19：专注模式每组自动计时 + 每组时长进日志
+## 体验版 1.0.20：息屏/切后台后本组计时继续走
+
+### 一、问题与根因
+
+- 现象：手机上先做一组、息屏几分钟再亮屏，计时显示仍停在息屏前的秒数。
+- 两层原因：
+  1. 小程序进入后台后页面 `setInterval` 被系统挂起，`tick` 不再执行，画面停在最后一帧；
+  2. 1.0.19 写的 `onHide` 记 `_hideAt`、`onShow` 执行 `_workStart += Date.now() - _hideAt`，属于"主动剔除后台时长"，即使时间基准正确也会被减回去。
+- 结论：不是"没有后台计时"，而是计时基准被代码平移了；`Date.now()` 本身跨后台仍然有效。
+
+### 二、修法
+
+- `onShow` 改为只做 `this.tick()`：用系统时间差一次补齐，画面立刻跳到正确秒数。
+- `onHide` 改为 `this.persistFocus()`：把当前组的 `workStart` 落盘，不修改时间基准。
+- `persistFocus()` 增加 `workStart` 字段；`restoreFocus()` 读回并校验 6 小时内有效，赋给 `_resumeWorkStart`。
+- `prepare()` 取 `_resumeWorkStart` 作为本组起始时刻（否则 `Date.now()`），`mmss` 初始值按已过时长显示，`hint` 不变。
+- 组完成仍以 `elapsedSec()` 落 `g.sec`，因此息屏那段会计入该组时长并写进日志。
+
+### 三、实测（本机 IDE + automator 冷启动）
+
+- 计时推进：`T0 mmss 0:01` → 5 秒后 `0:06`。
+- 模拟息屏：`onHide` → 6 秒 → `onShow`，`mmss 0:13`，完成该组记 `13″`。
+- 页面销毁重开：练 3 秒 → `persistFocus` → `navigateBack` → 3.2 秒 → 重进，`stage work setNo 1 mmss 0:09`，完成后该组 `9″`（截图 `t9/r2-rest.png`：组行显示 `13″`）。
+
+
 
 ### 一、每组自动计时（`pages/focus`）
 

@@ -138,12 +138,18 @@ Page({
     if (!same) return;
     this.items = st.items;
     this.idx = Math.min(st.idx || 0, this.items.length - 1);
+    // 上次是在做某一组时离开的：把这组的起始时刻带回来，息屏/被杀进程也接着算
+    const ws = Number(st.workStart || 0);
+    if (ws > 0 && Date.now() - ws < 6 * 3600 * 1000) this._resumeWorkStart = ws;
     wx.showToast({ title: '已恢复上次进度', icon: 'none' });
   },
 
   persistFocus() {
     try {
-      wx.setStorageSync(FOCUS_KEY, { date: this.date, idx: this.idx, items: this.items });
+      wx.setStorageSync(FOCUS_KEY, {
+        date: this.date, idx: this.idx, items: this.items,
+        workStart: this._workStart || 0
+      });
     } catch (e) {}
   },
 
@@ -157,16 +163,13 @@ Page({
     if (this.data.stage !== 'finish') this.saveCurrentIfNeeded();
   },
 
-  // 切后台/锁屏不把时间算进本组用时
+  // 息屏/切后台照常计时：计时用系统时间差，回来立刻补一次 tick
   onHide() {
-    if (this._workStart) this._hideAt = Date.now();
+    this.persistFocus();
   },
 
   onShow() {
-    if (this._workStart && this._hideAt) {
-      this._workStart += Date.now() - this._hideAt;
-    }
-    this._hideAt = 0;
+    this.tick();
   },
 
   onReady() {
@@ -429,13 +432,16 @@ Page({
     if (gi < 0) { this.idx++; return this.prepare(); }
     this._gi = gi;
     const g = it.groups[gi];
-    // 每组一进入就开始计时：完成时把本组实际用时写进该组 sec
-    this._workStart = Date.now();
+    // 每组一进入就开始计时：耗时按系统时间算，息屏后台也继续走
+    const ws = this._resumeWorkStart;
+    this._resumeWorkStart = 0;
+    this._workStart = (ws && ws > 0 && Date.now() - ws < 6 * 3600 * 1000) ? ws : Date.now();
+    const elapsed = Math.max(0, Math.round((Date.now() - this._workStart) / 1000));
     this.setData({
       stage: 'work', curType: 'strength', curName: it.name, curPart: it.part || '',
       curCardio: !!it.isCardio,
       setNo: gi + 1, setsDone: it.groups.filter(x => x.done).length, setsTotal: it.groups.length,
-      reps: g.reps || 0, weight: g.weight || 0, mmss: '0:00',
+      reps: g.reps || 0, weight: g.weight || 0, mmss: mmss(elapsed),
       rpe: g.rpe || 0, warmup: !!g.warmup,
       detailVisible: false, detail: null,
       rows: this.rowsOf(it),
