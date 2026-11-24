@@ -58,7 +58,9 @@
       <canvas type="2d" id="rings" class="rings" disable-scroll="true"></canvas>
       <view class="dial"></view>
       <view class="ring-hit" wx:if="{{stage === 'work' || (stage === 'ready' && setTimer)}}"
-        bindtap="ringTap" bindtouchstart="ringHoldStart" bindtouchend="ringHoldEnd" bindtouchcancel="ringHoldCancel"></view>
+        bindtap="ringTap"></view>
+      <text class="reset-lnk" wx:if="{{stage === 'work' && timerPaused && !chargePct}}" catchtap="resetArm">重置本组</text>
+      <text class="reset-tip" wx:if="{{chargePct > 0}}">蓄能中 · 点环取消</text>
       <block wx:if="{{stage === 'rest'}}">
         <view class="ctr">
           <text class="big">{{restLeft}}</text>

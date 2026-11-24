@@ -144,16 +144,7 @@ Page({
     // 整场用时从第一次进入算起，重进接着算（超过 12 小时视为新的一场）
     const ss = Number(st.startAt || 0);
     if (ss > 0 && Date.now() - ss < 12 * 3600 * 1000) this._sessionStart = ss;
-    // 上次是在做某一组时离开的：把这组的起始时刻带回来，息屏/被杀进程也接着算
-    const ws = Number(st.workStart || 0);
-    if (ws > 0 && Date.now() - ws < 6 * 3600 * 1000) {
-      this._resumeWorkStart = ws;
-      this._resumePause = {
-        acc: Number(st.pauseAcc || 0),
-        at: Number(st.pauseAt || 0),
-        paused: !!st.timerPaused
-      };
-    }
+    // 重进只恢复「做过哪几组」，本组计时一律回到 ready/0:00；秒表残留值不带入
     wx.showToast({ title: '已恢复上次进度', icon: 'none' });
   },
 
@@ -449,26 +440,22 @@ Page({
     if (gi < 0) { this.idx++; return this.prepare(); }
     this._gi = gi;
     const g = it.groups[gi];
-    // 每组一进入就开始计时：耗时按系统时间算，息屏后台也继续走
-    const ws = this._resumeWorkStart;
-    const rp = this._resumePause || null;
-    this._resumeWorkStart = 0;
-    this._resumePause = null;
-    this._workStart = (ws && ws > 0 && Date.now() - ws < 6 * 3600 * 1000) ? ws : Date.now();
-    this._lastMin = Math.floor(this.elapsedMs() / 60000);
-    this._pauseAcc = rp ? rp.acc : 0;
-    this._pauseAt = rp && rp.paused ? (rp.at || Date.now()) : 0;
-    const elapsed = Math.max(0, Math.round(this.elapsedMs() / 1000));
+    // 每组进入 = ready：计时归零、等用户点环开始（Bug A：不再沿用上一组/上次会话的残余计时）
+    this._workStart = 0;
+    this._pauseAcc = 0;
+    this._pauseAt = 0;
+    this._lastMin = 0;
+    this._flash = 0;
     this.setData({
-      stage: 'work', curType: 'strength', curName: it.name, curPart: it.part || '',
+      stage: 'ready', curType: 'strength', curName: it.name, curPart: it.part || '',
       curCardio: !!it.isCardio,
       setNo: gi + 1, setsDone: it.groups.filter(x => x.done).length, setsTotal: it.groups.length,
-      reps: g.reps || 0, weight: g.weight || 0, mmss: mmss(elapsed),
-      timerPaused: !!(rp && rp.paused),
+      reps: g.reps || 0, weight: g.weight || 0, mmss: '0:00',
+      timerPaused: false,
       rpe: g.rpe || 0, warmup: !!g.warmup,
       detailVisible: false, detail: null,
       rows: this.rowsOf(it),
-      hint: '第 ' + (gi + 1) + ' 组计时中，做完点「完成本组」'
+      hint: '第 ' + (gi + 1) + ' 组准备，点环开始计时'
     });
     this.refreshQueue();
     this.draw();
@@ -542,10 +529,15 @@ Page({
   togglePause() {
     if (this.data.stage !== 'work') return;
     if (this.data.timerPaused) {
-      if (this._pauseAt) this._pauseAcc = (this._pauseAcc || 0) + (Date.now() - this._pauseAt);
+      // Bug B：继续时按冻结值把 _workStart 重算回「现在」，清掉暂停累计，并确保 interval 在跑
+      const frozen = this.elapsedMs();
+      this._workStart = Date.now() - frozen;
+      this._pauseAcc = 0;
       this._pauseAt = 0;
-      this.setData({ timerPaused: false });
+      this.setData({ timerPaused: false, mmss: mmss(frozen / 1000) });
+      if (!this.timer) this.timer = setInterval(() => this.tick(), 500);
       this.tick();
+      this.persistFocus();
       wx.showToast({ title: '继续计时', icon: 'none' });
     } else {
       this._pauseAt = Date.now();
@@ -555,15 +547,15 @@ Page({
     }
   },
 
-  // 重置本组计时：从 0 重新开始
+  // 重置本组计时：丢数据，回到 ready，等下次点环再开始
   resetTimer() {
     if (this.data.stage !== 'work') return;
-    this._workStart = Date.now();
+    this._workStart = 0;
     this._pauseAcc = 0;
     this._pauseAt = 0;
     this._lastMin = 0;
     this._flash = 0;
-    this.setData({ mmss: '0:00', timerPaused: false });
+    this.setData({ stage: 'ready', mmss: '0:00', timerPaused: false });
     this.persistFocus();
     wx.vibrateShort({ type: 'medium' });
     wx.showToast({ title: '本组计时已重置', icon: 'none' });
@@ -1178,27 +1170,21 @@ Page({
       ctx.stroke();
     }
 
-    // 长按蓄能：白色弧从 0 长到整圈
+    // 重置蓄能：绿弧从 0 扫满一圈
     const charge = this.data.chargePct || 0;
     if (charge > 0) {
       ctx.beginPath();
       ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, charge));
-      ctx.strokeStyle = '#FFFFFF';
+      ctx.strokeStyle = '#3DDCBF';
       ctx.lineWidth = 10;
       ctx.stroke();
     }
   },
 
-  /* ---------- 环手势：单击开始/暂停/继续；长按 800ms 完成本组；双击重置 ---------- */
+  /* ---------- 环手势：只保留单击（开始/暂停/继续）；完成走大按钮 ---------- */
   ringTap() {
-    if (this._suppressTap) { this._suppressTap = false; return; }
-    const now = Date.now();
-    if (this._workStart && now - (this._lastTap || 0) < 320 && this.data.stage === 'work') {
-      this._lastTap = 0;
-      this.resetTimer();
-      return;
-    }
-    this._lastTap = now;
+    // 蓄能中再点 = 取消重置
+    if (this._resetCharging) { this.cancelCharge(); return; }
     if (this.data.stage === 'ready' && this.data.setTimer) {
       this.beginSet(false);
       wx.vibrateShort({ type: 'light' });
@@ -1207,34 +1193,36 @@ Page({
     if (this.data.stage === 'work') this.togglePause();
   },
 
-  ringHoldStart() {
-    if (this.data.stage !== 'work') return;
-    this._holdDone = false;
-    this._holdT0 = Date.now();
+  // 暂停态环内「重置本组」：点一下开始 800ms 蓄能，期间点环可取消
+  resetArm() {
+    if (this.data.stage !== 'work' || !this.data.timerPaused || this._resetCharging) return;
+    this._resetCharging = true;
+    this._chargeT0 = Date.now();
     if (this._chargeTimer) clearInterval(this._chargeTimer);
     this._chargeTimer = setInterval(() => {
-      const p = Math.min(1, (Date.now() - this._holdT0) / 800);
+      const p = Math.min(1, (Date.now() - this._chargeT0) / 800);
       this.setData({ chargePct: p });
       this.draw();
       if (p >= 1) {
-        this._holdDone = true;
-        this._suppressTap = true;
-        this.stopHold();
+        this.stopCharge();
         wx.vibrateShort({ type: 'heavy' });
-        wx.showToast({ title: '本组完成', icon: 'none' });
-        this.finishSet();
-        setTimeout(() => { this._suppressTap = false; }, 400);
+        this.resetTimer();
       }
     }, 50);
+    wx.vibrateShort({ type: 'light' });
   },
 
-  stopHold() {
+  cancelCharge() {
+    if (!this._resetCharging) return;
+    this.stopCharge();
+    wx.showToast({ title: '已取消重置', icon: 'none' });
+  },
+
+  stopCharge() {
+    this._resetCharging = false;
     if (this._chargeTimer) { clearInterval(this._chargeTimer); this._chargeTimer = null; }
     if (this.data.chargePct) { this.setData({ chargePct: 0 }); this.draw(); }
   },
-
-  ringHoldEnd() { this.stopHold(); },
-  ringHoldCancel() { this.stopHold(); },
 
   noop() {}
 });

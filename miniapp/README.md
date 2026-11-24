@@ -348,6 +348,31 @@ DECISION_POINTS = [
 - 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
+## 体验版 1.0.26：圆环三态状态机修补 + 重置下放
+
+### 一、三个真 Bug 与修法
+
+| # | 现象 | 根因 | 修法 |
+|---|---|---|---|
+| A | 进新组 / 重进页面，`mmss` 带着 1:07 直接开跑 | `prepare()` 用「上次 workStart」恢复本组，且默认进 work 自动计时 | 每组进 `ready`：`mmss=0:00`、`_workStart=0`；重进只恢复 items/idx 与整场 startAt |
+| B | 暂停后继续，数字冻住 | 继续时只改 `timerPaused`，`_workStart` 仍按旧基准算，`pauseAcc` 与 interval 状态都不对 | 继续时 `_workStart = Date.now() - frozen`，清 `pauseAcc/pauseAt`，`!timer` 时重建 interval，补一次 `tick()` |
+| C | 长按环完成本组没反应 | 环叠在 movable 区，原生拖拽判定吞掉长按 | 环上只留单击（开始/暂停/继续）；完成走大按钮与组行打勾 |
+
+### 二、重置的落位
+
+- 暂停态（用户已停下审视）环内下方出现「重置本组」小字链接——Apple 秒表 lap/reset 也在暂停时出现。
+- 点击 → 绿弧蓄能 800ms（`chargePct` 0→1）→ 执行重置；蓄能期间点环 = 取消。重置后回 `ready 0:00`，点环重新开始。
+- 双击重置已删除（丢数据不该靠难察觉的手势），环上不再有长按语义。
+
+### 三、汇总口径
+
+顶部 `动作 x/y · 组 a/b pct%` 与环内 meta 同取 `doneTotal/total`、`setsDoneAll/setsTotalAll/setsPct`，组百分比按组算（此前文字用的是动作百分比）。
+
+### 四、验证
+
+- 冷启动 + automator：进页面 `ready 0:00`（历史 3/12 组仍在，不串秒表）→ 点环 2 秒 → 暂停（`0:03` 冻结）→ 继续 `0:03→0:05`（Bug B 修好）→ 暂停出「重置本组」→ 蓄能 0.39/1.0 → 回 `ready 0:00` → 蓄能中途点环取消（仍 paused）→ 完成本组进 rest、`all=4/12` → 重进页面 `ready 0:00`、进度 `4/12` 保留。
+- 截图：`t9/w1-ready.png`、`t9/w3-reset-link.png`、`t9/w4-charging.png`、`t9/w7-reenter.png`。
+
 ## 体验版 1.0.25：专注圆环 = 计时器本体
 
 ### 一、问题
