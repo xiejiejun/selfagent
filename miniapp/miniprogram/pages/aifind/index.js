@@ -1,45 +1,11 @@
 const data = require('../../libs/data/index');
+const find = require('../../libs/find');
 const cloudurl = require('../../libs/cloudurl');
 const CLIP_INDEX = require('../../libs/clip-index.js');
 const ai = require('../../libs/ai');
 
 const AI_CACHE = 'selfagent_aifind_v1';
 const AI_CACHE_MS = 60 * 60 * 1000;
-
-const PART_WORDS = [
-  ['胸', ['胸', '卧推', '飞鸟', '夹胸']],
-  ['背', ['背', '划船', '下拉', '引体']],
-  ['肩', ['肩', '推举', '侧平举', '飞鸟后束']],
-  ['上臂', ['手臂', '二头', '三头', '弯举']],
-  ['腰腹', ['腹', '核心', '卷腹', '平板']],
-  ['上腿', ['腿', '臀', '深蹲', '硬拉', '腿举']],
-  ['小腿', ['小腿', '提踵']],
-  ['全身', ['全身', '壶铃摆', '波比']],
-  ['有氧', ['有氧', '跑步', '单车', '椭圆', '跳绳']]
-];
-
-const EQUIP_WORDS = [
-  ['哑铃', ['哑铃', '壶铃', '棒铃']],
-  ['杠铃', ['杠铃', '杠']],
-  ['器械', ['器械', '固定', '史密斯', '龙门']],
-  ['绳索', ['绳索', '龙门', '滑轮']],
-  ['自重', ['自重', '徒手', '在家', '无器械', 'bodyweight']],
-  ['小器械', ['弹力带', '瑜伽球', '药球', '健腹轮', '滚轴']]
-];
-
-function parse(q) {
-  const s = String(q || '').toLowerCase();
-  let part = '';
-  let equip = '';
-  const hits = [];
-  PART_WORDS.forEach(([p, ws]) => {
-    if (ws.some(w => s.indexOf(w) >= 0)) { part = part || p; hits.push(p); }
-  });
-  EQUIP_WORDS.forEach(([e, ws]) => {
-    if (ws.some(w => s.indexOf(w) >= 0)) { equip = equip || e; hits.push(e); }
-  });
-  return { part, equip, hits };
-}
 
 Page({
   data: {
@@ -52,7 +18,10 @@ Page({
     aiBusy: false,
     aiIntent: '',
     aiNote: '',
-    aiErr: ''
+    aiErr: '',
+    clar: [],
+    clarQ: '',
+    miss: []
   },
 
   onLoad(q) {
@@ -74,95 +43,169 @@ Page({
   },
 
   run() {
-    const q = this.data.q;
-    if (!q.trim()) { wx.showToast({ title: '说一句想练什么', icon: 'none' }); return; }
-    const p = parse(q);
-    const label = [p.part, p.equip].filter(Boolean).join(' · ') || '按名称匹配';
-    let list = data.search('', p.part || '', p.equip || '', 200);
-    if (!list.length) list = data.search(q, '', '', 200);
-    const kw = q.replace(/练|想|今天|帮我|推荐|动作|一下|的/g, '').trim();
-    if (kw && list.length > 12) {
-      const strict = list.filter(x => kw.split(/[\s,，]+/).some(w => w && x.n.indexOf(w) >= 0));
-      if (strict.length) list = strict.concat(list.filter(x => strict.indexOf(x) < 0));
-    }
-    // 本地兜底排序：名称命中越多越靠前，避免没 AI 时顺序随机
-    const ws = kw.split(/[\s,，]+/).filter(Boolean);
-    const score = x => {
-      let s = 0;
-      ws.forEach(w => { if (w && x.n.indexOf(w) >= 0) s += 3; });
-      if (p.part && x.p === p.part) s += 2;
-      if (p.equip && x.e === p.equip) s += 1;
-      return s;
-    };
-    list = list.slice().sort((a, b) => score(b) - score(a));
-    const head = list.slice(0, 12);
+    const q = this.data.q.trim();
+    if (!q) { wx.showToast({ title: '说一句想练什么', icon: 'none' }); return; }
+    const seq = this._seq = (this._seq || 0) + 1;
     this.setData({
-      parsed: label,
-      list: head.map(x => ({ id: x.id, n: x.n, p: x.p, e: x.e, t: x.t, why: '' })),
-      shows: Math.min(12, list.length),
-      detail: null,
-      aiIntent: '',
-      aiNote: '',
-      aiErr: ''
+      aiBusy: true, list: [], shows: 0, detail: null,
+      aiIntent: '', aiErr: '', clar: [], clarQ: '', miss: [], parsed: '',
+      aiNote: '正在理解你的训练意图…'
     });
-    this.fillThumbs(head.map(x => x.id));
-    this.aiRank(q.trim(), p, list);
+
+    const cached = this.readAiCache(q);
+    if (cached) {
+      const slots = find.normalize(cached.understood);
+      this.apply(slots, find.recall(slots, 90), cached.ai, seq);
+      return;
+    }
+
+    this.understand(q).then(u => {
+      if (seq !== this._seq) return null;
+      const slots = u ? find.normalize(u) : find.guess(q);
+      const cands = find.recall(slots, 90);
+      this.paintLocal(slots, cands, seq);
+      return this.rerank(q, slots, cands).then(res => {
+        if (seq !== this._seq) return;
+        if (!res || !(res.picks || []).length) {
+          this.apply(slots, cands, res, seq);
+          return;
+        }
+        this.writeAiCache(q, { understood: u || {}, ai: res });
+        this.apply(slots, cands, res, seq);
+      });
+    }).catch(e => {
+      if (seq !== this._seq) return;
+      const slots = find.guess(q);
+      const cands = find.recall(slots, 90);
+      this.setData({ aiErr: String((e && e.message) || e).slice(0, 80) });
+      this.apply(slots, cands, null, seq);
+    });
   },
 
   wait(ms) { return new Promise(r => setTimeout(r, ms)); },
 
-  // 训练意图 → AI 排序与理由；失败保持本地规则结果
-  aiRank(q, p, pool) {
-    if (!pool.length) return;
-    const cached = this.readAiCache(q);
-    if (cached) { this.applyAi(cached); return; }
-    const cands = pool.slice(0, 20).map(x => x.id + '|' + x.n + '|' + x.p + '|' + (x.e || '自重')).join('\n');
-    const sys = [
-      '你是健身教练。先判断用户这句话的训练意图（部位 / 器械 / 目标 / 限制条件），再只从给定候选动作中挑最合适的 8 个。',
-      '只输出 JSON，不要 markdown、不要解释，格式：',
-      '{"intent":"≤16字的意图判断","picks":[{"id":"动作id","why":"≤10字推荐理由"}]}',
-      '硬规则：id 必须来自候选列表；picks 取 6–8 个，每一个都必须带 why；why 必须说明匹配点（部位、器械、难度或动作模式），不许写空话；候选不匹配时宁可少给。'
-    ].join('\n');    const usr = '用户输入：' + q +
-      '\n本地规则初判：' + ([p.part, p.equip].filter(Boolean).join(' · ') || '无') +
-      '\n候选动作（id|名称|部位|器械）：\n' + cands;
-    this.setData({ aiBusy: true });
+  // 第一步：AI 只解析（部位/器械/动作模式/伤病/缺失条件），不检索
+  understand(q) {
     const tryOnce = (n) => ai.ask({
-      messages: [{ role: 'system', content: sys }, { role: 'user', content: usr }],
-      temperature: 0.2,
-      max_tokens: 420
+      messages: find.understandMessages(q),
+      temperature: 0.1,
+      max_tokens: 520
     }).then(r => {
       if (!r || !r.ok || !r.text) {
-        if (n > 1) return this.wait(4000).then(() => tryOnce(n - 1));
-        this.setData({ aiBusy: false, aiErr: String((r && r.error) || 'empty').slice(0, 80), aiNote: 'AI 暂不可用，已按本地规则排' });
+        if (n > 1) return this.wait(1500).then(() => tryOnce(n - 1));
         return null;
       }
-      const parsed = this.parseAiJson(r.text);
-      if (!parsed || !(parsed.picks || []).length) {
+      const j = this.parseAiJson(r.text);
+      if (!j) {
         if (n > 1) return this.wait(1200).then(() => tryOnce(n - 1));
-        this.setData({ aiBusy: false, aiErr: 'fmt: ' + String(r.text || '').slice(0, 120), aiNote: 'AI 返回格式异常，已按本地规则排' });
         return null;
       }
-      const res = {
-        intent: String(parsed.intent || '').slice(0, 20),
-        picks: (parsed.picks || []).filter(x => x && x.id && x.why).slice(0, 8)
-          .map(x => ({ id: String(x.id), why: String(x.why).slice(0, 16) }))
-      };
-      if (!res.picks.length) {
-        if (n > 1) return this.wait(1200).then(() => tryOnce(n - 1));
-        this.setData({ aiBusy: false, aiErr: 'nowhy: ' + String(r.text || '').slice(0, 120), aiNote: 'AI 未给出推荐理由，已按本地规则排' });
-        return null;
-      }
-      this.writeAiCache(q, res);
-      this.setData({ aiBusy: false });
-      this.applyAi(res);
-      return res;
-    }).catch(e => {
-      if (n > 1) return this.wait(4000).then(() => tryOnce(n - 1));
-      this.setData({ aiBusy: false, aiErr: 'catch: ' + String((e && e.message) || e).slice(0, 100), aiNote: 'AI 请求失败，已按本地规则排' });
-      return null;
-    });
-    tryOnce(3);
+      return j;
+    }).catch(() => (n > 1 ? this.wait(2500).then(() => tryOnce(n - 1)) : null));
+    return tryOnce(2);
   },
+
+  // 第二/三步：用召回候选做重排，允许「库里没有」和反问
+  rerank(q, slots, cands) {
+    if (!cands.length) return Promise.resolve(null);
+    const tryOnce = (n) => ai.ask({
+      messages: find.rerankMessages(q, slots, cands),
+      temperature: 0.15,
+      max_tokens: 900
+    }).then(r => {
+      if (!r || !r.ok || !r.text) {
+        if (n > 1) return this.wait(1500).then(() => tryOnce(n - 1));
+        return null;
+      }
+      const j = this.parseAiJson(r.text);
+      if (!j) {
+        if (n > 1) return this.wait(1200).then(() => tryOnce(n - 1));
+        return null;
+      }
+      return this.normRerank(j, cands);
+    }).catch(() => (n > 1 ? this.wait(2500).then(() => tryOnce(n - 1)) : null));
+    return tryOnce(2);
+  },
+
+  normRerank(j, cands) {
+    const ids = {};
+    cands.forEach(x => { ids[x.id] = 1; });
+    const picks = (j.picks || [])
+      .map(x => x && { id: find.fixId(x.id, ids), why: String(x.why || '').slice(0, 14) })
+      .filter(x => x && x.id)
+      .slice(0, 10);
+    const notFound = (j.notFound || j.missing || []).map(x => String(x).trim()).filter(Boolean).slice(0, 3);
+    const cl = j.clarify;
+    const clarify = cl && Array.isArray(cl.options) && cl.options.length
+      ? { q: String(cl.q || '').slice(0, 16), options: cl.options.map(x => String(x).trim()).filter(Boolean).slice(0, 4) }
+      : null;
+    return { intent: String(j.intent || '').slice(0, 24), picks, notFound, clarify };
+  },
+
+  paintLocal(slots, cands, seq) {
+    if (seq !== this._seq) return;
+    const head = cands.slice(0, 12);
+    const pack = head.map(x => ({ id: x.id, n: x.n, p: x.p, e: x.e, t: x.t, why: '' }));
+    this.setData({
+      parsed: find.slotLabel(slots) || '按名称匹配',
+      list: pack, shows: pack.length,
+      clar: slots.clarify && slots.clarify.options ? slots.clarify.options.map(String).slice(0, 4) : [],
+      clarQ: (slots.clarify && slots.clarify.q) || '',
+      aiNote: '检索到 ' + cands.length + ' 个候选，AI 正在重排…'
+    });
+    this.fillThumbs(head.map(x => x.id));
+  },
+
+  apply(slots, cands, res, seq) {
+    if (seq !== this._seq) return;
+    const byId = {};
+    cands.forEach(x => { byId[x.id] = x; });
+    const picks = (res && res.picks) || [];
+    const ordered = [];
+    const seen = {};
+    picks.forEach(pk => {
+      const it = byId[pk.id];
+      if (!it || seen[pk.id]) return;
+      seen[pk.id] = 1;
+      ordered.push(Object.assign({}, it, { why: pk.why || '' }));
+    });
+    const head = cands.slice(0, 12);
+    head.forEach(it => { if (!seen[it.id] && ordered.length < 12) { seen[it.id] = 1; ordered.push(Object.assign({}, it, { why: '' })); } });
+
+    const clarify = (res && res.clarify) || null;
+    const clar = clarify && clarify.options && clarify.options.length
+      ? clarify.options
+      : (slots.clarify && slots.clarify.options ? slots.clarify.options.map(String).slice(0, 4) : []);
+    const clarQ = (clarify && clarify.q) || (slots.clarify && slots.clarify.q) || '再补一个条件，结果更准';
+    const miss = (res && res.notFound) || [];
+
+    let note = '';
+    if (picks.length) note = 'AI 从 ' + cands.length + ' 个候选里选出 ' + picks.length + ' 个';
+    else if (res) note = 'AI 没有找到完全匹配的，下面是按条件和部位排出的候选';
+    else note = 'AI 暂不可用，已用本地检索排出 ' + cands.length + ' 个候选';
+
+    this.setData({
+      parsed: find.slotLabel(slots) || '按名称匹配',
+      list: ordered, shows: ordered.length,
+      aiIntent: (res && res.intent) || slots.intent || '',
+      aiBusy: false,
+      aiNote: note,
+      // 已经选出足够多时才反问会打断用户，只在「没太读懂 / 候选不足」时给选项
+      clar: clar.length >= 2 && (!res || picks.length < 4) ? clar : [],
+      clarQ,
+      miss
+    });
+    this.fillThumbs(ordered.map(x => x.id));
+  },
+
+  clarTap(e) {
+    const o = e.currentTarget.dataset.o;
+    if (!o) return;
+    this.setData({ q: (this.data.q + ' ' + o).trim(), clar: [] });
+    this.run();
+  },
+
+  toLib() { wx.navigateTo({ url: '/pages/library/index' }); },
 
   parseAiJson(text) {
     let t = String(text || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
@@ -181,7 +224,7 @@ Page({
   },
 
   writeAiCache(q, res) {
-    if (!res || !res.picks || !res.picks.length) return;
+    if (!res || !res.ai) return;
     try {
       const m = wx.getStorageSync(AI_CACHE) || {};
       m[q] = { t: Date.now(), res };
@@ -190,28 +233,6 @@ Page({
       keys.forEach(k => { next[k] = m[k]; });
       wx.setStorageSync(AI_CACHE, next);
     } catch (e) {}
-  },
-
-  // 把 AI 选中的动作提到前面，并带上理由
-  applyAi(res) {
-    const cur = this.data.list || [];
-    const byId = {};
-    cur.forEach(x => { byId[x.id] = x; });
-    const why = {};
-    const ordered = [];
-    (res.picks || []).forEach(pk => {
-      const it = byId[pk.id];
-      if (!it || ordered.indexOf(it) >= 0) return;
-      why[pk.id] = pk.why || '';
-      ordered.push(Object.assign({}, it, { why: pk.why || '' }));
-    });
-    cur.forEach(it => { if (ordered.every(o => o.id !== it.id)) ordered.push(it); });
-    this.setData({
-      list: ordered,
-      shows: ordered.length,
-      aiIntent: res.intent || '',
-      aiNote: res.picks && res.picks.length ? 'AI 依据动作详情与训练部位选出 ' + res.picks.length + ' 个' : ''
-    });
   },
 
   // 缩略图：先查云存储映射，再换临时 https（渲染层不认 cloud://），没有就占位

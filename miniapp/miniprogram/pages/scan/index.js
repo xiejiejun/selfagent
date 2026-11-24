@@ -1,11 +1,6 @@
 const data = require('../../libs/data/index');
+const find = require('../../libs/find');
 const ai = require('../../libs/ai');
-
-const PROMPT = [
-  '你是健身动作识别助手。看这张照片（可以是器械、训练场景或动作截图），',
-  '列出画面里能对应到的标准训练动作名称，最多 6 个。',
-  '只输出 JSON：{"exercises":["动作名1","动作名2"]}，动作名用中文通用叫法，不要解释。'
-].join('');
 
 function extractJson(text) {
   const s = String(text || '');
@@ -25,12 +20,13 @@ Page({
     list: [],
     detail: null,
     aiReady: true,
-    channel: ''
+    channel: '',
+    shot: '',
+    miss: []
   },
 
   onLoad() {
     const c = ai.cfg();
-    
     const custom = ai.usingCustom();
     this.setData({
       channel: custom
@@ -51,7 +47,7 @@ Page({
       success: (res) => {
         const f = res.tempFiles && res.tempFiles[0];
         if (!f) return;
-        this.setData({ img: f.tempFilePath, err: '', list: [], detail: null });
+        this.setData({ img: f.tempFilePath, err: '', list: [], detail: null, shot: '', miss: [] });
         this.recognize(f.tempFilePath);
       }
     });
@@ -74,59 +70,112 @@ Page({
       encoding: 'base64',
       success: (r) => {
         const url = 'data:image/jpeg;base64,' + r.data;
-        this.setData({ hint: 'AI 识别中…' });
+        this.setData({ hint: 'AI 看图中…' });
         this.callAI(url);
       },
       fail: (e) => this.fail('图片读取失败：' + (e.errMsg || ''))
     });
   },
 
+  // 第一步：看图，只输出结构化的器械 / 部位 / 动作 / 关键词
   callAI(url) {
-    ai.ask({
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: PROMPT },
-            { type: 'image_url', image_url: { url } }
-          ]
+    ai.ask({ messages: find.visionMessages(url), max_tokens: 700, temperature: 0.15 })
+      .then(res => {
+        if (!res.ok) {
+          this.fail(res.error || 'AI 调用失败', true);
+          return null;
         }
-      ],
-      max_tokens: 800,
-      temperature: 0.2
-    }).then(res => {
-      if (!res.ok) {
-        this.fail(res.error || 'AI 调用失败', true);
-        return;
-      }
-      const text = res.text || '';
-      const j = extractJson(text);
-      const names = (j && j.exercises) || [];
-      if (!names.length) {
-        this.setData({ busy: false, raw: text.slice(0, 400), hint: '', err: 'AI 没有给出可对应到动作库的名称' });
-        return;
-      }
-      this.resolve(names);
-    }).catch(e => this.fail('AI 失败：' + ((e && e.errMsg) || e), true));
+        const j = extractJson(res.text || '');
+        if (!j) {
+          this.setData({ busy: false, raw: String(res.text || '').slice(0, 400), hint: '', err: 'AI 返回格式异常，换一张或去动作库手动挑' });
+          return null;
+        }
+        const scene = String(j.scene || '').slice(0, 20);
+        const equips = (j.equipment || []).map(x => String(x).trim()).filter(Boolean).slice(0, 5);
+        const actions = (j.actions || []).slice(0, 5);
+        const part = String(j.part || '');
+        const parts = (j.parts || []).slice(0, 3);
+        const keywords = (j.keywords || []).slice(0, 6);
+        this.setData({
+          shot: [scene, equips.length ? equips.join(' / ') : ''].filter(Boolean).join(' · '),
+          hint: '按画面条件检索动作库…',
+          raw: actions.length ? '画面动作：' + actions.join('、') : ''
+        });
+        const slots = find.normalize({ part, parts, equips, keywords, names: actions });
+        // 名称直配也要跟画面条件一致：拍到龙门架就别塞弹力带/哑铃版本
+        const byName = find.byNames(actions).list.filter(x => {
+          if (slots.part && x.p !== slots.part && slots.parts.indexOf(x.p) < 0) return false;
+          if (slots.eqSpec.size && !slots.eqSpec.has(x.e)) return false;
+          return true;
+        });
+        const cands = find.recall(slots, 70).filter(x => !byName.some(y => y.id === x.id));
+        if (!byName.length && !cands.length) {
+          this.setData({ busy: false, hint: '', err: '没认出可用动作，换一张更清楚的照片，或去动作库手动挑' });
+          return null;
+        }
+        return this.rerank(scene, equips, part, actions, keywords, slots, byName, cands);
+      })
+      .catch(e => this.fail('AI 失败：' + ((e && e.errMsg) || e), true));
   },
 
-  resolve(names) {
-    const list = [];
-    const miss = [];
-    names.forEach((nm) => {
-      const ex = data.matchByName(nm);
-      if (ex && !list.some(x => x.id === ex.id)) {
-        list.push({ id: ex.id, n: ex.n, p: ex.p, e: ex.e, t: ex.t, from: nm });
-      } else if (!ex) {
-        miss.push(nm);
+  // 第二步：把画面条件当作"用户原话"，做同一套重排
+  rerank(scene, equips, part, actions, keywords, slots, byName, cands) {
+    const ctx = '用户拍了照片。画面：' + (scene || '健身场景') +
+      '；可见器械：' + (equips.join('、') || '未识别') +
+      '；主要部位：' + (part || '未判断') +
+      '；画面里的动作：' + ((actions || []).join('、') || '未识别');
+    if (!cands.length) return this.render(slots, byName, [], null);
+    this.setData({ hint: 'AI 正在按器械和动作模式重排…' });
+    const tryOnce = (n) => ai.ask({
+      messages: find.rerankMessages(ctx, slots, cands),
+      temperature: 0.15,
+      max_tokens: 900
+    }).then(r => {
+      if (!r || !r.ok || !r.text) {
+        if (n > 1) return new Promise(x => setTimeout(x, 1500)).then(() => tryOnce(n - 1));
+        return null;
       }
+      const j = extractJson(r.text);
+      if (!j) {
+        if (n > 1) return new Promise(x => setTimeout(x, 1200)).then(() => tryOnce(n - 1));
+        return null;
+      }
+      const ids = {};
+      cands.forEach(x => { ids[x.id] = 1; });
+      const picks = (j.picks || [])
+        .map(x => x && { id: find.fixId(x.id, ids), why: String(x.why || '').slice(0, 14) })
+        .filter(x => x && x.id)
+        .slice(0, 10);
+      return this.render(slots, byName, picks, j, cands);
+    }).catch(() => this.render(slots, byName, [], null, cands));
+    return tryOnce(2);
+  },
+
+  render(slots, byName, picks, j, cands) {
+    const all = cands || [];
+    const byId = {};
+    all.forEach(x => { byId[x.id] = x; });
+    const out = [];
+    const seen = {};
+    byName.forEach(x => { if (!seen[x.id]) { seen[x.id] = 1; out.push({ id: x.id, n: x.n, p: x.p, e: x.e, t: x.t, why: '画面直接对应' }); } });
+    picks.forEach(pk => {
+      const it = byId[pk.id];
+      if (!it || seen[pk.id]) return;
+      seen[pk.id] = 1;
+      out.push({ id: it.id, n: it.n, p: it.p, e: it.e, t: it.t, why: pk.why });
     });
+    all.slice(0, 12).forEach(it => {
+      if (out.length >= 12 || seen[it.id]) return;
+      seen[it.id] = 1;
+      out.push({ id: it.id, n: it.n, p: it.p, e: it.e, t: it.t, why: '' });
+    });
+    const miss = out.length >= 4 ? [] : ((j && (j.notFound || j.missing)) ? (j.notFound || j.missing).filter(Boolean).slice(0, 3) : []);
     this.setData({
-      busy: false, hint: '', err: '', list, raw: miss.length ? '未匹配：' + miss.join('、') : ''
+      busy: false, hint: '', err: '', list: out.slice(0, 12),
+      miss,
+      raw: miss.length ? '动作库里没有：' + miss.join('、') : (this.data.raw || '')
     });
-    if (!list.length) {
-      this.setData({ err: '识别到的名称在动作库里没有对应，可以点「去动作库手动挑」' });
-    }
+    if (!out.length) this.setData({ err: '没找到匹配动作，可以点「去动作库手动挑」' });
   },
 
   fail(msg, dev) {

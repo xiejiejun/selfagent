@@ -23,6 +23,15 @@
 .int-v { font-size: 23rpx; color: #14181A; }
 .int-v.busy { color: #98A29F; }
 
+.clar { margin: 4rpx 0 10rpx; padding: 16rpx 18rpx; background: #FFF8EC; border-left: 5rpx solid #E8A33D; border-radius: 12rpx; }
+.clar-q { display: block; font-size: 20rpx; color: #9A6A1E; }
+.clar-opts { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 10rpx; }
+.clar-o { padding: 9rpx 20rpx; background: #fff; border: 1rpx solid #EBD6B4; border-radius: 22rpx; font-size: 21rpx; color: #7A5A22; }
+
+.miss { display: flex; align-items: center; justify-content: space-between; margin: 0 0 10rpx; padding: 14rpx 18rpx; background: #FDF0F1; border-left: 5rpx solid #E06E78; border-radius: 12rpx; }
+.miss-t { flex: 1; font-size: 20rpx; color: #A34B55; }
+.miss-a { font-size: 20rpx; color: #C04450; }
+
 .card { display: flex; align-items: center; background: #fff; border-radius: 18rpx; padding: 18rpx 20rpx; margin-bottom: 10rpx; }
 .thumb { width: 96rpx; height: 96rpx; border-radius: 14rpx; background: #EEF2F0; flex: none; margin-right: 16rpx; }
 .thumb.ph, .d-media-in.ph { display: flex; align-items: center; justify-content: center; }

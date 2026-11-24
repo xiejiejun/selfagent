@@ -51,6 +51,13 @@ function byId(id) {
   return null;
 }
 
+// 全量动作（给 AI 召回层打分用，5632 条；只读，勿改）
+function all() {
+  const out = new Array(LIB.length);
+  for (let i = 0; i < LIB.length; i++) out[i] = mk(LIB[i]);
+  return out;
+}
+
 // 名称模糊匹配（给 md 导入、过往记录补 exId 用）
 function matchByName(name) {
   const n = String(name || '').replace(/\s/g, '');
@@ -64,4 +71,4 @@ function matchByName(name) {
   return best;
 }
 
-module.exports = { search, byId, matchByName, PARTS, EQUIPS, total: LIB.length };
+module.exports = { search, byId, matchByName, all, PARTS, EQUIPS, total: LIB.length };

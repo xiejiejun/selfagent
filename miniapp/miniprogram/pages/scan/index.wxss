@@ -22,6 +22,11 @@
 .rl { flex: 1; }
 .nm { display: block; font-size: 25rpx; font-weight: 600; color: #14181A; }
 .mp { display: block; margin-top: 4rpx; font-size: 20rpx; color: #8A9490; }
+.why { display: block; margin-top: 4rpx; font-size: 19rpx; color: #0F8C7E; }
+.shotline { display: block; font-size: 20rpx; color: #0F8C7E; margin: 6rpx 0 2rpx; }
+.missline { display: flex; justify-content: space-between; align-items: center; margin-top: 10rpx; padding-top: 12rpx; border-top: 1rpx dashed #F0DADD; }
+.miss-t { flex: 1; font-size: 20rpx; color: #A34B55; }
+.miss-a { font-size: 20rpx; color: #C04450; }
 .arr { color: #C9D2CE; font-size: 20rpx; }
 .mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(8,12,11,.5); z-index: 90; display: flex; align-items: flex-end; }
 .sheet { width: 100%; max-height: 76vh; overflow: auto; background: #fff; border-radius: 28rpx 28rpx 0 0; padding: 26rpx 28rpx calc(26rpx + env(safe-area-inset-bottom)); box-sizing: border-box; }

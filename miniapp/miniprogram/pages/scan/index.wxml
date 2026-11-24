@@ -19,6 +19,7 @@
     <view class="acts">
       <text class="hint" wx:if="{{busy}}">{{hint}}</text>
       <text class="hint" wx:elif="{{err}}">{{err}}</text>
+      <text class="shotline" wx:if="{{shot}}">画面：{{shot}}</text>
       <scroll-view class="rawbox" wx:if="{{raw}}" scroll-y="true"><text class="raw">{{raw}}</text></scroll-view>
       <view class="two">
         <view class="tb ghost" bindtap="album">重选</view>
@@ -33,8 +34,13 @@
       <view class="rl">
         <text class="nm">{{item.n}}</text>
         <text class="mp">{{item.p}} · {{item.e || '自重'}}{{item.t ? ' · ' + item.t : ''}}</text>
+        <text class="why" wx:if="{{item.why}}">✦ {{item.why}}</text>
       </view>
       <text class="arr">▸</text>
+    </view>
+    <view class="missline" wx:if="{{miss.length}}">
+      <text class="miss-t">动作库里没有：{{miss.join('、')}}</text>
+      <text class="miss-a" bindtap="toLib">手动挑 ›</text>
     </view>
   </view>
 

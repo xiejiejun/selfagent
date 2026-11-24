@@ -1,7 +1,7 @@
 <view class="page">
   <view class="hd">
     <text class="t">✦ AI 找动作</text>
-    <text class="s">先由 AI 判断训练意图，再从动作库按部位/器械/动作模式选</text>
+    <text class="s">先解析你的部位 / 器械 / 限制，再从全库 5632 个动作里召回并重排；找不到会直说，缺条件时会反问</text>
   </view>
 
   <view class="bar">
@@ -23,8 +23,20 @@
     <text class="int-v busy" wx:elif="{{aiBusy}}">正在读你的训练意图…</text>
   </view>
 
+  <view class="clar" wx:if="{{clar.length}}">
+    <text class="clar-q">{{clarQ}}</text>
+    <view class="clar-opts">
+      <text class="clar-o" wx:for="{{clar}}" wx:key="*this" data-o="{{item}}" bindtap="clarTap">{{item}}</text>
+    </view>
+  </view>
+
   <view class="meta" wx:if="{{shows}}">
     <text>{{aiNote || ('识别到「' + parsed + '」，给出 ' + shows + ' 个候选')}}</text>
+  </view>
+
+  <view class="miss" wx:if="{{miss.length}}">
+    <text class="miss-t">动作库里没有：{{miss.join('、')}}</text>
+    <text class="miss-a" bindtap="toLib">去动作库手动挑 ›</text>
   </view>
 
   <view class="card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
@@ -43,7 +55,7 @@
     <text class="es">换个说法试试，比如「在家 哑铃 胸」</text>
   </view>
 
-  <text class="tip">说明：AI 只在这 36 个候选里挑，编号与名称来自本地动作库；未配置 AI 或调用失败时，自动退回本地规则结果，页面不会空着。</text>
+  <text class="tip">说明：AI 先解析再检索，最多看 90 个候选；库里确实没有的用户请求会直接标出，不拿无关动作凑数。未配置 AI 或调用失败时自动退回本地别名检索，页面不会空着。</text>
 </view>
 
 <view class="mask" wx:if="{{detail}}" bindtap="close">
