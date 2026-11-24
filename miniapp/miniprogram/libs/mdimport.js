@@ -208,6 +208,8 @@ function apply(p) {
   });
 
   store.setTrain(train);
+  (train.records || []).forEach(r => { if (r && r.uid) { r.ts = r.ts || Date.now(); store.markDirty('train', r.uid); } });
+  (train.cardio || []).forEach(r => { if (r && r.uid) { r.ts = r.ts || Date.now(); store.markDirty('train', r.uid); } });
 
   let logs = store.getLogs();
   added.days.forEach(d => {
@@ -218,8 +220,10 @@ function apply(p) {
       if (sess && sess.title) logs[idx] = Object.assign({}, logs[idx], { tags: '训练 · ' + sess.title });
     }
   });
-  store.setLogs(engine.dedupeLogs(logs));
+  const dedup = engine.dedupeLogs(logs);
+  store.setLogs(dedup);
+  dedup.forEach(l => { if (l && l.id) { l.ts = l.ts || Date.now(); store.markDirty('logs', l.id); } });
   return added;
 }
 
-module.exports = { parse, preview, apply, partOf, dateOf, hash };
+module.exports = { parse, preview, apply, partOf, dateOf, hash, parseStrength };

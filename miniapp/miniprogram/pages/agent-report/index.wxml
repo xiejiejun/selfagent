@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="head">
+    <text class="hl">Agent 完整报告</text>
+    <text class="hs">画像 → 规划 → 趋势推演 · 基于本机记录生成</text>
+  </view>
+
+  <view class="seg">
+    <text class="sg {{seg === 'persona' ? 'on' : ''}}" data-t="persona" bindtap="switchSeg">画像</text>
+    <text class="sg {{seg === 'plan' ? 'on' : ''}}" data-t="plan" bindtap="switchSeg">规划</text>
+    <text class="sg {{seg === 'trend' ? 'on' : ''}}" data-t="trend" bindtap="switchSeg">趋势推演</text>
+  </view>
+
+  <view class="body" wx:if="{{hasLogs && report}}">
+    <block wx:for="{{report[seg]}}" wx:key="title">
+      <view class="card">
+        <text class="st">{{item.title}}</text>
+        <view class="li {{line.warn ? 'warn' : ''}} {{line.conf === 'good' ? 'good' : ''}}" wx:for="{{item.lines}}" wx:for-item="line" wx:key="text">
+          <text class="lt">{{line.text}}</text>
+          <text class="lc" wx:if="{{line.conf}}">· {{line.conf}}</text>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="empty" wx:else>
+    <text class="et">还没有可分析的记录</text>
+    <text class="es">先在「记录」页写几条日志，再回到这里看画像、规划与趋势推演。</text>
+  </view>
+</view>

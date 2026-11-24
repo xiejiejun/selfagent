@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="hd">
+    <text class="t">身体数据</text>
+    <text class="s">{{latestText}}</text>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">今天（{{date}}）</text></view>
+    <view class="frow" wx:for="{{fields}}" wx:key="k">
+      <text class="fl">{{item.l}}</text>
+      <input class="fi" type="digit" value="{{form[item.k]}}" data-k="{{item.k}}" bindinput="onField" placeholder="{{item.ph}}" />
+      <text class="fu">{{item.u}}</text>
+    </view>
+    <view class="btn" bindtap="save">保存这条记录</view>
+    <text class="tip">同一天再存会覆盖当天数据；只填了的项才会写入。</text>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">体重趋势（最近 12 次）</text><text class="cm">{{deltaText}}</text></view>
+    <view class="bars" wx:if="{{bars.length}}">
+      <view class="bcol" wx:for="{{bars}}" wx:key="date">
+        <text class="bv">{{item.weight || ''}}</text>
+        <view class="bwrap"><view class="bar {{item.weight ? 'on' : ''}}" style="height: {{item.h}}%"></view></view>
+        <text class="bl">{{item.date}}</text>
+      </view>
+    </view>
+    <text class="empty" wx:else>还没有身体数据</text>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">记录</text></view>
+    <view class="row" wx:for="{{list}}" wx:key="date">
+      <view class="rl">
+        <text class="rd">{{item.date}}</text>
+        <text class="rv">{{item.weight ? item.weight + 'kg ' : ''}}{{item.waist ? '腰 ' + item.waist + ' ' : ''}}{{item.chest ? '胸 ' + item.chest + ' ' : ''}}{{item.arm ? '臂 ' + item.arm : ''}}</text>
+      </view>
+      <text class="del" data-date="{{item.date}}" bindtap="del">删</text>
+    </view>
+  </view>
+</view>

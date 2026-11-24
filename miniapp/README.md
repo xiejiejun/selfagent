@@ -26,8 +26,8 @@
 云函数：
 
 - `aiProxy`：OpenAI 兼容 `/chat/completions` 转发，Key 只存服务端环境变量，客户端拿不到。
-- `syncPush`：把 logs / train(records+cardio) 拆成实体事件写入 `events`，profile/settings 写 `snapshots`，墓碑删云端实体，`sync_state` 记水位。
-- `syncPull`：按水位 `ts > since` 拉增量（分页 1000），返回 `{logs:[], train:{records,cardio}, profile, settings}`。
+- `syncPush`：只接收客户端标脏的实体（logs / train(records+cardio)）写入 `events`，`profile`/`settings`/`trainmeta` 写 `snapshots`（`trainmeta` 另存 `upd`=客户端编辑时间），墓碑删云端实体，`sync_state` 记水位；集合不存在时自建。
+- `syncPull`：按水位 `ts > since` 拉增量（分页 1000），返回 `{logs:[], train:{records,cardio}, profile, settings, trainmeta, metaTs}`。
 - `gifMigrate`：把动作缩略图（`media/thumb/<id>.webp`）搬到云存储并写 `media_map`，供动作库图卡读取；单次 ≤40 个 id。
 - `notify`：订阅消息登记与发送，`action=bind/unbind/status/send`，定时触发器每天 20:00 扫描 `subscriptions` 发提醒。
 
@@ -51,7 +51,21 @@ miniapp/
 
 ## 本地存储键（与网页版一一对应）
 
-`selfagent_logs_v1` / `selfagent_training_v1` / `selfagent_profile_v1` / `selfagent_settings_v1` / `selfagent_theme_v1` / `selfagent_page_v1` / `selfagent_del_v1` / `selfagent_rep_fp` / `selfagent_sync_v1`
+`selfagent_logs_v1` / `selfagent_training_v1` / `selfagent_profile_v1` / `selfagent_settings_v1` / `selfagent_theme_v1` / `selfagent_page_v1` / `selfagent_del_v1` / `selfagent_rep_fp` / `selfagent_sync_v1` / `selfagent_dirty_v1`（待推实体与快照）/ `selfagent_sync_seed_v1`（首次迁移标志）
+
+## 自动同步（以微信 openid 归属）
+
+身份完全由云开发承担：客户端不传 openid，云函数用 `cloud.getWXContext()` 取可信 OPENID，`events` / `snapshots` / `sync_state` 三个集合权限设为「仅创建者可读写」，记录天然按 `_openid` 隔离。
+
+- **写入即标脏**：`libs/store` 的 `write()` 触发 `onWrite` 钩子，训练记录/日志/收藏/设置分别标记 `train:<uid>`、`logs:<id>`、`snap:trainmeta|settings|profile`，存进 `selfagent_dirty_v1`。
+- **自动上行**：`libs/sync` 的 `schedule()` 做 1.5s 防抖，`boot()` 按脏列表拼 `states` 只推改动过的实体，成功后 `clearDirty(sent)`。
+- **分包上行（重要）**：`wx.cloud.callFunction` 单次入参上限约 100KB，且按 **UTF-8 字节** 算（中文 1 字≈3 字节）。因此上行按实体切包，单包 ≤45KB 字节，并且每包不超过 5 条日志 / 40 条记录；多包逐包发、逐包清脏。实测：90KB 字节通、120KB 字节失败；一包塞 11 条长笔记会卡死（`Failed to fetch`）。批量导入 MD 后务必走这条路，否则整包超限静默失败。
+- **下行分批**：`syncPull` 同样受返回体积限制，`pull()` 按 `logs` / `train` / `profile+settings` / `trainmeta` 分四次拉，避免一次返回过大。
+- **自动下行**：`onLaunch`（首次）与 `onShow`（间隔 ≥45s）调 `app.autoSync()`，先 `pull` 按水位拉增量，再用 `mergeByKey` 做逐实体 LWW：实体比 `ts`，`trainmeta` 比客户端编辑时间 `metaTs`（本地一改就立刻记账，避免被更旧的云端快照覆盖）。
+- **首次迁移**：升级前的老数据没有 `ts`，首次 `boot` 时 `seedLegacy()` 补时间戳并全部标脏推一次，之后写 `selfagent_sync_seed_v1`，避免换设备丢历史。
+- **删除**：删除前写墓碑，云端按墓碑移除实体，避免下次同步把删掉的数据拉回来。
+- 设置页「数据 → 自动同步（按微信身份）」可关闭自动链路，保留「上传本机 / 拉取合并」手动按钮。
+
 
 ## 数据模型
 
@@ -71,7 +85,7 @@ miniapp/
    - `AI_API_KEY`：服务端 Key
    - `AI_MODEL`：默认模型名（如 `deepseek-chat`）
    不配也能跑前 5 个页面，只有「问 AI」会返回 `AI_BASE_URL / AI_API_KEY 未配置`。
-6. **真机/模拟器**：编译后先用本地存储跑通「训练 / 记录 / 我的」，再点「我的 → 上传本机」验证同步；换设备执行「拉取合并」。
+6. **真机/模拟器**：编译后直接跑——启动即按 openid 拉云端数据（换设备/清缓存后自动恢复），改数据后 1.5s 自动上行；「我的 → 上传本机 / 拉取合并」保留为手动兜底。
 7. **迁移动作缩略图**（可选，影响动作库图卡是否有图）：部署 `gifMigrate` 后在控制台「云函数 → 测试」逐批调用：
    ```json
    {"ids": ["0001","0002","0003"]}
@@ -92,6 +106,13 @@ miniapp/
 - 云函数真机链路：`syncPush` 返回 `{ok:true,pushed:[logs,train,profile,settings]}`，`syncPull` 回读到 2 条日志（含 `autotr-<date>` 训练卡）与 1 条有氧；`aiProxy` 返回真实回答文本。
 - 三功能模拟器实测（端口 9420 automation）：动作库 5,632 条、部位筛选（`胸` 40 条）、加载更多 40→80、搜索「卧推」、★收藏写入 `train.favs`；专注模式 `ready→work→rest(59s)→finish`，3 组打满 `volume=1800`，落库 `groups` 三组 `done:true`，生成 `autotr-<date>` 训练日志；计划页 7 根周柱、天数/组数保存、AI 计划按钮可用。
 - 云函数桩测：`notify bind/send/status/unbind` 与 `gifMigrate`（写入 `media_map`）跑通。
+- 自动同步（本轮）：
+  - 离线桩测六项全过：只推脏实体（4 条写入 → 4 个事件）、改 1 条只 +1 事件、云端更旧不覆盖本地、墓碑丢弃云端实体、`trainmeta` 远端更新则覆盖、本地更新则保留。
+  - 模拟器：写一条笔记 → `dirty={logs:[id]}` → 1.5s 后脏清空 + 水位前进；清空 storage 走真实冷启动（关闭重开工程 + `cli auto`）后，4 条日志、收藏、`restUser` 全部按 openid 拉回。
+  - 云函数 `syncPush` / `syncPull` 已用本机 IDE CLI 部署（`cloud functions deploy --env cloud1-d2g3r78mffbe3ca36 --names syncPush syncPull`）。
+  - 批量导入 MD 后的一次实测：本机 68 条力量记录 + 4 条有氧 + 11 条长笔记（中文，约 40KB 字符 / 120KB 字节），旧版整包推送 `Failed to fetch`、`待推 83` 不动；改为 UTF-8 字节切包 + 条数上限后，72 个实体分 3 批上行，3s 内 `待推 83 → 32 → 0`。清空 storage 冷启动后按 openid 拉回 68/4/11，与云端一致。
+  - 云函数 `syncPush` 内部改为分批并发写（`PAR=5`），避免批量导入时串行写超时。
+  - 待验：真机与第二台设备的实际登录恢复；`mp.reLaunch` 不触发 `App.onLaunch`，冷启动必须关闭工程再开。
 - 待验：`wx.requestSubscribeMessage` 只能在真实点击手势下调用（模拟器 automation 会返回 `can only be invoked by user TAP gesture`），需真机点「开启提醒」验证授权；真机扫码与异地拉取同理。
 
 ## 还没做（下一步）
@@ -100,3 +121,260 @@ miniapp/
 - 订阅消息实际推送：模板关键词需按上文第 8 步对齐后，用 `notify` 的 `send` 实测一次。
 - 图表：目前用 WXML 柱条/进度条 + canvas 三环，`echarts-for-weixin` 未引入（可选）。
 - 分包：主包约 548KB（含 244KB 词库），未分包，后续动作数据增多时再拆。
+
+## 有氧计组方式（timer / sets）
+
+- `train.cardio[]` 新增 `mode`：`'timer'`（按时长，旧数据默认）| `'sets'`（按组，与力量同构）。`sets` 型用 `groups:[{no,reps,weight,done,rpe}]`，`weight:0` 即自重；`timer` 型沿用 `min/dur/sec`。
+- 动作库映射：`p:'有氧'` 或 `t:'心肺'` 的动作在训练页点＋ → 打开动作详情浮层（`ex-sheet`），不再落力量表单。默认方式按动作名预选：跳绳/波比/登山跑/开合跳/冲刺等 → `sets`；椭圆机/跑步/爬坡 → `timer`，详情页可随时改。
+- 详情浮层（`components/ex-sheet`）：标题旁「有氧」琥珀徽章 +「⏱ 计时 / 🔢 计组」分段控件；计时态只调时长，计组态调组/次/kg（0 显示“自重”）；底部「保存方式并加入今日」。已有记录改方式时，若换向会清空已记录数据，先弹确认（“将清除已记录的 X 组/分钟”）。
+- 今日列表：`timer` 行右侧显示 `20′`；`sets` 行显示完成组点列与 `x/y`，展开后逐组点打卡（`actions.toggleCardioGroup`）。
+- 专注模式：`sets` 型直接进力量卡流程（组行、打勾、RPE、休息），`strip chip` 加琥珀描边 +「有氧」；`timer` 型仍走分幕计时屏。
+- 引擎/统计：`engine.cdDayItems` 产出 `mode/groups/doneN/totalN`；`summarize` 把 sets 型计入组数与容量（自重 0kg），`cardioMin` 只累计 timer 型；`dayStat` 新增 `cardioSets`，连续天数与“今天有没有练”都能被纯 sets 有氧触发。
+- 徽章统一规格：`#E8A93D` 文字 + 10% 琥珀底、圆角 8rpx、22rpx 字号（深色专注页用 14% 底），出现在今日列表、图卡左上角、记录分段、历史/日志行、专注 strip chip 与动作标题旁。
+
+### 本轮模拟器实测（2026-11-24，端口 9420）
+
+- 引擎纯函数：sets 跳绳 `2×100` + timer 椭圆机 `20′` → `2 动作 · 1/2 组 · 有氧 跳绳 2×100、椭圆机 20′ · —`；`cardioMin=20`、`cardioSets=2`。
+- 列表：sets 行 `自重 2×100` + 两粒组点（1/2 完成），timer 行右侧 `30′`；图卡左上角「有氧」徽章正常。
+- 详情浮层：跳绳默认 `计组`、椭圆机默认 `计时`；分段切到计时后时长可调，保存生成 `mode:'timer', min:20, sec:1200, exId` 记录；计组保存保留已有组完成态。
+- 打卡：`tapCardioGroup` 第 2 组 → `done:true`、行变 `2/2`、日志 `autotr-2026-11-24` 的 cardio 行同步 `doneN 1→2`。
+- 专注模式：`uid=sets` 记录进入 `curType=strength`、`curCardio=true`、`第 2/2 组`，组行与 RPE 正常。
+- 清场：测试记录用 `deleteCardio` 删除，storage 与日志 meta 无残留，墓碑 2 条随同步上传。
+- 未覆盖：原生 `wx.showModal` 的“换向清空”确认只能真机手点，automation 不接管系统弹窗；计划表组件（`train-plan`）只渲染 AI 推荐动作，暂不出现有氧行。
+### 三项收口（2026-11-24 晚，版本 1.0.20261124.12）
+
+- **计组方式互转保留**：`actions.saveCardio` 不再在切方式时删 `groups`/清 `min`；两种形态数据并存，`mode` 只决定「哪个计入统计与渲染」。详情浮层切换不再弹「清除」确认，改为 toast「已切换，原数据保留」，并常驻一行「切换不清空：时长与组数各自保留，可随时切回」。
+- **距离字段**：`train.cardio[].dist`（km，0 = 不记）。详情浮层计组态新增「距离」步进器（±0.5，0–100，可手输）；引擎 `cdDayItems` 透传 `dist`，`dayContent` / `summaryText` / 今日列表 / 记录页 / 计划参数列都按 `… · 0.5km` 补位；专注模式保存与计时保存都会带上 `dist`，未传时沿用旧值。
+- **计划表有氧行**：`libs/cardio.js` 抽出公共口径（`isCardioEx` / `defaultCardioMode` / `cardioLine`），`recommend` 的有氧推荐按动作语义给 `mode`（跳绳/波比类 → 3×30 计组，跑步/椭圆类 → 20′ 计时）。计划卡条目行名称右侧加琥珀「有氧」徽章，右侧参数列为 `20′` / `3×30`；「加入今日训练」按 mode 分别落 `cardio[]`（计组型带 groups，计时型带 min/dur），并按 `exId` 去重（同时查 records 与 cardio）。
+
+本轮实测（模拟器 9420）：建计时记录 20′ → 浮层切计组保存 → 记录 `mode=sets / min=20 保留 / dist=0.5 / groups 3`；再切回计时保存 → `mode=timer / sec=1200 / dist=0.5 / groups 仍 3 组`；计划卡注入 `3×30` 与 `20′` 两条有氧 → 徽章与参数列正常，导入后落库 `测试跳绳计划 sets 3组`、`测试椭圆机计划 timer 20′`，今日列表行为 `自重 3×30` 与 `20 分钟`；测试记录已用 `onEditorDelete` 清场（本地真实数据保留 5 条椭圆机记录）。
+## 交互体验三批次（2026-11-24，版本 1.0.20261124.13）
+
+### 批次 1｜添加一步直达（＋ 不再弹 action sheet）
+
+- `pages/train/index.js`：`openAddSheet()` 直接 `openLibrary()`；删除原 4 项 action sheet（从动作库添加 / 用一句话找动作 / 添加有氧 / 拍照识别）与 `addCardio()`。点 ＋ 到选中动作由 4 击降到 2 击。
+- `pages/library/index.*`：`autoFocus: true`（搜索框自动聚焦）；`onLoad` 读 `?part=` 预选部位（`PARTS` 含「有氧」，空态「先记一条有氧」仍走这个入口）；顶部新增一行次级入口 `subrow`：`✏️ 用一句话添加` / `📷 拍照识别`（各自 `navigateTo` 到 `aifind` / `scan`，选完通过 `getOpenerEventChannel().emit('pick')` 回传，`navigateBack({delta:2})` 一次退回训练页）。
+- 「添加有氧」菜单项删除，有氧统一走动作库（`p:'有氧'` 自动落到有氧浮层）。
+
+### 批次 2｜力量 / 计时两种模式分开
+
+- `libs/settings.js`：`trainCfg().groupTimer`（默认 `false`），`setTrainCfg({groupTimer})` 落 `train.groupTimer` 并 markDirty；`pages/setting` 训练设置面板新增「组内计时」开关 + 说明。
+- `pages/focus`（默认关，即无组内秒表）：
+  - 力量卡不再默认显示 0:00 计时环；中央改为「本组次数 / 重量 · 第 n/N 组」的轻量盘（`.stage.lite` 336rpx）。
+  - 主按钮 = 「完成第 n 组」，点一下即记一组（`doneCurrent`）；组行也可直接点打勾（`tapRow`，当前组高亮 `.row.cur`）。
+  - 记完自动进组间休息：卡内画倒计时环（`#rings` canvas + `.rings`，`restPct` 逐秒重绘）+ 文案「第 n 组完成 · 休息 X″，结束做第 n+1 组」；倒计时归零或点「跳过休息」→ 震一下并回到 ready；最后一组完成进 between。
+  - 组间休息秒数沿用 `settings.restFor`（大肌群 150 / 孤立 60 / 默认 90，用户自填覆盖）。
+  - 打开「组内计时」后恢复原流程：开始 → 计时 → 完成，`sec` 落库（`rows` 显示本组用时）。
+  - `draw()` 从「三环空转」改为只画休息倒计时环；canvas 惰性初始化（力量卡未挂载时 onReady 查不到节点，`draw()` 会重试）。
+- 计时型（有氧 timer）与 sets 型有氧流程不变。
+
+### 批次 3｜多动作导航与文案闭环
+
+- 顶部 chips 右端新增「☰ 清单」按钮：底部 sheet 列出全部动作（序号 + 名称 + `有氧` 徽章 + 状态 ✓已完成/进行中/未开始），点击 1 击跳转（`jumpTo`）；chips 本身也可点。
+- 进度信息双口径：`0/13 动作` + `x/37 组 y%`（`setsDoneAll / setsTotalAll`，按组统计），清单 sheet 头同样显示组进度。
+- 文案：训练页悬浮条副标题「逐组计时」→「逐组记录」。
+- 计划卡「加入今日训练」：不再只 toast，改为 `wx.showModal`「已加入 · 新增 N 个动作，现在开始专注训练？」→ 确认直接 `navigateTo('/pages/focus/index?date=…')`，完成计划→专注的最后一跳。
+
+### 本轮模拟器实测（端口 9420）
+
+- ＋ → 直接 `pages/library/index`，`autoFocus=true`；空态「有氧」入口进来 `part=有氧`；`subrow` 两个次级 chip 正常渲染。
+- 专注页默认 `setTimer=false`：`hint=点「完成第 1 组」，或直接点组行打勾`；`tapRow(0)` → `stage=rest / restTotal=90 / rows[0].done=true`；`skipRest` → `ready` 且 hint 指向第 2 组；13 动作 chips + ☰ + 清单 13 行可滚动；`jumpTo(3)` → `curName=椭圆机`（有氧）且 sheet 关闭。
+- 设置页开关：`toggleGroupTimer(true)` → `train.groupTimer=true`（storage 同步）；再进专注页 `setTimer=true`、`start` → `work`、`mmss` 走秒、`finishSet` → `rest 59/60` 且该组 `sec` 落库；测完关回 `false`。
+- 未覆盖：`wx.showModal`（计划导入后的「开始训练」）automation 不接管，需真机点；休息环的音效未做（小程序无提示音 API，用 `wx.vibrateShort` 代替）。
+
+### 修复（2026-11-24，版本 1.0.20261124.14）
+
+- **有氧行 ⋯ 无响应**：`openRowMenu` 原先只在 `train.records`（力量）里找记录，有氧在 `train.cardio` 里 → 直接 null 返回、点了等于没点。现在先查力量再查有氧，有氧菜单单独一套（查看动作详情 / 收藏 / 删除，走 `actions.deleteCardio`），不再出现「杠铃片 / 默认休息」这类力量专属项。
+- **有氧图卡无图 + 无「详情」**：`buildView` 里 `exId` 直接取 `it.exId || ''`，而自助加的有氧、计划导入部分记录没存 `exId`；图卡 `详情` 的显隐条件是 `!isCardio || exId`，于是整块入口消失。现在有氧按 `exId → 名称回查 matchByName` 兜底解析 `exId`（只用于展示，不改记录），`withImg` 不再跳过有氧、`fillGrid` 预取 id 也包含有氧，图卡能取到缩略图；占位文字从「有氧」改为动作名。
+- 实测：造一条没有 `exId` 的「跳绳 1′」记录 → 列表项 `exId=2612`；图卡出现 `详情 · 编辑`；点详情浮层 `exSheetId=2612`、标题「跳绳」；椭圆机有氧 `img=thumb/2141.webp` 正常；测试记录已删，storage 无残留。
+
+## 统计聚焦 + 「进步」tab + AI 赋能（2026-11-24，版本 1.0.20261124.15）
+
+### 一、记录 tab 变成「训练统计页」
+
+- 砍掉：`精力 & 情绪`、`记录时钟` 热力、`类型与标签`。精力/情绪折线仍在分析页概览，作息热力随 `作息` tab 一并下线。
+- KPI 改成训练口径：`训练组数 / 训练次数 / 容量 kg / 有氧分钟`，每格带同长度上一时间窗的环比（`stats.rangeStats().kpis`，`trainedDays` 按有记录且有效容量的日期去重）。
+- 新增四张卡（全部来自 `train.records / train.cardio` 的现成聚合，`libs/stats.js`）：
+  - `部位分布`：**按组数占比**（自重动作没有容量，用容量会把自重部位算成 0，所以口径改成组数，右列同时显示 `N 组 · P%`），占比 <10% 且部位 ≥3 时高亮黄标。
+  - `进步榜`：`progressTop()` 按动作取区间内首末训练日的最佳 e1RM，算涨幅，倒序取 Top5，显示 `50→57.5kg ↑12%`；同一动作不足两个训练日不进榜。
+  - `有氧构成`：`cardioComp()` + `cardio.js` 新增 `CARDIO_MODALS / modalOf()`，把有氧动作名归一成跑步/椭圆机/单车/划船/游泳/跳绳/爬楼/走路，按分钟算占比。
+  - `PR 记录`：`prInRange()` 只在区间内最佳 e1RM **超过区间前历史最佳**时才算 PR（首次记录不算），显示计数 + 前 3 条，点卡跳 `pages/pr/index`。
+- 模拟器实测（30 天）：`489 组 / 18 次 / 148,890 kg / 30′`；部位 `背 306 组 63% · 上腿 6% 黄标`；进步榜 `15.9→22.7kg ↑53%`；有氧 `椭圆机 30′ 100%`；PR `10 个`。
+
+### 二、`作息` tab → `进步` tab（`libs/progress.js`）
+
+- 部位均衡雷达：六边形 canvas（`drawRadar`），六轴为 胸/背/肩/臂/核心/腿，值取近 7 天**组数**。
+- 进步曲线：`topCurves()` 取区间内 Top5 动作的 e1RM 曲线（按涨幅倒序），chips 切换，`drawCurve` 自绘折线 + 首末日期 + 最新 e1RM。
+- 恢复状态：`recoveryOf()` 按部位最近一次训练距今小时数，`<24h 刚练完(红) / <48h 恢复中(黄) / ≥48h 可练(绿) / 没练过(灰)`。
+- PR 时间线：近 30 天 `prInRange()` 的涨幅 PR，卡片流显示 `e1RM +N%`，首次记录标注「首次记录」。
+- 三条 AI 洞察（规则出数字，AI 只写一句话，见下）：推拉比（按组数的 推:拉）、趋势预测（e1RM 线性回归 + R² 置信度 + 2.5kg 阶梯目标周数）、明日建议（近 7 天组数最低 + 已恢复的部位）。
+- 实测：雷达 背 73 组/腿 28 组；预测「按当前趋势，12.5kg 约 2 周后达成（每周 +1.2kg）」R²=0.82 `●●●`；恢复条 `胸 13 天前·可练 / 背 24h·恢复中 / 肩·刚练完`；AI 三句全部返回（`推拉比0.4失衡…` / `力量稳步增长…` / `建议练胸…`）。
+
+### 三、AI 赋能（统一入口 `libs/aipolish.js`）
+
+- `polish(key, facts, instr, opts)`：规则数字进 prompt，只让模型写一句话；缓存键 = `hash(key + facts + instr)`，24h 内同 facts 不重调（storage `selfagent_ai_polish_v1`，最多 40 条）；`生成失败` 一律回落到规则文案，UI 不会空着。
+- 开关：`polish.setPureData(true)` = 纯数据模式，关闭全站 AI 扩写（进度 tab 右上角胶囊、设置页「动作与 AI → 纯数据模式」两处入口，同一份 `settings.ai.pureData`）。
+- 接入的触点：
+  1. 洞察卡 AI 扩写（概览前 3 张卡，`aiInsights`）；
+  2. 问 AI 多轮：`chat` 消息数组承载上下文，最近 6 轮带进 messages，sheet 内左右气泡 + 「清空对话」；
+  3. 推拉比 / 4. 趋势预测（进步 tab）；
+  5. 训练小结 AI 复盘（专注页 `aiReview`，两句以内，失败回落规则句）；
+  6. AI 周报（`pages/report`，三段【训练量】【均衡】【进步】，解析后渲染，失败回落原规则结论）；
+  7. AI 计划每个动作一句推荐理由（`recommend.genPlan()` 新增 `why`，计划卡渲染 `✦` 行）；
+  8. 拍照识别 / AI 找动作 / 查重保持。
+
+### 四、控件收尾
+
+- 悬浮球随手记：精力/情绪从数字圆点换成 `slider` + 五档文案（很低/偏低/一般/不错/充沛、很糟/低落/一般/不错/很好），滑动即出档位词；记录页快记本来就是滑条，两处口径一致。
+- 删除入口：记录卡 ⋯ / 训练行 ⋯ 均已是菜单（训练行走编辑浮层里的删除），无裸露删除。
+- AI 视觉签名：`✦` 统一加在「问 AI」胶囊、AI 洞察行、计划理由行、AI 解读理由按钮、AI 周报、拍照识别 / AI 找动作入口；计划卡徽章 `★ AI 推荐` 改 `✦ AI 推荐`。
+
+## Agent 决策参与者：DecisionCard + 四个决策时刻 + L3 授权（2026-11-24，版本 1.0.20261124.16）
+
+### 一、设计：L1 看 → L2 帮选 → L3 代办
+
+| 级 | 模式 | 用户感受 | 本轮实现 |
+| --- | --- | --- | --- |
+| L1 | 看（建议） | AI 告诉我状态 | 已有：洞察流 / AI 扩写 / AI 复盘 |
+| L2 | 帮选（决策辅助） | AI 把选项和理由摆好，点一下就能执行 | 本轮主体：DecisionCard × 4 个决策时刻 |
+| L3 | 代办（代理执行） | AI 直接改好，不满意再撤 | 设置页开关（默认关）+ AI 操作日志可撤销 |
+
+### 二、一个组件 + 一个注册表 + 一条管道
+
+- `components/decision/`：统一 DecisionCard。props `title / question / reason / options / evidence / note / meta`；选项卡横排、推荐项带「推荐」角标与绿色描边；「看数据依据」可展开 `evidence`；左侧 4rpx 渐变竖条 + `✦` 作为全站 AI 决策视觉签名。点选触发 `pick` 事件并带 `{key, index, option}`。
+- **决策卡的按钮不是文字回复，是操作**：每个 option 的 `key` 绑定一个可执行函数（生成计划 / 预填有氧 / 标记休息 / 套用排布 / 修平台期）。
+- `libs/decision.js` 末尾 `DECISION_POINTS` 注册表：
+
+```js
+DECISION_POINTS = [
+  { key: 'daily',   when: 'appOpen + 数据指纹变化', ctx: 恢复+容量+周目标 },
+  { key: 'rest',    when: '组间倒计时开始',        ctx: 上一组表现+历史 },
+  { key: 'post',    when: '小结卡渲染',            ctx: 本次全量 },
+  { key: 'weekly',  when: '周日 or 周目标达成',    ctx: 均衡度+平台期 },
+  { key: 'plateau', when: 'e1RM 停滞检测命中',     ctx: 该动作历史 },
+]
+```
+
+- 管道：`decision.*` 用规则算决策（零 token）→ `aipolish.polish(key, facts, instr)` 只负责把数字说成人话（带 facts 指纹缓存 24h，失败回落规则文案）→ 用户点执行。AI 含量高、token 消耗低。
+
+### 三、四个决策时刻
+
+**时刻 1｜打开 App：「今天练不练？练什么？」（首页 orb 下方第一张卡）**
+
+- 三种状态（`decision.daily`）：今天已开练 → 单选项「继续今天」；今天是休息日 → 「改成轻有氧 30′（推荐）/ 取消休息」；未开练 → 「部位日计划（推荐）/ 轻有氧 30′ / 休息日」。
+- 理由与依据全部是数字：恢复间隔、近 7 天组数、周目标进度（`evidence` 展开可见）。
+- 执行：`applyPartPlan` 复用 `recommend.recommendFor` + `actions.saveStrength/saveCardio` 写入今日 → toast → 跳计划页；`applyLightCardio` 用历史最常用有氧 `cardio.modalOf` 预填 30′ → 跳专注页；`markRest` 写休息日 → orb 变「今天休息 ✓ / 休息日 · 连续 N 天不断档」。
+- **休息日不 break streak**：`decision.streak()` 把休息日算「不断档但不加天数」，首页已从 `engine.streakDays` 切到这个函数。
+
+**时刻 2｜组间休息：「这组该加重量吗？」**
+
+- 规则 `decision.restAdvice({last, plan, planSec})`：自重 → 次数 +1；RPE ≥ 9 或次数差 ≥ 2 → 降一档（默认 2.5kg）；用时超本动作均值 30% → 维持；否则 → +step。
+- 组间屏在倒计时环下方加一行 `✦` 决策行 + 大按钮「下一组 27.5kg × 12 开始」；`applyAdvice` 把建议重量写进下一组再 `skipRest`——建议即操作。
+- AI 只补一句话，且**强过滤**：含任何阿拉伯/中文数字、公斤、千克一律丢弃；方向与规则相反（规则建议加重却说「维持/别加/降/减/巩固」，或规则建议降却说「加重」）也丢弃，回落规则文案。
+
+**时刻 3｜练完：小结里的两个决策输出**
+
+- `decision.postSession(items, stat, cardioMin)` → `{next, tomorrow, goal}`：`✦ 下次 器械三头肌伸展 25 → 27.5kg`、`✦ 明天 胸日（周目标已到 99%）`。
+- 周目标口径：`max(settings.plan 目标, 近 4 周周均组数)`，避免旧目标偏小导致「107/36 组」这种虚数。
+- 「按此排明天 ›」带 `?part=` 跳计划页 → 与时刻 1 的明日简报形成闭环。
+
+**时刻 4｜周日 / 周目标达成：「下周怎么排？」**
+
+- `decision.weekly(train)` 输出 7 格 `拉·腿·推·休·核心·腿·休` + `planText` + `basis`（如「本周 0 组推 / 73 组拉 / 28 组腿；腰腹缺口最大」），带 `[按此生成 7 天计划]` 与 `[我自己排]`。
+- `applyWeekly` 写 `settings.plan.text/days` 并记日志；`dismissWeekly` 写 `weeklyDone=今天` 关卡，不再反复打扰。
+- `decision.plateau(train)`：近 28 天 e1RM 两段窗口变化 < 2% 的动作（最多 3 个）→ 加量 / 换动作 / deload 三选一，各带理由，`fixPlateau` 写进 `settings.plan.strategy[name]`。
+
+### 四、L3 授权与 AI 操作日志
+
+- 设置页「动作与 AI → 允许 AI 直接调整计划」开关（默认关，`settings.ai.agentAuto`）。
+- 开启后：时刻 1 / 时刻 4 的建议自动应用一次（`autoDone` 按日期去重，不重复执行），并把改动写进 AI 操作日志。
+- 日志（`selfagent_ai_ops_v1`，最多 60 条）在设置页可逐条查看与**撤销**：`rest` 加/删休息日、`items` 按 uid 删除刚写入的力量/有氧记录、`plan` 回滚 `settings.plan` 字段；也支持一键清空。
+- 未开启时全部走 L2 一键确认，不产生任何自动写入。
+
+### 五、实测（模拟器 9420，冷启动三轮）
+
+- 首页：`decision = {key:"daily", done:true, question:"今天已经开练了", reason:"5/36 组、1500 kg…", options:[继续今天]}`；休息日态 orb 文案「今天休息 ✓ / 休息日 · 连续 N 天不断档」。
+- 专注页：完成一组 → `stage=rest restLeft≈83`、`TIP=上一组做满 12 次，状态够，建议下一组 27.5kg 试一次。`、`LABEL=下一组 27.5kg × 12 开始 advW=27.5`；AI 侧曾在旧规则下返回「尝试加重至二十六点五公斤…」（数字错）与「完成度低，先维持重量巩固动作，别急着加重。」（与规则相反），两处均被新过滤丢弃并回落规则文案——过滤已复测通过。
+- 收工页：`FIN_NEXT=器械三头肌伸展 25→27.5`、`FIN_TOM=明天排「胸」最合理：近 7 天训练量最低，且已恢复 13 天`、`FIN_GOAL={pct:99, weekSets:109, goalSets:110}`（修正后不再出现 107/36）。
+- 计划页：`weekly.text=拉·腿·推·休·核心·腿·休`、`planText=周一 拉；周二 腿；周三 推；周五 核心；周六 腿；其余休息`；`plateau=[]`（当前数据未命中）。
+- 设置页：`agentAuto=false`、日志空态正常；日志写入/撤销/清空各走过一次，最终 `OPS=0`。
+- 测试写入的组点已全部还原，最终基线 `哑铃凳臂屈伸 110 / 器械三头肌伸展 000 / 绳索三头肌下压杠 000 / 杠铃弯举 111`、`ORB 5/36 组`。
+
+### 六、上传路径坑（重要）
+
+- `proj/project.config.json` 的 `miniprogramRoot` 是 `miniprogram/`，`upload.js` 打的是 `proj/miniprogram/`；而 `proj/` 根目录下还残留一份旧副本 `proj/pages`、`proj/libs`。
+- 所以文件先落 `proj/<相对路径>` 后，**必须再 `cp proj/<相对路径> proj/miniprogram/<相对路径>`**，否则包体大小与上一版一模一样（`1,250,849`），新代码根本没进包。
+- 判据：`getCodeFiles count` 与 `__FULL__ size` 要变化（`.16` 上传时云主机出口 IP 未被白名单放行，最终包体数字待补；zip buffer 已涨到 761,921）。
+
+### 七、未做 / 待确认
+
+- 「按此生成 7 天计划」目前只写 `settings.plan.text/days` 文本，未落成 7 天日历条目（结构化为每日 plan 未确认口径）。
+- 周目标口径已改为 `max(计划目标, 近 4 周周均)`，待用户确认。
+- automator 处理不了原生 `wx.showModal / showActionSheet`（会挂住），相关确认交互仍需真机点。
+
+## 交互修补：智能单按钮 + 随手记手感 + 信号条决策入口（2026-11-24）
+
+### 一、专注页主按钮：静默失效改成智能单按钮
+
+- 原 `finishSet()` 第一行 `if (stage !== 'work') return;`，按钮在 ready/rest 等状态点了等于没点（不勾、不报错、不提示）。
+- 现在统一入口 `primaryTap()`，按 `stage` 分派且**任何状态都有反馈**：
+  - `ready` + 组内计时开 → `beginSet`；`ready` + 计时关 → `doneCurrent`（点一下即记一组）；
+  - `work` → `finishSet`（去掉确认弹窗，一步完成；长按同样直记）；
+  - `rest` → `applyAdvice`（套用建议重量进下一组）；`between` → `nextItem`；`cardio` → `finishCardio`。
+- `finishSet()` 的兜底：`ready` 直接记一组，其余 toast「先跳过休息，再记本组 / 本组还没开始」，不再静默返回。
+- 实测：`READY 器械三头肌伸展 ready setTimer=false 1/3` → `primaryTap` → `rest restLeft=89`、`tip=上一组做满 12 次，状态够，建议下一组 27.5kg 试一次。` → 再点 → `ready weight=27.5 setNo=2`。
+
+### 二、随手记弹层三处手感（`components/float-orb`）
+
+- **档位高亮**：`.sl-i.on` 之前只写了情绪（`.sl-i.m.on`），精力选中永远不变色；补上 `.sl-i.on`（绿色加粗 22rpx），选中项跟随滑条高亮。
+- **大数字**：右侧值从裸档位词改成「4 分 · 不错」，未打分时仍显示「滑动打分」。
+- **识别预览**：`libs/mdimport.js` 导出 `parseStrength`；输入 debounce 500ms 后规则解析，弹层出现 `✦ 将被识别为 训练 · 卧推 · 60kg · 5 组 × 5 次` / `有氧 · 跑步 · 5km` / `记录 · 附精力/情绪`，不调 AI、零 token。
+- **关闭手势**：右上「关闭」文字换成 `✕`，顶部加拖拽条，弹层支持下滑 >70px 关闭（`sheetDy` 跟手位移）。
+
+### 三、信号条 → 决策入口（首页）
+
+- `buildSignals` 里「胸 已经 13 天没练」这类信号现在带 `act:'part'` + 部位 + 天数。
+- 点它直接生成同位置决策卡：`补练 胸 吗？` + `[胸日计划（推荐）] [轻有氧 30′] [先不补]`，理由「胸 已 13 天没练，点下面第一条会追加到今天（已练的不重复加）」；选项沿用 `applyDaily` 的 plan/cardio/rest 分支，点「胸日计划」走 `applyPartPlan` 生成并加入今日（按 `exId` 去重）。
+- 卡片挂进 `#dailyCard` 容器，点击后 `pageScrollTo` 滚到卡上。
+- 实测：`SIG_DEC {"q":"补练 胸 吗？","reason":"胸 已 13 天没练，点下面第一条会追加到今天（已练的不重复加）。","opts":["胸日计划","轻有氧 30′","先不补"]}`。
+
+### 四、折叠行单行化（训练页）
+
+- `ex-head` 里「名称行 + 参数行」两行改为：折叠态名称与参数同一行（`.line.one`，省略号截断），展开态才分两行。
+- 实测 `TRAIN_LIST 13`：`杠铃弯举|25kg 3×12 · 3″`、`哑铃凳臂屈伸|25kg 3×12`、`椭圆机|30 分钟`；截图行高明显压缩。
+
+### 五、验证与还原
+
+- 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
+- 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
+- `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
+## 体验版 1.0.17：AI 找动作接意图分析 + 编辑动作弹层统一
+
+包体 1,318,431 B（`__FULL__ size`），`getCodeFiles count: 104`；上传成功，版本号 `1.0.17`，描述「AI 找动作接 AI 意图分析 + 编辑动作弹层按钮统一」。
+
+### 一、AI 找动作（`pages/aifind`）真的调 AI
+
+- 入口：`libs/ai.js` 的 `ai.ask`（配了自定义 baseUrl/apiKey 就直连 `/chat/completions`，否则走云函数 `aiProxy`）。
+- 流程：本地规则先出结果（按部位/器械过滤 + 兜底打分：命中名称 +3、部位 +2、器械 +1）→ 页面立刻有列表，不空白；随后 `aiRank()` 把前 20 个候选压成 `id|名称|部位|器械` 交给 AI。
+- Prompt：先判断意图（部位/器械/目标/限制），再**只从候选里**挑 6–8 个；硬规则「每个 pick 必须带 why」「why 必须说明匹配点」「候选不匹配宁可少给」；`temperature 0.2`、`max_tokens 420`，只输出 JSON `{"intent":"","picks":[{"id":"","why":""}]}`。
+- 容错：失败/格式异常最多 3 次，间隔 4s（格式异常 1.2s）；无 why 的 pick 直接丢弃（理由不许留空）；最终失败写 `aiNote`（「AI 暂不可用 / 返回格式异常 / 未给出推荐理由 / 请求失败，已按本地规则排」）+ `aiErr` 诊断串（不入界面）。
+- 缓存：`selfagent_aifind_v1`，key 为查询原句，1 小时内复用、最多 30 条；**只有 picks 非空才写缓存**，避免把失败结果缓存住。
+- UI：顶部 `.intent` 意图条（`✦ AI 判断` + 意图句，busy 时「正在读你的训练意图…」）；每行 `.why` 绿色理由；有 AI 结果时 meta 改「AI 依据动作详情与训练部位选出 N 个」；副标题「先由 AI 判断训练意图，再从动作库按部位/器械/动作模式选」；底部说明「AI 只在这 36 个候选里挑…失败自动退回本地规则结果，页面不会空着」。
+- 实测（冷启动后）：
+  - `在家练胸 只有哑铃` → 意图「在家哑铃胸肌训练」，8 个候选 7 个带理由：`哑铃卧推::基础平板推胸`、`哑铃上斜卧推::上斜推胸中束`、`哑铃下斜卧推::下斜推胸下束`、`哑铃飞鸟::平飞鸟夹胸`。
+  - `腹 自重` → 意图「腰腹自重训练」，8 个：`交叉身体卷腹::核心卷腹，基础自重`、`卷腹地面::地面卷腹，易入门`…（4.6s）
+  - `腿 器械 深蹲` → 意图「腿部器械深蹲」，8 个：`杠杆器械坐姿单腿宽距深蹲::单腿宽距深蹲`…（3.6s）
+  - 冷启动后第一次查询约 15.5s（3 次重试跨过云函数冷启动）；列表在此期间已显示本地结果。
+
+### 二、编辑动作弹层按钮统一（`components/train-editor`）
+
+- 行内小控件统一高 56rpx、圆角 12rpx：`.tag` 44→56、`.num` 60→56（拆 `.num.reps` 74rpx / `.num.weight` 96rpx）、`.chip` 52→56 且固定宽 56、`.no` 28rpx；`.unit` 20rpx；`.row` 最小高 76rpx、gap 8rpx。
+- `.chip.on` 浅绿底 `#F0FAF7`，`.chip.del` 透明边框 + `#EFF2F1` 底，不再和「勾」抢视觉。
+- 「＋ 加一组」由裸文字改成通栏按钮 `.addset`（64rpx 高、浅绿底、居中）。
+- 底部按钮统一 88rpx 高、16rpx 圆角、28rpx 字号；删除不再 `flex: 0 0 150rpx`，与取消/保存三等分等宽，保存加粗 600。
+- 实测截图 `t9/j2-editor.png`：`杠铃弯举` 三组「常规／12／次 ×／25／kg／✓／×」同高对齐，＋加一组通栏，取消/删除/保存同宽同高。
+
+### 三、云函数 aiProxy 超时
+
+- `cloudfunctions/aiProxy/config.json` 的 `timeout` 由 20 改为 45，`cli cloud functions deploy` 返回 `success:true, filesCount:3, packSize:'1.5 KB'`。
+- 但 `cli cloud functions info` 仍显示 `timeout 3`、`Nodejs16.13`：IDE 侧 deploy 不覆盖云端函数超时，需在云开发控制台手动改（未改前，冷启动首次调用仍可能超时，页面已用 3 次重试兜住）。

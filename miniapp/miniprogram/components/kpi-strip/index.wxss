@@ -1,36 +1,71 @@
 .strip {
   display: flex;
   gap: 10rpx;
-}
-
-.cell {
-  flex: 1;
-  min-width: 0;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 18rpx 16rpx;
+  width: 100%;
   box-sizing: border-box;
 }
 
+.cell {
+  /* width:0 + flex-grow：四格强制等分，内容再长也不会把格子撑出屏幕 */
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 18rpx 16rpx 16rpx;
+  box-sizing: border-box;
+}
+
+/* 数字是主角：细体 + 等宽数字，避免跳动 */
 .v {
   display: block;
-  font-size: 40rpx;
-  line-height: 1.1;
-  font-weight: 600;
+  font-size: 46rpx;
+  line-height: 1.05;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -.03em;
   color: #14181A;
-  letter-spacing: -.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
 }
 .l {
   display: block;
-  margin-top: 6rpx;
-  font-size: 20rpx;
+  margin-top: 8rpx;
+  font-size: 19rpx;
   line-height: 1.3;
   color: #8A9490;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 8rpx;
+  min-height: 22rpx;
 }
 .n {
-  display: block;
-  margin-top: 6rpx;
-  font-size: 19rpx;
-  line-height: 1.35;
-  color: #12A594;
+  font-size: 18rpx;
+  line-height: 1.3;
+  color: #A9B3AF;
 }
+.d { font-size: 18rpx; line-height: 1.3; color: #12A594; }
+.d.up { color: #12A594; }
+.d.down { color: #E06E78; }
+.d.flat { color: #A9B3AF; }
+
+/* 4 格（概览/训练）放大到 26–28px 量级 */
+.lg .cell { padding: 22rpx 18rpx 18rpx; }
+.lg .v { font-size: 56rpx; font-weight: 250; }
+.lg .l { font-size: 20rpx; margin-top: 10rpx; }
+
+/* 6 格（首页）保持紧凑 */
+.six { gap: 8rpx; }
+.six .cell { padding: 14rpx 10rpx; border-radius: 14rpx; }
+.six .v { font-size: 40rpx; }
+.six .l { font-size: 18rpx; margin-top: 4rpx; }
+.six .meta { margin-top: 4rpx; }

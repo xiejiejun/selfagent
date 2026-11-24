@@ -1,0 +1,34 @@
+<view class="dc">
+  <view class="dc-h">
+    <text class="dc-star">✦</text>
+    <text class="dc-k">{{title}}</text>
+    <text class="dc-m" wx:if="{{meta}}">{{meta}}</text>
+  </view>
+
+  <text class="dc-q" wx:if="{{question}}">{{question}}</text>
+
+  <view class="dc-opts">
+    <view class="opt {{item.rec ? 'rec' : ''}}" wx:for="{{options}}" wx:key="key" data-i="{{index}}" bindtap="pick">
+      <text class="opt-b" wx:if="{{item.rec}}">推荐</text>
+      <text class="opt-l">{{item.label}}</text>
+      <text class="opt-s">{{item.sub}}</text>
+    </view>
+  </view>
+
+  <view class="dc-r" wx:if="{{reason}}">
+    <text class="dc-rk">理由</text>
+    <text class="dc-rt">{{reason}}</text>
+  </view>
+
+  <view class="dc-evh" wx:if="{{evidence.length}}" bindtap="toggle">
+    <text class="dc-evt">看数据依据 {{evOpen ? '⌃' : '⌄'}}</text>
+  </view>
+  <view class="dc-ev" wx:if="{{evOpen}}">
+    <view class="ev" wx:for="{{evidence}}" wx:key="t">
+      <text class="ev-t">{{item.t}}</text>
+      <text class="ev-v">{{item.v}}</text>
+    </view>
+  </view>
+
+  <text class="dc-note" wx:if="{{note}}">{{note}}</text>
+</view>

@@ -1,47 +1,192 @@
 <view class="page">
-  <view class="head">
-    <text class="name">{{name || '专注训练'}}</text>
-    <text class="part">{{part}}</text>
-  </view>
-
-  <view class="stage">
-    <canvas type="2d" id="rings" class="rings"></canvas>
-    <view class="ctr">
-      <text class="big">{{elapsed}}</text>
-      <text class="unit">秒</text>
+  <view class="top">
+    <text class="quit" bindtap="quit">结束</text>
+    <view class="prog">
+      <view class="prog-bar"><view class="prog-in" style="width: {{pct}}%"></view></view>
+      <text class="prog-t">{{doneTotal || 0}}/{{total}} 动作 · {{setsDoneAll || 0}}/{{setsTotalAll || 0}} 组 {{setsPct || 0}}%</text>
     </view>
-    <view class="meta">
-      <text>{{done}}/{{total}} 组</text>
-      <text>{{volume}} kg</text>
+    <text class="quit ghost" wx:if="{{stage !== 'finish'}}" bindtap="skipItem">跳过</text>
+  </view>
+
+  <view class="qbar">
+    <scroll-view class="queue" scroll-x="true" enhanced="true" show-scrollbar="false">
+      <view class="qitem {{item.done ? 'done' : ''}} {{item.cur ? 'cur' : ''}} {{item.cd ? 'cd' : ''}}" wx:for="{{queue}}" wx:key="i" data-i="{{item.i}}" bindtap="jumpTo">
+        <text class="qi-n">{{item.i}}</text>
+        <text class="qi-t">{{item.name}}</text>
+        <text class="qi-cd" wx:if="{{item.cd}}">有氧</text>
+      </view>
+    </scroll-view>
+    <text class="qmenu" bindtap="openList">☰</text>
+  </view>
+
+  <!-- 全动作清单：远距离跳转 1 击 -->
+  <view class="mask" wx:if="{{listVisible}}" bindtap="closeList"></view>
+  <view class="listsheet" wx:if="{{listVisible}}">
+    <view class="ls-h">
+      <text class="ls-t">{{total}} 个动作 · {{setsDoneAll}}/{{setsTotalAll}} 组</text>
+      <text class="ls-x" bindtap="closeList">✕</text>
     </view>
+    <scroll-view class="ls-body" scroll-y="true">
+      <view class="ls-row {{item.cur ? 'cur' : ''}} {{item.done ? 'done' : ''}}" wx:for="{{queue}}" wx:key="i" data-i="{{item.i}}" bindtap="jumpTo">
+        <text class="ls-i">{{item.i}}</text>
+        <text class="ls-n">{{item.name}}</text>
+        <text class="ls-cd" wx:if="{{item.cd}}">有氧</text>
+        <text class="ls-st">{{item.done ? '✓ 已完成' : (item.cur ? '进行中' : '未开始')}}</text>
+      </view>
+    </scroll-view>
   </view>
 
-  <text class="hint">{{hint}}</text>
-
-  <view class="reps" wx:if="{{stage === 'work'}}">
-    <view class="rbtn" bindtap="subRep">−</view>
-    <text class="rnum">{{rows[done].reps}} 次</text>
-    <view class="rbtn" bindtap="addRep">＋</view>
-  </view>
-
-  <view class="rest" wx:if="{{stage === 'rest'}}">
-    <text class="rleft">{{left}}</text>
-    <text class="rtxt">休息中</text>
-    <view class="skip" bindtap="skipRest">跳过休息</view>
-  </view>
-
-  <view class="main">
-    <view class="go primary" wx:if="{{stage === 'ready'}}" bindtap="start">开始</view>
-    <view class="go primary" wx:if="{{stage === 'work'}}" bindtap="setDone">这组完成</view>
-    <view class="go primary" wx:if="{{stage === 'rest'}}" bindtap="skipRest">开始下一组</view>
-    <view class="go primary" wx:if="{{stage === 'finish'}}" bindtap="finish">完成并保存</view>
-  </view>
-
-  <view class="list">
-    <view class="row {{item.done ? 'ok' : ''}}" wx:for="{{rows}}" wx:key="no">
-      <text class="no">{{item.no}}</text>
-      <text class="detail">{{item.weight > 0 ? item.weight + 'kg' : '自重'}} × {{item.reps}}</text>
-      <text class="mark">{{item.done ? '✓' : ''}}</text>
+  <!-- 训练中 / 休息 / 准备 -->
+  <block wx:if="{{stage !== 'finish' && curType === 'strength'}}">
+    <view class="head">
+      <view class="nm-row">
+        <text class="name">{{curName}}</text>
+        <text class="cbadge" wx:if="{{curCardio}}">有氧</text>
+        <text class="qmark" bindtap="showDetail">?</text>
+      </view>
+      <text class="part">{{curPart}} · 第 {{setNo}}/{{setsTotal}} 组 · 已完成 {{setsDone}} 组</text>
     </view>
-  </view>
+
+    <view class="stage {{stage === 'rest' ? 'resting' : ''}} {{!setTimer && stage !== 'rest' ? 'lite' : ''}}">
+      <canvas type="2d" id="rings" class="rings" disable-scroll="true"></canvas>
+      <view class="dial"></view>
+      <block wx:if="{{stage === 'rest'}}">
+        <view class="ctr">
+          <text class="big">{{restLeft}}</text>
+          <text class="unit">秒 · 做第 {{setNo}} 组</text>
+        </view>
+      </block>
+      <block wx:elif="{{setTimer}}">
+        <view class="ctr">
+          <text class="big">{{mmss}}</text>
+          <text class="unit">本组用时</text>
+        </view>
+      </block>
+      <block wx:else>
+        <view class="ctr lite-ctr">
+          <text class="big lite-big">{{reps}} 次</text>
+          <text class="unit">{{weight > 0 ? weight + 'kg' : '自重'}} · 第 {{setNo}}/{{setsTotal}} 组</text>
+        </view>
+      </block>
+      <view class="meta">
+        <text>{{doneSets}}/{{total}} 组 · {{doneVolume}} kg</text>
+      </view>
+    </view>
+
+    <text class="hint">{{hint}}</text>
+
+    <!-- 组间决策：规则算重量，AI 一句话 -->
+    <view class="rest-dec" wx:if="{{stage === 'rest'}}">
+      <text class="rd-star">✦</text>
+      <text class="rd-t">{{restAi || restTip}}</text>
+    </view>
+
+    <view class="steppers" wx:if="{{stage !== 'rest'}}">
+      <view class="stp">
+        <text class="stp-l">次数</text>
+        <view class="sbtn" bindtap="subRep">−</view>
+        <text class="snum">{{reps}}</text>
+        <view class="sbtn" bindtap="addRep">＋</view>
+      </view>
+      <view class="stp">
+        <text class="stp-l">重量</text>
+        <view class="sbtn" bindtap="subWeight">−</view>
+        <input class="snum in" type="digit" value="{{weight}}" bindinput="onWeightInput" placeholder="0" />
+        <view class="sbtn" bindtap="addWeight">＋</view>
+      </view>
+    </view>
+
+    <view class="main">
+      <view class="go primary" wx:if="{{stage === 'ready' && setTimer}}" bindtap="primaryTap">开始第 {{setNo}} 组</view>
+      <view class="go primary" wx:if="{{stage === 'ready' && !setTimer}}" bindtap="primaryTap">完成第 {{setNo}} 组</view>
+      <view class="go primary hold" wx:if="{{stage === 'work'}}" bindtap="primaryTap" bindlongpress="holdFinish">完成本组 · 第 {{setNo}} 组</view>
+      <view class="go primary" wx:if="{{stage === 'rest'}}" bindtap="primaryTap">{{restNextLabel}}</view>
+      <view class="go primary" wx:if="{{stage === 'between'}}" bindtap="primaryTap">下一个动作</view>
+    </view>
+
+    <!-- 组标记：暖身 / RPE -->
+    <view class="marks" wx:if="{{stage !== 'rest'}}">
+      <text class="mk-btn {{warmup ? 'on' : ''}}" bindtap="toggleWarmup">{{warmup ? '✓ 暖身组' : '标记暖身'}}</text>
+      <view class="rpe"><text class="rpe-l">RPE</text>
+        <text class="rpe-c {{rpe === item ? 'on' : ''}}" wx:for="{{[6,7,8,9,10]}}" wx:key="*this" data-v="{{item}}" bindtap="pickRpe">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="list">
+      <view class="row {{item.done ? 'ok' : ''}} {{item.cur ? 'cur' : ''}}" wx:for="{{rows}}" wx:key="no" data-i="{{index}}" bindtap="tapRow">
+        <text class="no {{item.warm ? 'warm' : ''}}">{{item.no}}</text>
+        <text class="detail">{{item.txt}}</text>
+        <text class="rtag" wx:if="{{item.tag === 'drop'}}">递减</text>
+        <text class="rtag" wx:if="{{item.tag === 'side'}}">单侧</text>
+        <text class="rtag" wx:if="{{item.tag === 'super'}}">超级</text>
+        <text class="rtag rpe" wx:if="{{item.rpe}}">RPE {{item.rpe}}</text>
+        <text class="sec">{{item.sec}}</text>
+        <text class="mark">{{item.done ? '✓' : ''}}</text>
+      </view>
+    </view>
+    <view class="addq" bindtap="addMore">＋ 中途加个动作</view>
+  </block>
+
+  <!-- 有氧 -->
+  <block wx:if="{{stage !== 'finish' && curType === 'cardio'}}">
+    <view class="head">
+      <text class="name">{{curName}}</text>
+      <text class="part">有氧 · 计划 {{cardioPlanned}}′</text>
+    </view>
+
+    <view class="stage">
+      <view class="dial"></view>
+      <view class="ctr cardio">
+        <text class="big">{{mmss}}</text>
+        <text class="unit">已运动</text>
+      </view>
+    </view>
+
+    <text class="hint">{{hint}}</text>
+
+    <view class="steppers" wx:if="{{stage === 'ready'}}">
+      <view class="stp">
+        <text class="stp-l">计划时长</text>
+        <view class="sbtn" bindtap="cardioMinSub">−</view>
+        <text class="snum">{{cardioPlanned}}′</text>
+        <view class="sbtn" bindtap="cardioMinAdd">＋</view>
+      </view>
+    </view>
+
+    <view class="main">
+      <view class="go primary" wx:if="{{stage === 'ready'}}" bindtap="start">开始有氧</view>
+      <view class="go primary" wx:if="{{stage === 'cardio'}}" bindtap="finishCardio">完成有氧</view>
+    </view>
+  </block>
+
+  <ex-sheet visible="{{exSheetVisible}}" ex-id="{{exSheetId}}" ex-name="{{exSheetName}}" theme="dark" bind:close="closeExSheet" />
+
+  <!-- 收工 -->
+  <block wx:if="{{stage === 'finish'}}">
+    <view class="fin">
+      <text class="fin-t">这次练完了</text>
+      <text class="fin-s">{{finishText}}</text>
+      <text class="fin-s">用时 {{finishTime}}</text>
+      <view class="fin-ai" wx:if="{{aiReview}}">
+        <text class="fin-ai-sp">✦</text><text class="fin-ai-t">{{aiReview}}</text>
+      </view>
+
+      <!-- 两个决策输出：下次多重 / 明天排什么 -->
+      <view class="fin-dec" wx:if="{{finNext}}">
+        <text class="fd-k">✦ 下次 {{finNext.name}}</text>
+        <text class="fd-v">{{finNext.v}}</text>
+        <text class="fd-s">{{finNext.text}}</text>
+      </view>
+      <view class="fin-dec" wx:if="{{finTomorrow}}">
+        <text class="fd-k">✦ 明天</text>
+        <text class="fd-v">{{finTomorrow.part ? finTomorrow.part + ' 日' : '休息或轻有氧'}}</text>
+        <text class="fd-s">{{finTomorrow.text}}{{finGoal ? '（周目标已到 ' + finGoal.pct + '%）' : ''}}</text>
+      </view>
+
+      <view class="main">
+        <view class="go primary" bindtap="finish">收工，看记录</view>
+        <view class="go ghost" wx:if="{{finTomorrow}}" bindtap="planTomorrow">按此排明天 ›</view>
+      </view>
+    </view>
+  </block>
 </view>

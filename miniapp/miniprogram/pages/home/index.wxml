@@ -1,10 +1,84 @@
 <view class="page">
   <view class="head">
     <text class="hl">{{todayLabel}}</text>
-    <text class="hs">{{hasToday ? '今天已练 ' + today.done + '/' + today.total + ' 组' : '今天还没开始'}}</text>
+    <text class="hs">{{sub || (hasToday ? '今天已练 ' + today.done + '/' + today.total + ' 组' : '今天还没开始')}}</text>
   </view>
 
+  <!-- 训练环：今天 x/y 组，点进专注 -->
+  <view class="orb" bindtap="mainCta">
+    <view class="orb-l">
+      <canvas type="2d" id="orbCv" class="orb-cv"></canvas>
+      <view class="orb-in">
+        <text class="orb-n">{{orb.done}}/{{orb.total}}</text>
+        <text class="orb-u">组</text>
+      </view>
+    </view>
+    <view class="orb-r">
+      <text class="orb-k">{{orb.kick}}</text>
+      <text class="orb-t">{{orb.text}}</text>
+      <text class="orb-s">{{orb.pct}}% 完成 · 点这里开始</text>
+    </view>
+  </view>
+
+  <!-- 今日简报：三个可直接执行的选项 + 数据依据 -->
+  <view id="dailyCard">
+    <decision-card
+      wx:if="{{decision}}"
+      title="今日简报"
+      question="{{decision.question}}"
+      reason="{{decision.reason}}"
+      options="{{decision.options}}"
+      evidence="{{decision.evidence}}"
+      note="{{decAi ? '✦ ' + decAi : ''}}"
+      bind:pick="onDecisionPick"
+    />
+  </view>
+
+  <!-- 今日 6 格 -->
   <kpi-strip items="{{kpis}}" />
+
+  <!-- 信号 -->
+  <view class="sigs" wx:if="{{sigs.length || aiInsight}}">
+    <view class="sig ai" wx:if="{{aiInsight}}">
+      <view class="sig-d ai"></view>
+      <text class="sig-t">AI：{{aiInsight}}</text>
+    </view>
+    <view class="sig" wx:for="{{sigs}}" wx:key="t" data-go="{{item.go}}" data-act="{{item.act}}" data-part="{{item.part}}" data-days="{{item.days}}" bindtap="tapSig">
+      <view class="sig-d"></view>
+      <text class="sig-t">{{item.t}}</text>
+      <text class="sig-a">›</text>
+    </view>
+  </view>
+
+  <!-- 本周回顾：默认白卡摘要条，点开才展开；分享图用深色 -->
+  <view class="rv {{rvShare ? 'share' : ''}}" wx:if="{{reviewShow && review}}">
+    <view class="rv-h">
+      <text class="rv-k">本周回顾</text>
+      <text class="rv-r">{{review.range}}</text>
+    </view>
+    <view class="rv-line" bindtap="toggleReviewBody">
+      <text class="rv-sum">{{review.say}}</text>
+      <text class="rv-a">{{rvOpen ? '收起' : '展开'}} {{rvOpen ? '⌃' : '⌄'}}</text>
+    </view>
+    <block wx:if="{{rvOpen}}">
+      <view class="rv-grid">
+        <view class="rv-c" wx:for="{{review.cells}}" wx:key="l">
+          <text class="rv-v">{{item.v}}</text>
+          <text class="rv-l">{{item.l}}</text>
+        </view>
+      </view>
+      <text class="rv-diff">{{review.diff}}</text>
+      <view class="rv-kw" wx:if="{{review.kw.length}}">
+        <text class="rv-k" wx:for="{{review.kw}}" wx:key="*this">{{item}}</text>
+      </view>
+      <view class="rv-acts">
+        <view class="rvb" bindtap="shareReview">生成分享图</view>
+        <view class="rvb ghost" bindtap="hideReview">收起</view>
+      </view>
+    </block>
+    <canvas type="2d" id="rvCv" class="rv-cv"></canvas>
+  </view>
+  <view class="rv-open" wx:elif="{{!reviewShow}}" bindtap="showReview">本周回顾 ›</view>
 
   <view class="card">
     <view class="ch">
@@ -20,22 +94,54 @@
   </view>
 
   <view class="card">
+    <view class="ch">
+      <text class="ct">记录热力</text>
+      <text class="cm">近 13 周</text>
+    </view>
+    <view class="hm">
+      <view class="hm-col" wx:for="{{hmCols}}" wx:key="index">
+        <view class="hm-cell lv{{c.lv}} {{c.today ? 'today' : ''}} {{c.fut ? 'fut' : ''}}" wx:for="{{item.cells}}" wx:key="index" wx:for-item="c"></view>
+      </view>
+    </view>
+    <view class="hm-m">
+      <text class="hm-mt" wx:for="{{hmMonths}}" wx:key="index">{{item}}</text>
+    </view>
+    <view class="hm-lg">
+      <text class="lg-t">少</text>
+      <view class="lg-c lv0"></view><view class="lg-c lv1"></view><view class="lg-c lv2"></view><view class="lg-c lv3"></view><view class="lg-c lv4"></view>
+      <text class="lg-t">多</text>
+    </view>
+    <text class="hm-foot">{{hmHit}} 天有记录 · 最长连续 {{streak}} 天</text>
+  </view>
+
+  <view class="card">
     <view class="ch"><text class="ct">今日动作</text></view>
-    <view class="names" wx:if="{{names.length}}">
-      <text class="nm" wx:for="{{names}}" wx:key="*this">{{item}}</text>
+    <view class="dot-tip" wx:if="{{dotTip && items.length}}">
+      <text class="dot-tip-t">点圆点记一组，从第一个空圆点开始</text>
+      <text class="dot-tip-x" bindtap="closeDotTip">知道了</text>
+    </view>
+    <view class="items" wx:if="{{items.length}}">
+      <view class="it" wx:for="{{items}}" wx:key="name">
+        <view class="it-m">
+          <text class="it-n">{{item.name}}</text>
+          <text class="it-p">{{item.type === 'cardio' ? (item.min + '′ 有氧') : (item.part + ' · ' + item.done + '/' + item.sets + ' 组')}}</text>
+        </view>
+        <view class="dots" wx:if="{{item.type !== 'cardio'}}">
+          <view class="dot {{d.on ? 'on' : ''}} {{d.warm ? 'warm' : ''}}"
+                wx:for="{{item.dots}}" wx:key="index" wx:for-item="d"
+                data-uid="{{item.uid}}" data-idx="{{index}}" catchtap="tapDot"></view>
+        </view>
+        <text class="it-go" wx:else bindtap="gotoFocus">›</text>
+      </view>
     </view>
     <view class="empty" wx:else>
       <text class="empty-t">今天还没有安排动作</text>
       <view class="empty-cta" bindtap="openLibrary">从动作库挑一个开始</view>
     </view>
   </view>
-
-  <view class="acts">
-    <view class="act primary" bindtap="mainCta">{{canStart ? '开始训练' : '先挑今天的动作'}}</view>
-  </view>
 </view>
 
-<float-orb bottom="{{190}}" bind:focus="orbFocus" bind:noted="refresh" />
+<float-orb id="orb" bottom="{{190}}" bind:focus="orbFocus" bind:noted="refresh" />
 
 <train-editor
   visible="{{editorVisible}}"

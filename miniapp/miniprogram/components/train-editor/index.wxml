@@ -28,15 +28,16 @@
         <view class="rows">
           <view class="row" wx:for="{{rows}}" wx:key="no">
             <text class="no">{{item.no}}</text>
-            <input class="num" type="number" value="{{item.reps}}" data-i="{{index}}" bindinput="onReps" />
+            <text class="tag {{item.tag}}" data-i="{{index}}" catchtap="cycleTag">{{item.tagLabel || '常规'}}</text>
+            <input class="num reps" type="number" value="{{item.reps}}" data-i="{{index}}" bindinput="onReps" />
             <text class="unit">次 ×</text>
-            <input class="num wide" type="digit" value="{{item.weight}}" data-i="{{index}}" bindinput="onWeight" />
+            <input class="num weight" type="digit" maxlength="6" value="{{item.wText}}" data-i="{{index}}" bindinput="onWeight" bindblur="onWeightBlur" />
             <text class="unit">kg</text>
             <text class="chip {{item.done ? 'on' : ''}}" data-i="{{index}}" catchtap="toggleDone">{{item.done ? '✓' : '待'}}</text>
             <text class="chip del" data-i="{{index}}" catchtap="delSet">×</text>
           </view>
         </view>
-        <text class="ghost" catchtap="addSet">＋ 加一组</text>
+        <text class="addset" catchtap="addSet">＋ 加一组</text>
       </block>
     </view>
 

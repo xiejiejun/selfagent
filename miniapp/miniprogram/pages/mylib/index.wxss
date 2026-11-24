@@ -1,0 +1,34 @@
+.page { min-height: 100vh; background: #F3F7F5; padding: 26rpx 24rpx 60rpx; box-sizing: border-box; }
+.hd { padding: 0 8rpx 18rpx; }
+.t { display: block; font-size: 40rpx; font-weight: 700; color: #14181A; }
+.s { display: block; margin-top: 8rpx; font-size: 21rpx; color: #8A9490; }
+.btn { height: 84rpx; line-height: 84rpx; text-align: center; border-radius: 42rpx; background: #12A594; color: #fff; font-size: 26rpx; margin-bottom: 18rpx; }
+.card { background: #fff; border-radius: 20rpx; padding: 22rpx; margin-bottom: 14rpx; }
+.frow { display: flex; align-items: center; gap: 14rpx; margin-top: 10rpx; }
+.fl { width: 90rpx; font-size: 23rpx; color: #5B6461; }
+.fi { flex: 1; height: 70rpx; background: #F3F7F5; border-radius: 12rpx; padding: 0 18rpx; font-size: 24rpx; }
+.lb { display: block; margin-top: 16rpx; font-size: 22rpx; color: #5B6461; }
+.chips { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 10rpx; }
+.chip { padding: 8rpx 18rpx; border-radius: 20rpx; background: #F3F7F5; color: #5B6461; font-size: 21rpx; }
+.chip.on { background: #12A594; color: #fff; }
+.ta { width: 100%; margin-top: 14rpx; background: #F3F7F5; border-radius: 12rpx; padding: 16rpx; font-size: 23rpx; min-height: 110rpx; box-sizing: border-box; }
+.acts { display: flex; gap: 14rpx; margin-top: 18rpx; }
+.ab { flex: 1; height: 76rpx; line-height: 76rpx; text-align: center; border-radius: 38rpx; font-size: 24rpx; }
+.ab.ghost { background: #F3F7F5; color: #5B6461; }
+.ab.primary { background: #12A594; color: #fff; }
+.item { display: flex; align-items: center; gap: 14rpx; }
+.il { flex: 1; }
+.nm { display: block; font-size: 26rpx; font-weight: 600; color: #14181A; }
+.mp { display: block; margin-top: 4rpx; font-size: 20rpx; color: #8A9490; }
+.op { font-size: 21rpx; color: #12A594; padding: 6rpx 10rpx; }
+.op.del { color: #E06E78; }
+.empty { text-align: center; padding: 100rpx 0; }
+.et { display: block; font-size: 26rpx; color: #454F4C; }
+.es { display: block; margin-top: 10rpx; font-size: 21rpx; color: #A9B3AF; }
+
+.img-row { display: flex; align-items: center; gap: 16rpx; margin-top: 16rpx; }
+.img-box { width: 150rpx; height: 150rpx; border-radius: 16rpx; background: #F3F7F5; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.img-in { width: 100%; height: 100%; }
+.img-ph { font-size: 21rpx; color: #8A9490; }
+.img-x { font-size: 21rpx; color: #E06E78; padding: 6rpx 10rpx; }
+.thumb { width: 96rpx; height: 96rpx; border-radius: 14rpx; background: #F3F7F5; }

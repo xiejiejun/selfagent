@@ -1,70 +1,234 @@
 <view class="page">
-  <!-- 快记 -->
-  <view class="quick">
-    <textarea
-      class="qarea"
-      placeholder="今天怎么样？训练感受、体重、睡眠、状态都能记"
-      value="{{quickText}}"
-      bindinput="onQuickInput"
-      maxlength="600"
-      auto-height
-      show-confirm-bar="{{false}}"
-    />
-    <view class="qfoot">
-      <text class="qtip">训练动作在「训练」页记，这里记文字</text>
-      <text class="qs {{quickText ? '' : 'off'}}" bindtap="saveQuick">保存</text>
-    </view>
+  <view class="seg">
+    <text class="sg {{tab === 'log' ? 'on' : ''}}" data-tab="log" bindtap="switchTab">记录</text>
+    <text class="sg {{tab === 'stats' ? 'on' : ''}}" data-tab="stats" bindtap="switchTab">统计</text>
   </view>
 
-  <!-- 时间线 -->
-  <view class="tl" wx:for="{{groups}}" wx:key="date" wx:for-item="grp">
-    <view class="dl">
-      <text class="dname">{{grp.label}}</text>
-      <text class="dnum">{{grp.logs.length}} 条</text>
-    </view>
-
-    <view class="tcard" wx:for="{{grp.logs}}" wx:for-item="lg" wx:key="id">
-      <view class="ch">
-        <text class="ltype {{lg.isTrain ? 'fit' : ''}}">{{lg.isTrain ? '训练' : '记录'}}</text>
-        <text class="ctime">{{lg.timeText}}</text>
-        <text class="cdel" wx:if="{{!lg.isTrain}}" data-id="{{lg.id}}" catchtap="delLog">删除</text>
+  <!-- 快记 -->
+  <block wx:if="{{tab === 'log'}}">
+    <view class="quick">
+      <textarea
+        class="qarea"
+        placeholder="今天怎么样？训练感受、体重、睡眠、状态都能记"
+        value="{{quickText}}"
+        bindinput="onQuickInput"
+        maxlength="600"
+        auto-height
+        show-confirm-bar="{{false}}"
+      />
+      <view class="hintrow" wx:if="{{infer}}">
+        <text class="infer" bindtap="applyInfer">识别为 {{infer.key === 'work' ? '工作' : infer.key === 'fit' ? '健身' : '生活习惯'}}{{infer.tags.length ? ' · ' + infer.tags.join(' / ') : ''}} · 采用</text>
+      </view>
+      <view class="hintrow" wx:if="{{parseHint}}">
+        <text class="infer fit" bindtap="convertTrain">这句像训练：{{parseHint.name}} {{parseHint.sets}}×{{parseHint.reps}}{{parseHint.weight ? ' ' + parseHint.weight + 'kg' : ''}} · 转成训练 ›</text>
       </view>
 
-      <block wx:if="{{lg.isTrain}}">
-        <text class="csum">{{lg.summary}}</text>
-        <view class="ex {{row.open ? 'open' : ''}}" wx:for="{{lg.rows}}" wx:for-item="row" wx:key="key">
-          <view class="eh" data-id="{{lg.id}}" data-key="{{row.key}}" bindtap="toggleRow">
-            <text class="en">{{row.name}}</text>
-            <text class="el">{{row.line}}</text>
-            <text class="more" data-uid="{{row.uid}}" data-cardio="{{row.isCardio}}" data-date="{{grp.date}}" catchtap="editRow">⋯</text>
-          </view>
-          <view class="sets" wx:if="{{row.open}}">
-            <view class="set" wx:for="{{row.groups}}" wx:for-item="g" wx:key="no">
-              <text class="no">{{g.no}}</text>
-              <text class="st {{g.done ? 'on' : ''}}">{{g.txt}}</text>
-              <text class="mk">{{g.done ? '✓' : '待'}}</text>
+      <view class="trow">
+        <text class="tl">类型</text>
+        <scroll-view class="tchips" scroll-x="true" enhanced="true" show-scrollbar="false">
+          <text class="chip {{typeKey === item.key ? 'on' : ''}}" wx:for="{{types}}" wx:key="key" data-k="{{item.key}}" bindtap="pickType">{{item.label}}</text>
+        </scroll-view>
+      </view>
+
+      <view class="trow">
+        <text class="tl">标签</text>
+        <scroll-view class="tchips" scroll-x="true" enhanced="true" show-scrollbar="false">
+          <text class="chip sm {{pickedTags.indexOf(item) >= 0 ? 'on' : ''}}" wx:for="{{typeTags}}" wx:key="*this" data-tag="{{item}}" bindtap="toggleTag">{{item}}</text>
+          <text class="chip sm none" bindtap="goSetting">{{typeTags.length ? '＋ 管理' : '去设置里加标签'}}</text>
+        </scroll-view>
+      </view>
+
+      <view class="score-row">
+        <view class="score-top">
+          <text class="score-l">精力</text>
+          <text class="score-v">{{quickEnergy ? energyLabels[quickEnergy - 1] : '滑动打分'}}</text>
+        </view>
+        <slider class="score-s" min="1" max="5" step="1" value="{{quickEnergy || 3}}"
+                block-size="20" activeColor="#12A594" backgroundColor="#EDF1F0"
+                data-k="quickEnergy" bindchange="onScoreSlide" />
+        <view class="score-lab">
+          <text class="sl-i {{quickEnergy >= index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this">{{item}}</text>
+        </view>
+      </view>
+      <view class="score-row">
+        <view class="score-top">
+          <text class="score-l">情绪</text>
+          <text class="score-v">{{quickMood ? moodLabels[quickMood - 1] : '滑动打分'}}</text>
+        </view>
+        <slider class="score-s" min="1" max="5" step="1" value="{{quickMood || 3}}"
+                block-size="20" activeColor="#12A594" backgroundColor="#EDF1F0"
+                data-k="quickMood" bindchange="onScoreSlide" />
+        <view class="score-lab">
+          <text class="sl-i m {{quickMood >= index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this">{{item}}</text>
+        </view>
+      </view>
+
+      <view class="qfoot">
+        <view class="qleft">
+          <text class="yt {{yesterday ? 'on' : ''}}" bindtap="toggleYesterday">{{yesterday ? '✓ ' : ''}}记到昨天</text>
+          <text class="demo" bindtap="loadDemo">载入示例</text>
+        </view>
+        <text class="qs {{quickText ? '' : 'off'}}" bindtap="saveQuick">保存</text>
+      </view>
+    </view>
+
+    <!-- 时间线 -->
+    <view class="tl-grp" wx:for="{{groups}}" wx:key="date" wx:for-item="grp">
+      <view class="dl">
+        <text class="dname">{{grp.label}}</text>
+        <text class="dnum">{{grp.logs.length}} 条</text>
+      </view>
+
+      <view class="tcard" wx:for="{{grp.logs}}" wx:for-item="lg" wx:key="id">
+        <view class="ch">
+          <text class="ltype {{lg.isTrain ? 'fit' : ''}}" style="{{lg.isTrain ? '' : 'color:' + lg.typeColor + ';border-color:' + lg.typeColor}}">{{lg.isTrain ? '训练' : (lg.typeLabel || '记录')}}</text>
+          <text class="ctime">{{lg.timeText}}</text>
+          <text class="cmore" wx:if="{{!lg.isTrain}}" data-id="{{lg.id}}" catchtap="openLogMenu">⋯</text>
+        </view>
+
+        <block wx:if="{{lg.isTrain}}">
+          <text class="csum">{{lg.summary}}</text>
+          <view class="ex {{row.open ? 'open' : ''}}" wx:for="{{lg.rows}}" wx:for-item="row" wx:key="key">
+            <view class="eh" data-id="{{lg.id}}" data-key="{{row.key}}" bindtap="toggleRow">
+              <text class="en">{{row.name}}</text>
+              <text class="cbadge" wx:if="{{row.isCardio}}">有氧</text>
+              <text class="el">{{row.line}}</text>
+              <text class="more" data-uid="{{row.uid}}" data-cardio="{{row.isCardio}}" data-date="{{grp.date}}" catchtap="editRow">⋯</text>
             </view>
-            <view class="set" wx:if="{{row.isCardio}}">
-              <text class="no">1</text>
-              <text class="st {{row.done ? 'on' : ''}}">有氧 · 时长训练</text>
-              <text class="mk">{{row.done ? '✓' : '待'}}</text>
+            <view class="sets" wx:if="{{row.open}}">
+              <view class="set" wx:for="{{row.groups}}" wx:for-item="g" wx:key="no">
+                <text class="no">{{g.no}}</text>
+                <text class="st {{g.done ? 'on' : ''}}">{{g.txt}}</text>
+                <text class="gsec">{{g.sec}}</text>
+                <text class="mk">{{g.done ? '✓' : '待'}}</text>
+              </view>
+              <view class="set" wx:if="{{row.isCardio && row.cdMode !== 'sets'}}">
+                <text class="no">1</text>
+                <text class="st {{row.done ? 'on' : ''}}">有氧 · 时长训练</text>
+                <text class="mk">{{row.done ? '✓' : '待'}}</text>
+              </view>
+            </view>
+          </view>
+        </block>
+
+        <block wx:else>
+          <text class="ctext">{{lg.text}}</text>
+          <view class="score-tags" wx:if="{{lg.score || lg.mood}}">
+            <text class="stag" wx:if="{{lg.score}}">精力 {{lg.score}}</text>
+            <text class="stag" wx:if="{{lg.mood}}">情绪 {{lg.moodText || lg.mood}}</text>
+          </view>
+          <text class="ctag" wx:if="{{lg.tags}}">{{lg.tags}}</text>
+        </block>
+      </view>
+    </view>
+
+    <view class="empty" wx:if="{{!groups.length}}">
+      <text class="et">还没有记录</text>
+      <text class="es">先在上面写一句，或者去「训练」记动作</text>
+    </view>
+  </block>
+
+  <!-- 统计 -->
+  <block wx:else>
+    <view class="ranges">
+      <text class="rg {{range === 7 ? 'on' : ''}}" data-r="7" bindtap="setRange">7 天</text>
+      <text class="rg {{range === 30 ? 'on' : ''}}" data-r="30" bindtap="setRange">30 天</text>
+      <text class="rg {{range === 90 ? 'on' : ''}}" data-r="90" bindtap="setRange">90 天</text>
+      <text class="rg {{range === 'custom' ? 'on' : ''}}" data-r="custom" bindtap="setRange">自定义</text>
+      <text class="rg-date" wx:if="{{stats}}">{{stats.start}} ~ {{stats.end}}</text>
+    </view>
+    <view class="cpick" wx:if="{{range === 'custom'}}">
+      <picker mode="date" value="{{cStart}}" end="{{cEnd || stats.end}}" bindchange="onCStart">
+        <text class="cpv">{{cStart || '开始日期'}}</text>
+      </picker>
+      <text class="cpd">至</text>
+      <picker mode="date" value="{{cEnd}}" start="{{cStart}}" end="{{stats.end}}" bindchange="onCEnd">
+        <text class="cpv">{{cEnd || '结束日期'}}</text>
+      </picker>
+    </view>
+
+    <block wx:if="{{stats}}">
+      <view class="kgrid">
+        <view class="k" wx:for="{{stats.kpis}}" wx:key="l">
+          <text class="kl">{{item.l}}</text>
+          <view class="kv"><text class="kn">{{item.v}}</text><text class="ku">{{item.u}}</text></view>
+          <text class="kd {{item.d.cls}}">{{item.d.txt}}</text>
+        </view>
+      </view>
+
+      <view class="empty" wx:if="{{stats.empty}}">
+        <text class="et">这段还没有数据</text>
+        <text class="es">记几笔就能看到趋势</text>
+        <view class="cta" bindtap="switchTab" data-tab="log">去记一笔</view>
+      </view>
+
+      <block wx:else>
+        <view class="card">
+          <view class="ch"><text class="ct">容量 & 有氧</text><text class="cm">{{stats.noteLoad}}</text></view>
+          <scroll-view class="load" scroll-x="true" enhanced="true" show-scrollbar="false">
+            <view class="ld-col" wx:for="{{stats.load}}" wx:key="label">
+              <view class="ld-pair">
+                <view class="ld-v" style="height: {{item.vh}}%"></view>
+                <view class="ld-m" style="height: {{item.mh}}%"></view>
+              </view>
+              <text class="ld-l">{{item.label}}</text>
+            </view>
+          </scroll-view>
+          <view class="ld-lg"><text class="lg-d v"></text><text>容量 kg</text><text class="lg-d m"></text><text>有氧分钟</text></view>
+          <text class="cnote">{{stats.noteLoad}}</text>
+        </view>
+
+        <view class="card">
+          <view class="ch"><text class="ct">部位分布</text><text class="cm">组数占比 · {{stats.noteParts}}</text></view>
+          <view class="pd-row" wx:for="{{stats.parts}}" wx:key="part">
+            <text class="pd-n">{{item.part}}</text>
+            <view class="pd-bar"><view class="pd-in {{item.low ? 'low' : ''}}" style="width: {{item.pct}}%"></view></view>
+            <text class="pd-v {{item.low ? 'low' : ''}}">{{item.sets}} 组 · {{item.pct}}%</text>
+          </view>
+          <view class="pd-none" wx:if="{{!stats.parts.length}}">这段还没有力量训练</view>
+        </view>
+
+        <view class="card">
+          <view class="ch"><text class="ct">进步榜</text><text class="cm">{{stats.noteProgress}}</text></view>
+          <view class="pg-row" wx:for="{{stats.progress}}" wx:key="name">
+            <text class="pg-n">{{item.name}}</text>
+            <text class="pg-w">{{item.text}}</text>
+            <text class="pg-p">↑{{item.pct}}%</text>
+          </view>
+          <view class="pd-none" wx:if="{{!stats.progress.length}}">同一动作练满两次后才会出涨幅榜（按 e1RM 估算）</view>
+        </view>
+
+        <view class="card">
+          <view class="ch"><text class="ct">有氧构成</text><text class="cm">{{stats.noteCd}}</text></view>
+          <view class="pd-row" wx:for="{{stats.cdComp}}" wx:key="label">
+            <text class="pd-n">{{item.label}}</text>
+            <view class="pd-bar"><view class="pd-in cd" style="width: {{item.pct}}%"></view></view>
+            <text class="pd-v">{{item.min}}′ · {{item.pct}}%</text>
+          </view>
+          <view class="pd-none" wx:if="{{!stats.cdComp.length}}">这段还没有有氧</view>
+        </view>
+
+        <view class="card pr-card" bindtap="goPR">
+          <view class="ch"><text class="ct">PR 记录</text><text class="cm">{{stats.notePr}}</text></view>
+          <view class="pr-row">
+            <view class="pr-top">
+              <view class="pr-num"><text class="pr-v">{{stats.prs.count}}</text><text class="pr-u">个新纪录</text></view>
+              <text class="pr-go">›</text>
+            </view>
+            <view class="pr-list">
+              <block wx:for="{{stats.prs.list}}" wx:key="name">
+                <view class="pr-it" wx:if="{{index < 3}}">
+                  <text class="pr-nm">{{item.name}}</text>
+                  <text class="pr-vv">{{item.weight}}kg×{{item.reps}}</text>
+                </view>
+              </block>
+              <text class="pr-empty" wx:if="{{!stats.prs.count}}">本期还没有新 PR，去练一组冲一下</text>
             </view>
           </view>
         </view>
-        <text class="addbtn" data-date="{{grp.date}}" bindtap="addToDay">＋ 添加动作</text>
       </block>
-
-      <block wx:else>
-        <text class="ctext">{{lg.text}}</text>
-        <text class="ctag" wx:if="{{lg.tags}}">{{lg.tags}}</text>
-      </block>
-    </view>
-  </view>
-
-  <view class="empty" wx:if="{{!groups.length}}">
-    <text class="et">还没有记录</text>
-    <text class="es">先在上面写一句，或者去「训练」记动作</text>
-  </view>
+    </block>
+  </block>
 </view>
 
 <train-editor
@@ -74,3 +238,5 @@
   bind:confirm="onEditorConfirm"
   bind:delete="onEditorDelete"
 />
+
+<float-orb id="orb" bottom="190" bind:focus="orbFocus" bind:noted="afterOrbNote" />

@@ -1,7 +1,10 @@
-<view class="strip">
-  <view class="cell" wx:for="{{items}}" wx:key="l">
-    <text class="v">{{item.v}}</text>
+<view class="strip {{shown.length > 5 ? 'six' : ''}} {{size === 'lg' ? 'lg' : ''}}">
+  <view class="cell" wx:for="{{shown}}" wx:key="l">
+    <text class="v" style="{{item.fs ? 'font-size:' + item.fs + 'rpx;' : ''}}">{{item.v}}</text>
     <text class="l">{{item.l}}</text>
-    <text class="n" wx:if="{{item.n}}">{{item.n}}</text>
+    <view class="meta">
+      <text class="d {{item.tone}}" wx:if="{{item.d}}">{{item.d}}</text>
+      <text class="n" wx:if="{{item.n}}">{{item.n}}</text>
+    </view>
   </view>
 </view>

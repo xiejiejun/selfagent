@@ -1,0 +1,27 @@
+.page { min-height: 100vh; background: #F3F7F5; padding: 26rpx 24rpx 60rpx; box-sizing: border-box; }
+.hd { padding: 0 8rpx 18rpx; }
+.t { display: block; font-size: 40rpx; font-weight: 700; color: #14181A; }
+.s { display: block; margin-top: 8rpx; font-size: 21rpx; color: #8A9490; }
+.card { background: #fff; border-radius: 22rpx; padding: 22rpx; margin-bottom: 18rpx; }
+.ch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; }
+.ct { font-size: 24rpx; font-weight: 600; color: #14181A; }
+.cm { font-size: 20rpx; color: #12A594; }
+.frow { display: flex; align-items: center; gap: 14rpx; margin-top: 12rpx; }
+.fl { width: 76rpx; font-size: 23rpx; color: #5B6461; }
+.fi { flex: 1; height: 70rpx; background: #F3F7F5; border-radius: 12rpx; padding: 0 18rpx; font-size: 24rpx; }
+.fu { width: 50rpx; font-size: 21rpx; color: #8A9490; }
+.btn { margin-top: 22rpx; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 44rpx; background: #12A594; color: #fff; font-size: 27rpx; }
+.tip { display: block; margin-top: 12rpx; font-size: 19rpx; color: #A9B3AF; }
+.bars { display: flex; align-items: flex-end; gap: 5rpx; }
+.bcol { flex: 1; text-align: center; overflow: hidden; }
+.bv { display: block; height: 26rpx; font-size: 16rpx; color: #8A9490; }
+.bwrap { height: 140rpx; display: flex; align-items: flex-end; justify-content: center; }
+.bar { width: 58%; border-radius: 5rpx; background: transparent; }
+.bar.on { background: linear-gradient(180deg,#3DDCBF,#12A594); }
+.bl { display: block; margin-top: 6rpx; font-size: 16rpx; color: #A9B3AF; }
+.empty { display: block; text-align: center; color: #A9B3AF; font-size: 21rpx; padding: 30rpx 0; }
+.row { display: flex; justify-content: space-between; align-items: center; padding: 12rpx 0; border-bottom: 1rpx solid #F1F5F3; }
+.row:last-child { border-bottom: none; }
+.rd { display: block; font-size: 21rpx; color: #8A9490; }
+.rv { display: block; margin-top: 3rpx; font-size: 23rpx; color: #14181A; }
+.del { font-size: 20rpx; color: #E06E78; padding: 6rpx 12rpx; }

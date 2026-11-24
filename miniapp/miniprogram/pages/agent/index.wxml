@@ -1,59 +1,66 @@
 <view class="page">
   <view class="head">
     <text class="hl">分析</text>
-    <view class="ranges" wx:if="{{tab === 'train'}}">
-      <text class="rg {{range === 7 ? 'on' : ''}}" data-n="7" bindtap="switchRange">7 天</text>
-      <text class="rg {{range === 30 ? 'on' : ''}}" data-n="30" bindtap="switchRange">30 天</text>
-      <text class="rg {{range === 90 ? 'on' : ''}}" data-n="90" bindtap="switchRange">90 天</text>
+    <view class="head-r">
+      <view class="ranges" wx:if="{{tab === 'train'}}">
+        <text class="rg {{range === 7 ? 'on' : ''}}" data-n="7" bindtap="switchRange">7 天</text>
+        <text class="rg {{range === 30 ? 'on' : ''}}" data-n="30" bindtap="switchRange">30 天</text>
+        <text class="rg {{range === 90 ? 'on' : ''}}" data-n="90" bindtap="switchRange">90 天</text>
+      </view>
+      <view class="askcap {{cloudReady ? '' : 'off'}}" bindtap="openAsk">
+        <view class="dot {{cloudReady ? 'on' : ''}}"></view>
+        <text>✦ 问 AI</text>
+      </view>
     </view>
   </view>
 
   <view class="seg">
     <text class="sg {{tab === 'overview' ? 'on' : ''}}" data-t="overview" bindtap="switchTab">概览</text>
     <text class="sg {{tab === 'train' ? 'on' : ''}}" data-t="train" bindtap="switchTab">训练</text>
-    <text class="sg {{tab === 'rest' ? 'on' : ''}}" data-t="rest" bindtap="switchTab">作息</text>
+    <text class="sg {{tab === 'progress' ? 'on' : ''}}" data-t="progress" bindtap="switchTab">进步</text>
   </view>
 
   <view class="body">
-    <view class="card ask" style="order: {{tab === 'overview' && !hasData ? -1 : 9}}">
-      <view class="ch">
-        <text class="ct">问 AI</text>
-        <view class="ai-state">
-          <view class="dot {{cloudReady ? 'on' : ''}}"></view>
-          <text class="ai-t">{{cloudReady ? 'AI 已连接' : 'AI 未连接'}}</text>
-        </view>
-      </view>
-      <text class="ai-line" wx:if="{{!hasData}}">记一次训练，我就能开始分析你</text>
-      <view class="askrow">
-        <textarea
-          class="qbox"
-          placeholder="问任何训练或作息问题"
-          value="{{q}}"
-          bindinput="onInput"
-          auto-height
-          maxlength="300"
-          confirm-type="send"
-          bindconfirm="ask"
-          show-confirm-bar="{{false}}"
-        />
-        <view class="send {{asking || !q ? 'off' : ''}}" bindtap="ask">{{asking ? '…' : '发送'}}</view>
-      </view>
-      <view class="sugs">
-        <text class="sug" wx:for="{{suggest}}" wx:key="*this" data-t="{{item}}" bindtap="useSuggest">{{item}}</text>
-      </view>
-      <view class="answer" wx:if="{{answer}}">
-        <text class="atext">{{answer}}</text>
-      </view>
-    </view>
-
     <block wx:if="{{tab === 'overview'}}">
-      <view class="feed" wx:if="{{insights.length}}">
-        <view class="ins {{item.k}}" wx:for="{{insights}}" wx:key="t">
-          <text class="ins-tt">{{item.t}}</text>
-          <text class="ins-v">{{item.v}}</text>
-          <text class="ins-s">{{item.sub}}</text>
+      <view class="kpiwrap"><kpi-strip items="{{kpis}}" size="lg" /></view>
+
+      <view class="card chart-card" wx:if="{{lineOK}}">
+        <view class="ch"><text class="ct">精力 · 情绪</text><text class="cm">近 7 条</text></view>
+        <mini-chart type="line" labels="{{lineLabels}}" series="{{lineSeries}}" height="152" />
+        <view class="lgd">
+          <view class="lg-i"><view class="lg-d s1"></view><text>精力</text></view>
+          <view class="lg-i"><view class="lg-d s2"></view><text>情绪</text></view>
         </view>
       </view>
+
+      <view class="feed" wx:if="{{insights.length}}">
+        <view class="ins {{item.k}} {{openIns === index ? 'open' : ''}}" wx:for="{{insights}}" wx:key="t" data-i="{{index}}" bindtap="toggleIns" style="animation-delay: {{index * 40}}ms">
+          <view class="ins-h">
+            <text class="ins-badge">{{kl[item.k]}}</text>
+            <text class="ins-tt">{{item.t}}</text>
+          </view>
+          <view class="ins-b">
+            <text class="ins-v">{{item.v}}</text>
+            <text class="ins-s">{{item.sub}}</text>
+          </view>
+          <view class="ai-line" wx:if="{{item.ai}}">
+            <text class="ai-sp">✦</text><text class="ai-tx">{{item.ai}}</text>
+          </view>
+          <view class="ev-h" wx:if="{{item.ev.length}}">
+            <text class="evd">{{item.conf}}</text>
+            <text class="ev-t">依据 {{item.ev.length}} 条</text>
+            <text class="ev-a">{{openIns === index ? '收起' : '展开'}}</text>
+          </view>
+          <view class="ev" wx:if="{{openIns === index && item.ev.length}}">
+            <view class="ev-row" wx:for="{{item.ev}}" wx:for-item="ev" wx:key="t">
+              <text class="ev-k">{{ev.t}}</text>
+              <text class="ev-v">{{ev.v}}</text>
+            </view>
+            <text class="ev-go" catchtap="goEv">查看记录页 ›</text>
+          </view>
+        </view>
+      </view>
+
       <view class="card emptycard" wx:if="{{!hasNotes}}">
         <text class="empty-t">还没有生活记录，洞察流是空的</text>
         <text class="empty-s">用右下角悬浮球随手记一句，精力/情绪/作息就会开始累积</text>
@@ -62,7 +69,15 @@
     </block>
 
     <block wx:if="{{tab === 'train'}}">
-      <kpi-strip items="{{kpis}}" />
+      <view class="kpiwrap"><kpi-strip items="{{kpis}}" size="lg" /></view>
+
+      <view class="card chart-card">
+        <view class="ch"><text class="ct">近 7 天容量</text><text class="cm">kg · 按天</text></view>
+        <mini-chart wx:if="{{barOK}}" type="bar" labels="{{barLabels}}" values="{{barVals}}" height="132" today-index="{{6}}" play="{{true}}" />
+        <view class="chart-empty" wx:else>
+          <text class="empty">这几天没有容量数据 — 记一次带重量的训练就有了</text>
+        </view>
+      </view>
 
       <view class="card">
         <view class="ch"><text class="ct">部位分布</text><text class="cm">按容量占比</text></view>
@@ -93,34 +108,129 @@
       </view>
     </block>
 
-    <block wx:if="{{tab === 'rest'}}">
+    <block wx:if="{{tab === 'progress'}}">
+      <view class="pg-head">
+        <view class="ranges">
+          <text class="rg {{range === 7 ? 'on' : ''}}" data-n="7" bindtap="switchRange">7 天</text>
+          <text class="rg {{range === 30 ? 'on' : ''}}" data-n="30" bindtap="switchRange">30 天</text>
+          <text class="rg {{range === 90 ? 'on' : ''}}" data-n="90" bindtap="switchRange">90 天</text>
+        </view>
+        <text class="pure {{aiPure ? 'on' : ''}}" bindtap="togglePure">{{aiPure ? '纯数据模式' : 'AI 已开'}}</text>
+      </view>
+
+      <!-- 部位均衡雷达 -->
       <view class="card">
-        <view class="ch"><text class="ct">时钟热力</text><text class="cm">星期 × 时段</text></view>
-        <view class="hrow head-row">
-          <text class="hlab"></text>
-          <text class="hslot" wx:for="{{['0-4','4-8','8-12','12-16','16-20','20-24']}}" wx:key="*this">{{item}}</text>
+        <view class="ch"><text class="ct">部位均衡</text><text class="cm">近 7 天容量分布</text></view>
+        <canvas canvas-id="radar" class="radar"></canvas>
+        <view class="ai-line" wx:if="{{aiPush}}"><text class="ai-sp">✦</text><text class="ai-tx">{{aiPush}}</text></view>
+        <view class="ai-line rule" wx:else><text class="ai-sp">✦</text><text class="ai-tx">{{prog.pushPull.text}}</text></view>
+      </view>
+
+      <!-- 进步曲线 Top5 -->
+      <view class="card">
+        <view class="ch"><text class="ct">进步曲线</text><text class="cm">e1RM 估算</text></view>
+        <scroll-view class="chips" scroll-x="true" show-scrollbar="false" wx:if="{{prog.curves.length}}">
+          <text class="chip {{curveSel === index ? 'on' : ''}}" wx:for="{{prog.curves}}" wx:key="name" data-i="{{index}}" bindtap="selCurve">{{item.name}}</text>
+        </scroll-view>
+        <canvas canvas-id="curve" class="curve"></canvas>
+        <view class="cv-meta" wx:if="{{curve}}">
+          <text class="cv-d">{{curve.from}} → {{curve.to}} kg e1RM</text>
+          <text class="cv-d">{{curve.n}} 个训练日</text>
         </view>
-        <view class="hrow" wx:for="{{heat}}" wx:key="label" wx:for-item="row">
-          <text class="hlab">{{row.label}}</text>
-          <view class="hcell w{{c.w}}" wx:for="{{row.cells}}" wx:for-item="c" wx:for-index="ci" wx:key="ci">
-            <text class="hn" wx:if="{{c.n}}">{{c.n}}</text>
-          </view>
-        </view>
-        <view class="unlock" wx:if="{{!hasNotes}}">
-          <text class="empty">还没有记录，热力图是空的 — 写一条就会亮</text>
-          <view class="empty-cta" bindtap="goLog">去记录页写一条</view>
+        <view class="ai-line" wx:if="{{aiTrend}}"><text class="ai-sp">✦</text><text class="ai-tx">{{aiTrend}}</text></view>
+        <view class="ai-line rule" wx:elif="{{prog.forecast}}"><text class="ai-sp">✦</text><text class="ai-tx">{{prog.forecast.text}}</text></view>
+        <view class="unlock" wx:if="{{!prog.curves.length}}">
+          <text class="empty">同一动作至少两次带重量记录，才会画出曲线</text>
+          <view class="empty-cta" bindtap="goTrain">去训练页</view>
         </view>
       </view>
 
-      <view class="feed" wx:if="{{restNotes.length}}">
-        <view class="ins rest" wx:for="{{restNotes}}" wx:key="t">
-          <text class="ins-tt">{{item.t}}</text>
-          <text class="ins-v">{{item.v}}</text>
-          <text class="ins-s">{{item.sub}}</text>
+      <!-- 恢复条 -->
+      <view class="card">
+        <view class="ch"><text class="ct">恢复状态</text><text class="cm">按上次训练距今</text></view>
+        <view class="rc-row" wx:for="{{prog.recovery}}" wx:key="label">
+          <text class="rc-l">{{item.label}}</text>
+          <view class="rc-bar"><view class="rc-in {{item.state}}"></view></view>
+          <text class="rc-t {{item.state}}">{{item.text}}</text>
         </view>
+        <view class="ai-line" wx:if="{{aiTomorrow}}"><text class="ai-sp">✦</text><text class="ai-tx">{{aiTomorrow}}</text></view>
+        <view class="ai-line rule" wx:else><text class="ai-sp">✦</text><text class="ai-tx">{{prog.tomorrow.text}}</text></view>
+      </view>
+
+      <!-- PR 时间线 -->
+      <view class="card">
+        <view class="ch"><text class="ct">PR 时间线</text><text class="cm">近 30 天</text></view>
+        <view class="prl" wx:for="{{prog.prs}}" wx:key="name">
+          <view class="prl-dot"></view>
+          <view class="prl-b">
+            <view class="prl-h">
+              <text class="prl-n">{{item.name}}</text>
+              <text class="prl-date">{{item.label}}</text>
+            </view>
+            <text class="prl-v">{{item.weight}}kg×{{item.reps}}{{item.up ? ' · e1RM +' + item.up + '%' : (item.first ? ' · 首次记录' : '')}}</text>
+          </view>
+        </view>
+        <view class="prl-none" wx:if="{{!prog.prs.length}}">近 30 天还没有新 PR，按计划推一组就到</view>
       </view>
     </block>
+
+
+    <view class="rep-link" wx:if="{{tab === 'overview'}}" style="order: 10" bindtap="goReport">
+      <text class="rl-t">完整报告</text>
+      <text class="rl-s">画像 · 规划 · 趋势推演</text>
+      <text class="rl-a">›</text>
+    </view>
   </view>
 </view>
 
-<float-orb bottom="{{190}}" bind:focus="orbFocus" bind:noted="orbNoted" />
+<view class="askmask" wx:if="{{askOpen}}" bindtap="closeAsk">
+  <view class="asksheet" catchtap="noop">
+    <view class="as-h">
+      <view class="as-hl">
+        <text class="as-t">问 AI</text>
+        <view class="ai-state">
+          <view class="dot {{cloudReady ? 'on' : ''}}"></view>
+          <text class="ai-t">{{cloudReady ? 'AI 已连接' : 'AI 未连接'}}</text>
+        </view>
+      </view>
+      <text class="as-x" bindtap="closeAsk">✕</text>
+    </view>
+
+    <view class="askrow">
+      <textarea
+        class="qbox"
+        placeholder="问训练、恢复或计划，可以连着追问"
+        value="{{q}}"
+        bindinput="onInput"
+        auto-height
+        maxlength="300"
+        confirm-type="send"
+        bindconfirm="ask"
+        show-confirm-bar="{{false}}"
+      />
+      <view class="send {{asking || !q ? 'off' : ''}}" bindtap="ask">{{asking ? '…' : '发送'}}</view>
+    </view>
+
+    <scroll-view class="as-body" scroll-y="true">
+      <view class="sugs">
+        <text class="sug" wx:for="{{suggest}}" wx:key="*this" data-t="{{item}}" bindtap="useSuggest">{{item}}</text>
+      </view>
+      <view class="local" wx:if="{{local}}">
+        <view class="local-h"><text class="local-k">本地结论{{local.range ? ' · ' + local.range : ''}}</text></view>
+        <text class="local-t">{{local.title}}</text>
+        <text class="local-m">{{local.main}}</text>
+        <text class="local-s" wx:if="{{local.sub}}">{{local.sub}}</text>
+      </view>
+      <view class="chat" wx:if="{{chat.length}}">
+        <view class="msg {{item.r}}" wx:for="{{chat}}" wx:key="index">
+          <text class="msg-t" wx:if="{{item.r === 'u'}}">{{item.t}}</text>
+          <view class="msg-a" wx:else><text class="ai-sp">✦</text><text class="msg-t">{{item.t}}</text></view>
+        </view>
+        <text class="clearchat" bindtap="clearChat">清空对话</text>
+      </view>
+      <view class="thinking" wx:if="{{asking}}"><text>✦ 正在思考…</text></view>
+    </scroll-view>
+  </view>
+</view>
+
+<float-orb id="orb" bottom="{{190}}" bind:focus="orbFocus" bind:noted="orbNoted" />

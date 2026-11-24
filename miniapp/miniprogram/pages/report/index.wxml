@@ -1,0 +1,76 @@
+<view class="page">
+  <view class="hd">
+    <text class="nav" bindtap="prevWeek">‹</text>
+    <view class="hc">
+      <text class="t">{{title}}</text>
+      <text class="s">{{rangeText}}</text>
+    </view>
+    <text class="nav {{offset === 0 ? 'off' : ''}}" bindtap="nextWeek">›</text>
+  </view>
+
+  <view class="card">
+    <view class="nums">
+      <view class="n"><text class="nv">{{cur.trained}}</text><text class="nt">训练天 {{delta.trained}}</text></view>
+      <view class="n"><text class="nv">{{cur.sets}}</text><text class="nt">组数 {{delta.sets}}</text></view>
+      <view class="n"><text class="nv">{{cur.volume}}</text><text class="nt">容量 kg {{delta.volume}}</text></view>
+      <view class="n"><text class="nv">{{cur.cardioMin}}′</text><text class="nt">有氧 {{delta.cardio}}</text></view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">这周发生了什么</text><text class="cm" wx:if="{{aiLoading}}">✦ 生成中…</text><text class="cm" wx:elif="{{aiWeekly.length}}">✦ AI 生成</text></view>
+    <view class="aiw" wx:if="{{aiWeekly.length}}">
+      <view class="aiw-row" wx:for="{{aiWeekly}}" wx:key="k">
+        <text class="aiw-k">{{item.k}}</text>
+        <text class="aiw-v">{{item.v}}</text>
+      </view>
+    </view>
+    <block wx:else>
+      <view class="concl" wx:for="{{conclusions}}" wx:key="*this">
+        <text class="dot">·</text><text class="cx">{{item}}</text>
+      </view>
+    </block>
+    <view class="sub">
+      <text class="st">情绪均值 {{moodText}}</text>
+      <text class="st">睡眠 {{sleepText}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">每日容量</text></view>
+    <view class="bars">
+      <view class="bcol" wx:for="{{days}}" wx:key="date">
+        <text class="bv">{{item.volume ? item.volume : ''}}</text>
+        <view class="bwrap"><view class="bar {{item.volume ? 'on' : ''}}" style="height: {{item.h}}%"></view></view>
+        <text class="bl">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{parts.length}}">
+    <view class="ch"><text class="ct">部位分布（近 7 天）</text></view>
+    <view class="prow" wx:for="{{parts}}" wx:key="part">
+      <text class="pn">{{item.part}}</text>
+      <view class="pbar"><view class="pin" style="width: {{item.h}}%"></view></view>
+      <text class="pv">{{item.volume}}</text>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{prs.length}}">
+    <view class="ch"><text class="ct">本周新纪录</text></view>
+    <view class="prrow" wx:for="{{prs}}" wx:key="name">
+      <text class="prn">{{item.name}}</text>
+      <text class="prv">{{item.bestW > 0 ? item.bestW + 'kg' : '自重'}} × {{item.reps}}</text>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{tops.length}}">
+    <view class="ch"><text class="ct">最常练</text></view>
+    <view class="prrow" wx:for="{{tops}}" wx:key="name">
+      <text class="prn">{{item.name}}</text>
+      <text class="prv">{{item.sets}} 组 · {{item.volume}} kg</text>
+    </view>
+  </view>
+
+  <text class="foot">口径：周 = 最近 7 天（含今天）；容量只算完成的训练组</text>
+</view>

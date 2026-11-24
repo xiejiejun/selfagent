@@ -1,0 +1,112 @@
+<view class="plp">
+  <view class="card">
+    <view class="ch">
+      <text class="ct">本周节奏</text>
+      <view class="ch-r">
+        <text class="tmark" wx:if="{{todayMark}}"><text class="tdot"></text>今天：{{todayMark}}</text>
+        <text class="cm">{{weekDone}} 组 / 周目标 {{days}} 天</text>
+      </view>
+    </view>
+    <view class="bars">
+      <view class="bw {{item.today ? 'today' : ''}}" wx:for="{{week}}" wx:key="label">
+        <view class="bar {{item.ok ? 'ok' : ''}}" style="height: {{item.h}}rpx"></view>
+        <text class="bl">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{rec && rec.items.length}}">
+    <view class="ch">
+      <view class="chl">
+        <text class="ct">部位</text>
+        <text class="pv" bindtap="openPart">{{rec.view}}<text class="pv-ar">▾</text></text>
+        <text class="badge" wx:if="{{recAuto}}">✦ AI 推荐</text>
+        <text class="edit-tag" wx:if="{{recEdited}}">已手改</text>
+      </view>
+    </view>
+    <text class="rstate {{rec.recovery.warn ? 'warn' : 'ok'}}">{{rec.recovery.text}}</text>
+
+    <view class="sk" wx:if="{{regenerating}}">
+      <view class="sk-row" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+        <view class="sk-l"></view>
+        <view class="sk-r"></view>
+      </view>
+    </view>
+
+    <block wx:else>
+      <view class="rec-item {{item.cd ? 'cd' : ''}}" wx:for="{{rec.items}}" wx:key="exId" data-i="{{index}}" bindtap="itemMenu">
+        <view class="ri-l">
+          <view class="ri-row">
+            <text class="ri-n">{{item.name}}</text>
+            <text class="cbadge" wx:if="{{item.cd}}">有氧</text>
+          </view>
+          <text class="ri-note">{{item.note}}</text>
+          <view class="ri-why" wx:if="{{item.why}}"><text class="ri-sp">✦</text><text class="ri-why-t">{{item.why}}</text></view>
+        </view>
+        <text class="ri-line">{{item.line}}</text>
+        <text class="ri-more">⋯</text>
+      </view>
+      <text class="ptext" wx:if="{{recReason}}">{{recReason}}</text>
+      <view class="acts">
+        <view class="btn ghost" bindtap="aiWhy">{{askingWhy ? '解读中…' : '✦ AI 解读理由'}}</view>
+        <view class="btn primary" bindtap="importToday">{{importLabel}}</view>
+      </view>
+    </block>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">目标</text></view>
+    <view class="frow">
+      <text class="fl">每周训练</text>
+      <view class="chips">
+        <text class="chip {{days === item ? 'on' : ''}}" wx:for="{{[2,3,4,5,6]}}" wx:key="*this" data-n="{{item}}" bindtap="pickDays">{{item}} 天</text>
+      </view>
+    </view>
+    <view class="frow">
+      <text class="fl">每天组数</text>
+      <input class="fi" type="number" value="{{setsPerDay}}" bindinput="onSets" />
+    </view>
+    <view class="frow">
+      <text class="fl">提醒时间</text>
+      <picker mode="time" value="{{remind}}" bindchange="onRemind">
+        <text class="fi right">{{remind}} ›</text>
+      </picker>
+    </view>
+    <view class="btn" bindtap="save">保存计划</view>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">AI 周计划</text><text class="cm">{{asking ? '生成中…' : '按你的记录生成'}}</text></view>
+    <text class="ptext" wx:if="{{planText}}">{{planText}}</text>
+    <text class="empty" wx:else>还没有计划，点下面按最近 30 天记录生成</text>
+    <view class="btn ghost" bindtap="askPlan">生成本周计划</view>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">训练提醒</text><text class="cm">{{sub ? '已开启 · ' + remind : '未开启'}}</text></view>
+    <text class="tip">每天 {{remind}} 通过订阅消息提醒你训练；一次性订阅，每次推送后需要再点一次授权。</text>
+    <view class="btn" wx:if="{{!sub}}" bindtap="subscribe">开启提醒</view>
+    <view class="btn ghost" wx:else bindtap="unsubscribe">关闭提醒</view>
+  </view>
+</view>
+
+<!-- 部位选择 Sheet：推荐是默认值，不是强制项 -->
+<view class="mask" wx:if="{{partOpen}}" bindtap="closePart" catchtouchmove="noop"></view>
+<view class="sheet" wx:if="{{partOpen}}">
+  <view class="sh-h">
+    <text class="sh-t">今天练哪？</text>
+    <text class="sh-x" bindtap="closePart">✕</text>
+  </view>
+  <view class="pgrid">
+    <view class="ptile {{pending && pending.key === item.key ? 'on' : ''}} {{item.warn ? 'warn' : ''}}" wx:for="{{parts}}" wx:key="key" data-k="{{item.key}}" bindtap="pickPartTile">
+      <text class="pt-star" wx:if="{{item.star}}">★</text>
+      <text class="pt-n">{{item.view}}</text>
+      <text class="pt-s">{{item.text}}</text>
+    </view>
+  </view>
+  <view class="sh-foot" wx:if="{{pending}}">
+    <text class="sh-prev">✓ {{pending.view}}：{{pending.text}}</text>
+    <text class="sh-warn" wx:if="{{pending.warn}}">{{pending.view}} 恢复中，练了可能影响恢复质量</text>
+    <view class="btn {{pending.warn ? 'danger' : 'primary'}}" bindtap="confirmPart">{{pending.warn ? '仍要练' + pending.view : '生成' + pending.view + '日计划'}}</view>
+  </view>
+</view>

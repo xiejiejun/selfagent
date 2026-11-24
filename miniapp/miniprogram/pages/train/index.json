@@ -3,6 +3,8 @@
   "usingComponents": {
     "train-editor": "/components/train-editor/index",
     "float-orb": "/components/float-orb/index",
-    "kpi-strip": "/components/kpi-strip/index"
+    "kpi-strip": "/components/kpi-strip/index",
+    "train-plan": "/components/train-plan/index",
+    "ex-sheet": "/components/ex-sheet/index"
   }
 }

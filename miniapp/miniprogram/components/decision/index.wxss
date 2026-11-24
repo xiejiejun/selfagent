@@ -1,0 +1,47 @@
+.dc {
+  position: relative;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 22rpx 22rpx 18rpx;
+  margin-top: 16rpx;
+  border: 1rpx solid #E4F0EC;
+}
+.dc::before {
+  content: '';
+  position: absolute; left: 0; top: 24rpx; bottom: 24rpx; width: 4rpx;
+  border-radius: 4rpx; background: linear-gradient(180deg, #6D8CFF, #12A594);
+}
+.dc-h { display: flex; align-items: center; gap: 8rpx; }
+.dc-star { font-size: 24rpx; color: #6D8CFF; }
+.dc-k { font-size: 24rpx; font-weight: 600; color: #14181A; letter-spacing: .4rpx; }
+.dc-m { margin-left: auto; font-size: 19rpx; color: #A9B3AF; }
+.dc-q { display: block; margin-top: 12rpx; font-size: 32rpx; font-weight: 600; color: #14181A; }
+
+.dc-opts { display: flex; gap: 10rpx; margin-top: 16rpx; }
+.opt {
+  flex: 1; position: relative;
+  background: #F6F9F8; border: 1rpx solid #EAF1EF; border-radius: 14rpx;
+  padding: 16rpx 12rpx 14rpx;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.opt.rec { background: #EDF9F6; border-color: #12A594; }
+.opt-l { display: block; font-size: 24rpx; font-weight: 600; color: #14181A; line-height: 1.3; }
+.opt.rec .opt-l { color: #0C7C6E; }
+.opt-s { display: block; margin-top: 6rpx; font-size: 18rpx; color: #8A9490; line-height: 1.35; }
+.opt-b {
+  position: absolute; right: 8rpx; top: -12rpx;
+  background: #12A594; color: #fff; font-size: 16rpx; line-height: 1;
+  padding: 6rpx 10rpx; border-radius: 8rpx;
+}
+
+.dc-r { display: flex; gap: 10rpx; margin-top: 14rpx; }
+.dc-rk { flex: none; font-size: 19rpx; color: #12A594; background: #EDF7F5; border-radius: 6rpx; padding: 3rpx 8rpx; height: 28rpx; line-height: 28rpx; }
+.dc-rt { font-size: 21rpx; line-height: 1.5; color: #5B6461; }
+
+.dc-evh { margin-top: 12rpx; }
+.dc-evt { font-size: 20rpx; color: #8A9490; }
+.dc-ev { display: flex; flex-wrap: wrap; gap: 8rpx; margin-top: 10rpx; }
+.ev { display: flex; align-items: center; gap: 8rpx; background: #F6F9F8; border-radius: 8rpx; padding: 8rpx 12rpx; }
+.ev-t { font-size: 18rpx; color: #8A9490; }
+.ev-v { font-size: 19rpx; color: #14181A; font-weight: 500; }
+.dc-note { display: block; margin-top: 10rpx; font-size: 19rpx; color: #A9B3AF; }

@@ -26,3 +26,81 @@
 .danger { height: 80rpx; line-height: 80rpx; text-align: center; color: #E06E78; background: #FDF1F2; border-radius: 14rpx; font-size: 26rpx; }
 
 .foot { display: block; text-align: center; font-size: 20rpx; color: #B6BEBB; margin-top: 20rpx; }
+
+/* 记录偏好 */
+.type-list { }
+.ty { border: 1rpx solid #EDF1F0; border-radius: 12rpx; padding: 12rpx 14rpx; margin-bottom: 10rpx; }
+.ty.on { border-color: #12A594; background: #F5FBFA; }
+.ty-h { display: flex; align-items: center; gap: 10rpx; }
+.ty-d { width: 12rpx; height: 12rpx; border-radius: 50%; }
+.ty-n { flex: 1; font-size: 24rpx; color: #14181A; }
+.ty-x { font-size: 19rpx; color: #B6BEBB; }
+.ty-tags { display: flex; flex-wrap: wrap; gap: 8rpx; margin-top: 10rpx; }
+.ttag { font-size: 19rpx; color: #5B6461; background: #F0F4F3; border-radius: 8rpx; padding: 4rpx 12rpx; }
+.ttag.none { color: #B6BEBB; background: transparent; }
+.fbtn { font-size: 22rpx; color: #12A594; padding: 8rpx 16rpx; border: 1rpx solid #CFE9E3; border-radius: 10rpx; }
+.fu { font-size: 21rpx; color: #A9B3AF; }
+.srow { display: flex; align-items: center; justify-content: space-between; padding: 12rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.sl { font-size: 24rpx; color: #8A9490; }
+.mem { }
+.mem-i { display: block; font-size: 21rpx; color: #5B6461; line-height: 1.7; }
+
+/* 分组列表 */
+.gl { background: #fff; border-radius: 20rpx; overflow: hidden; }
+.gr { display: flex; align-items: center; padding: 26rpx 22rpx; border-bottom: 1rpx solid #F4F7F6; }
+.gr:last-child { border-bottom: none; }
+.gr-hv { background: #F6F9F8; }
+.gr-l { flex: 1; min-width: 0; }
+.gr-t { display: block; font-size: 27rpx; color: #14181A; font-weight: 600; }
+.gr-s { display: block; margin-top: 6rpx; font-size: 21rpx; color: #8A9490; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gr-a { font-size: 26rpx; color: #C3CCC8; margin-left: 12rpx; }
+
+.badge { display: flex; align-items: center; gap: 6rpx; margin-left: 12rpx; }
+.bdot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #C9D1CE; }
+.badge.on .bdot { background: #12A594; }
+.badge text { font-size: 19rpx; color: #8A9490; }
+.badge.on text { color: #12A594; }
+
+.danger { margin-top: 22rpx; }
+
+/* 二级面板 */
+.mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(10,14,13,.42); z-index: 90; }
+.panel { position: fixed; left: 0; right: 0; bottom: 0; max-height: 82vh; background: #fff; border-radius: 28rpx 28rpx 0 0; z-index: 91; padding: 24rpx 24rpx calc(28rpx + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+.p-h { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16rpx; border-bottom: 1rpx solid #F0F4F3; }
+.p-t { font-size: 29rpx; font-weight: 600; color: #14181A; }
+.p-x { font-size: 23rpx; color: #12A594; padding: 6rpx 10rpx; }
+.p-b { flex: 1; min-height: 0; padding-top: 18rpx; }
+.p-sub { display: block; font-size: 21rpx; color: #A9B3AF; margin-bottom: 10rpx; }
+.pbtn { margin-top: 18rpx; height: 80rpx; line-height: 80rpx; text-align: center; background: #12A594; color: #fff; border-radius: 14rpx; font-size: 27rpx; }
+.pbtn.ghost { background: #F4F7F6; color: #5B6461; margin-top: 12rpx; }
+
+.grid.two { flex-wrap: wrap; }
+.grid.two .gbtn { flex: 0 0 calc(50% - 6rpx); }
+.grid.one .gbtn { flex: 1; margin-top: 12rpx; }
+
+.adv { display: flex; align-items: center; margin: 22rpx 0 10rpx; padding-top: 18rpx; border-top: 1rpx solid #F0F4F3; }
+.adv-t { font-size: 23rpx; color: #14181A; font-weight: 600; }
+.adv-s { flex: 1; font-size: 19rpx; color: #A9B3AF; margin-left: 12rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.adv-a { font-size: 20rpx; color: #12A594; }
+
+.lrow { display: flex; align-items: center; padding: 22rpx 4rpx; border-bottom: 1rpx solid #F4F7F6; }
+.lr-t { flex: 1; font-size: 25rpx; color: #14181A; }
+.lr-a { font-size: 24rpx; color: #C3CCC8; }
+
+.mem { margin-top: 22rpx; padding-top: 18rpx; border-top: 1rpx solid #F0F4F3; }
+.mem-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10rpx; }
+.mem-t { font-size: 23rpx; color: #14181A; font-weight: 600; }
+.mem-n { font-size: 20rpx; color: #A9B3AF; }
+
+/* AI 操作日志 */
+.op { display: flex; align-items: center; gap: 12rpx; padding: 14rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.op:last-of-type { border-bottom: none; }
+.op-l { flex: 1; }
+.op-t { display: block; font-size: 23rpx; color: #14181A; }
+.op-d { display: block; margin-top: 4rpx; font-size: 19rpx; color: #A9B3AF; }
+.op-u { flex: none; font-size: 20rpx; color: #12A594; background: #EDF7F5; border-radius: 8rpx; padding: 8rpx 14rpx; }
+.op-u.off { color: #C3CCC8; background: #F4F7F6; }
+
+.sec { display: flex; align-items: center; justify-content: space-between; margin: 22rpx 0 10rpx; }
+.sec-t { font-size: 21rpx; color: #A9B3AF; }
+

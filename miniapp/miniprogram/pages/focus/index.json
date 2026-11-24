@@ -3,5 +3,7 @@
   "navigationBarTextStyle": "white",
   "navigationBarBackgroundColor": "#101615",
   "backgroundColor": "#101615",
-  "usingComponents": {}
+  "usingComponents": {
+    "ex-sheet": "/components/ex-sheet/index"
+  }
 }

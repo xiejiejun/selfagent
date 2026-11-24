@@ -24,3 +24,23 @@
 .ptext { display: block; font-size: 24rpx; line-height: 1.7; color: #14181A; white-space: pre-wrap; }
 .empty { display: block; font-size: 23rpx; color: #A9B3AF; }
 .tip { display: block; font-size: 21rpx; color: #A9B3AF; line-height: 1.6; }
+
+.cm.warn { color: #E0A23C; }
+.cm.ok { color: #12A594; }
+.rec-item { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding: 14rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.ri-l { flex: 1; }
+.ri-n { display: block; font-size: 25rpx; color: #14181A; font-weight: 500; }
+.ri-note { display: block; margin-top: 4rpx; font-size: 20rpx; color: #8A9490; line-height: 1.5; }
+.ri-line { font-size: 23rpx; color: #12A594; white-space: nowrap; }
+.acts { display: flex; gap: 14rpx; margin-top: 18rpx; }
+.acts .btn { flex: 1; margin-top: 0; }
+
+/* 平台期 */
+.pl { padding: 14rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.pl:last-child { border-bottom: none; }
+.pl-h { display: flex; align-items: baseline; justify-content: space-between; }
+.pl-n { font-size: 25rpx; color: #14181A; font-weight: 500; }
+.pl-v { font-size: 21rpx; color: #E0A23C; }
+.pl-opts { display: flex; gap: 10rpx; margin-top: 12rpx; }
+.pl-o { flex: 1; text-align: center; height: 62rpx; line-height: 62rpx; border-radius: 10rpx; background: #F4F7F6; font-size: 21rpx; color: #5B6461; }
+.pl-o.on { background: #EDF7F5; color: #12A594; border: 1rpx solid #12A594; line-height: 60rpx; }

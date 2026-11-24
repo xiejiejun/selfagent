@@ -1,0 +1,39 @@
+<view class="page">
+  <view class="hd">
+    <text class="t">PR 榜 · 梯度</text>
+    <text class="s">{{total}} 个动作有完成记录 · 按估算 1RM 排序</text>
+  </view>
+
+  <scroll-view class="chips" scroll-x="true" enhanced="true" show-scrollbar="false">
+    <text class="chip {{part === item ? 'on' : ''}}" wx:for="{{parts}}" wx:key="*this" data-p="{{item}}" bindtap="onPart">{{item}}</text>
+  </scroll-view>
+
+  <view class="card" wx:for="{{list}}" wx:key="name" data-name="{{item.name}}" bindtap="open">
+    <view class="row">
+      <view class="ml">
+        <text class="nm">{{item.name}}</text>
+        <text class="mp">{{item.part || '其他'}} · 最佳 {{item.bestW > 0 ? item.bestW + 'kg' : '自重'}} × {{item.reps}} · {{item.date}}</text>
+      </view>
+      <view class="mr">
+        <text class="rm">e1RM</text>
+        <text class="rv">{{item.e1rm || '—'}}</text>
+      </view>
+    </view>
+    <view class="grad" wx:if="{{openName === item.name}}">
+      <view class="bars" wx:if="{{openBars.length}}">
+        <view class="bcol" wx:for="{{openBars}}" wx:key="date">
+          <text class="bv">{{item.txt}}</text>
+          <view class="bwrap"><view class="bar {{item.weight ? 'on' : ''}}" style="height: {{item.h}}%"></view></view>
+          <text class="bl">{{item.date}}</text>
+        </view>
+      </view>
+      <text class="gnone" wx:else>还没有足够的历史做梯度</text>
+      <view class="pickbtn" data-name="{{item.name}}" catchtap="pick">用这个动作开始训练</view>
+    </view>
+  </view>
+
+  <view class="empty" wx:if="{{!list.length}}">
+    <text class="et">还没有 PR</text>
+    <text class="es">完成几组带重量的训练，这里会自动算出最佳组和梯度</text>
+  </view>
+</view>

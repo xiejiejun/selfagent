@@ -1,0 +1,60 @@
+<view class="page">
+  <view class="hd">
+    <text class="t">自定义动作</text>
+    <text class="s">这里加的动作会置顶出现在动作库里，可直接用来记录</text>
+  </view>
+
+  <view class="btn" bindtap="newOne">＋ 新建动作</view>
+
+  <view class="card form" wx:if="{{formOn}}">
+    <view class="frow">
+      <text class="fl">名称</text>
+      <input class="fi" value="{{f.name}}" data-k="name" bindinput="onF" placeholder="如 绳索夹胸（自创）" />
+    </view>
+
+    <view class="img-row">
+      <view class="img-box" bindtap="chooseImg">
+        <image wx:if="{{f.img}}" class="img-in" src="{{f.img}}" mode="aspectFill" />
+        <text wx:else class="img-ph">＋ 动作图片</text>
+      </view>
+      <text class="img-x" wx:if="{{f.img}}" bindtap="clearImg">移除</text>
+    </view>
+
+    <text class="lb">部位</text>
+    <view class="chips">
+      <text class="chip {{f.part === item ? 'on' : ''}}" wx:for="{{parts}}" wx:key="*this" data-p="{{item}}" bindtap="onPart">{{item}}</text>
+    </view>
+
+    <text class="lb">方式</text>
+    <view class="chips">
+      <text class="chip {{f.equip === item ? 'on' : ''}}" wx:for="{{equips}}" wx:key="*this" data-e="{{item}}" bindtap="onEquip">{{item}}</text>
+    </view>
+
+    <view class="frow">
+      <text class="fl">目标肌</text>
+      <input class="fi" value="{{f.target}}" data-k="target" bindinput="onF" placeholder="如 胸大肌" />
+    </view>
+
+    <textarea class="ta" value="{{f.steps}}" data-k="steps" bindinput="onF" placeholder="动作要领，一行一步（可空）" maxlength="600" auto-height />
+
+    <view class="acts">
+      <view class="ab ghost" bindtap="cancel">取消</view>
+      <view class="ab primary" bindtap="save">保存</view>
+    </view>
+  </view>
+
+  <view class="card item" wx:for="{{list}}" wx:key="id">
+    <image wx:if="{{item.img}}" class="thumb" src="{{item.img}}" mode="aspectFill" />
+    <view class="il">
+      <text class="nm">{{item.n}}</text>
+      <text class="mp">{{item.p}} · {{item.e || '自重'}}{{item.t ? ' · 要领 ' + item.t + ' 步' : ''}}</text>
+    </view>
+    <text class="op" data-id="{{item.id}}" bindtap="edit">编辑</text>
+    <text class="op del" data-id="{{item.id}}" bindtap="del">删除</text>
+  </view>
+
+  <view class="empty" wx:if="{{!list.length && !formOn}}">
+    <text class="et">还没有自定义动作</text>
+    <text class="es">动作库没有的，可以自己建一个，记录时一样能选到</text>
+  </view>
+</view>

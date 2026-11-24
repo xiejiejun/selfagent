@@ -11,9 +11,11 @@ function post(url, headers, body) {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json' }, headers)
     }, res => {
-      let buf = '';
-      res.on('data', c => { buf += c; });
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
       res.on('end', () => {
+        // 按 Buffer 拼接再统一按 UTF-8 解码，避免多字节字符在分片边界被截断成乱码
+        const buf = Buffer.concat(chunks).toString('utf8');
         if (res.statusCode >= 200 && res.statusCode < 300) {
           try { resolve(JSON.parse(buf)); } catch (e) { reject(new Error('bad json: ' + buf.slice(0, 200))); }
         } else {

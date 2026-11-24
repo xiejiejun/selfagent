@@ -1,72 +1,191 @@
 <view class="page">
   <view class="head">
-    <view class="seg">
-      <text class="sg on">今天</text>
-      <text class="sg" bindtap="goPlan">计划</text>
-      <text class="sg" bindtap="goLog">记录</text>
+    <view class="segrow">
+      <view class="seg">
+        <text class="sg {{tab === 'today' ? 'on' : ''}}" data-t="today" bindtap="switchTab">今天</text>
+        <text class="sg {{tab === 'plan' ? 'on' : ''}}" data-t="plan" bindtap="switchTab">计划</text>
+        <text class="sg {{tab === 'log' ? 'on' : ''}}" data-t="log" bindtap="switchTab">记录</text>
+      </view>
+      <text class="seg-add" wx:if="{{tab === 'today'}}" bindtap="openAddSheet">＋</text>
     </view>
 
-    <view class="datebar">
+    <view class="datebar" wx:if="{{tab !== 'plan'}}">
       <text class="arrow" bindtap="prevDay">‹</text>
       <text class="dlabel">{{dateLabel}}</text>
       <text class="arrow {{isToday ? 'off' : ''}}" bindtap="nextDay">›</text>
       <text class="todaybtn" wx:if="{{!isToday}}" bindtap="backToday">回到今天</text>
     </view>
-    <text class="sum">{{summary}}</text>
-    <kpi-strip items="{{kpis}}" />
+
+    <block wx:if="{{tab === 'today'}}">
+      <text class="sum">{{summary}}</text>
+      <kpi-strip items="{{kpis}}" />
+
+      <view class="focusbar" wx:if="{{!empty}}" bindtap="orbFocus">
+        <view class="fb-ic">▶</view>
+        <view class="fb-l">
+          <text class="fb-t">专注训练</text>
+          <text class="fb-s">一场做完今天的 {{list.length}} 个动作，逐组记录</text>
+        </view>
+        <text class="fb-go">开始 ›</text>
+      </view>
+    </block>
+
+    <text class="sum" wx:elif="{{tab === 'log'}}">{{empty ? '这一天没有训练' : summary}}</text>
   </view>
 
-  <view class="card" wx:if="{{!empty}}">
-    <view class="ex {{item.open ? 'open' : ''}}" wx:for="{{list}}" wx:key="uid">
-      <view class="ex-head" data-uid="{{item.uid}}" bindtap="toggleRow">
-        <view class="ex-main">
-          <text class="nm">{{item.name}}</text>
-          <text class="line">{{item.line}}</text>
-        </view>
-        <view class="dots" wx:if="{{!item.isCardio}}">
-          <text class="dot {{idx < item.doneN ? 'on' : ''}}" wx:for="{{item.groups}}" wx:for-item="g" wx:for-index="idx" wx:key="no"></text>
-        </view>
-        <text class="cdmark" wx:if="{{item.isCardio}}">{{item.done ? '✓' : '—'}}</text>
-        <text class="more" data-uid="{{item.uid}}" data-cardio="{{item.isCardio}}" catchtap="openEdit">⋯</text>
-        <text class="ar">▸</text>
-      </view>
+  <!-- ================= 今天 ================= -->
+  <block wx:if="{{tab === 'today'}}">
+    <!-- 组间休息 pill -->
+    <view class="restpill" wx:if="{{rest.show}}">
+      <text class="rp-t">休息 {{rest.left}}″</text>
+      <text class="rp-l">{{rest.label}}</text>
+      <text class="rp-x" bindtap="skipRest">跳过</text>
+    </view>
 
-      <view class="sets" wx:if="{{item.open && !item.isCardio}}">
-        <view class="set" wx:for="{{item.groups}}" wx:for-item="g" wx:for-index="gi" wx:key="no"
-              data-uid="{{item.uid}}" data-i="{{gi}}" bindtap="tapGroup">
-          <text class="no {{g.warmup ? 'warm' : ''}}">{{g.no}}</text>
-          <text class="txt {{g.done ? 'done' : ''}}">{{g.txt}}</text>
-          <text class="mark">{{g.done ? '✓' : '待'}}</text>
-        </view>
-        <text class="hint">点某组即可打卡；点 ⋯ 编辑重量与次数</text>
-        <view class="focusbtn" data-uid="{{item.uid}}" catchtap="focus">进入专注模式 ›</view>
-      </view>
+    <view class="modes" wx:if="{{!empty}}">
+      <text class="mode {{!grid ? 'on' : ''}}" bindtap="toggleGrid">列表</text>
+      <text class="mode {{grid ? 'on' : ''}}" bindtap="toggleGrid">图卡</text>
+      <text class="mode ghost" bindtap="showSummary">训练小结</text>
+    </view>
 
-      <view class="sets" wx:if="{{item.open && item.isCardio}}">
-        <view class="set" data-uid="{{item.uid}}" data-cardio="1" bindtap="openEdit">
-          <text class="no">1</text>
-          <text class="txt {{item.done ? 'done' : ''}}">有氧 · 时长训练</text>
-          <text class="mark">{{item.done ? '✓' : '待'}}</text>
+    <!-- 图卡网格 -->
+    <view class="grid" wx:if="{{grid && !empty}}">
+      <view class="gcard" wx:for="{{list}}" wx:key="uid">
+        <text class="cbadge gcb" wx:if="{{item.isCardio}}">有氧</text>
+        <view class="gc-ph {{item.isCardio ? 'cd' : ''}}">
+          <image wx:if="{{item.img}}" class="gc-img" src="{{item.img}}" mode="aspectFill" data-uid="{{item.uid}}" binderror="gridImgErr" />
+          <text wx:else class="gc-phn">{{item.isCardio ? item.name : (item.part || '动作')}}</text>
+        </view>
+        <text class="gc-n">{{item.name}}</text>
+        <text class="gc-v">{{item.isCardio && item.cdMode !== 'sets' ? (item.done ? '✓' : '—') : item.doneN + '/' + item.totalN}}</text>
+        <text class="gc-s">{{item.line}}</text>
+        <view class="gc-bar"><view class="gc-in" style="width: {{item.totalN ? (item.doneN / item.totalN * 100) : 0}}%"></view></view>
+        <view class="gc-act">
+          <text wx:if="{{!item.isCardio || item.exId}}" data-uid="{{item.uid}}" catchtap="openDetail">详情</text>
+          <text class="sp" wx:if="{{!item.isCardio || item.exId}}">·</text>
+          <text data-uid="{{item.uid}}" data-cardio="{{item.isCardio}}" catchtap="openEdit">编辑</text>
         </view>
       </view>
     </view>
+
+    <view class="card" wx:if="{{!empty && !grid}}">
+      <view class="ex {{item.open ? 'open' : ''}} {{dragUid === item.uid ? 'dragging' : ''}} {{item.dy && dragUid !== item.uid ? 'shift' : ''}}" style="{{item.dy ? 'transform: translateY(' + item.dy + 'px);' : ''}}" wx:for="{{list}}" wx:key="uid">
+        <view class="ex-head" data-uid="{{item.uid}}" bindtap="toggleRow">
+          <view class="grip" data-uid="{{item.uid}}" bindlongpress="dragStart" catchtouchmove="dragMove" bindtouchend="dragEnd">≡</view>
+          <view class="ex-main">
+            <view class="nm-row">
+              <text class="nm">{{item.name}}<text class="fav" wx:if="{{item.fav}}"> ★</text></text>
+              <text class="cbadge" wx:if="{{item.isCardio}}">有氧</text>
+              <text class="line one" wx:if="{{!item.open}}">{{item.line}}</text>
+            </view>
+            <text class="line" wx:if="{{item.open}}">{{item.line}}</text>
+          </view>
+          <view class="dots" wx:if="{{!item.isCardio || item.cdMode === 'sets'}}">
+            <text class="dot {{idx < item.doneN ? 'on' : ''}}" wx:for="{{item.groups}}" wx:for-item="g" wx:for-index="idx" wx:key="no"></text>
+          </view>
+          <text class="cdmark" wx:if="{{item.isCardio && item.cdMode !== 'sets'}}">{{item.cdMin}}′</text>
+          <text class="more" data-uid="{{item.uid}}" catchtap="openRowMenu">⋯</text>
+          <text class="ar">▸</text>
+        </view>
+
+        <view class="sets" wx:if="{{item.open && !item.isCardio}}">
+          <text class="sug" wx:if="{{item.sugLine}}">{{item.sugLine}}</text>
+          <view class="set" wx:for="{{item.groups}}" wx:for-item="g" wx:for-index="gi" wx:key="no">
+            <text class="no {{g.warmup ? 'warm' : ''}}" data-uid="{{item.uid}}" data-i="{{gi}}" catchtap="tapGroup">{{g.no}}</text>
+            <view class="mid" data-uid="{{item.uid}}" data-i="{{gi}}" bindtap="tapGroup">
+              <text class="txt {{g.done ? 'done' : ''}}">{{g.txt}}</text>
+              <text class="gsec">{{g.sec}}</text>
+              <text class="gtag" wx:if="{{g.tag === 'drop'}}">递减</text>
+              <text class="gtag side" wx:if="{{g.tag === 'side'}}">单侧</text>
+              <text class="gtag super" wx:if="{{g.tag === 'super'}}">超级组</text>
+              <text class="gtag rpe" wx:if="{{g.rpe}}">RPE {{g.rpe}}</text>
+            </view>
+            <text class="mark {{g.done ? 'on' : ''}}">{{g.done ? '✓' : '待'}}</text>
+            <text class="gmore" data-uid="{{item.uid}}" data-i="{{gi}}" catchtap="openSetMenu">⋯</text>
+          </view>
+          <text class="hint">长按 ≡ 可拖动排序（有氧一起排）；点组打卡；组行 ⋯ 可暖身/递减/单侧/超级组；动作 ⋯ 可看详情</text>
+          <view class="focusbtn" data-uid="{{item.uid}}" catchtap="focus">进入专注模式 ›</view>
+        </view>
+
+        <view class="sets" wx:if="{{item.open && item.isCardio}}">
+          <view class="set" wx:if="{{item.cdMode === 'sets'}}" wx:for="{{item.groups}}" wx:for-item="g" wx:for-index="gi" wx:key="no">
+            <text class="no cdn" data-uid="{{item.uid}}" data-i="{{gi}}" catchtap="tapCardioGroup">{{g.no}}</text>
+            <view class="mid" data-uid="{{item.uid}}" data-i="{{gi}}" bindtap="tapCardioGroup">
+              <text class="txt {{g.done ? 'done' : ''}}">{{g.txt}}</text>
+              <text class="gtag rpe" wx:if="{{g.rpe}}">RPE {{g.rpe}}</text>
+            </view>
+            <text class="mark {{g.done ? 'on' : ''}}" data-uid="{{item.uid}}" data-i="{{gi}}" catchtap="tapCardioGroup">{{g.done ? '✓' : '待'}}</text>
+          </view>
+          <view class="set" wx:if="{{item.cdMode !== 'sets'}}" data-uid="{{item.uid}}" data-cardio="1" bindtap="openEdit">
+            <text class="no">1</text>
+            <text class="txt {{item.done ? 'done' : ''}}">有氧 · 计时训练 {{item.cdMin}}′</text>
+            <text class="mark on">{{item.done ? '✓' : '待'}}</text>
+          </view>
+          <view class="cfoot">
+            <text class="cchg" data-uid="{{item.uid}}" catchtap="openDetail">计组方式 ›</text>
+            <view class="focusbtn" data-uid="{{item.uid}}" catchtap="focus">进入专注模式 ›</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty" wx:if="{{empty}}">
+      <text class="et">这个日期还没有训练</text>
+      <text class="es">挑一个动作就能开始，不用先排计划</text>
+      <view class="cta" bindtap="openLibrary">从动作库挑一个开始</view>
+      <text class="cta-sub" bindtap="openLibrary" data-part="有氧">或者，先记一条有氧</text>
+    </view>
+
+    <!-- 推荐动作：当天动作少时补位 -->
+    <view class="card rec" wx:if="{{rec.items.length}}">
+      <view class="ch"><text class="ct">推荐 · {{rec.part}}</text><text class="cm">{{rec.recovery}}</text></view>
+      <view class="ritem" wx:for="{{rec.items}}" wx:key="exId" data-exid="{{item.exId}}" data-name="{{item.name}}" data-part="{{item.part}}" bindtap="addRec">
+        <view class="ri-l">
+          <text class="ri-n">{{item.name}}</text>
+          <text class="ri-s">{{item.part}} · {{item.line}}</text>
+        </view>
+        <text class="ri-add">＋ 加入</text>
+      </view>
+    </view>
+  </block>
+
+  <!-- ================= 计划（页内组件，不跳页） ================= -->
+  <view class="tabbody" wx:if="{{tab === 'plan'}}">
+    <train-plan id="planCard" date="{{today}}" date-label="今天" bind:changed="onPlanChanged" />
   </view>
 
-  <view class="empty" wx:else>
-    <text class="et">这个日期还没有训练</text>
-    <text class="es">挑一个动作就能开始，不用先排计划</text>
-    <view class="cta" bindtap="openLibrary">从动作库挑一个开始</view>
-    <text class="cta-sub" bindtap="addCardio">或者，先记一条有氧</text>
-  </view>
-
-  <view class="addbar">
-    <view class="addbtn" bindtap="openAddSheet">＋ 添加</view>
-  </view>
+  <!-- ================= 记录：所选日期的训练历史（只读） ================= -->
+  <block wx:if="{{tab === 'log'}}">
+    <view class="card logcard" wx:if="{{!empty}}">
+      <view class="lr" wx:for="{{list}}" wx:key="uid">
+        <view class="lr-h">
+          <view class="lr-nrow">
+            <text class="lr-n">{{item.name}}</text>
+            <text class="cbadge" wx:if="{{item.isCardio}}">有氧</text>
+          </view>
+          <text class="lr-v">{{item.isCardio && item.cdMode !== 'sets' ? (item.done ? '✓ 完成' : '未完成') : item.doneN + '/' + item.totalN + ' 组'}}</text>
+        </view>
+        <text class="lr-s">{{item.line}}</text>
+        <view class="lr-dots" wx:if="{{!item.isCardio || item.cdMode === 'sets'}}">
+          <text class="ld {{idx < item.doneN ? 'on' : ''}}" wx:for="{{item.groups}}" wx:for-item="g" wx:for-index="idx" wx:key="no"></text>
+        </view>
+      </view>
+      <text class="hint">只读视图 · 去「今天」分段修改这一天的训练</text>
+    </view>
+    <view class="empty" wx:if="{{empty}}">
+      <text class="et">这一天没有训练记录</text>
+      <text class="es">切到「今天」给这一天加动作或记有氧</text>
+      <view class="cta" data-t="today" bindtap="switchTab">切到今天</view>
+    </view>
+  </block>
 </view>
 
-<float-orb bottom="{{190}}" bind:focus="orbFocus" bind:noted="afterNote" />
+<!-- 动作详情浮层：只展示当前这一个动作，不跳动作库 -->
+<ex-sheet id="exSheet" visible="{{exSheetVisible}}" ex-id="{{exSheetId}}" ex-name="{{exSheetName}}" uid="{{exSheetUid}}" date="{{date}}" bind:close="closeExSheet" bind:fav="refresh" bind:save="onExSheetSave" />
 
-<train-editor
+<float-orb wx:if="{{tab === 'today' && !exSheetVisible}}" id="orb" bottom="{{190}}" bind:focus="orbFocus" bind:noted="afterNote" />
+
+<train-editor id="editor"
   visible="{{editorVisible}}"
   payload="{{payload}}"
   bind:close="onEditorClose"

@@ -1,0 +1,50 @@
+<view class="page">
+  <view class="card">
+    <view class="ch"><text class="ct">自定义 Agent API</text><text class="cm">填了就走本机直连；留空走云函数 aiProxy</text></view>
+
+    <view class="frow">
+      <text class="fl">接口地址</text>
+      <input class="fi" value="{{baseUrl}}" data-k="baseUrl" bindinput="onF" placeholder="https://api.openai.com/v1" />
+    </view>
+    <view class="frow">
+      <text class="fl">API Key</text>
+      <input class="fi" value="{{apiKey}}" data-k="apiKey" bindinput="onF" password placeholder="sk-..." />
+    </view>
+    <view class="frow">
+      <text class="fl">模型</text>
+      <input class="fi" value="{{model}}" data-k="model" bindinput="onF" placeholder="gpt-4o-mini（可空）" />
+    </view>
+
+    <view class="acts">
+      <view class="ab primary" bindtap="save">保存</view>
+      <view class="ab ghost" bindtap="clear">清空回退</view>
+    </view>
+
+    <view class="acts">
+      <view class="ab ghost {{testing ? 'off' : ''}}" bindtap="test">{{testing ? '测试中…' : '连通测试'}}</view>
+    </view>
+    <text class="res" wx:if="{{testResult}}">{{testResult}}</text>
+  </view>
+
+  <view class="card">
+    <view class="ch"><text class="ct">发送隐私</text><text class="cm">{{usage}}</text></view>
+    <view class="srow">
+      <view class="sl">
+        <text class="sl-t">匿名化发送</text>
+        <text class="sl-s">手机号、长 ID、邮箱、Key 会替换成占位符</text>
+      </view>
+      <switch checked="{{anon}}" color="#12A594" bindchange="toggleAnon" />
+    </view>
+    <view class="acts">
+      <view class="ab ghost" bindtap="togglePreview">{{showPreview ? '收起将发送的内容' : '查看将发送的内容'}}</view>
+    </view>
+    <text class="prev" wx:if="{{showPreview}}">{{preview || '还没有发过请求'}}</text>
+  </view>
+
+  <view class="card note">
+    <text class="nt">说明</text>
+    <text class="nl">1. 接口需兼容 OpenAI 的 /chat/completions 格式。</text>
+    <text class="nl">2. 直连域名要在小程序后台「开发管理 → 服务器域名」加入 request 合法域名；开发阶段可在开发者工具勾选「不校验合法域名」。</text>
+    <text class="nl">3. Key 只存在本机；不填时由云函数 aiProxy 转发，Key 不进小程序包。</text>
+  </view>
+</view>

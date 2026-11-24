@@ -1,0 +1,99 @@
+<view class="mask {{theme === 'dark' ? 'dark' : ''}}" wx:if="{{visible && sheet}}" bindtap="close">
+  <view class="sheet" catchtap="noop">
+    <view class="grab"></view>
+    <view class="d-media {{cx ? 'sm' : ''}}">
+      <video wx:if="{{sheet.clipID}}" class="d-media-in" src="{{sheet.clipID}}" poster="{{sheet.fileID}}" muted loop autoplay playsinline controls="{{false}}" show-center-play-btn="{{false}}" object-fit="contain" binderror="clipErr" bindloadedmetadata="clipReady" />
+      <image wx:if="{{sheet.fileID && !sheet.clipReady}}" class="d-media-in poster" src="{{sheet.fileID}}" mode="aspectFit" binderror="imgErr" />
+      <view wx:if="{{!sheet.fileID && !sheet.clipID}}" class="d-media-in ph"><text class="phn">{{sheet.n[0]}}</text></view>
+      <text class="d-x" catchtap="close">×</text>
+    </view>
+
+    <view class="d-tags">
+      <text class="tag">{{sheet.p}}</text>
+      <text class="tag">{{sheet.e || '自重'}}</text>
+      <text class="tag" wx:if="{{sheet.t}}">{{sheet.t}}</text>
+      <text class="tag alias" wx:if="{{sheet.alias}}">已改名</text>
+      <text class="tag alias" wx:if="{{sheet.mine}}">自定义</text>
+    </view>
+
+    <view class="d-title-row">
+      <text class="d-title">{{sheet.n}}</text>
+      <text class="cbadge" wx:if="{{sheet.cardio}}">有氧</text>
+    </view>
+
+    <view class="sheet-scroll">
+      <block wx:if="{{cx}}">
+        <view class="d-sec">计组方式</view>
+        <view class="cmode">
+          <view class="cm-opt {{cx.mode === 'timer' ? 'on' : ''}}" data-m="timer" bindtap="setCxMode">⏱ 计时</view>
+          <view class="cm-opt {{cx.mode === 'sets' ? 'on' : ''}}" data-m="sets" bindtap="setCxMode">🔢 计组</view>
+        </view>
+        <text class="cm-hint" wx:if="{{cx.hasRec}}">切换不清空：时长与组数各自保留，可随时切回</text>
+
+        <view class="cform" wx:if="{{cx.mode === 'timer'}}">
+          <view class="cf-row">
+            <text class="cf-l">时长</text>
+            <view class="stepper">
+              <view class="st-btn" data-k="min" data-d="-5" bindtap="cxStep">−</view>
+              <text class="st-v">{{cx.min}}′</text>
+              <view class="st-btn" data-k="min" data-d="5" bindtap="cxStep">＋</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="cform" wx:else>
+          <view class="cf-row">
+            <text class="cf-l">组</text>
+            <view class="stepper">
+              <view class="st-btn" data-k="sets" data-d="-1" bindtap="cxStep">−</view>
+              <text class="st-v">{{cx.sets}}</text>
+              <view class="st-btn" data-k="sets" data-d="1" bindtap="cxStep">＋</view>
+            </view>
+          </view>
+          <view class="cf-row">
+            <text class="cf-l">次</text>
+            <view class="stepper">
+              <view class="st-btn" data-k="reps" data-d="-1" bindtap="cxStep">−</view>
+              <text class="st-v">{{cx.reps}}</text>
+              <view class="st-btn" data-k="reps" data-d="1" bindtap="cxStep">＋</view>
+            </view>
+          </view>
+          <view class="cf-row">
+            <text class="cf-l">kg</text>
+            <view class="stepper">
+              <view class="st-btn" data-k="weight" data-d="-2.5" bindtap="cxStep">−</view>
+              <input class="st-in" type="digit" value="{{cx.weight}}" bindinput="cxWeightInput" />
+              <view class="st-btn" data-k="weight" data-d="2.5" bindtap="cxStep">＋</view>
+            </view>
+            <text class="cf-hint">{{cx.weight ? '' : '自重'}}</text>
+          </view>
+          <view class="cf-row">
+            <text class="cf-l">距离</text>
+            <view class="stepper">
+              <view class="st-btn" data-k="dist" data-d="-0.5" bindtap="cxStep">−</view>
+              <input class="st-in" type="digit" value="{{cx.dist}}" bindinput="cxDistInput" />
+              <view class="st-btn" data-k="dist" data-d="0.5" bindtap="cxStep">＋</view>
+            </view>
+            <text class="cf-hint">km · 0 不记</text>
+          </view>
+        </view>
+      </block>
+
+      <view class="d-sec">动作要领</view>
+      <view class="d-steps" wx:if="{{sheet.steps.length}}">
+        <view class="d-step" wx:for="{{sheet.steps}}" wx:key="*this">
+          <text class="d-idx">{{index + 1}}</text>
+          <text class="d-txt">{{item}}</text>
+        </view>
+      </view>
+      <text class="d-none" wx:else>这个动作还没有要领说明</text>
+    </view>
+
+    <view class="csave" wx:if="{{cx}}" bindtap="saveCx">{{cx.hasRec ? '保存方式' : '保存方式并加入今日'}}</view>
+
+    <view class="d-btns">
+      <view class="d-btn ghost {{sheet.fav ? 'on' : ''}}" bindtap="star">{{sheet.fav ? '★ 已收藏' : '☆ 收藏'}}</view>
+      <view class="d-btn primary" bindtap="close">知道了</view>
+    </view>
+  </view>
+</view>

@@ -9,7 +9,17 @@
     "pages/focus/index",
     "pages/plan/index",
     "pages/picker/index",
-    "pages/import/index"
+    "pages/import/index",
+    "pages/review/index",
+    "pages/report/index",
+    "pages/archive/index",
+    "pages/body/index",
+    "pages/pr/index",
+    "pages/mylib/index",
+    "pages/aifind/index",
+    "pages/scan/index",
+    "pages/apiconfig/index",
+    "pages/agent-report/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

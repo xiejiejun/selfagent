@@ -1,0 +1,67 @@
+<view class="page">
+  <view class="hd">
+    <text class="t">✦ AI 找动作</text>
+    <text class="s">先由 AI 判断训练意图，再从动作库按部位/器械/动作模式选</text>
+  </view>
+
+  <view class="bar">
+    <input class="q" value="{{q}}" bindinput="onInput" placeholder="如：在家练胸，只有哑铃 / 背 引体" confirm-type="search" bindconfirm="run" />
+    <view class="go" bindtap="run">找</view>
+  </view>
+
+  <scroll-view class="chips" scroll-x="true" enhanced="true" show-scrollbar="false">
+    <text class="chip" data-q="在家练胸 只有哑铃" bindtap="quick">在家·哑铃·胸</text>
+    <text class="chip" data-q="健身房练背 杠铃划船" bindtap="quick">背·杠铃</text>
+    <text class="chip" data-q="腿 器械 深蹲" bindtap="quick">腿·器械</text>
+    <text class="chip" data-q="腹 自重" bindtap="quick">腹·自重</text>
+    <text class="chip" data-q="有氧 跳绳" bindtap="quick">有氧</text>
+  </scroll-view>
+
+  <view class="intent" wx:if="{{aiIntent || aiBusy}}">
+    <text class="int-k">✦ AI 判断</text>
+    <text class="int-v" wx:if="{{aiIntent}}">{{aiIntent}}</text>
+    <text class="int-v busy" wx:elif="{{aiBusy}}">正在读你的训练意图…</text>
+  </view>
+
+  <view class="meta" wx:if="{{shows}}">
+    <text>{{aiNote || ('识别到「' + parsed + '」，给出 ' + shows + ' 个候选')}}</text>
+  </view>
+
+  <view class="card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+    <image wx:if="{{item.fileID}}" class="thumb" src="{{item.fileID}}" mode="aspectFill" lazy-load="true" />
+    <view wx:else class="thumb ph"><text class="phn">{{item.n[0]}}</text></view>
+    <view class="row">
+      <text class="nm">{{item.n}}</text>
+      <text class="mp">{{item.p}} · {{item.e || '自重'}}{{item.t ? ' · ' + item.t : ''}}</text>
+      <text class="why" wx:if="{{item.why}}">✦ {{item.why}}</text>
+    </view>
+    <text class="arr">▸</text>
+  </view>
+
+  <view class="empty" wx:if="{{!list.length}}">
+    <text class="et">还没有结果</text>
+    <text class="es">换个说法试试，比如「在家 哑铃 胸」</text>
+  </view>
+
+  <text class="tip">说明：AI 只在这 36 个候选里挑，编号与名称来自本地动作库；未配置 AI 或调用失败时，自动退回本地规则结果，页面不会空着。</text>
+</view>
+
+<view class="mask" wx:if="{{detail}}" bindtap="close">
+  <view class="sheet" catchtap="noop">
+    <view class="sh">
+      <text class="sht">{{detail.n}}</text>
+      <text class="shx" bindtap="close">关闭</text>
+    </view>
+    <view class="d-media">
+      <video wx:if="{{detail.clipID}}" id="dvideo" class="d-media-in" src="{{detail.clipID}}" poster="{{detail.fileID}}" muted loop autoplay playsinline object-fit="cover" show-center-play-btn="{{false}}" binderror="onClipErr" />
+      <image wx:elif="{{detail.fileID}}" class="d-media-in" src="{{detail.fileID}}" mode="aspectFill" />
+      <view wx:else class="d-media-in ph"><text class="phn">{{detail.n[0]}}</text></view>
+    </view>
+    <view class="tags"><text class="tg">{{detail.p}}</text><text class="tg">{{detail.e || '自重'}}</text><text class="tg" wx:if="{{detail.t}}">{{detail.t}}</text></view>
+    <view class="steps">
+      <view class="st" wx:for="{{detail.steps}}" wx:key="*this"><text class="sn">{{index + 1}}</text><text class="sx">{{item}}</text></view>
+      <text class="none" wx:if="{{!detail.steps.length}}">这个动作还没有要领</text>
+    </view>
+    <view class="btn" bindtap="pick">加入今天的训练</view>
+  </view>
+</view>

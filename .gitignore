@@ -1,3 +1,10 @@
 _pushlog.txt
 tiny.html
 db/
+
+# 小程序本地产物
+miniapp/tools/node_modules/
+miniapp/tools/out/
+miniapp/*.zip
+miniapp/_preview/
+miniapp/screenshots/

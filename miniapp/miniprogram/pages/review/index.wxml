@@ -1,0 +1,44 @@
+<view class="page">
+  <view class="hd">
+    <text class="t">每日复盘</text>
+    <text class="s">{{label}} · {{savedText || '还没打分'}}</text>
+  </view>
+
+  <view class="card">
+    <view class="nums">
+      <view class="n"><text class="nv">{{stat.sets}}/{{stat.total}}</text><text class="nt">组数</text></view>
+      <view class="n"><text class="nv">{{stat.volume}}</text><text class="nt">容量 kg</text></view>
+      <view class="n"><text class="nv">{{stat.cardioMin}}′</text><text class="nt">有氧</text></view>
+    </view>
+    <text class="names" wx:if="{{names.length}}">{{names}}</text>
+    <text class="names" wx:else>今天没有训练记录，也可以只记录状态</text>
+    <text class="ycmp">{{yesterday}}</text>
+  </view>
+
+  <view class="card">
+    <view class="row-h"><text class="rl">精力</text><text class="rv">{{energy ? energy + '/5' : '未打分'}}</text></view>
+    <view class="chips">
+      <text class="chip {{energy === item ? 'on' : ''}}" wx:for="{{energyOpts}}" wx:key="*this" data-v="{{item}}" bindtap="setEnergy">{{item}}</text>
+    </view>
+    <text class="hint">1 = 起不来，5 = 满电</text>
+
+    <view class="row-h mt"><text class="rl">情绪</text><text class="rv">{{mood ? mood + '/5' : '未打分'}}</text></view>
+    <view class="chips">
+      <text class="chip {{mood === item ? 'on' : ''}}" wx:for="{{moodOpts}}" wx:key="*this" data-v="{{item}}" bindtap="setMood">{{item}}</text>
+    </view>
+    <text class="hint">1 = 很差，5 = 很好</text>
+
+    <view class="frow mt">
+      <text class="fl">睡眠</text>
+      <input class="fi" type="digit" value="{{sleepH}}" bindinput="onSleep" placeholder="小时，如 7.5" />
+    </view>
+    <textarea class="note" value="{{note}}" bindinput="onNote" placeholder="一句话：今天状态怎么样、哪里紧、下次注意什么" maxlength="160" auto-height />
+  </view>
+
+  <view class="btn" bindtap="save">保存今天的复盘</view>
+
+  <view class="links">
+    <text class="lk" bindtap="goReport">看周报 ›</text>
+    <text class="lk" bindtap="goBody">记体重围度 ›</text>
+  </view>
+</view>

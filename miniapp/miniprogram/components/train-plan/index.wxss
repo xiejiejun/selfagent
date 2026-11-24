@@ -1,0 +1,87 @@
+.plp { display: block; }
+.card { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 18rpx; }
+.ch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
+.ct { font-size: 27rpx; font-weight: 600; color: #14181A; }
+.cm { font-size: 21rpx; color: #A9B3AF; }
+
+.bars { display: flex; align-items: flex-end; gap: 10rpx; height: 150rpx; }
+.bw { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.bar { width: 26rpx; background: #D9E7E3; border-radius: 6rpx; }
+.bar.ok { background: #12A594; }
+.bl { margin-top: 8rpx; font-size: 19rpx; color: #A9B3AF; }
+
+.frow { display: flex; align-items: center; justify-content: space-between; padding: 14rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.fl { font-size: 24rpx; color: #5B6461; }
+.fi { width: 220rpx; text-align: right; font-size: 26rpx; color: #14181A; }
+.right { text-align: right; }
+.chips { display: flex; gap: 8rpx; flex-wrap: wrap; justify-content: flex-end; }
+.chip { padding: 8rpx 18rpx; background: #F4F7F6; border-radius: 22rpx; font-size: 21rpx; color: #5B6461; }
+.chip.on { background: #12A594; color: #fff; }
+
+.btn { margin-top: 18rpx; height: 82rpx; line-height: 82rpx; text-align: center; border-radius: 14rpx; background: #12A594; color: #fff; font-size: 27rpx; }
+.btn.ghost { background: #F4F7F6; color: #5B6461; }
+.btn.primary { background: #12A594; color: #fff; }
+
+.ptext { display: block; font-size: 24rpx; line-height: 1.7; color: #14181A; white-space: pre-wrap; }
+.empty { display: block; font-size: 23rpx; color: #A9B3AF; }
+.tip { display: block; font-size: 21rpx; color: #A9B3AF; line-height: 1.6; }
+
+.cm.warn { color: #E0A23C; }
+.cm.ok { color: #12A594; }
+.rec-item { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding: 14rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.ri-l { flex: 1; }
+.ri-row { display: flex; align-items: center; gap: 10rpx; }
+.ri-n { display: block; font-size: 25rpx; color: #14181A; font-weight: 500; }
+.cbadge { flex: none; font-size: 22rpx; line-height: 30rpx; padding: 0 8rpx; border-radius: 8rpx; color: #E8A93D; background: rgba(232, 169, 61, 0.10); }
+.ri-note { display: block; margin-top: 4rpx; font-size: 20rpx; color: #8A9490; line-height: 1.5; }
+.ri-line { font-size: 23rpx; color: #12A594; white-space: nowrap; }
+.rec-item.cd .ri-line { color: #96660F; }
+.acts { display: flex; gap: 14rpx; margin-top: 18rpx; }
+.acts .btn { flex: 1; margin-top: 0; }
+
+/* ---- 头部：部位触发器 + AI 徽章 ---- */
+.ch-r { display: flex; flex-direction: column; align-items: flex-end; gap: 4rpx; }
+.tmark { display: flex; align-items: center; font-size: 20rpx; color: #12A594; }
+.tdot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #12A594; margin-right: 6rpx; }
+.bw.today .bl { color: #12A594; font-weight: 600; }
+.bw.today .bar { box-shadow: inset 0 -4rpx 0 #12A594; }
+
+.chl { display: flex; align-items: center; gap: 10rpx; }
+.pv { font-size: 27rpx; font-weight: 600; color: #12A594; padding: 4rpx 10rpx 4rpx 0; }
+.pv-ar { font-size: 22rpx; color: #12A594; margin-left: 4rpx; }
+.badge { font-size: 19rpx; color: #E3B341; background: #FFF7E6; border-radius: 8rpx; padding: 3rpx 10rpx; }
+.edit-tag { font-size: 19rpx; color: #5B6461; background: #F4F7F6; border-radius: 8rpx; padding: 3rpx 10rpx; }
+.ri-more { font-size: 24rpx; color: #C3CCC8; padding: 0 4rpx 0 10rpx; }
+.rstate { display: block; font-size: 21rpx; color: #A9B3AF; margin-bottom: 6rpx; }
+.rstate.ok { color: #12A594; }
+.rstate.warn { color: #E0A23C; }
+
+/* ---- 重生成骨架 ---- */
+.sk { padding: 6rpx 0; }
+.sk-row { display: flex; justify-content: space-between; align-items: center; padding: 16rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.sk-l { width: 44%; height: 26rpx; border-radius: 8rpx; background: #EFF3F2; }
+.sk-r { width: 20%; height: 26rpx; border-radius: 8rpx; background: #EFF3F2; }
+
+/* ---- 部位选择 Sheet ---- */
+.mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(20, 24, 26, 0.42); z-index: 900; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 901; background: #fff; border-radius: 26rpx 26rpx 0 0; padding: 26rpx 26rpx calc(26rpx + env(safe-area-inset-bottom)); animation: shup 220ms ease-out; }
+@keyframes shup { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sh-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18rpx; }
+.sh-t { font-size: 29rpx; font-weight: 600; color: #14181A; }
+.sh-x { font-size: 26rpx; color: #A9B3AF; padding: 6rpx 10rpx; }
+.pgrid { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.ptile { position: relative; width: calc((100% - 24rpx) / 3); box-sizing: border-box; padding: 18rpx 14rpx; background: #F6F9F8; border-radius: 16rpx; border: 1rpx solid transparent; }
+.ptile.on { background: #EFF9F7; border-color: #12A594; }
+.ptile.warn .pt-s { color: #E0A23C; }
+.pt-n { display: block; font-size: 27rpx; font-weight: 600; color: #14181A; }
+.pt-s { display: block; margin-top: 6rpx; font-size: 19rpx; color: #8A9490; line-height: 1.4; }
+.pt-star { position: absolute; right: 10rpx; top: 8rpx; font-size: 20rpx; color: #E3B341; }
+.sh-foot { margin-top: 20rpx; border-top: 1rpx solid #F4F7F6; padding-top: 16rpx; }
+.sh-prev { display: block; font-size: 22rpx; color: #12A594; }
+.sh-warn { display: block; margin-top: 6rpx; font-size: 22rpx; color: #E0A23C; }
+.btn.danger { background: #E06E78; color: #fff; }
+
+/* 每个动作的推荐理由行 */
+.ri-why { display: flex; align-items: flex-start; gap: 6rpx; margin-top: 6rpx; }
+.ri-sp { font-size: 19rpx; color: #12A594; }
+.ri-why-t { flex: 1; font-size: 20rpx; color: #7C8783; line-height: 1.5; }

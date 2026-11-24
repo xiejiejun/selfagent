@@ -1,0 +1,60 @@
+<view class="page">
+  <view class="hd">
+    <text class="t">✦ 拍照识别</text>
+    <text class="s">拍器械或训练场景，识别成动作库里的动作，直接加入今天</text>
+  </view>
+
+  <view class="shot" wx:if="{{!img}}">
+    <text class="st">拍一张器械 / 场景照片</text>
+    <text class="ss">例如：一排哑铃、龙门架、跑步机面板</text>
+    <view class="two">
+      <view class="tb primary" bindtap="shoot">拍照</view>
+      <view class="tb ghost" bindtap="album">从相册选</view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{img}}">
+    <image class="pic" src="{{img}}" mode="aspectFill" />
+    <view class="acts">
+      <text class="hint" wx:if="{{busy}}">{{hint}}</text>
+      <text class="hint" wx:elif="{{err}}">{{err}}</text>
+      <scroll-view class="rawbox" wx:if="{{raw}}" scroll-y="true"><text class="raw">{{raw}}</text></scroll-view>
+      <view class="two">
+        <view class="tb ghost" bindtap="album">重选</view>
+        <view class="tb primary" bindtap="retry" wx:if="{{!busy}}">再试一次</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{list.length}}">
+    <text class="ct">识别到 {{list.length}} 个动作</text>
+    <view class="row" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+      <view class="rl">
+        <text class="nm">{{item.n}}</text>
+        <text class="mp">{{item.p}} · {{item.e || '自重'}}{{item.t ? ' · ' + item.t : ''}}</text>
+      </view>
+      <text class="arr">▸</text>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{!aiReady}}">
+    <text class="ct">先看得到的东西</text>
+    <text class="hint">识图需要云端 AI（aiProxy 的 AI_BASE_URL / AI_API_KEY / AI_MODEL）。没配也可以先用动作库手动挑，两边数据是同一套。</text>
+    <view class="tb primary" bindtap="toLib">去动作库手动挑</view>
+  </view>
+</view>
+
+<view class="mask" wx:if="{{detail}}" bindtap="close">
+  <view class="sheet" catchtap="noop">
+    <view class="sh">
+      <text class="sht">{{detail.n}}</text>
+      <text class="shx" bindtap="close">关闭</text>
+    </view>
+    <view class="tags"><text class="tg">{{detail.p}}</text><text class="tg">{{detail.e || '自重'}}</text></view>
+    <view class="steps">
+      <view class="st" wx:for="{{detail.steps}}" wx:key="*this"><text class="sn">{{index + 1}}</text><text class="sx">{{item}}</text></view>
+      <text class="none" wx:if="{{!detail.steps.length}}">这个动作还没有要领</text>
+    </view>
+    <view class="btn" bindtap="pick">加入今天的训练</view>
+  </view>
+</view>

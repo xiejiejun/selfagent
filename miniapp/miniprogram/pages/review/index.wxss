@@ -1,0 +1,30 @@
+.page { min-height: 100vh; background: #F3F7F5; padding: 26rpx 24rpx 60rpx; box-sizing: border-box; }
+.hd { padding: 0 8rpx 18rpx; }
+.t { display: block; font-size: 40rpx; font-weight: 700; color: #14181A; }
+.s { display: block; margin-top: 8rpx; font-size: 22rpx; color: #8A9490; }
+
+.card { background: #fff; border-radius: 22rpx; padding: 24rpx; margin-bottom: 20rpx; }
+.nums { display: flex; }
+.n { flex: 1; text-align: center; }
+.nv { display: block; font-size: 34rpx; font-weight: 700; color: #14181A; }
+.nt { display: block; margin-top: 4rpx; font-size: 20rpx; color: #A9B3AF; }
+.names { display: block; margin-top: 18rpx; font-size: 22rpx; color: #5B6461; line-height: 1.5; }
+.ycmp { display: block; margin-top: 10rpx; font-size: 21rpx; color: #8A9490; }
+
+.row-h { display: flex; justify-content: space-between; align-items: center; }
+.rl { font-size: 27rpx; font-weight: 600; color: #14181A; }
+.rv { font-size: 22rpx; color: #12A594; }
+.chips { display: flex; gap: 14rpx; margin-top: 14rpx; }
+.chip { flex: 1; height: 72rpx; line-height: 72rpx; text-align: center; border-radius: 14rpx; background: #F3F7F5; color: #5B6461; font-size: 26rpx; }
+.chip.on { background: #12A594; color: #fff; font-weight: 600; }
+.hint { display: block; margin-top: 8rpx; font-size: 20rpx; color: #A9B3AF; }
+.mt { margin-top: 24rpx; }
+
+.frow { display: flex; align-items: center; gap: 16rpx; }
+.fl { width: 90rpx; font-size: 24rpx; color: #5B6461; }
+.fi { flex: 1; height: 72rpx; background: #F3F7F5; border-radius: 12rpx; padding: 0 20rpx; font-size: 24rpx; }
+.note { width: 100%; margin-top: 18rpx; background: #F3F7F5; border-radius: 14rpx; padding: 18rpx; font-size: 24rpx; color: #14181A; min-height: 120rpx; box-sizing: border-box; }
+
+.btn { height: 96rpx; line-height: 96rpx; text-align: center; border-radius: 48rpx; background: #12A594; color: #fff; font-size: 29rpx; font-weight: 600; }
+.links { display: flex; justify-content: center; gap: 40rpx; margin-top: 22rpx; }
+.lk { font-size: 23rpx; color: #5B6461; }

@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "记录",
   "usingComponents": {
-    "train-editor": "/components/train-editor/index"
+    "train-editor": "/components/train-editor/index",
+    "float-orb": "/components/float-orb/index"
   }
 }

@@ -1,0 +1,2 @@
+.wrap { width: 100%; }
+.cv { width: 100%; display: block; }

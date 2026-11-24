@@ -9,6 +9,56 @@
     </view>
   </view>
 
+  <!-- 下周排布：一键套用 / 我自己排 -->
+  <decision-card
+    wx:if="{{weeklyOpen && weekly}}"
+    title="下周排布"
+    question="{{weekly.question}}"
+    reason="{{weekly.basis}}"
+    meta="{{weekly.text}}"
+    options="{{weeklyOpts}}"
+    note=""
+    bind:pick="onWeeklyPick"
+  />
+
+  <!-- 平台期检测：加量 / 换动作 / 减量，三选一 -->
+  <view class="card" wx:if="{{plateau.length}}">
+    <view class="ch">
+      <text class="ct">✦ 平台期检测</text>
+      <text class="cm">近 4 周 · e1RM 变化 &lt;2%</text>
+    </view>
+    <view class="pl" wx:for="{{plateau}}" wx:key="name">
+      <view class="pl-h">
+        <text class="pl-n">{{item.name}}</text>
+        <text class="pl-v">{{item.from}} → {{item.to}}kg · {{item.chg > 0 ? '+' : ''}}{{item.chg}}%</text>
+      </view>
+      <view class="pl-opts">
+        <text class="pl-o {{item.pick === 'load' ? 'on' : ''}}" data-i="{{index}}" data-k="load" bindtap="fixPlateau">下周 +2.5kg</text>
+        <text class="pl-o {{item.pick === 'swap' ? 'on' : ''}}" data-i="{{index}}" data-k="swap" bindtap="fixPlateau">换动作</text>
+        <text class="pl-o {{item.pick === 'deload' ? 'on' : ''}}" data-i="{{index}}" data-k="deload" bindtap="fixPlateau">减量 20%</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{rec && rec.items.length}}">
+    <view class="ch">
+      <text class="ct">今日推荐 · {{rec.view}}</text>
+      <text class="cm {{rec.recovery.warn ? 'warn' : 'ok'}}">{{rec.recovery.text}}</text>
+    </view>
+    <view class="rec-item" wx:for="{{rec.items}}" wx:key="exId">
+      <view class="ri-l">
+        <text class="ri-n">{{item.name}}</text>
+        <text class="ri-note">{{item.note}}</text>
+      </view>
+      <text class="ri-line">{{item.line}}</text>
+    </view>
+    <text class="ptext" wx:if="{{recReason}}">{{recReason}}</text>
+    <view class="acts">
+      <view class="btn ghost" bindtap="aiWhy">{{askingWhy ? '解读中…' : 'AI 解读理由'}}</view>
+      <view class="btn primary" bindtap="importToday">加入今日训练</view>
+    </view>
+  </view>
+
   <view class="card">
     <view class="ch"><text class="ct">目标</text></view>
     <view class="frow">

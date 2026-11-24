@@ -1,58 +1,257 @@
 <view class="page">
-  <view class="card">
-    <view class="ch"><text class="ct">个人信息</text></view>
-    <view class="frow">
-      <text class="fl">身高 cm</text>
-      <input class="fi" type="digit" value="{{height}}" data-k="height" bindinput="onField" placeholder="170" />
+  <view class="gl">
+    <view class="gr" hover-class="gr-hv" bindtap="openPanel" data-p="profile">
+      <view class="gr-l">
+        <text class="gr-t">个人档案</text>
+        <text class="gr-s">{{sum.profile}}</text>
+      </view>
+      <text class="gr-a">›</text>
     </view>
-    <view class="frow">
-      <text class="fl">体重 kg</text>
-      <input class="fi" type="digit" value="{{weight}}" data-k="weight" bindinput="onField" placeholder="65" />
+
+    <view class="gr" hover-class="gr-hv" bindtap="openPanel" data-p="prefs">
+      <view class="gr-l">
+        <text class="gr-t">记录偏好</text>
+        <text class="gr-s">{{sum.prefs}}</text>
+      </view>
+      <text class="gr-a">›</text>
     </view>
-    <view class="frow">
-      <text class="fl">目标</text>
-      <input class="fi" value="{{goal}}" data-k="goal" bindinput="onField" placeholder="增肌 / 减脂 / 保持" />
+
+    <view class="gr" hover-class="gr-hv" bindtap="openPanel" data-p="train">
+      <view class="gr-l">
+        <text class="gr-t">训练设置</text>
+        <text class="gr-s">{{sum.train}}</text>
+      </view>
+      <text class="gr-a">›</text>
     </view>
-    <view class="btn" bindtap="saveProfile">保存资料</view>
+
+    <view class="gr" hover-class="gr-hv" bindtap="openPanel" data-p="ai">
+      <view class="gr-l">
+        <text class="gr-t">动作与 AI</text>
+        <text class="gr-s">{{sum.ai}}</text>
+      </view>
+      <view class="badge {{cloudReady ? 'on' : ''}}">
+        <view class="bdot"></view>
+        <text>{{cloudReady ? '已连接' : '未配置'}}</text>
+      </view>
+      <text class="gr-a">›</text>
+    </view>
+
+    <view class="gr" hover-class="gr-hv" bindtap="openPanel" data-p="data">
+      <view class="gr-l">
+        <text class="gr-t">数据</text>
+        <text class="gr-s">{{sum.data}}</text>
+      </view>
+      <view class="badge {{syncOn ? 'on' : ''}}">
+        <view class="bdot"></view>
+        <text>{{syncText}}</text>
+      </view>
+      <text class="gr-a">›</text>
+    </view>
+
+    <view class="gr" hover-class="gr-hv" bindtap="openPanel" data-p="about">
+      <view class="gr-l">
+        <text class="gr-t">关于</text>
+        <text class="gr-s">{{sum.about}}</text>
+      </view>
+      <text class="gr-a">›</text>
+    </view>
   </view>
 
-  <view class="card">
-    <view class="ch"><text class="ct">训练计划</text><text class="cm">目标 + 提醒</text></view>
-    <view class="grid">
-      <view class="gbtn" bindtap="goPlan">打开计划页</view>
-      <view class="gbtn" bindtap="goLibrary">动作库图卡</view>
-    </view>
-  </view>
-
-  <view class="card">
-    <view class="ch"><text class="ct">数据</text><text class="cm">{{syncText}}</text></view>
-    <view class="nums">
-      <view class="n"><text class="nv">{{logsCount}}</text><text class="nt">日志</text></view>
-      <view class="n"><text class="nv">{{recordsCount}}</text><text class="nt">力量记录</text></view>
-      <view class="n"><text class="nv">{{cardioCount}}</text><text class="nt">有氧记录</text></view>
-    </view>
-    <view class="grid">
-      <view class="gbtn" bindtap="exportData">导出到剪贴板</view>
-      <view class="gbtn" bindtap="importData">从剪贴板导入</view>
-    </view>
-    <view class="grid mdrow">
-      <view class="gbtn" bindtap="goImport">从 Markdown 导入训练笔记</view>
-    </view>
-  </view>
-
-  <view class="card">
-    <view class="ch"><text class="ct">云同步</text><text class="cm">{{cloudReady ? '云开发已连接' : '云开发未配置'}}</text></view>
-    <view class="grid">
-      <view class="gbtn {{busy ? 'off' : ''}}" bindtap="pushCloud">上传本机</view>
-      <view class="gbtn {{busy ? 'off' : ''}}" bindtap="pullCloud">拉取合并</view>
-    </view>
-    <text class="tip">上传走 syncPush，拉取走 syncPull；两端共用同一份增量水位与墓碑。</text>
-  </view>
-
-  <view class="card">
-    <view class="ch"><text class="ct">危险操作</text></view>
-    <view class="danger" bindtap="clearAll">清空本机数据</view>
-  </view>
-
+  <view class="danger" hover-class="danger-hv" bindtap="clearAll">清空本机数据</view>
   <text class="foot">SelfAgent 小程序 · 与网页版共用逻辑层</text>
+</view>
+
+<view class="mask" wx:if="{{panel}}" bindtap="closePanel"></view>
+<view class="panel" wx:if="{{panel}}">
+  <view class="p-h">
+    <text class="p-t">{{panelTitle}}</text>
+    <text class="p-x" bindtap="closePanel">关闭</text>
+  </view>
+
+  <scroll-view class="p-b" scroll-y="true" enhanced="true" show-scrollbar="false">
+    <!-- 个人档案 -->
+    <block wx:if="{{panel === 'profile'}}">
+      <view class="frow">
+        <text class="fl">身高 cm</text>
+        <input class="fi" type="digit" value="{{height}}" data-k="height" bindinput="onField" placeholder="170" />
+      </view>
+      <view class="frow">
+        <text class="fl">体重 kg</text>
+        <input class="fi" type="digit" value="{{weight}}" data-k="weight" bindinput="onField" placeholder="65" />
+      </view>
+      <view class="frow">
+        <text class="fl">目标</text>
+        <input class="fi" value="{{goal}}" data-k="goal" bindinput="onField" placeholder="增肌 / 减脂 / 保持" />
+      </view>
+      <view class="pbtn" bindtap="saveProfile">保存资料</view>
+      <text class="tip">只存在本机，导出数据时会一并带上。</text>
+    </block>
+
+    <!-- 记录偏好 -->
+    <block wx:if="{{panel === 'prefs'}}">
+      <view class="type-list">
+        <view class="ty {{activeType === item.key ? 'on' : ''}}" wx:for="{{typesView}}" wx:key="key">
+          <view class="ty-h" data-k="{{item.key}}" bindtap="pickActive">
+            <view class="ty-d" style="background: {{item.color}}"></view>
+            <text class="ty-n">{{item.label}}</text>
+            <text class="ty-x" data-k="{{item.key}}" catchtap="delType">删除类型</text>
+          </view>
+          <view class="ty-tags">
+            <text class="ttag" wx:for="{{item.tags}}" wx:for-item="tg" wx:key="*this" data-k="{{item.key}}" data-tag="{{tg}}" bindtap="delTag">{{tg}} ×</text>
+            <text class="ttag none" wx:if="{{!item.tags.length}}">还没有标签</text>
+          </view>
+        </view>
+      </view>
+      <view class="frow mt">
+        <text class="fl">新增标签</text>
+        <input class="fi" value="{{newTag}}" bindinput="onNewTag" placeholder="先点上面一个类型，再输入标签" />
+        <text class="fbtn" bindtap="addTag">加入</text>
+      </view>
+      <view class="frow">
+        <text class="fl">新增类型</text>
+        <input class="fi" value="{{newType}}" bindinput="onNewType" placeholder="如 学习 / 社交" />
+        <text class="fbtn" bindtap="addType">新建</text>
+      </view>
+      <text class="tip">点标签可删除；删掉的只是选项，已有记录里的标签原样保留。</text>
+    </block>
+
+    <!-- 训练设置 -->
+    <block wx:if="{{panel === 'train'}}">
+      <view class="frow">
+        <text class="fl">默认组间休息</text>
+        <input class="fi" type="number" value="{{restSec}}" bindinput="onRest" placeholder="90" />
+        <text class="fu">秒</text>
+      </view>
+      <view class="srow">
+        <text class="sl">自动进入下一组</text>
+        <switch checked="{{autoNext}}" color="#12A594" bindchange="toggleAuto" />
+      </view>
+      <view class="srow">
+        <text class="sl">组内计时</text>
+        <switch checked="{{groupTimer}}" color="#12A594" bindchange="toggleGroupTimer" />
+      </view>
+      <text class="tip">关着：组行打勾即完成，自动进组间休息倒计时，跟训练页一致。开了才显示「本组用时」，适合记录力竭组时长。</text>
+      <view class="frow">
+        <text class="fl">重量步进</text>
+        <input class="fi" type="digit" value="{{wStep}}" bindinput="onStep" placeholder="2.5" />
+        <text class="fu">kg</text>
+      </view>
+      <text class="tip">休息秒数为 0 时按动作类型自动给（大重量 150″，小肌群 60″，其余 90″）。</text>
+    </block>
+
+    <!-- 动作与 AI -->
+    <block wx:if="{{panel === 'ai'}}">
+      <text class="p-sub">常用</text>
+      <view class="grid two">
+        <view class="gbtn" data-url="/pages/library/index" bindtap="goPage">动作库</view>
+        <view class="gbtn" data-url="/pages/mylib/index" bindtap="goPage">自定义动作</view>
+        <view class="gbtn" bindtap="goScan">✦ 拍照识别</view>
+        <view class="gbtn" bindtap="goAifind">✦ AI 找动作</view>
+      </view>
+
+      <view class="lrow">
+        <text class="lr-t">纯数据模式（关掉全站 AI 扩写）</text>
+        <switch checked="{{pureData}}" color="#12A594" bindchange="togglePure" />
+      </view>
+
+      <view class="srow">
+        <text class="sl">允许 AI 直接调整计划</text>
+        <switch checked="{{agentAuto}}" color="#12A594" bindchange="toggleAgentAuto" />
+      </view>
+      <text class="tip">关着：每条建议都要你点一下才执行（L2）。开着：今日简报与下周排布会自动套用，所有改动都记在下面的操作日志里，可逐条撤销。</text>
+
+      <view class="mem">
+        <view class="mem-h">
+          <text class="mem-t">AI 操作日志</text>
+          <text class="mem-n">{{opList.length}} 条</text>
+        </view>
+        <block wx:if="{{opList.length}}">
+          <view class="op" wx:for="{{opList}}" wx:key="id">
+            <view class="op-l">
+              <text class="op-t">{{item.auto ? '✦ ' : ''}}{{item.title}}</text>
+              <text class="op-d">{{item.at}} · {{item.desc}}</text>
+            </view>
+            <text class="op-u {{item.undone ? 'off' : ''}}" data-id="{{item.id}}" bindtap="undoOp">{{item.undone ? '已撤销' : '撤销'}}</text>
+          </view>
+          <view class="pbtn ghost" bindtap="clearOps">清空日志</view>
+        </block>
+        <text class="tip" wx:else>AI 帮你改过计划、标过休息日，都会在这里留一条记录。</text>
+      </view>
+
+      <view class="adv" bindtap="toggleAdv">
+        <text class="adv-t">高级</text>
+        <text class="adv-s">PR 榜 · 完整分析 · 记忆 · API · 报告</text>
+        <text class="adv-a">{{advOpen ? '收起' : '展开'}} {{advOpen ? '⌃' : '⌄'}}</text>
+      </view>
+      <block wx:if="{{advOpen}}">
+        <view class="lrow" data-url="/pages/pr/index" bindtap="goPage"><text class="lr-t">PR 榜 / 梯度</text><text class="lr-a">›</text></view>
+        <view class="lrow" data-url="/pages/agent-report/index" bindtap="goPage"><text class="lr-t">完整分析报告</text><text class="lr-a">›</text></view>
+        <view class="lrow" data-url="/pages/report/index" bindtap="goPage"><text class="lr-t">周报</text><text class="lr-a">›</text></view>
+        <view class="lrow" data-url="/pages/apiconfig/index" bindtap="goPage"><text class="lr-t">Agent API 配置</text><text class="lr-a">›</text></view>
+      </block>
+
+      <view class="mem">
+        <view class="mem-h">
+          <text class="mem-t">Agent 记忆</text>
+          <text class="mem-n">{{memList.length}} / 12 条</text>
+        </view>
+        <block wx:if="{{memList.length}}">
+          <text class="mem-i" wx:for="{{memList}}" wx:key="*this">· {{item}}</text>
+          <view class="pbtn ghost" bindtap="clearMem">清除记忆</view>
+        </block>
+        <text class="tip" wx:else>每次分析后会自动沉淀结论；有记忆时 Agent 回答会带上上下文。</text>
+      </view>
+    </block>
+
+    <!-- 数据 -->
+    <block wx:if="{{panel === 'data'}}">
+      <view class="nums">
+        <view class="n"><text class="nv">{{logsCount}}</text><text class="nt">日志</text></view>
+        <view class="n"><text class="nv">{{recordsCount}}</text><text class="nt">力量记录</text></view>
+        <view class="n"><text class="nv">{{cardioCount}}</text><text class="nt">有氧记录</text></view>
+      </view>
+
+      <view class="sec">
+        <text class="sec-t">同步</text>
+        <view class="badge {{syncOn ? 'on' : ''}}">
+          <view class="bdot"></view>
+          <text>{{syncText}}</text>
+        </view>
+      </view>
+      <view class="srow">
+        <text class="sl">自动同步（按微信身份）</text>
+        <switch checked="{{syncAuto}}" color="#12A594" bindchange="toggleSyncAuto" />
+      </view>
+      <text class="tip">微信云开发按 openid 归属数据：改了自动上行，换设备进来自动下行合并，冲突比 updatedAt。</text>
+      <view class="grid two">
+        <view class="gbtn {{busy ? 'off' : ''}}" bindtap="pushCloud">上传本机</view>
+        <view class="gbtn {{busy ? 'off' : ''}}" bindtap="pullCloud">拉取合并</view>
+      </view>
+
+      <text class="sec-t">导入导出</text>
+      <view class="grid two">
+        <view class="gbtn" bindtap="exportData">导出到剪贴板</view>
+        <view class="gbtn" bindtap="importData">从剪贴板导入</view>
+      </view>
+      <view class="grid one">
+        <view class="gbtn" bindtap="goImport">从 Markdown 导入训练笔记</view>
+      </view>
+
+      <text class="sec-t">洞察</text>
+      <view class="grid two">
+        <view class="gbtn" data-url="/pages/review/index" bindtap="goPage">每日复盘</view>
+        <view class="gbtn" data-url="/pages/report/index" bindtap="goPage">周报</view>
+        <view class="gbtn" data-url="/pages/archive/index" bindtap="goPage">月度档案</view>
+        <view class="gbtn" data-url="/pages/body/index" bindtap="goPage">身体数据</view>
+      </view>
+    </block>
+
+    <!-- 关于 -->
+    <block wx:if="{{panel === 'about'}}">
+      <view class="lrow" bindtap="replayGuide"><text class="lr-t">新手引导 · 重放</text><text class="lr-a">›</text></view>
+      <view class="lrow" bindtap="about"><text class="lr-t">版本与功能速查</text><text class="lr-a">›</text></view>
+      <text class="tip">悬浮球：拖动换位置，点开是快记面板，长按直接进专注训练。</text>
+      <text class="tip">本地优先：日志、训练、设置都在本机；云端只在同步时读写。</text>
+    </block>
+  </scroll-view>
 </view>

@@ -1,0 +1,17 @@
+.page { min-height: 100vh; background: #F3F7F5; padding: 26rpx 24rpx 60rpx; box-sizing: border-box; }
+.head { padding: 0 8rpx 16rpx; }
+.hl { display: block; font-size: 40rpx; font-weight: 700; color: #14181A; }
+.hs { display: block; margin-top: 8rpx; font-size: 21rpx; color: #8A9490; }
+.seg { display: flex; gap: 10rpx; margin: 10rpx 0 20rpx; }
+.sg { padding: 12rpx 28rpx; border-radius: 24rpx; background: #fff; color: #5B6461; font-size: 23rpx; }
+.sg.on { background: #12A594; color: #fff; }
+.card { background: #fff; border-radius: 20rpx; padding: 22rpx; margin-bottom: 16rpx; }
+.st { display: block; font-size: 26rpx; font-weight: 700; color: #14181A; margin-bottom: 12rpx; }
+.li { display: flex; flex-wrap: wrap; gap: 8rpx; padding: 10rpx 0; border-top: 1rpx solid #F4F7F6; }
+.lt { flex: 1; font-size: 23rpx; line-height: 1.7; color: #14181A; }
+.lc { font-size: 19rpx; color: #A9B3AF; }
+.li.warn .lt { color: #B8632B; }
+.li.good .lt { color: #12A594; }
+.empty { text-align: center; padding: 120rpx 0; }
+.et { display: block; font-size: 26rpx; color: #454F4C; }
+.es { display: block; margin-top: 10rpx; font-size: 21rpx; color: #A9B3AF; }

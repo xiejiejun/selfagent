@@ -1,5 +1,8 @@
 const engine = require('../../libs/engine/index');
 
+const TAGS = ['', 'warm', 'drop', 'side', 'super'];
+const TAG_LABEL = { '': '', warm: '热身', drop: '递减', side: '每侧', super: '超级组' };
+
 Component({
   properties: {
     visible: { type: Boolean, value: false },
@@ -22,7 +25,7 @@ Component({
       const isCardio = payload.mode === 'cardio';
       const gs = (payload.groups && payload.groups.length)
         ? payload.groups
-        : [{ no: 1, reps: payload.reps || 10, weight: payload.weight || 0, done: true, warmup: false, rpe: 0, sec: 0 }];
+        : [{ no: 1, reps: payload.reps || 10, weight: payload.weight || 0, done: true, warmup: false, rpe: 0, sec: 0, tag: '' }];
       this.setData({
         name: payload.name || '',
         mode: isCardio ? 'cardio' : 'strength',
@@ -33,10 +36,13 @@ Component({
           no: i + 1,
           reps: g.reps || 0,
           weight: g.weight || 0,
+          wText: g.weight ? String(g.weight) : '0',
           done: !!g.done,
           warmup: !!g.warmup,
           rpe: g.rpe || 0,
-          sec: g.sec || 0
+          sec: g.sec || 0,
+          tag: g.tag || (g.warmup ? 'warm' : ''),
+          tagLabel: TAG_LABEL[g.tag || (g.warmup ? 'warm' : '')] || ''
         }))
       });
     }
@@ -68,10 +74,24 @@ Component({
       this.setData({ rows });
     },
 
+    // 重量：保留用户原样输入（18.5 / 2.5 / 0.5），不要在输入过程中做数字回写，
+    // 否则打「.」的瞬间会被 parseFloat 吞掉。解析放到保存前。
     onWeight(e) {
       const i = Number(e.currentTarget.dataset.i);
       const rows = this.data.rows.slice();
-      rows[i].weight = Math.max(0, parseFloat(e.detail.value) || 0);
+      const v = String(e.detail.value == null ? '' : e.detail.value);
+      rows[i].wText = v;
+      rows[i].weight = Number(v) || 0;
+      this.setData({ rows });
+    },
+
+    onWeightBlur(e) {
+      const i = Number(e.currentTarget.dataset.i);
+      const rows = this.data.rows.slice();
+      const v = Number(rows[i].wText);
+      const w = v > 0 ? Math.round(v * 100) / 100 : 0;
+      rows[i].weight = w;
+      rows[i].wText = w ? String(w) : '0';
       this.setData({ rows });
     },
 
@@ -82,10 +102,22 @@ Component({
       this.setData({ rows });
     },
 
+    // 组类型循环：常规 → 热身 → 递减 → 每侧 → 超级组
+    cycleTag(e) {
+      const i = Number(e.currentTarget.dataset.i);
+      const rows = this.data.rows.slice();
+      const cur = rows[i].tag || '';
+      const next = TAGS[(TAGS.indexOf(cur) + 1) % TAGS.length];
+      rows[i].tag = next;
+      rows[i].tagLabel = TAG_LABEL[next];
+      rows[i].warmup = next === 'warm';
+      this.setData({ rows });
+    },
+
     addSet() {
       const rows = this.data.rows.slice();
       const last = rows[rows.length - 1] || { reps: 10, weight: 0 };
-      rows.push({ no: rows.length + 1, reps: last.reps, weight: last.weight, done: false, warmup: false, rpe: 0, sec: 0 });
+      rows.push({ no: rows.length + 1, reps: last.reps, weight: last.weight, wText: String(last.weight || 0), done: false, warmup: false, rpe: 0, sec: 0, tag: '', tagLabel: '' });
       this.setData({ rows });
     },
 
@@ -116,6 +148,9 @@ Component({
             date: p.date,
             modal: name,
             name,
+            exId: p.exId || '',
+            part: '有氧',
+            mode: 'timer',
             min,
             dur: min,
             sec: min * 60,
@@ -134,9 +169,10 @@ Component({
         reps: r.reps || 0,
         weight: r.weight || 0,
         done: !!r.done,
-        warmup: !!r.warmup,
+        warmup: !!r.warmup || r.tag === 'warm',
         rpe: r.rpe || 0,
-        sec: r.sec || 0
+        sec: r.sec || 0,
+        tag: r.tag || ''
       }));
       const maxReps = groups.reduce((a, g) => Math.max(a, g.reps || 0), 0);
       const maxW = groups.reduce((a, g) => Math.max(a, g.weight || 0), 0);

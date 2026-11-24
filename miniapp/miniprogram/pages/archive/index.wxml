@@ -1,0 +1,60 @@
+<view class="page">
+  <view class="hd">
+    <text class="nav" bindtap="prevMonth">‹</text>
+    <view class="hc"><text class="t">{{title}}</text><text class="s">{{totals.trained}} 天训练 · {{totals.sets}} 组 · {{totals.volume}} kg</text></view>
+    <text class="nav {{canNext ? '' : 'off'}}" bindtap="nextMonth">›</text>
+  </view>
+
+  <view class="sum">
+    <view class="sn"><text class="sv">{{totals.trained}}</text><text class="sl">训练天</text></view>
+    <view class="sn"><text class="sv">{{totals.cardioMin}}′</text><text class="sl">有氧</text></view>
+    <view class="sn"><text class="sv">{{totals.notes}}</text><text class="sl">复盘</text></view>
+  </view>
+
+  <view class="day" wx:for="{{days}}" wx:key="date" data-date="{{item.date}}" bindtap="openDay">
+    <view class="dl">
+      <text class="dd">{{item.label}}</text>
+      <text class="dw">{{item.weekday}}</text>
+    </view>
+    <view class="dc">
+      <text class="dline">{{item.line}}</text>
+      <text class="dstat">{{item.sets}} 组 · {{item.volume}} kg{{item.cardioMin ? ' · 有氧 ' + item.cardioMin + '′' : ''}}</text>
+    </view>
+    <view class="dm" wx:if="{{item.mood || item.energy}}">
+      <text class="tag">精{{item.energy || '—'}}</text>
+      <text class="tag">情{{item.mood || '—'}}</text>
+    </view>
+    <text class="arr">▸</text>
+  </view>
+
+  <view class="empty" wx:if="{{!days.length}}">
+    <text class="et">这个月还没有记录</text>
+    <text class="es">练完一次或做一次复盘，就会出现在这里</text>
+  </view>
+</view>
+
+<view class="mask" wx:if="{{detail}}" bindtap="closeDay">
+  <view class="sheet" catchtap="noop">
+    <view class="sh">
+      <text class="sht">{{detail.date}} {{detail.weekday}}</text>
+      <text class="shx" bindtap="closeDay">关闭</text>
+    </view>
+    <text class="shs">{{detail.sets}} 组 · {{detail.volume}} kg{{detail.cardioMin ? ' · 有氧 ' + detail.cardioMin + '′' : ''}}</text>
+
+    <view class="items">
+      <view class="it" wx:for="{{detail.items}}" wx:key="uid">
+        <text class="itn">{{item.name}}</text>
+        <text class="itd">{{item.type === 'cardio' ? item.min + '′' : (item.volume || 0) + ' kg · ' + (item.sets || 0) + ' 组'}}</text>
+      </view>
+      <text class="itnone" wx:if="{{!detail.items.length}}">没有训练明细</text>
+    </view>
+
+    <view class="ck" wx:if="{{detail.energy || detail.mood || detail.note}}">
+      <text class="ckt">状态</text>
+      <text class="ckl">精力 {{detail.energy || '—'}} / 情绪 {{detail.mood || '—'}}{{detail.sleepH ? ' / 睡眠 ' + detail.sleepH + 'h' : ''}}</text>
+      <text class="ckn" wx:if="{{detail.note}}">{{detail.note}}</text>
+    </view>
+
+    <view class="btn" data-date="{{detail.date}}" bindtap="openReview">编辑这天的复盘</view>
+  </view>
+</view>

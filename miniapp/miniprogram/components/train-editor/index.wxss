@@ -48,54 +48,94 @@
   color: #14181A;
 }
 
-.rows { display: flex; flex-direction: column; gap: 12rpx; margin: 4rpx 0 14rpx; }
+.rows { display: flex; flex-direction: column; gap: 10rpx; margin: 6rpx 0 14rpx; }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 10rpx;
-  padding: 10rpx 14rpx;
+  gap: 8rpx;
+  padding: 8rpx 12rpx;
   background: #F7F9F8;
-  border-radius: 12rpx;
+  border-radius: 14rpx;
+  min-height: 76rpx;
 }
 
-.no { width: 32rpx; text-align: center; font-size: 22rpx; color: #8A9490; }
-.num { width: 92rpx; height: 60rpx; text-align: center; background: #fff; border-radius: 10rpx; border: 1rpx solid #E3E8E6; font-size: 26rpx; }
-.num.wide { width: 108rpx; }
-.unit { font-size: 22rpx; color: #8A9490; }
+.no { width: 28rpx; text-align: center; font-size: 22rpx; color: #8A9490; flex: none; }
+
+/* 所有小控件统一 56rpx 高、12rpx 圆角，不再大小混排 */
+.tag {
+  flex: none;
+  padding: 0 12rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  border-radius: 12rpx;
+  font-size: 20rpx;
+  color: #8A9490;
+  background: #EDF1EF;
+  white-space: nowrap;
+}
+.tag.warm { color: #C58A2E; background: #FBF1DF; }
+.tag.drop { color: #3C7BD1; background: #E8F0FC; }
+.tag.side { color: #7A5AC8; background: #F0EAFB; }
+.tag.super { color: #C4518E; background: #FBEAF3; }
+
+.num {
+  height: 56rpx;
+  text-align: center;
+  background: #fff;
+  border-radius: 12rpx;
+  border: 1rpx solid #E3E8E6;
+  font-size: 26rpx;
+  padding: 0;
+}
+.num.reps { width: 74rpx; flex: none; }
+.num.weight { width: 96rpx; flex: none; }
+.unit { font-size: 20rpx; color: #8A9490; flex: none; }
 
 .chip {
-  min-width: 52rpx;
-  height: 52rpx;
-  line-height: 52rpx;
+  flex: none;
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
   text-align: center;
-  border-radius: 10rpx;
+  border-radius: 12rpx;
   font-size: 22rpx;
   color: #8A9490;
   background: #fff;
   border: 1rpx solid #E3E8E6;
-  padding: 0 8rpx;
+  padding: 0;
 }
-.chip.on { color: #12A594; border-color: #12A594; }
-.chip.del { color: #B6BEBB; }
+.chip.on { color: #12A594; border-color: #12A594; background: #F0FAF7; }
+.chip.del { color: #B6BEBB; border-color: transparent; background: #EFF2F1; }
 
-.ghost { display: inline-block; font-size: 26rpx; color: #12A594; padding: 10rpx 4rpx 20rpx; }
+.addset {
+  display: block;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #12A594;
+  background: #F2F8F6;
+  border-radius: 12rpx;
+  margin-bottom: 16rpx;
+}
 
 .actions {
   display: flex;
-  gap: 14rpx;
+  gap: 12rpx;
   padding: 14rpx 32rpx 10rpx;
   border-top: 1rpx solid #EFF2F1;
 }
 
 .btn {
   flex: 1;
-  height: 84rpx;
-  line-height: 84rpx;
+  height: 88rpx;
+  line-height: 88rpx;
   text-align: center;
-  border-radius: 14rpx;
-  font-size: 29rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 500;
 }
 .btn.ghost { background: #F2F5F4; color: #5B6461; }
-.btn.primary { background: #12A594; color: #fff; }
-.btn.danger { flex: 0 0 150rpx; background: #FDF1F2; color: #E06E78; }
+.btn.primary { background: #12A594; color: #fff; font-weight: 600; }
+.btn.danger { background: #FDF1F2; color: #E06E78; }

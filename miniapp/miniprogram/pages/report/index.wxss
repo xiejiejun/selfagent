@@ -1,0 +1,47 @@
+.page { min-height: 100vh; background: #F3F7F5; padding: 24rpx 24rpx 60rpx; box-sizing: border-box; }
+.hd { display: flex; align-items: center; gap: 16rpx; padding: 4rpx 8rpx 18rpx; }
+.nav { width: 64rpx; text-align: center; font-size: 34rpx; color: #14181A; }
+.nav.off { color: #D3DCD8; }
+.hc { flex: 1; text-align: center; }
+.t { display: block; font-size: 34rpx; font-weight: 700; color: #14181A; }
+.s { display: block; margin-top: 4rpx; font-size: 20rpx; color: #8A9490; }
+
+.card { background: #fff; border-radius: 22rpx; padding: 22rpx; margin-bottom: 18rpx; }
+.nums { display: flex; }
+.n { flex: 1; text-align: center; }
+.nv { display: block; font-size: 32rpx; font-weight: 700; color: #14181A; }
+.nt { display: block; margin-top: 4rpx; font-size: 18rpx; color: #A9B3AF; }
+
+.ch { margin-bottom: 12rpx; }
+.ct { font-size: 24rpx; font-weight: 600; color: #14181A; }
+.concl { display: flex; gap: 8rpx; padding: 4rpx 0; }
+.dot { color: #12A594; }
+.cx { flex: 1; font-size: 23rpx; color: #454F4C; line-height: 1.55; }
+.sub { display: flex; gap: 26rpx; margin-top: 10rpx; }
+.st { font-size: 21rpx; color: #8A9490; }
+
+.bars { display: flex; align-items: flex-end; gap: 6rpx; }
+.bcol { flex: 1; text-align: center; }
+.bv { display: block; height: 28rpx; font-size: 17rpx; color: #8A9490; }
+.bwrap { height: 160rpx; display: flex; align-items: flex-end; justify-content: center; }
+.bar { width: 60%; border-radius: 6rpx; background: transparent; }
+.bar.on { background: linear-gradient(180deg,#3DDCBF,#12A594); }
+.bl { display: block; margin-top: 6rpx; font-size: 18rpx; color: #8A9490; }
+
+.prow { display: flex; align-items: center; gap: 12rpx; padding: 6rpx 0; }
+.pn { width: 80rpx; font-size: 22rpx; color: #454F4C; }
+.pbar { flex: 1; height: 14rpx; background: #EEF4F2; border-radius: 7rpx; overflow: hidden; }
+.pin { height: 14rpx; background: #12A594; }
+.pv { width: 100rpx; text-align: right; font-size: 20rpx; color: #8A9490; }
+
+.prrow { display: flex; justify-content: space-between; padding: 10rpx 0; border-bottom: 1rpx solid #F1F5F3; font-size: 23rpx; }
+.prrow:last-child { border-bottom: none; }
+.prn { color: #14181A; }
+.prv { color: #12A594; }
+.foot { display: block; text-align: center; font-size: 19rpx; color: #A9B3AF; padding: 12rpx 0; }
+/* AI 周报三段 */
+.aiw { margin-top: 6rpx; }
+.aiw-row { display: flex; align-items: flex-start; gap: 10rpx; padding: 10rpx 0; border-bottom: 1rpx solid #F2F6F4; }
+.aiw-row:last-child { border-bottom: none; }
+.aiw-k { font-size: 20rpx; color: #12A594; border: 1rpx solid #CFEAE3; border-radius: 10rpx; padding: 3rpx 10rpx; flex-shrink: 0; }
+.aiw-v { flex: 1; font-size: 23rpx; color: #3B4441; line-height: 1.6; }

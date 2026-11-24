@@ -3,24 +3,29 @@
   <view class="mopt {{mode === 'focus' ? 'on' : ''}}" catchtap="pickFocus">专注</view>
 </view>
 
-<view
-  class="orb {{mode === 'focus' ? 'is-focus' : ''}} {{pressing ? 'pressing' : ''}}"
-  style="left: {{left}}px; top: {{top}}px; width: {{sizeRpx}}rpx; height: {{sizeRpx}}rpx;"
-  catchtouchstart="onStart"
-  catchtouchmove="onMove"
-  catchtouchend="onEnd"
-  bindtap="onTap"
-  bindlongpress="onLong"
->
-  <text class="orb-ch">{{mode === 'focus' ? '练' : '记'}}</text>
-  <text class="orb-badge" wx:if="{{mode === 'focus' && countText}}">{{countText}}</text>
-</view>
+<movable-area class="orb-area">
+  <movable-view
+    class="orb {{mode === 'focus' ? 'is-focus' : ''}} {{pressing ? 'pressing' : ''}}"
+    style="width: {{sizeRpx}}rpx; height: {{sizeRpx}}rpx;"
+    direction="all"
+    out-of-bounds="false"
+    damping="60"
+    x="{{mvX}}" y="{{mvY}}"
+    bindchange="onMvChange"
+    bindtap="onTap"
+    bindlongpress="onLong"
+  >
+    <text class="orb-ch">{{mode === 'focus' ? '练' : '记'}}</text>
+    <text class="orb-badge" wx:if="{{mode === 'focus' && countText}}">{{countText}}</text>
+  </movable-view>
+</movable-area>
 
 <view class="mask" wx:if="{{noteOn}}" catchtap="closeNote">
-  <view class="sheet" catchtap="noop">
+  <view class="sheet" catchtap="noop" bindtouchstart="onSheetStart" bindtouchmove="onSheetMove" bindtouchend="onSheetEnd" style="transform: translateY({{sheetDy}}px);">
+    <view class="sheet-bar"></view>
     <view class="sh-head">
       <text class="sh-t">随手记</text>
-      <text class="sh-x" catchtap="closeNote">关闭</text>
+      <text class="sh-x" catchtap="closeNote">✕</text>
     </view>
     <textarea
       class="ta"
@@ -32,6 +37,27 @@
       show-confirm-bar="{{false}}"
       focus="{{noteOn}}"
     />
+    <view class="prev" wx:if="{{notePrev}}"><text class="prev-k">✦ 将被识别为</text><text class="prev-v">{{notePrev}}</text></view>
+    <view class="score-row">
+      <view class="score-top">
+        <text class="score-l">精力</text>
+        <text class="score-v {{noteEnergy ? 'on' : ''}}">{{noteEnergy ? noteEnergy + ' 分 · ' + energyLabels[noteEnergy - 1] : '滑动打分'}}</text>
+      </view>
+      <slider class="score-s" min="1" max="5" step="1" value="{{noteEnergy || 3}}" activeColor="#12A594" block-size="20" data-k="noteEnergy" bindchange="onSlide" bindchanging="onSlide" />
+      <view class="score-lab">
+        <text class="sl-i {{noteEnergy === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+    <view class="score-row">
+      <view class="score-top">
+        <text class="score-l">情绪</text>
+        <text class="score-v m {{noteMood ? 'on' : ''}}">{{noteMood ? noteMood + ' 分 · ' + moodLabels[noteMood - 1] : '滑动打分'}}</text>
+      </view>
+      <slider class="score-s" min="1" max="5" step="1" value="{{noteMood || 3}}" activeColor="#8E7CC3" block-size="20" data-k="noteMood" bindchange="onSlide" bindchanging="onSlide" />
+      <view class="score-lab">
+        <text class="sl-i m {{noteMood === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
     <view class="sh-btns">
       <view class="sh-btn ghost" catchtap="closeNote">取消</view>
       <view class="sh-btn" catchtap="saveNote">保存</view>

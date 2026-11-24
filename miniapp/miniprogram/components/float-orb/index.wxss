@@ -1,6 +1,14 @@
-.orb {
+.orb-area {
   position: fixed;
+  left: 0; top: 0;
+  width: 100vw; height: 100vh;
+  pointer-events: none;   /* 透明区域不挡页面点击 */
   z-index: 90;
+}
+
+.orb {
+  pointer-events: auto;   /* 球本身可交互 */
+  position: relative;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -50,6 +58,7 @@
 
 .orb-menu {
   position: fixed;
+  pointer-events: auto;
   transform: translateY(calc(-100% - 16rpx));
   display: flex;
   gap: 8rpx;
@@ -75,11 +84,13 @@
 }
 
 .mask {
+  pointer-events: auto;   /* 遮罩需要接收点击 */
   position: fixed;
   left: 0;
   right: 0;
   top: 0;
   bottom: 0;
+  z-index: 96;
   background: rgba(20, 24, 26, .42);
   z-index: 96;
   display: flex;
@@ -90,7 +101,16 @@
   width: 100%;
   background: #fff;
   border-radius: 28rpx 28rpx 0 0;
-  padding: 28rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
+  padding: 12rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
+  transition: transform .18s ease-out;
+}
+
+.sheet-bar {
+  width: 64rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background: #DDE4E2;
+  margin: 4rpx auto 14rpx;
 }
 
 .sh-head {
@@ -101,7 +121,7 @@
 }
 
 .sh-t { font-size: 30rpx; font-weight: 600; color: #14181A; }
-.sh-x { font-size: 24rpx; color: #8A9490; }
+.sh-x { font-size: 30rpx; color: #8A9490; padding: 0 8rpx; }
 
 .ta {
   width: 100%;
@@ -137,3 +157,34 @@
   color: #5B6461;
   border: 1rpx solid #E3E8E6;
 }
+
+.score-row { display: flex; align-items: center; margin-top: 18rpx; }
+.score-l { width: 72rpx; font-size: 24rpx; color: #5B6461; }
+.dots { flex: 1; display: flex; gap: 14rpx; }
+.dot { width: 56rpx; height: 56rpx; line-height: 56rpx; text-align: center; border-radius: 50%; background: #F0F4F3; color: #8A9490; font-size: 22rpx; }
+.dot.on { background: #12A594; color: #fff; }
+
+/* 滑条 + 档位文案 */
+.score-row { display: block; margin-top: 18rpx; }
+.score-top { display: flex; align-items: center; justify-content: space-between; }
+.score-v { font-size: 24rpx; color: #98A29F; font-weight: 500; }
+.score-v.on { color: #0F8C7E; font-size: 28rpx; font-weight: 700; }
+.score-v.m.on { color: #6D5FA8; }
+.score-s { margin: 0; padding: 0 4rpx; }
+.score-lab { display: flex; justify-content: space-between; padding: 0 8rpx 0 2rpx; }
+.sl-i { font-size: 20rpx; color: #C2CAC7; transition: color .15s, font-weight .15s; }
+.sl-i.on { color: #0F8C7E; font-weight: 700; font-size: 22rpx; }
+.sl-i.m.on { color: #6D5FA8; }
+
+/* 保存前识别预览 */
+.prev {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 10rpx;
+  padding: 12rpx 16rpx;
+  background: #F2F8F6;
+  border-radius: 12rpx;
+}
+.prev-k { font-size: 19rpx; color: #0F8C7E; }
+.prev-v { font-size: 22rpx; color: #14181A; font-weight: 600; }

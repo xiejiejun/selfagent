@@ -50,6 +50,7 @@ function stDayItems(train, dk) {
     };
     return {
       type: 'strength', uid: r.uid || '', exId: r.exId, name: r.name, part: r.part,
+      ord: typeof r.ord === 'number' ? r.ord : null,
       sets: gs.length, reps: pick('reps'), weight: pick('weight'), done,
       volume: Math.round(vol),
       groups: gs.map(g => ({ no: g.no, reps: g.reps, weight: g.weight, done: !!g.done, warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, uid: g.uid || '' }))
@@ -57,51 +58,104 @@ function stDayItems(train, dk) {
   });
 }
 
+// 有氧两种计组方式：timer（按时长）/ sets（按组，和力量同构）
+function cardioMode(c) { return c && c.mode === 'sets' ? 'sets' : 'timer'; }
+
 function cdDayItems(train, dk) {
   return ensureTrain(train).cardio.filter(c => c && c.date === dk && !c.skipped).map(c => {
+    const mode = cardioMode(c);
     const min = c.min || c.dur || Math.round((c.sec || 0) / 60) || 0;
-    return { type: 'cardio', name: c.modal || c.name || '有氧', min, done: !!c.done, uid: c.uid || '' };
+    const gs = mode === 'sets' ? ensureGroups(c) : [];
+    const doneN = gs.filter(g => g.done).length;
+    const vol = gs.filter(g => g.done && !g.warmup).reduce((a, g) => a + (g.reps || 0) * (g.weight || 0), 0);
+    return {
+      type: 'cardio', mode, name: c.modal || c.name || '有氧',
+      exId: c.exId || '',
+      part: c.part || '有氧',
+      min: mode === 'sets' ? 0 : min,
+      sets: gs.length, reps: gs.length ? (gs[gs.length - 1].reps || 0) : 0,
+      weight: gs.length ? (gs[gs.length - 1].weight || 0) : 0,
+      volume: Math.round(vol),
+      done: mode === 'sets' ? (gs.length > 0 && doneN === gs.length) : !!c.done,
+      doneN: mode === 'sets' ? doneN : ((c.done ? 1 : 0)),
+      totalN: mode === 'sets' ? gs.length : 1,
+      dist: Number(c.dist) || 0,
+      groups: gs.map(g => ({ no: g.no, reps: g.reps, weight: g.weight, done: !!g.done, warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, uid: g.uid || '' })),
+      uid: c.uid || '',
+      ord: typeof c.ord === 'number' ? c.ord : null
+    };
   });
 }
 
+// 力量与有氧统一按 ord（用户拖拽出来的顺序）排列；老数据没有 ord 时保持「力量在前、有氧在后」
 function dayItems(train, dk) {
-  return stDayItems(train, dk).concat(cdDayItems(train, dk));
+  const all = stDayItems(train, dk).concat(cdDayItems(train, dk));
+  if (!all.some(i => typeof i.ord === 'number')) return all;
+  return all
+    .map((it, k) => ({ it, k }))
+    .sort((a, b) => {
+      const ao = typeof a.it.ord === 'number' ? a.it.ord : 1e6 + a.k;
+      const bo = typeof b.it.ord === 'number' ? b.it.ord : 1e6 + b.k;
+      return ao - bo;
+    })
+    .map(x => x.it);
 }
 
 function dayContent(items) {
   const st = (items || []).filter(i => i.type !== 'cardio').map(i => i.name);
-  const cd = (items || []).filter(i => i.type === 'cardio').map(i => i.name + (i.min ? ' ' + i.min + 'min' : ''));
+  const cd = (items || []).filter(i => i.type === 'cardio').map(i => {
+    const km = (i.dist || 0) > 0 ? ' ' + i.dist + 'km' : '';
+    if (i.mode === 'sets') return i.name + (i.sets ? ' ' + i.sets + '×' + (i.reps || 0) : '') + km;
+    return i.name + (i.min ? ' ' + i.min + 'min' : '') + km;
+  });
   return st.concat(cd).join('、');
 }
 
 /* ---------------- 文案 ---------------- */
+
+function fmtSec(sec) {
+  const s = Math.round(sec || 0);
+  if (!s) return '';
+  return s >= 60 ? Math.floor(s / 60) + '′' + pad2(s % 60) + '″' : s + '″';
+}
 
 function groupLine(groups) {
   const a = (groups || []).filter(g => !g.warmup);
   if (!a.length) return '';
   const one = g => (g.weight > 0 ? g.weight + 'kg' : '自重') + '×' + (g.reps || 0);
   const same = a.every(g => (g.weight || 0) === (a[0].weight || 0) && (g.reps || 0) === (a[0].reps || 0));
-  if (same) return (a[0].weight > 0 ? a[0].weight + 'kg' : '自重') + ' ' + a.length + '×' + (a[0].reps || 0);
+  const secs = a.filter(g => g.sec > 0);
+  const tail = secs.length ? ' · ' + fmtSec(secs.reduce((x, g) => x + g.sec, 0)) : '';
+  if (same) return (a[0].weight > 0 ? a[0].weight + 'kg' : '自重') + ' ' + a.length + '×' + (a[0].reps || 0) + tail;
   const parts = a.map(one);
-  return parts.length > 3 ? parts.slice(0, 3).join(' · ') + ' · +' + (parts.length - 3) : parts.join(' · ');
+  const line = parts.length > 3 ? parts.slice(0, 3).join(' · ') + ' · +' + (parts.length - 3) : parts.join(' · ');
+  return line + tail;
 }
 
 function summarize(items) {
-  const strength = (items || []).filter(i => i.type !== 'cardio');
-  const cardio = (items || []).filter(i => i.type === 'cardio');
+  const all = items || [];
+  const cardio = all.filter(i => i.type === 'cardio');
+  const cdSets = cardio.filter(i => i.mode === 'sets');
+  const strength = all.filter(i => i.type !== 'cardio').concat(cdSets);
   let done = 0, total = 0;
   strength.forEach(it => {
     const gs = it.groups || [];
     total += gs.length || it.sets || 0;
-    done += gs.filter(g => g.done).length;
+    done += gs.length ? gs.filter(g => g.done).length : (it.done ? 1 : 0);
   });
   const volume = Math.round(strength.reduce((a, i) => a + (i.volume || 0), 0));
-  return { n: strength.length, done, total, volume, cardio };
+  const cardioMin = cardio.filter(i => i.mode !== 'sets').reduce((a, i) => a + (i.min || 0), 0);
+  return { n: all.length, done, total, volume, cardio, cardioMin };
 }
 
 function summaryText(items) {
   const s = summarize(items);
-  const cd = s.cardio.length ? ' · 有氧 ' + s.cardio.map(c => c.name + ' ' + c.min + '′').join('、') : '';
+  const cd = s.cardio.length
+    ? ' · 有氧 ' + s.cardio.map(c => {
+      const km = (c.dist || 0) > 0 ? ' · ' + c.dist + 'km' : '';
+      return (c.mode === 'sets' ? (c.name + ' ' + c.sets + '×' + (c.reps || 0)) : (c.name + ' ' + c.min + '′')) + km;
+    }).join('、')
+    : '';
   return s.n + ' 动作 · ' + s.done + '/' + s.total + ' 组' + cd + ' · ' + (s.volume ? s.volume.toLocaleString() + ' kg' : '—');
 }
 
@@ -200,8 +254,9 @@ function dedupeLogs(logs) {
 function dayStat(train, dk) {
   const items = dayItems(train, dk);
   const s = summarize(items);
-  const cardioMin = s.cardio.reduce((a, c) => a + (c.min || 0), 0);
-  return { date: dk, n: s.n, done: s.done, total: s.total, volume: s.volume, cardioMin, items };
+  const cardioMin = s.cardioMin;
+  const cardioSets = s.cardio.filter(c => c.mode === 'sets').reduce((a, c) => a + (c.totalN || 0), 0);
+  return { date: dk, n: s.n, done: s.done, total: s.total, volume: s.volume, cardioMin, cardioSets, items };
 }
 
 function lastNDays(train, n, endDate) {
@@ -220,7 +275,7 @@ function streakDays(train, endDate) {
   for (let i = 0; i < 400; i++) {
     const d = new Date(end.getFullYear(), end.getMonth(), end.getDate() - i);
     const s = dayStat(train, dayKey(d));
-    if (s.volume > 0 || s.cardioMin > 0) n++;
+    if (s.volume > 0 || s.cardioMin > 0 || s.cardioSets > 0) n++;
     else if (i > 0) break;
   }
   return n;
@@ -278,7 +333,7 @@ function fmtTime(iso) {
 module.exports = {
   pad2, dayKey, uid, ensureTrain, ensureGroups,
   stDayItems, cdDayItems, dayItems, dayContent,
-  groupLine, summarize, summaryText,
+  groupLine, summarize, summaryText, fmtSec,
   upsertRecord, removeRecord, upsertCardio, removeCardio,
   addTomb, pruneTomb,
   buildTrainLog, syncTrainLog, dedupeLogs,
