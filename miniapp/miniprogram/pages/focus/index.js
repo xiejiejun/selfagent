@@ -122,6 +122,7 @@ Page({
       return;
     }
     this.setData({ date: this.date, setTimer: true });
+    this._sessionStart = Date.now();
     this.restoreFocus();
     this.refreshQueue();
     this.prepare();
@@ -139,6 +140,9 @@ Page({
     if (!same) return;
     this.items = st.items;
     this.idx = Math.min(st.idx || 0, this.items.length - 1);
+    // 整场用时从第一次进入算起，重进接着算（超过 12 小时视为新的一场）
+    const ss = Number(st.startAt || 0);
+    if (ss > 0 && Date.now() - ss < 12 * 3600 * 1000) this._sessionStart = ss;
     // 上次是在做某一组时离开的：把这组的起始时刻带回来，息屏/被杀进程也接着算
     const ws = Number(st.workStart || 0);
     if (ws > 0 && Date.now() - ws < 6 * 3600 * 1000) {
@@ -157,6 +161,7 @@ Page({
       wx.setStorageSync(FOCUS_KEY, {
         date: this.date, idx: this.idx, items: this.items,
         workStart: this._workStart || 0,
+        startAt: this._sessionStart || 0,
         pauseAcc: this._pauseAcc || 0,
         pauseAt: this._pauseAt || 0,
         timerPaused: !!this.data.timerPaused
@@ -809,28 +814,46 @@ Page({
 
   // 中途添加动作（队列末尾追加）
   addMore() {
+    this.openPicker(ex => {
+      if (!ex) return;
+      this.appendItem(ex);
+      wx.showToast({ title: '已加入队列', icon: 'none' });
+    });
+  },
+
+  // 收工页加练：挑完直接切到新动作继续做
+  addExtra() {
+    this.openPicker(ex => {
+      if (!ex) return;
+      const i = this.appendItem(ex);
+      this.idx = i;
+      this.prepare();
+      this.refreshQueue();
+      this.persistFocus();
+      wx.showToast({ title: '加练：' + ex.n, icon: 'none' });
+    });
+  },
+
+  openPicker(cb) {
     wx.navigateTo({
       url: '/pages/library/index',
-      events: {
-        pick: (ex) => {
-          if (!ex) return;
-          const rec = actions.saveStrength({
-            date: this.date, exId: ex.id, name: ex.n, part: ex.p,
-            sets: 3, reps: 10, weight: 0,
-            groups: [{ reps: 10, weight: 0, done: false }, { reps: 10, weight: 0, done: false }, { reps: 10, weight: 0, done: false }]
-          }) || {};
-          this.items.push({
-            type: 'strength', uid: rec.uid, exId: ex.id, name: ex.n, part: ex.p,
-            groups: [{ no: 1, reps: 10, weight: 0, warmup: false, tag: '', done: false, sec: 0 },
-              { no: 2, reps: 10, weight: 0, warmup: false, tag: '', done: false, sec: 0 },
-              { no: 3, reps: 10, weight: 0, warmup: false, tag: '', done: false, sec: 0 }]
-          });
-          this.refreshQueue();
-          this.persistFocus();
-          wx.showToast({ title: '已加入队列', icon: 'none' });
-        }
-      }
+      events: { pick: cb }
     });
+  },
+
+  appendItem(ex) {
+    const rec = actions.saveStrength({
+      date: this.date, exId: ex.id, name: ex.n, part: ex.p,
+      sets: 3, reps: 10, weight: 0,
+      groups: [{ reps: 10, weight: 0, done: false }, { reps: 10, weight: 0, done: false }, { reps: 10, weight: 0, done: false }]
+    }) || {};
+    this.items.push({
+      type: 'strength', uid: rec.uid, exId: ex.id, name: ex.n, part: ex.p,
+      groups: [{ no: 1, reps: 10, weight: 0, warmup: false, tag: '', done: false, sec: 0 },
+        { no: 2, reps: 10, weight: 0, warmup: false, tag: '', done: false, sec: 0 },
+        { no: 3, reps: 10, weight: 0, warmup: false, tag: '', done: false, sec: 0 }]
+    });
+    return this.items.length - 1;
   },
 
   skipRest(auto) {
@@ -986,12 +1009,14 @@ Page({
   showFinish() {
     const stat = this.setsStat();
     const cardio = this.items.filter(x => x.type === 'cardio' && x.done).reduce((a, x) => a + (x.min || 0), 0);
-    const sessionSec = this._sessionSec || 0;
+    // 整场用时按真实时钟算（含组间休息），不再只累加有氧时长
+    const wall = this._sessionStart ? Math.round((Date.now() - this._sessionStart) / 1000) : 0;
+    const sessionSec = Math.max(0, wall);
     this.setData({
       stage: 'finish', doneSets: stat.done, doneVolume: stat.vol, doneCardio: cardio,
       sessionSec,
       finishText: stat.done + ' 组 · ' + stat.vol + ' kg' + (cardio ? ' · 有氧 ' + cardio + '′' : ''),
-      finishTime: sessionSec >= 60 ? Math.round(sessionSec / 60) + ' 分钟' : sessionSec + ' 秒',
+      finishTime: sessionSec >= 60 ? Math.round(sessionSec / 60) + ' 分钟' : (sessionSec >= 1 ? sessionSec + ' 秒' : '不足 1 分钟'),
       pct: 100,
       aiReview: '',
       finNext: null,

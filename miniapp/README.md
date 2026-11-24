@@ -348,6 +348,20 @@ DECISION_POINTS = [
 - 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
+## 体验版 1.0.23：收工页「加练」+ 整场用时修正
+
+### 一、加练
+
+收工页按钮区新增「＋ 加练，再挑个动作」：打开动作库，选中动作后回来自动追加到本次训练末尾（3 组 × 10 次、重量 0，按 1.0.18/1.0.19 的组编辑继续改），并直接跳到该动作第 1 组开始计时，练完自然回到收工页。
+
+实现：`pages/focus` 抽出 `openPicker / appendItem`，`addMore`（中途加动作）与新的 `addExtra`（收工页加练）共用；`addExtra` 追加后把 `idx` 指到新项并 `prepare()`，因此会从 `finish` 回到 `work`。
+
+### 二、用时修正
+
+原「用时」只累加有氧 `min`，力量训练整场显示 `0 秒`。现改为按真实时钟计算：`onLoad` 记 `_sessionStart`，`persistFocus` 存 `startAt`，重进 12 小时内接着算；`showFinish` 用 `Date.now() - _sessionStart`，不足 1 分钟显示「不足 1 分钟」。
+
+实测（IDE + automator，1.0.23）：收工页显示「用时 2 秒」与「＋ 加练，再挑个动作」；点加练 → 动作库 40 张卡 → 选「3/4 仰卧起坐」→ 返回后 `stage=work`、队列 11→12 项、当前动作即新动作、计时从 `0:02` 起走。截图 `t9/x1-finish-extra.png`、`t9/x2-extra-work.png`。
+
 ## 体验版 1.0.22：拍照识图链路修复（多模态 + 通道诊断）
 
 ### 一、报错根因

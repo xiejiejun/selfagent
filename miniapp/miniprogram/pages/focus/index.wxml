@@ -205,6 +205,7 @@
 
       <view class="main">
         <view class="go primary" bindtap="finish">收工，看记录</view>
+        <view class="go ghost" bindtap="addExtra">＋ 加练，再挑个动作</view>
         <view class="go ghost" wx:if="{{finTomorrow}}" bindtap="planTomorrow">按此排明天 ›</view>
       </view>
     </view>
