@@ -6,9 +6,9 @@ function isCardioEx(ex) {
   return p.indexOf('有氧') >= 0 || t.indexOf('心肺') >= 0 || t.indexOf('有氧') >= 0;
 }
 
-// 能计数的动作默认按组，其余按时长；默认只是预选，详情页可改
-function defaultCardioMode(name) {
-  return /跳绳|波比|登山|开合跳|高抬腿|深蹲跳|波速|壶铃|冲刺|爬绳/.test(String(name || '')) ? 'sets' : 'timer';
+// 默认计时；计组是手动选项（跳绳/波比这类也不再预选计组）
+function defaultCardioMode() {
+  return 'timer';
 }
 
 // 计划/列表右侧参数列：计时 20′；计组 3×12（带距离时补 km）

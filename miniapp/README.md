@@ -349,6 +349,17 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.39：有氧默认计时 + 专注模式重进接着计时
+
+- 有氧默认计组方式：`libs/cardio.js` 的 `defaultCardioMode()` 固定返回 `timer`（不再按 跳绳/波比/壶铃 等名称预选计组），新加有氧在详情里就是「计时 20′」，要计组手动切；`libs/recommend.js` 的 `cardioItem` 同步只出计时条目。
+- 专注模式现场恢复：
+  - 快照新增 `stage / cardioStart`，原有 `workStart / pauseAcc / pauseAt / timerPaused` 真正被读回；
+  - 新增 `resumeStage()`：`onLoad` 里 `prepare()` 铺好 ready 后，按快照回到 `work`（`_workStart` 还原、暂停则冻结）或 `cardio`（`_cardioStart` 还原），`mmss` 立刻显示续计值；
+  - 写入点补齐：`beginSet`、有氧 `start`、`prepare`（两个分支）、`onUnload`；
+  - 带 `uid` 进入时以该动作为准：`restIdx !== this.idx` 就不续计，避免点 A 动作却恢复 B 的秒表。
+- `start()` 增加 `stage === 'ready'` 守卫，进行中重复点击不再重置。
+- 验证（模拟器）：`跳绳` 详情 `cx.mode=timer/min=20`；力量 `0:03 → 退出重进 0:07 → 0:11`；有氧 `0:03 → 0:06 → 0:10`；带错配 uid 进入时正确落到目标动作且从 ready 开始。截图 `t9/z1-cardio-timer.png`、`z8-strength-run.png`、`z9-strength-resumed.png`、`z6-cardio-resumed.png`。
+
 ## 体验版 1.0.38：修图卡缩略图偶发空白
 
 - 症状：训练页「图卡」里偶发图片不显示，只剩一块浅灰；有时要等几秒或重进页面才出。

@@ -195,15 +195,8 @@ function whyOf(p, it) {
   return '补 ' + it.part + ' 的稳定容量，动作库按器械多样性挑的';
 }
 
-// 有氧推荐条目：计组型按 3×30 起步，计时型按 20′
+// 有氧推荐条目：默认计时 20′（计组留给用户自己在详情里切）
 function cardioItem(e, src) {
-  const mode = cardioLib.defaultCardioMode(e.n);
-  if (mode === 'sets') {
-    return {
-      exId: e.id, name: e.n, part: e.p, eq: e.e, mode: 'sets', sets: 3, reps: 30, weight: 0, dur: 0, dist: 0,
-      note: '计组有氧 · 按 3 组起步，可补记距离', src, why: '补充心肺容量，按 3×30 起步，不追配速'
-    };
-  }
   return {
     exId: e.id, name: e.n, part: e.p, eq: e.e, mode: 'timer', sets: 1, reps: 1, weight: 0, dur: 20, dist: 0,
     note: '有氧以时长为准 · 建议 20-30 分钟中等强度', src, why: '以时长为口径，20′ 中等强度即可，别当力量练'

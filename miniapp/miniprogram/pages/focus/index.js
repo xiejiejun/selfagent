@@ -143,6 +143,7 @@ Page({
     this.restoreFocus();
     this.refreshQueue();
     this.prepare();
+    this.resumeStage();
     wx.setKeepScreenOn({ keepScreenOn: true });
     this.timer = setInterval(() => this.tick(), 500);
     this.draw();
@@ -156,19 +157,71 @@ Page({
     const same = this.items.every((it, i) => st.items[i] && st.items[i].uid === it.uid);
     if (!same) return;
     this.items = st.items;
-    this.idx = Math.min(st.idx || 0, this.items.length - 1);
+    const restIdx = Math.min(st.idx || 0, this.items.length - 1);
+    // 指定了 uid（从某个动作行点进来）就以它为准，不能被上次的 idx 抢走
+    const tgt = this.targetUid ? this.items.findIndex(x => x.uid === this.targetUid) : -1;
+    this.idx = tgt >= 0 ? tgt : restIdx;
     // 整场用时从第一次进入算起，重进接着算（超过 12 小时视为新的一场）
     const ss = Number(st.startAt || 0);
     if (ss > 0 && Date.now() - ss < 12 * 3600 * 1000) this._sessionStart = ss;
-    // 重进只恢复「做过哪几组」，本组计时一律回到 ready/0:00；秒表残留值不带入
+    // 记下当时的阶段与计时起点：重进要接着计，不再归零（prepare 会先铺 ready，随后 resumeStage 覆盖）
+    // 只有「恢复的还是同一个动作」时才接着计时；按 uid 跳到别的动作则重新开始
+    if (restIdx === this.idx) {
+      this._resume = {
+        stage: st.stage || '',
+        workStart: Number(st.workStart || 0),
+        pauseAcc: Number(st.pauseAcc || 0),
+        pauseAt: Number(st.pauseAt || 0),
+        timerPaused: !!st.timerPaused,
+        cardioStart: Number(st.cardioStart || 0)
+      };
+    }
     wx.showToast({ title: '已恢复上次进度', icon: 'none' });
+  },
+
+  // 重进时把「进行中的那一组 / 有氧」恢复到原计时，而不是从 0:00 重来
+  resumeStage() {
+    const r = this._resume;
+    this._resume = null;
+    if (!r) return;
+    const now = Date.now();
+    const MAX = 12 * 3600 * 1000;
+    // 有氧：接着累计
+    if (r.stage === 'cardio' && this.data.stage === 'ready' && this.data.curType === 'cardio') {
+      const cs = Number(r.cardioStart || 0);
+      if (cs > 0 && now - cs > 0 && now - cs < MAX) {
+        this._cardioStart = cs;
+        const s = Math.round((now - cs) / 1000);
+        this.setData({ stage: 'cardio', cardioSec: s, mmss: mmss(s), hint: '有氧进行中，结束后点完成' });
+        this.tick();
+      }
+      return;
+    }
+    // 力量：恢复当前组的计时起点、暂停累计与暂停状态
+    if (r.stage !== 'work' || this.data.stage !== 'ready') return;
+    const ws = Number(r.workStart || 0);
+    if (!ws || now - ws < 0 || now - ws > MAX) return;
+    this._workStart = ws;
+    this._pauseAcc = Number(r.pauseAcc || 0);
+    this._pauseAt = r.timerPaused ? Number(r.pauseAt || now) : 0;
+    this._lastMin = Math.floor(this.elapsedMs() / 60000);
+    const gi = typeof this._gi === 'number' ? this._gi : 0;
+    this.setData({
+      stage: 'work',
+      timerPaused: !!r.timerPaused,
+      mmss: mmss(this.elapsedMs() / 1000),
+      hint: '第 ' + (gi + 1) + ' 组进行中 · 已接着上次计时'
+    });
+    this.tick();
   },
 
   persistFocus() {
     try {
       wx.setStorageSync(FOCUS_KEY, {
         date: this.date, idx: this.idx, items: this.items,
+        stage: this.data.stage,
         workStart: this._workStart || 0,
+        cardioStart: this._cardioStart || 0,
         startAt: this._sessionStart || 0,
         pauseAcc: this._pauseAcc || 0,
         pauseAt: this._pauseAt || 0,
@@ -184,7 +237,7 @@ Page({
   onUnload() {
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
     wx.setKeepScreenOn({ keepScreenOn: false });
-    if (this.data.stage !== 'finish') this.saveCurrentIfNeeded();
+    if (this.data.stage !== 'finish') { this.persistFocus(); this.saveCurrentIfNeeded(); }
   },
 
   // 息屏/切后台照常计时：计时用系统时间差，回来立刻补一次 tick
@@ -451,6 +504,7 @@ Page({
         hint: '准备好后开始有氧计时'
       });
       this.refreshQueue();
+      this.persistFocus();
       return;
     }
     const gi = it.groups.findIndex(g => !g.done);
@@ -475,6 +529,7 @@ Page({
       hint: '第 ' + (gi + 1) + ' 组准备，点环开始计时'
     });
     this.refreshQueue();
+    this.persistFocus();
     this.draw();
   },
 
@@ -583,9 +638,12 @@ Page({
   start() {
     const it = this.items[this.idx];
     if (!it) return;
+    // 已经开始了就别重置：进行中重复点由暂停/跳过处理
+    if (this.data.stage !== 'ready') return;
     if (it.type === 'cardio') {
       this._cardioStart = Date.now();
       this.setData({ stage: 'cardio', mmss: '0:00', hint: '有氧进行中，结束后点完成' });
+      this.persistFocus();
       return;
     }
     if (!this.data.setTimer) { this.doneCurrent(); return; }
@@ -611,6 +669,7 @@ Page({
       wLabel: engine.wText(g.weight, it.uni),
       hint: (fromRest ? '休息结束 · ' : '') + '第 ' + (gi + 1) + ' 组进行中，做完点完成'
     });
+    this.persistFocus();
   },
 
   // 无计时模式：当前组一键完成
