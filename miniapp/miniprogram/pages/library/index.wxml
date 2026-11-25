@@ -3,18 +3,52 @@
     <text class="lh-t">随便看看——收藏喜欢的，训练时直接用</text>
     <text class="lh-x" bindtap="dismissCoach">知道了</text>
   </view>
-  <view class="cards3" wx:if="{{learn}}">
-    <view class="ecard" bindtap="focusSearch"><text class="ec-ic">🔍</text><text class="ec-t">搜索</text></view>
-    <view class="ecard" bindtap="openAiFind"><text class="ec-ic">✦</text><text class="ec-t">AI 找动作</text></view>
-    <view class="ecard" bindtap="openScan"><text class="ec-ic">📷</text><text class="ec-t">拍照识别</text></view>
-  </view>
-  <view class="subrow" wx:else>
-    <view class="subchip" bindtap="openAiFind">✦ 用一句话添加</view>
-    <view class="subchip" bindtap="openScan">✦ 拍照识别</view>
-  </view>
+
   <view class="bar">
-    <input class="q" value="{{q}}" bindinput="onInput" focus="{{autoFocus}}" placeholder="搜索动作，如 卧推 / 深蹲" confirm-type="search" />
+    <view class="qwrap">
+      <input class="q" value="{{q}}" bindinput="onInput" focus="{{autoFocus}}" placeholder="搜索或描述，如：卧推 / 家里只有哑铃练背" confirm-type="search" />
+      <text class="cam" bindtap="takePhoto">📷</text>
+    </view>
     <view class="fav {{favOnly ? 'on' : ''}}" bindtap="toggleFavView">★</view>
+  </view>
+
+  <view class="busy" wx:if="{{busy}}"><text class="busy-t">✦ {{busyText}}</text></view>
+
+  <view class="srcbar" wx:if="{{srcLabel && !busy}}">
+    <text class="src-t {{src}}">{{srcLabel}}</text>
+    <text class="src-n" wx:if="{{src !== 'kw'}}">{{list.length}} 个</text>
+  </view>
+
+  <view class="cond" wx:if="{{!busy && src === 'ai' && aiChips.length}}">
+    <text class="cond-l">条件</text>
+    <text class="cond-chip" wx:for="{{aiChips}}" wx:key="k" data-k="{{item.k}}" bindtap="editChip">{{item.t}} ▾</text>
+  </view>
+
+  <view class="condpanel" wx:if="{{condOpts.length}}">
+    <view class="cp-head">
+      <text class="cp-t">{{condTitle}}</text>
+      <text class="cp-x" bindtap="closeCond">关闭</text>
+    </view>
+    <view class="cp-opts">
+      <text class="cp-o" wx:for="{{condOpts}}" wx:key="*this" data-v="{{item}}" bindtap="pickCond">{{item}}</text>
+    </view>
+  </view>
+
+  <view class="clar" wx:if="{{!busy && clar.length}}">
+    <text class="clar-q">{{clarQ || '再补一个条件，结果更准'}}</text>
+    <view class="clar-opts">
+      <text class="clar-o" wx:for="{{clar}}" wx:key="*this" data-o="{{item}}" bindtap="clarTap">{{item}}</text>
+    </view>
+  </view>
+
+  <text class="srcnote" wx:if="{{!busy && miss.length}}">动作库里没有：{{missText}}</text>
+  <text class="srcnote err" wx:if="{{!busy && aiErr}}">{{aiErr}}</text>
+
+  <view class="meta">
+    <text>共 {{total}} 个动作 · 当前 {{shown}}</text>
+    <text wx:if="{{noImg > 0}}" class="warn">{{noImg}} 个无图</text>
+    <text wx:if="{{imgTotal > 0}}" class="prog">图 {{imgDone}}/{{imgTotal}}</text>
+    <text class="mylib" bindtap="toMylib">＋ 我的动作</text>
   </view>
 
   <scroll-view class="chips" scroll-x="true" enhanced="true" show-scrollbar="false">
@@ -23,13 +57,6 @@
   <scroll-view class="chips eq" scroll-x="true" enhanced="true" show-scrollbar="false">
     <text class="chip eqchip {{equip === item ? 'on' : ''}}" wx:for="{{equips}}" wx:key="*this" data-e="{{item}}" bindtap="onEquip">{{item}}</text>
   </scroll-view>
-
-  <view class="meta">
-    <text>共 {{total}} 个动作 · 当前 {{shown}}</text>
-    <text wx:if="{{noImg > 0}}" class="warn">{{noImg}} 个无图</text>
-    <text wx:if="{{imgTotal > 0}}" class="prog">图 {{imgDone}}/{{imgTotal}}</text>
-    <text class="mylib" bindtap="toMylib">＋ 我的动作</text>
-  </view>
 
   <view class="grid">
     <view class="ex-card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="openDetail">
@@ -43,12 +70,19 @@
       <view class="cover">
         <text class="n">{{item.n}}</text>
         <text class="p">{{item.p}} · {{item.e || '自重'}}</text>
+        <text class="why" wx:if="{{item.why}}">✦ {{item.why}}</text>
       </view>
     </view>
   </view>
 
   <view class="more" wx:if="{{hasMore}}" bindtap="more">加载更多</view>
-  <text class="empty" wx:if="{{!list.length}}">没有匹配的动作，换个部位或方式试试</text>
+
+  <view class="emptybox" wx:if="{{!list.length && !busy}}">
+    <text class="eb-t">没找到？试试描述一下你的场景</text>
+    <view class="eb-q" data-q="想练背，家里只有哑铃" bindtap="useExample">“想练背，家里只有哑铃”</view>
+    <view class="eb-q" data-q="膝盖不舒服，能练腿的动作" bindtap="useExample">“膝盖不舒服，能练腿的动作”</view>
+    <view class="eb-q" data-q="新手增肌，只有自重" bindtap="useExample">“新手增肌，只有自重”</view>
+  </view>
 </view>
 
 <view class="mask" wx:if="{{detail}}" bindtap="closeDetail">

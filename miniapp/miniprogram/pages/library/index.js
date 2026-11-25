@@ -4,9 +4,21 @@ const actions = require('../../libs/actions');
 const cloudurl = require('../../libs/cloudurl');
 const CLIP_INDEX = require('../../libs/clip-index.js');
 const ai = require('../../libs/ai');
+const usearch = require('../../libs/usearch.js');
 
 const PAGE_SIZE = 40;
 const COACH_KEY = 'selfagent_coach_lib_v1';
+
+// AI 理解条上的条件文案：部位 · 器械 · 限制
+function findLabel(slots) {
+  if (!slots) return '';
+  const t = [];
+  if (slots.part) t.push(slots.part);
+  if (slots.equips && slots.equips.length) t.push(slots.equips.slice(0, 2).join('/'));
+  if (!t.length && slots.keywords && slots.keywords.length) t.push(slots.keywords.slice(0, 2).join('/'));
+  if (slots.constraints && slots.constraints.length) t.push(slots.constraints[0]);
+  return t.join(' · ');
+}
 
 Page({
   data: {
@@ -29,7 +41,20 @@ Page({
     nameDraft: '',
     learn: false,      // 学习态：只逛不加
     coach: false,      // 一次性场景提示
-    searching: false
+    searching: false,
+    // 统一检索
+    src: 'kw',         // kw | ai | vision
+    srcLabel: '',
+    busy: false,
+    busyText: '',
+    aiChips: [],
+    clar: [],
+    clarQ: '',
+    miss: [],
+    aiErr: '',
+    condKind: '',
+    condTitle: '',
+    condOpts: []
   },
 
   onLoad(opts) {
@@ -100,7 +125,11 @@ Page({
       list: visible,
       shown: visible.length,
       hasMore: list.length > visible.length,
-      noImg: visible.filter(c => !c.fileID).length
+      noImg: visible.filter(c => !c.fileID).length,
+      src: 'kw',
+      srcLabel: list.length ? '命中 ' + list.length + ' 个动作' : '',
+      aiChips: [], clar: [], clarQ: '', miss: [], missText: '', aiErr: '',
+      condKind: '', condOpts: []
     });
     this.fillImages(visible.filter(c => !c.fileID).map(c => c.id));
   },
@@ -116,7 +145,8 @@ Page({
       e: e.e,
       fileID: String(raw).indexOf('cloud://') === 0 ? '' : raw,
       fav: favs.indexOf(e.id) >= 0,
-      mine: !!e.mine || String(e.id || '').indexOf('my') === 0
+      mine: !!e.mine || String(e.id || '').indexOf('my') === 0,
+      why: e.why || ''
     };
   },
 
@@ -257,22 +287,198 @@ Page({
   },
 
   onInput(e) {
-    this.setData({ q: e.detail.value });
+    const v = e.detail.value;
+    this.setData({ q: v });
+    if (this._t) { clearTimeout(this._t); this._t = null; }
+    const s = String(v || '').trim();
+    if (!s) { this.setData({ src: 'kw', srcLabel: '', aiChips: [], clar: [], miss: [], busy: false }); this.refresh(); return; }
+
+    // 短词先直出本地结果；长句/场景描述直接走 AI，不用等关键词
+    const kind = usearch.route(s);
+    if (kind === 'ai') {
+      this._t = setTimeout(() => this.runAi(s), 800);
+      return;
+    }
+    this.refresh();
+    // 关键词一个都没命中：AI 兜底（用户已经描述了，只是用词不在词典里）
+    this._t = setTimeout(() => {
+      if (this.data.src !== 'kw') return;
+      const hit = data.search(s, this.data.part, this.data.equip, 100000).length;
+      if (!hit) this.runAi(s);
+    }, 600);
+  },
+
+  noop() {},
+
+  // 自然语言：AI 理解 + 重排，落同一个网格
+  runAi(q) {
+    const key = String(q || '').trim();
+    if (!key) return;
+    const seq = this._seq = (this._seq || 0) + 1;
+    this.setData({ busy: true, busyText: 'AI 理解你的意图…', src: 'ai', aiErr: '' });
+    usearch.aiSearch(key).then(r => {
+      if (seq !== this._seq) return;
+      if (!r || !r.list.length) {
+        this.setData({
+          busy: false, list: [], src: 'ai', srcLabel: '', aiChips: [], clar: [], miss: [], missText: '',
+          aiErr: '这句没读出可用的动作，换个说法试试', shown: 0, total: 0, hasMore: false,
+          imgTotal: 0, imgDone: 0, condKind: '', condOpts: [], noImg: 0
+        });
+        this.all = [];
+        return;
+      }
+      const chips = usearch.slotsToChips(r.slots);
+      const label = chips.length ? '✦ AI 理解' : ('✦ AI 理解：' + (findLabel(r.slots) || '按语义匹配'));
+      this.applyUnified(r, label, chips, r.res || {});
+    }).catch(() => {
+      if (seq !== this._seq) return;
+      this.setData({ busy: false, aiErr: 'AI 暂不可用' });
+    });
+  },
+
+  // 图片：识别 → 同一条结果流
+  takePhoto() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['camera', 'album'],
+      sizeType: ['compressed'],
+      success: (res) => {
+        const f = res.tempFiles && res.tempFiles[0];
+        if (!f) return;
+        const seq = this._seq = (this._seq || 0) + 1;
+        this.setData({ busy: true, busyText: 'AI 看图中…', src: 'vision', aiErr: '', list: [] });
+        usearch.visionSearch(f.tempFilePath).then(r => {
+          if (seq !== this._seq) return;
+          if (!r || !r.list.length) {
+            this.setData({ busy: false, aiErr: '没认出可用动作，换个角度拍或直接描述你的场景' });
+            return;
+          }
+          const parts = [];
+          if (r.shot) parts.push(r.shot);
+          if (r.rawText) parts.push(r.rawText);
+          const label = '📷 识别到：' + (parts.join(' · ') || '健身场景');
+          this.applyUnified(r, label, usearch.slotsToChips(r.slots), {});
+        }).catch(() => {
+          if (seq !== this._seq) return;
+          this.setData({ busy: false, aiErr: '看图失败，换一张或直接描述场景' });
+        });
+      }
+    });
+  },
+
+  // 统一渲染：AI / 拍照 / 条件修改都走这里
+  applyUnified(r, label, chips, res) {
+    const favs = (store.getTrain() || {}).favs || [];
+    const names = actions.exNameMap();
+    this.all = r.list || [];
+    this._slots = r.slots || null;
+    const list = this.all.map(e => this.card(e, favs, names));
+    const cl = (res && res.clarify) || (r.slots && r.slots.clarify) || null;
+    const miss = (res && res.notFound) || [];
+    this.setData({
+      busy: false, busyText: '',
+      list, shown: list.length, hasMore: false, total: this.all.length,
+      srcLabel: label || '',
+      aiChips: chips || [],
+      clar: cl && cl.options ? cl.options.slice(0, 4) : [],
+      clarQ: (cl && cl.q) || '',
+      miss,
+      missText: miss.join('、'),
+      aiErr: '',
+      condKind: '', condOpts: [],
+      imgDone: Object.keys(this.media).length, imgTotal: this.all.length,
+      noImg: list.filter(c => !c.fileID).length
+    });
+    this.fillImages(list.filter(c => !c.fileID).map(c => c.id));
+  },
+
+  // 点 AI 理解条上的条件 → 就地改，改完本地重排（不再打 AI）
+  editChip(e) {
+    const k = e.currentTarget.dataset.k;
+    if (!this._slots || !k) return;
+    const titles = { part: '改部位', equip: '改器械', pattern: '改动作模式', cons: '伤病/限制' };
+    let opts = [];
+    if (k === 'part') opts = ['不限'].concat(data.PARTS);
+    else if (k === 'equip') opts = ['不限', '哑铃', '杠铃', '绳索', '器械', '自重', '小器械'];
+    else if (k === 'pattern') opts = ['不限', '水平推', '垂直推', '水平拉', '垂直拉', '蹲', '髋铰链', '弯举', '臂屈伸', '核心'];
+    else opts = ['不限'];
+    this.setData({ condKind: k, condTitle: titles[k] || '改条件', condOpts: opts });
+  },
+
+  pickCond(e) {
+    const v = e.currentTarget.dataset.v;
+    const k = this.data.condKind;
+    if (!k || !this._slots) return;
+    const slots = usearch.refineSlots(this._slots, k, v === '不限' ? '' : v);
+    const r = usearch.localBySlots(slots);
+    const chips = usearch.slotsToChips(slots);
+    const label = '✦ AI 理解 · 已改条件';
+    this.setData({ condKind: '', condOpts: [] });
+    this.applyUnified(r, label, chips, {});
+  },
+
+  closeCond() { this.setData({ condKind: '', condOpts: [] }); },
+
+  // 追问条：补一个条件再搜
+  clarTap(e) {
+    const o = e.currentTarget.dataset.o;
+    if (!o) return;
+    const q = (this.data.q + ' ' + o).trim();
+    this.setData({ q, clar: [] });
+    this.runAi(q);
+  },
+
+  // 空态：给个可点的例子，直接走 AI
+  useExample(e) {
+    const q = e.currentTarget.dataset.q;
+    if (!q) return;
+    this.setData({ q });
+    this.runAi(q);
+  },
+
+  clearQ() {
+    this.setData({ q: '', srcLabel: '', aiChips: [], clar: [], miss: [], aiErr: '', condKind: '', condOpts: [] });
     this.refresh();
   },
 
   onPart(e) {
-    this.setData({ part: e.currentTarget.dataset.p });
+    const p = e.currentTarget.dataset.p;
+    this.setData({ part: p });
+    // AI 结果里改部位：改条件重排，别把整句丢回关键词搜索
+    if (this.data.src === 'ai' && this._slots) {
+      const slots = usearch.refineSlots(this._slots, 'part', p === '全部' ? '' : p);
+      const r = usearch.localBySlots(slots);
+      this.applyUnified(r, '✦ AI 理解 · 已改条件', usearch.slotsToChips(slots), {});
+      return;
+    }
     this.refresh();
   },
 
   onEquip(e) {
-    this.setData({ equip: e.currentTarget.dataset.e });
+    const eq = e.currentTarget.dataset.e;
+    this.setData({ equip: eq });
+    if (this.data.src === 'ai' && this._slots) {
+      const slots = usearch.refineSlots(this._slots, 'equip', eq === '全部' ? '' : eq);
+      const r = usearch.localBySlots(slots);
+      this.applyUnified(r, '✦ AI 理解 · 已改条件', usearch.slotsToChips(slots), {});
+      return;
+    }
     this.refresh();
   },
 
   toggleFavView() {
-    this.setData({ favOnly: !this.data.favOnly });
+    const on = !this.data.favOnly;
+    this.setData({ favOnly: on });
+    if (this.data.src !== 'kw' && this.all && this.all.length) {
+      // AI/拍照结果直接在当前结果里过滤收藏，不重跑搜索
+      const favs = (store.getTrain() || {}).favs || [];
+      const names = actions.exNameMap();
+      const src = this.all;
+      const list = (on ? src.filter(e => favs.indexOf(e.id) >= 0) : src).map(e => this.card(e, favs, names));
+      this.setData({ list, shown: list.length, hasMore: false, total: list.length });
+      return;
+    }
     this.refresh();
   },
 

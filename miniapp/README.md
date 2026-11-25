@@ -349,6 +349,40 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.34：动作库「单框多模态搜索」
+
+### 一、架构
+
+新增 `libs/usearch.js`，把原来三个入口变成三个 handler，前端只剩一个框 + 一条结果流：
+
+| 输入 | 判定（`route`） | 处理 | 结果标注 |
+|---|---|---|---|
+| 短词「卧推」 | 非自然语言 | `data.search` 本地词典 | `命中 N 个动作` |
+| 长句「想练背，家里只有哑铃」 | 长度 ≥9 / 含标点 / 含意图词（只有·没有·在家·想练·适合·伤·分钟…） | `understand` → `recall(90)` → `rerank` | `✦ AI 理解` + 条件 chips |
+| 关键词零命中 | `data.search` 返回 0 | 同上，AI 兜底 | 同上 |
+| 点 📷 | 选图/拍照 | 压缩→base64→`visionMessages`→名称直配+条件召回 | `📷 识别到：画面 · 器械` |
+
+- AI 结果按 query 缓存 1 小时（`selfagent_unisearch_v1`，最多 30 条），命中缓存直接出结果。
+- 判定为「无意义输入」时返回空列表，不再由 `recall` 的兜底拿全库前 12 个充数。
+
+### 二、交互
+
+- 条件 chips：`slotsToChips` 输出部位/器械/动作模式/限制；点 chip 弹就地选项（`editChip` → `pickCond`），`refineSlots` 改一个维度并清掉冲突项（改部位清 patterns/names/keywords），再 `localBySlots` 本地重排，不打 AI。
+- 追问条：`clarify.options` 直接渲染成 chips，点一下拼回原话走 `aiSearch`。
+- 关键词/AI 两种态下点顶部部位/器械筛选：AI 态走 `refineSlots` 重排，关键词态照旧 `refresh`；收藏视图在 AI 结果里就地过滤，不重跑搜索。
+- 空态：三条可点示例（`useExample`）直接进 AI。
+
+### 三、验证（模拟器）
+
+| # | 用例 | 结果 |
+|---|---|---|
+| 1 | 输入「卧推」 | `src kw`、`命中 79 个动作`、首屏 40 |
+| 2 | 输入「想练背，家里只有哑铃」 | `src ai`、`✦ AI 理解`、chips `背/哑铃/垂直拉/家里`、12 条结果带 why |
+| 3 | 点「背」chip 改「胸」 | `✦ AI 理解 · 已改条件`，chips 变为 `胸/哑铃/家里`，垂直拉被清掉，重排 12 条 |
+| 4 | 输入「qwerty无意义」 | 0 条，提示「这句没读出可用的动作」，chips 清空，空态三例可点 |
+
+截图：`t9/u1-lib-base.png`、`u2-lib-ai.png`、`u3-lib-cond.png`、`u4-lib-empty.png`。
+
 ## 体验版 1.0.33：动作库独立可达 + 学习化
 
 ### 一、入口层
