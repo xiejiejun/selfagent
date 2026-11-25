@@ -193,6 +193,29 @@
 <!-- 动作详情浮层：只展示当前这一个动作，不跳动作库 -->
 <ex-sheet id="exSheet" visible="{{exSheetVisible}}" ex-id="{{exSheetId}}" ex-name="{{exSheetName}}" uid="{{exSheetUid}}" date="{{date}}" bind:close="closeExSheet" bind:fav="refresh" bind:save="onExSheetSave" />
 
+<!-- 同部位推荐：加完一个动作后弹，可重新推荐 / 继续下一个 -->
+<view class="smask" wx:if="{{same.show}}" bindtap="closeSame"></view>
+<view class="ssheet" wx:if="{{same.show}}">
+  <view class="ss-bar"></view>
+  <view class="ss-head">
+    <text class="ss-t">✦ 同部位推荐</text>
+    <text class="ss-x" catchtap="closeSame">✕</text>
+  </view>
+  <text class="ss-sub">{{same.part}} · 今天还没练 · 第 {{same.idx + 1}} 个候选</text>
+  <view class="ss-card">
+    <view class="ss-c-l">
+      <text class="ss-n">{{same.name}}</text>
+      <text class="ss-meta">{{same.part}} · {{same.equip}} · {{same.line}}</text>
+      <text class="ss-why">✦ {{same.why}}</text>
+    </view>
+    <text class="ss-add" catchtap="addSame">＋ 加入</text>
+  </view>
+  <view class="ss-btns">
+    <view class="ss-btn" catchtap="rerollSame">重新推荐</view>
+    <view class="ss-btn ghost" catchtap="nextSame">继续推荐下一个</view>
+  </view>
+</view>
+
 <float-orb wx:if="{{tab === 'today' && !exSheetVisible}}" id="orb" bottom="{{190}}" bind:focus="orbFocus" bind:noted="afterNote" />
 
 <train-editor id="editor"

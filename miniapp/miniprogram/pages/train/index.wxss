@@ -36,6 +36,28 @@
 .fsc-n { font-size: 22rpx; color: #7A5A10; }
 .fsc-a { font-size: 22rpx; color: #C08A12; font-weight: 600; }
 
+/* 同部位推荐弹层 */
+.smask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(20,24,26,.42); z-index: 96; }
+.ssheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 97;
+  background: #fff; border-radius: 28rpx 28rpx 0 0;
+  padding: 12rpx 28rpx calc(24rpx + env(safe-area-inset-bottom));
+}
+.ss-bar { width: 64rpx; height: 8rpx; border-radius: 4rpx; background: #DDE4E2; margin: 4rpx auto 14rpx; }
+.ss-head { display: flex; align-items: center; justify-content: space-between; }
+.ss-t { font-size: 28rpx; font-weight: 600; color: #14181A; }
+.ss-x { font-size: 28rpx; color: #8A9490; padding: 0 8rpx; }
+.ss-sub { display: block; margin-top: 6rpx; font-size: 21rpx; color: #A9B3AF; }
+.ss-card { margin-top: 18rpx; padding: 20rpx 22rpx; background: #F4F8F7; border-radius: 18rpx; display: flex; align-items: center; gap: 16rpx; }
+.ss-c-l { flex: 1; }
+.ss-n { display: block; font-size: 29rpx; font-weight: 600; color: #14181A; }
+.ss-meta { display: block; margin-top: 6rpx; font-size: 22rpx; color: #5B6461; }
+.ss-why { display: block; margin-top: 6rpx; font-size: 21rpx; color: #0F8C7E; }
+.ss-add { flex: none; padding: 14rpx 24rpx; background: #12A594; color: #fff; border-radius: 30rpx; font-size: 24rpx; font-weight: 600; }
+.ss-btns { display: flex; gap: 16rpx; margin-top: 20rpx; }
+.ss-btn { flex: 1; height: 82rpx; line-height: 82rpx; text-align: center; border-radius: 41rpx; font-size: 25rpx; color: #3F4B47; background: #F0F4F3; }
+.ss-btn.ghost { background: #fff; border: 1rpx solid #E3E8E6; }
+
 .card { background: #fff; border-radius: 20rpx; padding: 10rpx 20rpx; }
 
 .ex { border-bottom: 1rpx solid #F1F4F3; }

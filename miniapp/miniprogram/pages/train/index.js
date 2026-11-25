@@ -140,7 +140,8 @@ Page({
     exSheetId: '',
     exSheetName: '',
     exSheetUid: '',
-    rest: { show: false, left: 0, label: '' }
+    rest: { show: false, left: 0, label: '' },
+    same: { show: false, part: '', id: '', name: '', equip: '', line: '', why: '', idx: 0, total: 0 }
   },
 
   onLoad() {
@@ -595,7 +596,7 @@ Page({
     const favs = train.favs || [];
     const isFav = favs.indexOf(rec.exId) >= 0;
     wx.showActionSheet({
-      itemList: ['查看动作详情', '编辑组次', isFav ? '取消收藏' : '收藏这个动作', '杠铃片构成', '默认休息秒数', '删除这个动作'],
+      itemList: ['查看动作详情', '编辑组次', isFav ? '取消收藏' : '收藏这个动作', '杠铃片构成', '默认休息秒数', '推荐同部位动作', '删除这个动作'],
       success: (r) => {
         if (r.tapIndex === 0) { this.openDetail({ currentTarget: { dataset: { uid } } }); return; }
         if (r.tapIndex === 1) { this.openEdit({ currentTarget: { dataset: { uid } } }); return; }
@@ -607,6 +608,7 @@ Page({
         }
         if (r.tapIndex === 3) { this.showPlates(rec); return; }
         if (r.tapIndex === 4) { this.setRestSec(rec); return; }
+        if (r.tapIndex === 5) { this.openSameRec(rec.part); return; }
         wx.showModal({
           title: '删除动作',
           content: '会从 ' + this.data.dateLabel + ' 移除「' + rec.name + '」，记录不可恢复。',
@@ -739,6 +741,91 @@ Page({
     this.addPick({ id: d.id, n: d.name || '', p: d.part || '' });
   },
 
+  /* ---------------- 同部位推荐（AI 推荐卡） ---------------- */
+  closeSame() { this.setData({ same: Object.assign({}, this.data.same, { show: false }) }); },
+
+  openSameRec(part) {
+    const ALIAS = { '腿': '上腿', '手臂': '上臂', '腹': '腰腹', '腹部': '腰腹', '背部': '背', '胸部': '胸', '肩部': '肩' };
+    const p = ALIAS[String(part || '').trim()] || String(part || '').trim();
+    if (!p || p === '有氧') { wx.showToast({ title: '有氧没有同部位推荐', icon: 'none' }); return; }
+    this._sameWhy = [
+      '同部位 · 换个角度刺激',
+      '同部位 · 补足训练容量',
+      '同部位 · 换器械，避开习惯动作',
+      '同部位 · 放到后面收尾正好'
+    ];
+    this.buildSamePool(p);
+    this.showSameAt(0);
+  },
+
+  // 候选池：同部位、今天还没加；先挑常见动作（推/划/蹲/弯举…），冷门与拉伸类靠后
+  buildSamePool(part) {
+    const train = engine.ensureTrain(store.getTrain());
+    const used = {};
+    (train.records || []).forEach(r => { if (r && r.date === this.data.date && r.exId) used[String(r.exId)] = 1; });
+    const all = data.all().filter(x => x && x.p === part && !used[String(x.id)] && String(x.id).indexOf('my') !== 0);
+    const POP = ['推', '划船', '蹲', '弯举', '飞鸟', '平举', '下拉', '硬拉', '腿举', '卷腹', '提踵',
+      '俯卧撑', '臂屈伸', '下压', '夹胸', '引体', '耸肩', '面拉', '臀桥', '弓步', '侧屈', '挺身'];
+    const COLD = ['拉伸', '活动度', 'pose', '瑜伽', '呼吸', '放松', '泡沫轴'];
+    const hot = [];
+    const cold = [];
+    all.forEach(x => {
+      const n = String(x.n || '').toLowerCase();
+      if (COLD.some(w => n.indexOf(w) >= 0)) cold.push(x);
+      else if (POP.some(w => n.indexOf(w) >= 0)) hot.push(x);
+      else cold.push(x);
+    });
+    const shuffle = (arr) => {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    };
+    this._same = shuffle(hot).concat(shuffle(cold)).slice(0, 80);
+  },
+
+  showSameAt(i) {
+    const pool = this._same || [];
+    if (!pool.length) {
+      this.setData({ same: Object.assign({}, this.data.same, { show: false }) });
+      wx.showToast({ title: '这个部位的动作今天都加过了', icon: 'none' });
+      return;
+    }
+    const idx = ((i % pool.length) + pool.length) % pool.length;
+    const it = pool[idx];
+    const whys = this._sameWhy || ['同部位 · 换个角度刺激'];
+    const why = whys[idx % whys.length];
+    this.setData({
+      same: {
+        show: true, part: it.p, id: String(it.id), name: it.n, equip: it.e || '自重',
+        line: '3 组 × 12', why, idx, total: pool.length
+      }
+    });
+  },
+
+  // 重新推荐：重新打散候选池（保证换一个，不原地重弹）
+  rerollSame() {
+    if (!this.data.same.part) return;
+    const old = this.data.same.id;
+    this.buildSamePool(this.data.same.part);
+    this.showSameAt(0);
+    if (this.data.same.id === old && (this._same || []).length > 1) this.showSameAt(1);
+  },
+
+  // 继续推荐下一个：按当前池顺序轮下去
+  nextSame() {
+    if (!this._same || !this._same.length) return;
+    this.showSameAt((this.data.same.idx || 0) + 1);
+  },
+
+  addSame() {
+    const s = this.data.same;
+    if (!s || !s.id) return;
+    this.closeSame();
+    this.addPick({ id: s.id, n: s.name, p: s.part });
+  },
   openFocusByUid(uid) {
     const train = engine.ensureTrain(store.getTrain());
     const hit = (train.records || []).some(x => x && x.uid === uid) ||
@@ -820,6 +907,10 @@ Page({
     this.setData({ editorVisible: false, payload: null });
     this.refresh();
     wx.showToast({ title: d.isNew ? '已添加' : '已保存', icon: 'none' });
+    // 刚加入一个动作：顺手推荐同部位的另一个动作
+    if (d.isNew && d.mode !== 'cardio' && (rec.part || d.record.part)) {
+      setTimeout(() => this.openSameRec(rec.part || d.record.part), 320);
+    }
   },
 
   onEditorDelete(e) {

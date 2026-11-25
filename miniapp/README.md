@@ -349,6 +349,14 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.35：加入动作后的「同部位推荐」
+
+- 触发点两处：① `onEditorConfirm` 里 `isNew` 的器械动作保存后 320ms 弹卡；② 动作行 ⋯ 菜单第 6 项「推荐同部位动作」（有氧行不提供）。
+- `buildSamePool(part)`：别名归一（腿/手臂/腹/背/胸/肩部）→ 过滤当天已加与自定义 → 按常见动作词表（推·划船·蹲·弯举·飞鸟·平举·下拉·硬拉·腿举·卷腹·提踵·俯卧撑·臂屈伸·下压·夹胸·引体·耸肩·面拉·臀桥·弓步·侧屈·挺身）分热/冷两档 → 各自打散后拼起来截 80 条。
+- `showSameAt(i)`：按池取模轮播，附四条轮换推荐语（换角度/补容量/换器械/收尾）。
+- `rerollSame()` 重打散且避开当前 id；`nextSame()` idx+1；`addSame()` 直接 `addPick` 开编辑弹窗；`closeSame()` 收起。
+- 验证（模拟器）：肩 → `哑铃后束三角肌飞鸟`（池 80）；`nextSame` → `壶铃双推推举`；`rerollSame` → `绳索坐姿面拉（绳）`；`addSame` → `editorVisible true` 且卡片收起；胸 → `绳索上斜卧推`，腿（别名）→ `悬吊带侧交叉箭步蹲`。截图 `t9/v1-same-rec.png`、`v2-same-next.png`、`v3-same-add.png`。
+
 ## 体验版 1.0.34：动作库「单框多模态搜索」
 
 ### 一、架构
