@@ -726,6 +726,14 @@ Page({
     this.setData({ detail: null, nameDraft: '' });
   },
 
+  // 自定义动作：从详情直接去「我的动作库」编辑内容/要领/换图
+  editCustom() {
+    const d = this.data.detail;
+    if (!d || !d.id) return;
+    this.closeDetail();
+    wx.navigateTo({ url: '/pages/mylib/index?edit=' + encodeURIComponent(d.id) });
+  },
+
   onNameInput(e) {
     this.setData({ nameDraft: e.detail.value });
   },

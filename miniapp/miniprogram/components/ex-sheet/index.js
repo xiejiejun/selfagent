@@ -53,7 +53,8 @@ Component({
       const favs = (store.getTrain() || {}).favs || [];
       const steps = String(ex.s || '').split('\n').map(x => x.trim()).filter(Boolean);
       let clipID = '';
-      try { clipID = (this.clip && this.clip.url) ? (this.clip.url(realId) || '') : ''; } catch (e) { clipID = ''; }
+      try { clipID = (String(realId).indexOf('my') === 0) ? '' : ((this.clip && this.clip.url) ? (this.clip.url(realId) || '') : ''); } catch (e) { clipID = ''; }
+      const mine = String(realId).indexOf('my') === 0;
       this.setData({
         sheet: {
           id: realId,
@@ -62,11 +63,12 @@ Component({
           e: ex.e,
           t: ex.t,
           alias: !!names[realId],
-          mine: realId.indexOf('my') === 0,
+          mine,
           steps,
           fileID: (this.media && this.media[realId]) || '',
           clipID,
-          clipReady: !clipID || !!(this.media && this.media[realId]),
+          // 自定义动作只放静态图：clipReady 必须为假，否则海报被 wx:if 藏掉
+          clipReady: mine ? false : (!clipID || !!(this.media && this.media[realId])),
           fav: favs.indexOf(realId) >= 0,
           cardio: isCardioEx(ex) || String(ex.p || '') === '有氧'
         }
@@ -181,8 +183,9 @@ Component({
       });
     },
 
-    // 封面：media_map 取 fileID → 临时链接（cloud:// 不能直接给 <image>）
+    // 封面：自定义动作直接用它自己的图；库动作走 media_map → 临时链接
     poster(id) {
+      if (String(id).indexOf('my') === 0) { this.customPoster(id); return; }
       if (!wx.cloud || !wx.cloud.callFunction) return;
       wx.cloud.callFunction({ name: 'gifMigrate', data: { action: 'map', ids: [id] } })
         .then(r => {
@@ -198,6 +201,20 @@ Component({
           });
         })
         .catch(() => this.cdn(id));
+    },
+
+    customPoster(id) {
+      const ex = (actions.customList() || []).find(x => x && String(x.id) === String(id)) || {};
+      const img = String(ex.img || ex.fileID || '');
+      if (!img) return;
+      const apply = (u) => {
+        if (!this.media) this.media = {};
+        this.media[id] = u;
+        const s = this.data.sheet;
+        if (s && s.id === id) this.setData({ 'sheet.fileID': u });
+      };
+      if (img.indexOf('cloud://') !== 0) { apply(img); return; }
+      cloudurl.resolve([img], (urls) => { const u = urls[img]; if (u) apply(u); });
     },
 
     cdn(id) {
@@ -228,6 +245,13 @@ Component({
       this.setData({ 'sheet.fav': on });
       wx.showToast({ title: on ? '已收藏' : '已取消收藏', icon: 'none' });
       this.triggerEvent('fav', { id: s.id, on });
+    },
+
+    // 自定义动作：去「我的动作库」改内容/要领/换图
+    edit() {
+      const s = this.data.sheet;
+      if (!s) return;
+      this.triggerEvent('edit', { id: s.id });
     },
 
     close() { this.triggerEvent('close'); },

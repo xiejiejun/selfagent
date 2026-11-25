@@ -126,6 +126,7 @@
     </view>
 
     <view class="d-btns">
+      <view class="d-btn ghost" wx:if="{{detail.mine}}" bindtap="editCustom">编辑</view>
       <block wx:if="{{learn}}">
         <view class="d-btn primary favbtn" data-id="{{detail.id}}" bindtap="star">{{detail.fav ? '★ 已收藏' : '☆ 收藏'}}</view>
         <view class="d-btn ghost" bindtap="pickNow">＋ 加入今天</view>

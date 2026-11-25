@@ -61,7 +61,7 @@
     <view class="grid" wx:if="{{grid && !empty}}">
       <view class="gcard" wx:for="{{list}}" wx:key="uid">
         <text class="cbadge gcb" wx:if="{{item.isCardio}}">有氧</text>
-        <view class="gc-ph {{item.isCardio ? 'cd' : ''}}">
+        <view class="gc-ph {{item.isCardio ? 'cd' : ''}}" data-uid="{{item.uid}}" catchtap="openDetail">
           <text class="gc-phn">{{item.isCardio ? item.name : (item.part || '动作')}}</text>
           <image wx:if="{{item.img}}" class="gc-img" src="{{item.img}}" mode="aspectFill" data-uid="{{item.uid}}" bindload="gridImgOk" binderror="gridImgErr" />
         </view>
@@ -70,8 +70,6 @@
         <text class="gc-s">{{item.line}}</text>
         <view class="gc-bar"><view class="gc-in" style="width: {{item.totalN ? (item.doneN / item.totalN * 100) : 0}}%"></view></view>
         <view class="gc-act">
-          <text wx:if="{{!item.isCardio || item.exId}}" data-uid="{{item.uid}}" catchtap="openDetail">详情</text>
-          <text class="sp" wx:if="{{!item.isCardio || item.exId}}">·</text>
           <text data-uid="{{item.uid}}" data-cardio="{{item.isCardio}}" catchtap="openEdit">编辑</text>
         </view>
       </view>
@@ -191,7 +189,7 @@
 </view>
 
 <!-- 动作详情浮层：只展示当前这一个动作，不跳动作库 -->
-<ex-sheet id="exSheet" visible="{{exSheetVisible}}" ex-id="{{exSheetId}}" ex-name="{{exSheetName}}" uid="{{exSheetUid}}" date="{{date}}" bind:close="closeExSheet" bind:fav="refresh" bind:save="onExSheetSave" />
+<ex-sheet id="exSheet" visible="{{exSheetVisible}}" ex-id="{{exSheetId}}" ex-name="{{exSheetName}}" uid="{{exSheetUid}}" date="{{date}}" bind:close="closeExSheet" bind:fav="refresh" bind:save="onExSheetSave" bind:edit="onExSheetEdit" />
 
 <!-- 同部位推荐：加完一个动作后弹，可重新推荐 / 继续下一个 -->
 <view class="smask" wx:if="{{same.show}}" bindtap="closeSame"></view>

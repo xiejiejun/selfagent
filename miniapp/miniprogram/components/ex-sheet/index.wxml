@@ -92,6 +92,7 @@
     <view class="csave" wx:if="{{cx}}" bindtap="saveCx">{{cx.hasRec ? '保存方式' : '保存方式并加入今日'}}</view>
 
     <view class="d-btns">
+      <view class="d-btn ghost" wx:if="{{sheet.mine}}" bindtap="edit">编辑</view>
       <view class="d-btn ghost {{sheet.fav ? 'on' : ''}}" bindtap="star">{{sheet.fav ? '★ 已收藏' : '☆ 收藏'}}</view>
       <view class="d-btn primary" bindtap="close">知道了</view>
     </view>

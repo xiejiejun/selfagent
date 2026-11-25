@@ -11,6 +11,12 @@ Page({
     equips: data.EQUIPS.map(e => e.k).filter(k => k !== '全部')
   },
 
+  onLoad(q) {
+    // 从动作详情/训练页点「编辑」进来：直接打开这个自定义动作的表单
+    const id = q && q.edit ? String(q.edit) : '';
+    if (id) setTimeout(() => this.edit({ currentTarget: { dataset: { id } } }), 60);
+  },
+
   onShow() { this.refresh(); this.retryLocalImgs(); },
 
   // 老数据里图片只存了本机临时路径：补传到云存储，换回 fileID，才能进数据库、换机也在

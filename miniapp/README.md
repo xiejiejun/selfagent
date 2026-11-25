@@ -349,6 +349,13 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.45：点图看详情；自定义动作可直接编辑
+
+- 训练页图卡去掉「详情」按钮，点封面图直接打开动作详情浮层；底部只留「编辑」。
+- 详情浮层对自定义动作改用自带图片作封面（不走 media_map、不挂短片），`clipReady` 恒为假以让海报正常显示。
+- 自定义动作详情（训练页浮层、动作库弹层）加「编辑」按钮，跳「我的动作库」并自动展开对应表单（名称/部位/器材/目标肌/动作要领/图片），保存即落库并同步。
+- 验证（模拟器冷启动）：`t9/h7-custom-sheet.png`（浮层出图）、`h8-mylib-edit.png`（编辑跳转并回填）、`h10-lib-detail-edit.png`（动作库详情）、`h9-grid-no-detail-btn.png`（图卡仅剩编辑）。
+
 ## 体验版 1.0.44：自定义动作的图与云同步
 
 - 训练页图卡：`withImg` 对 `my…` 自定义动作直接读 `train.custom.img`，`https`/本地路径直接用，`cloud://` 经 `resolveCustImg` 换临时链接；`warmGrid/fillGrid` 分成「库动作查 gifMigrate 映射 / 自定义用自带图」两路；`gridImgOk` 允许把自定义图缓存到 `thumbs/<my-id>.webp`。

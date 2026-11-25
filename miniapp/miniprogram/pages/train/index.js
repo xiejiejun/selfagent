@@ -526,6 +526,14 @@ Page({
 
   closeExSheet() { this.setData({ exSheetVisible: false }); },
 
+  // 自定义动作：从详情浮层直接去「我的动作库」改名称/部位/要领/图片
+  onExSheetEdit(e) {
+    const id = ((e && e.detail) || {}).id;
+    this.setData({ exSheetVisible: false });
+    if (!id) return;
+    wx.navigateTo({ url: '/pages/mylib/index?edit=' + encodeURIComponent(id) });
+  },
+
   // 详情浮层里「保存方式并加入今日」
   onExSheetSave(e) {
     const d = e.detail || {};
