@@ -35,6 +35,10 @@
 .shx { font-size: 22rpx; color: #8A9490; }
 .tags { display: flex; gap: 10rpx; margin-top: 12rpx; }
 .tg { padding: 5rpx 14rpx; border-radius: 18rpx; background: #EEF7F5; color: #0E8677; font-size: 20rpx; }
+.dmedia { position: relative; width: 100%; height: 340rpx; margin: 14rpx 0 4rpx; border-radius: 16rpx; background: #EDF2F0; overflow: hidden; }
+.dmi { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.dmi.ph { display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, #F4F8F7, #E6EFEC); }
+.phn { font-size: 64rpx; color: #8FA09A; font-weight: 600; }
 .steps { margin-top: 14rpx; }
 .st { display: flex; gap: 12rpx; padding: 7rpx 0; }
 .sn { width: 30rpx; height: 30rpx; line-height: 30rpx; text-align: center; border-radius: 50%; background: #EEF7F5; color: #12A594; font-size: 18rpx; }

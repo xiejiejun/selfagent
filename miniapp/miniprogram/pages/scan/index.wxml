@@ -60,6 +60,11 @@
       <text class="sht">{{detail.n}}</text>
       <text class="shx" bindtap="close">关闭</text>
     </view>
+    <view class="dmedia">
+      <video wx:if="{{detail.clipID}}" id="dvideo" class="dmi" src="{{detail.clipID}}" poster="{{detail.fileID}}" muted loop autoplay playsinline object-fit="cover" show-center-play-btn="{{false}}" controls="{{false}}" binderror="onClipErr" bindloadedmetadata="onClipReady" />
+      <image wx:elif="{{detail.fileID}}" class="dmi" src="{{detail.fileID}}" mode="aspectFill" binderror="onImgErr" />
+      <view wx:else class="dmi ph"><text class="phn">{{detail.n[0]}}</text></view>
+    </view>
     <view class="tags"><text class="tg">{{detail.p}}</text><text class="tg">{{detail.e || '自重'}}</text></view>
     <view class="steps">
       <view class="st" wx:for="{{detail.steps}}" wx:key="*this"><text class="sn">{{index + 1}}</text><text class="sx">{{item}}</text></view>

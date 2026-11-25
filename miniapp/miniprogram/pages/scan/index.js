@@ -1,6 +1,8 @@
 const data = require('../../libs/data/index');
 const find = require('../../libs/find');
 const ai = require('../../libs/ai');
+const CLIP_INDEX = require('../../libs/clip-index');
+const cloudurl = require('../../libs/cloudurl');
 
 function extractJson(text) {
   const s = String(text || '');
@@ -26,6 +28,7 @@ Page({
   },
 
   onLoad() {
+    this.clip = (CLIP_INDEX && CLIP_INDEX.ids) ? CLIP_INDEX : { ids: {}, url: () => '', has: () => false };
     const c = ai.cfg();
     const custom = ai.usingCustom();
     this.setData({
@@ -203,17 +206,119 @@ Page({
 
   open(e) {
     const id = e.currentTarget.dataset.id;
-    const ex = data.byId(id);
+    const ex = data.byId(id) || null;
     if (!ex) return;
+    // 短片索引取值单独兜底：任何异常都不能挡住弹窗本身
+    let cid = '';
+    try { cid = (this.clip && this.clip.url) ? (this.clip.url(ex.id) || '') : ''; } catch (err) { cid = ''; }
+    const poster = ex.img || ex.fileID || '';
+    const isCloud = String(poster).indexOf('cloud://') === 0;
+    const isCloudClip = String(cid).indexOf('cloud://') === 0;
     this.setData({
+      // cloud:// 直接给 <image>/<video> 必挂（渲染层按相对路径请求），先空着，换到 https 再填
       detail: {
         id: ex.id, n: ex.n, p: ex.p, e: ex.e, t: ex.t,
-        steps: (ex.s || '').split('\n').filter(x => x.trim()).slice(0, 8)
-      }
+        steps: (ex.s || '').split('\n').filter(x => x.trim()).slice(0, 8),
+        fileID: isCloud ? '' : poster,
+        clipID: isCloudClip ? '' : cid
+      },
+      clipReady: false
+    });
+    this.clipTempTried = false;
+    if (isCloud) this.resolvePoster(ex.id, poster);
+    else if (!poster) this.fillImage(ex.id);
+    if (isCloudClip) {
+      cloudurl.resolve([cid], (urls) => {
+        const u = urls[cid];
+        const d = this.data.detail;
+        if (u && d && d.id === ex.id) this.setData({ detail: Object.assign({}, d, { clipID: u }) });
+        else if (d && d.id === ex.id) this.setData({ clipReady: true });
+      });
+    }
+    try { this.ensureClip(ex.id); } catch (err) { console.warn('[scan] ensureClip', err && err.message); }
+  },
+
+  // 封面：cloud:// 不能直接给 <image>，换成临时 https
+  resolvePoster(id, fid) {
+    if (!fid || String(fid).indexOf('cloud://') !== 0 || !wx.cloud) { this.fillImage(id); return; }
+    cloudurl.resolve([fid], (urls) => {
+      const u = urls[fid];
+      if (!u) { this.fillImage(id); return; }
+      const d = this.data.detail;
+      if (d && d.id === id) this.setData({ detail: Object.assign({}, d, { fileID: u }) });
     });
   },
 
-  close() { this.setData({ detail: null }); },
+  // 兜底：动作库里没带图时，问一次映射表
+  fillImage(id) {
+    if (!wx.cloud) return;
+    wx.cloud.callFunction({ name: 'gifMigrate', data: { action: 'map', ids: [String(id)] } })
+      .then(r => {
+        const fid = (r && r.result && r.result.map && r.result.map[id]) || '';
+        if (!fid) return;
+        if (String(fid).indexOf('cloud://') === 0) this.resolvePoster(id, fid);
+        else {
+          const d = this.data.detail;
+          if (d && d.id === id) this.setData({ detail: Object.assign({}, d, { fileID: fid }) });
+        }
+      })
+      .catch(() => {});
+  },
+
+  // 短片：索引命中直接播；未命中后台补产一次，不阻塞弹窗
+  ensureClip(id) {
+    if (!id || !this.clip || typeof this.clip.has !== 'function' || this.clip.has(id)) return;
+    if (!wx.cloud) return;
+    if (!this.clipPending) this.clipPending = {};
+    if (this.clipPending[id]) return;
+    this.clipPending[id] = 1;
+    wx.cloud.callFunction({ name: 'gifMigrate', data: { action: 'batchgen', clip: true, ids: [String(id)], budget: 12000 } })
+      .then(r => {
+        const map = ((r && r.result) || {}).map || {};
+        if (!map[id]) return;
+        this.clip.ids[this.clip.key(id)] = 1;
+        const cid = this.clip.url(id);
+        if (!cid) return;
+        cloudurl.resolve([cid], (urls) => {
+          const u = urls[cid];
+          const d = this.data.detail;
+          if (u && d && d.id === id) this.setData({ detail: Object.assign({}, d, { clipID: u }) });
+        });
+      })
+      .catch(() => {})
+      .then(() => { delete this.clipPending[id]; });
+  },
+
+  onClipErr() {
+    const d = this.data.detail;
+    if (!d) return;
+    if (String(d.clipID).indexOf('cloud://') === 0 && wx.cloud && !this.clipTempTried) {
+      this.clipTempTried = true;
+      cloudurl.resolve([d.clipID], (urls) => {
+        const u = urls[d.clipID];
+        const cur = this.data.detail;
+        if (u && cur && cur.id === d.id) this.setData({ detail: Object.assign({}, cur, { clipID: u }) });
+        else this.setData({ detail: Object.assign({}, cur, { clipID: '' }), clipReady: true });
+      });
+      return;
+    }
+    this.clipTempTried = false;
+    this.setData({ detail: Object.assign({}, d, { clipID: '' }), clipReady: true });
+  },
+
+  onClipReady() {
+    if (!this.data.clipReady) this.setData({ clipReady: true });
+  },
+
+  onImgErr() {
+    const d = this.data.detail;
+    if (d) this.setData({ detail: Object.assign({}, d, { fileID: '' }) });
+  },
+
+  close() {
+    try { const ctx = wx.createVideoContext('dvideo', this); if (ctx) ctx.stop(); } catch (e) {}
+    this.setData({ detail: null });
+  },
 
   pick() {
     const d = this.data.detail;

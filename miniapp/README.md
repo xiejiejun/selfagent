@@ -348,6 +348,36 @@ DECISION_POINTS = [
 - 冷启动 3 次（改 lib/组件/page 方法都必须整轮冷启动，热更新不生效）；自动化脚本 `h1/h2/i2/i3/i5/i7`。
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
+
+## 体验版 1.0.29：拍照识别详情补短片 / 图片
+
+### 一、媒体区
+
+- 弹窗在标题与部位标签之间加 `.dmedia`（340rpx 高、16rpx 圆角），三层回落：短片 → 静态图 → 首字占位。
+- 短片：`libs/clip-index.js` 命中即播 `media/clip/<4位id>.mp4`；`muted loop autoplay playsinline`、`controls=false`、隐藏中心播放键，效果等同动图（一直循环、无控件）。
+- 索引未命中：调 `gifMigrate` `{action:'batchgen',clip:true,ids:[id],budget:12000}` 后台补产一次（`clipPending` 去重），成功写入 `clip.ids` 再播。
+- 短片 `binderror`：cloud:// 先换临时 https 重试一次（`clipTempTried`），仍失败才撤视频。
+
+### 二、图片回落
+
+| 顺序 | 来源 | 处理 |
+|---|---|---|
+| 1 | 动作条目 `img` / `fileID` | 非 cloud:// 直接用 |
+| 2 | 同上但为 cloud:// | `cloudurl.resolve` 换临时 https |
+| 3 | 条目没有图 | `gifMigrate` `{action:'map',ids:[id]}` 补一张，再 resolve |
+| 4 | 仍无 | `.ph` 占位，显示动作名首字 |
+
+### 三、验证（模拟器）
+
+| # | 用例 | 结果 |
+|---|---|---|
+| 1 | 打开 `0001 3/4仰卧起坐` | `clipID` = `.../media/clip/0001.mp4` 临时 https，媒体区循环播放，无进度条 |
+| 2 | 手动触发 `onClipErr` | `clipID` 清空、`fileID` 有值，回落静态解剖图 |
+| 3 | 打开 `0002 45度侧屈` | 索引命中，同样出短片 |
+| 4 | 关闭弹窗 | 视频 stop，无残留 |
+
+截图：`t9/s1-scan-clip.png`、`t9/s2-scan-fallback.png`、`t9/s3-scan-noclip.png`。
+
 ## 体验版 1.0.28：休息态环手势 + 建议轮播，去「下一组」按钮
 
 ### 一、休息态三态（与 work 同语言）
