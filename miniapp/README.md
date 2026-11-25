@@ -349,6 +349,33 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.31：修「待推 N」清不掉
+
+### 一、根因
+
+- 脏队列只增不清的残留：`plan(full)` 只把「本机还存在」的实体打包，被删/被合并掉的 uid 留在 `selfagent_dirty_v1` 里，既发不出去也进不了 `clearDirty` 的 sent 列表 → 计数永久挂在「待推 N」。
+- `pages/setting` 自己数 `dirty.train + logs + snap`，与推送实际发送范围不一致，于是出现「已上传」和「待推 12」同时成立。
+
+### 二、改法
+
+| 层 | 改动 |
+|---|---|
+| `libs/store` | 新增 `pruneDirty()`：按现存 records/cardio 的 uid、logs 的 id 过滤脏键，`snap` 与 `ts` 保留 |
+| `libs/sync` | `push()` 开头先 prune；返回 `remaining`；`status()` 返回 `pending`（已 prune） |
+| `pages/setting` | 「待推 N」改读 `sync.status().pending`；时间戳改读 `sync.watermark()` |
+| 上传按钮 | 成功 → 「已上传 · N 包」/「已上传 · 待推 N」；失败 → 弹窗显示云函数错误原文 |
+
+### 三、验证
+
+| # | 用例 | 结果 |
+|---|---|---|
+| 1 | 脏键混入 12 条不存在 uid | prune 后 `train` 只留真实 uid，设置页无「待推」 |
+| 2 | 脏键全部不存在 | prune 后 `{train:[],logs:[],snap:[],ts:{}}` |
+| 3 | 真实 uid + 脏键 + `trainmeta` | 真实 uid 与 `snap`、`ts` 原样保留（`KEPT_ALL true`） |
+| 4 | 设置页 reLaunch（模拟器，12 条死键） | `syncText` = 「已同步 · 09:13」，不再显示待推 |
+
+脚本：`t9/s4.js`（页面显示）、`t9/s8.js`（store 单元逻辑）。
+
 ## 体验版 1.0.30：详情媒体区正方形
 
 - `.dmedia` 从通栏 340rpx 高改为 **560rpx × 560rpx** 居中正方形，`object-fit: cover`，短片与静态图都是方图。

@@ -50,11 +50,12 @@ Page({
   refresh() {
     const p = store.getProfile() || {};
     const train = engine.ensureTrain(store.getTrain());
-    const st = store.getSyncState() || {};
-    const ts = ['logs', 'train', 'profile', 'settings', 'trainmeta'].reduce((a, k) => Math.max(a, Number(st[k]) || 0), 0);
-    const pend = store.getDirty();
-    const pendN = (pend.train || []).length + (pend.logs || []).length + (pend.snap || []).length;
-    const last = ts ? ('已同步 · ' + engine.fmtTime(new Date(ts).toISOString()) + (pendN ? ' · 待推 ' + pendN : '')) : '未同步';
+    const w = sync.watermark();
+    const ts = ['logs', 'train', 'profile', 'settings', 'trainmeta'].reduce((a, k) => Math.max(a, Number(w[k]) || 0), 0);
+    const pendN = sync.status().pending;
+    const last = pendN
+      ? ((ts ? '已同步 · ' + engine.fmtTime(new Date(ts).toISOString()) : '未同步') + ' · 待推 ' + pendN)
+      : (ts ? '已同步 · ' + engine.fmtTime(new Date(ts).toISOString()) : '未同步');
     const cfg = settings.trainCfg();
     const typesView = settings.types().map(t => ({ key: t.key, label: t.label, color: settings.colorFor(t.key), tags: t.tags || [] }));
     const tagCount = typesView.reduce((n, t) => n + t.tags.length, 0);
@@ -323,10 +324,24 @@ Page({
   },
   pushCloud() {
     if (!this.data.cloudReady) { wx.showModal({ title: '云开发未配置', content: '先在 app.js 填 CLOUD_ENV 并部署云函数。', showCancel: false }); return; }
+    if (this.data.busy) return;
     this.setData({ busy: true });
     sync.pushAll()
-      .then(r => { this.setData({ busy: false }); wx.showToast({ title: r && r.ok ? '已上传' : '上传失败', icon: 'none' }); this.refresh(); })
-      .catch(err => { this.setData({ busy: false }); wx.showToast({ title: '上传失败', icon: 'none' }); console.warn('[sync] push', err); });
+      .then(r => {
+        this.setData({ busy: false });
+        if (!r || !r.ok) {
+          wx.showModal({ title: '上传失败', content: String((r && r.error) || '云函数未返回成功（检查 syncPush 是否已部署）'), showCancel: false });
+        } else {
+          const left = Number(r.remaining) || 0;
+          wx.showToast({ title: left ? ('已上传 · 待推 ' + left) : ('已上传' + (r.batches ? ' · ' + r.batches + ' 包' : '')), icon: 'none' });
+        }
+        this.refresh();
+      })
+      .catch(err => {
+        this.setData({ busy: false });
+        wx.showModal({ title: '上传失败', content: String((err && (err.errMsg || err.message)) || err), showCancel: false });
+        console.warn('[sync] push', err);
+      });
   },
 
   pullCloud() {

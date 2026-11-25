@@ -157,8 +157,9 @@ function statesOfBatch(b) {
 
 async function push(full) {
   if (!cloudOk()) return { ok: false, error: '云开发未初始化' };
+  if (store.pruneDirty) store.pruneDirty();
   const { out } = plan(!!full);
-  if (!out.length) return { ok: true, skipped: true };
+  if (!out.length) return { ok: true, skipped: true, remaining: dirtyCount() };
 
   const tomb = store.getTomb();
   let serverTs = 0;
@@ -181,7 +182,13 @@ async function push(full) {
     store.clearDirty(one);
   }
   ALL.forEach(k => bump(k, serverTs || Date.now()));
-  return { ok: true, serverTs, batches: out.length };
+  return { ok: true, serverTs, batches: out.length, remaining: dirtyCount() };
+}
+
+// 待推行数：设置页「待推 N」与推送结果共用同一个口径
+function dirtyCount() {
+  const d = store.pruneDirty ? store.pruneDirty() : store.getDirty();
+  return (d.train || []).length + (d.logs || []).length + (d.snap || []).length;
 }
 
 /* ---------- 下行 ---------- */
@@ -331,7 +338,7 @@ async function pushAll() { return push(true); }
 
 function status() {
   const w = watermark();
-  return { last: Number(w.last) || 0, metaTs: metaTs(), auto: autoOn(), cloud: cloudOk(), dirty: store.getDirty() };
+  return { last: Number(w.last) || 0, metaTs: metaTs(), auto: autoOn(), cloud: cloudOk(), dirty: (store.pruneDirty ? store.pruneDirty() : store.getDirty()), pending: dirtyCount() };
 }
 
 // 本地写入钩子：实体改脏 → 延时上行；设置/档案/主题等快照改动自动标脏

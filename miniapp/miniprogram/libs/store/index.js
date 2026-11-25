@@ -90,6 +90,26 @@ function clearDirty(sent) {
   setDirty(out);
 }
 
+// 清掉「本机已经没有这个实体」的脏键：删掉/合并掉的记录不会再上行，
+// 留着只会在设置页显示「待推 N」永远清不干净。
+function pruneDirty() {
+  const d = getDirty();
+  const train = read(KEYS.train, {}) || {};
+  const presentT = {};
+  (train.records || []).forEach(x => { if (x && x.uid) presentT[String(x.uid)] = 1; });
+  (train.cardio || []).forEach(x => { if (x && x.uid) presentT[String(x.uid)] = 1; });
+  const presentL = {};
+  (read(KEYS.logs, []) || []).forEach(x => { if (x && x.id) presentL[String(x.id)] = 1; });
+  const out = emptyDirty();
+  let changed = false;
+  out.train = d.train.filter(k => { if (presentT[String(k)]) return true; changed = true; return false; });
+  out.logs = d.logs.filter(k => { if (presentL[String(k)]) return true; changed = true; return false; });
+  out.snap = d.snap.slice();
+  Object.keys(d.ts || {}).forEach(k => { if (out.snap.indexOf(k) >= 0) out.ts[k] = d.ts[k]; });
+  if (changed) setDirty(out);
+  return out;
+}
+
 /* ---------- 取值 ---------- */
 function uid(prefix) {
   return (prefix || 't') + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -103,7 +123,7 @@ function dayKey(d) {
 
 module.exports = {
   KEYS, read, write, writeRaw, uid, dayKey,
-  onWrite, markDirty, getDirty, setDirty, clearDirty,
+  onWrite, markDirty, getDirty, setDirty, clearDirty, pruneDirty,
 
   getLogs() { return read(KEYS.logs, []); },
   setLogs(v) { return write(KEYS.logs, Array.isArray(v) ? v : []); },
