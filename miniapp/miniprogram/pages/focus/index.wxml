@@ -57,10 +57,10 @@
     <view class="stage {{stage === 'rest' ? 'resting' : ''}} {{timerPaused ? 'paused' : ''}} {{!setTimer && stage !== 'rest' ? 'lite' : ''}}">
       <canvas type="2d" id="rings" class="rings" disable-scroll="true"></canvas>
       <view class="dial"></view>
-      <view class="ring-hit" wx:if="{{stage === 'work' || (stage === 'ready' && setTimer)}}"
-        bindtap="ringTap"></view>
-      <text class="reset-lnk" wx:if="{{stage === 'work' && timerPaused && !chargePct}}" catchtap="resetArm">重置本组</text>
-      <text class="reset-tip" wx:if="{{chargePct > 0}}">蓄能中 · 点环取消</text>
+      <view class="ring-hit fmc-in" wx:if="{{stage === 'work' || (stage === 'ready' && setTimer)}}"
+        bindtouchstart="ringTouchStart" bindtouchmove="ringTouchMove"
+        bindtouchend="ringTouchEnd" bindtouchcancel="ringTouchEnd"></view>
+      <text class="charge-tip" wx:if="{{chargeTip}}">{{chargeTip}}</text>
       <block wx:if="{{stage === 'rest'}}">
         <view class="ctr">
           <text class="big">{{restLeft}}</text>
@@ -70,7 +70,7 @@
       <block wx:elif="{{setTimer}}">
         <view class="ctr">
           <text class="big">{{mmss}}</text>
-          <text class="unit">{{stage === 'ready' ? '点击开始' : (timerPaused ? '已暂停 · 点击继续' : '本组用时')}}</text>
+          <text class="unit {{timerPaused ? 'pd' : ''}}">{{stage === 'ready' ? '点击开始' : (timerPaused ? '点击继续 · 长按重置' : '点击暂停 · 长按完成')}}</text>
         </view>
       </block>
       <block wx:else>
@@ -105,12 +105,14 @@
       </view>
     </view>
 
-    <view class="main">
-      <view class="go primary" wx:if="{{stage === 'ready' && setTimer}}" bindtap="primaryTap">开始第 {{setNo}} 组</view>
+    <view class="main" wx:if="{{stage === 'rest' || stage === 'between' || (stage === 'ready' && !setTimer)}}">
       <view class="go primary" wx:if="{{stage === 'ready' && !setTimer}}" bindtap="primaryTap">完成第 {{setNo}} 组</view>
-      <view class="go primary hold" wx:if="{{stage === 'work'}}" bindtap="primaryTap" bindlongpress="holdFinish">完成本组 · 第 {{setNo}} 组</view>
       <view class="go primary" wx:if="{{stage === 'rest'}}" bindtap="primaryTap">{{restNextLabel}}</view>
       <view class="go primary" wx:if="{{stage === 'between'}}" bindtap="primaryTap">下一个动作</view>
+    </view>
+
+    <view class="coach" wx:if="{{ringCoach && stage === 'ready'}}" bindtap="ringCoachOff">
+      <text class="coach-t">点按开始 · 练完长按环完成</text>
     </view>
 
     <!-- 组标记：暖身 / RPE -->

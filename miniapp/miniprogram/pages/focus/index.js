@@ -70,6 +70,9 @@ Page({
     setTimer: true,
     timerPaused: false,
     chargePct: 0,
+    chargeColor: '#3DDCBF',
+    chargeTip: '',
+    ringCoach: false,
     restPct: 0,
     restLeft: 0,
     restTotal: 60,
@@ -123,6 +126,9 @@ Page({
       return;
     }
     this.setData({ date: this.date, setTimer: true });
+    let coach = 0;
+    try { coach = wx.getStorageSync('selfagent_coach_ring_v1'); } catch (e) {}
+    this.setData({ ringCoach: !coach });
     this._sessionStart = Date.now();
     this.restoreFocus();
     this.refreshQueue();
@@ -538,12 +544,10 @@ Page({
       if (!this.timer) this.timer = setInterval(() => this.tick(), 500);
       this.tick();
       this.persistFocus();
-      wx.showToast({ title: '继续计时', icon: 'none' });
     } else {
       this._pauseAt = Date.now();
       this.setData({ timerPaused: true, mmss: mmss(this.elapsedMs() / 1000) });
       this.persistFocus();
-      wx.showToast({ title: '已暂停', icon: 'none' });
     }
   },
 
@@ -1170,58 +1174,117 @@ Page({
       ctx.stroke();
     }
 
-    // 重置蓄能：绿弧从 0 扫满一圈
+    // 蓄能弧：完成=绿，重置=琥珀（颜色即语义）
     const charge = this.data.chargePct || 0;
     if (charge > 0) {
       ctx.beginPath();
       ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, charge));
-      ctx.strokeStyle = '#3DDCBF';
+      ctx.strokeStyle = this.data.chargeColor || '#3DDCBF';
       ctx.lineWidth = 10;
       ctx.stroke();
     }
   },
 
-  /* ---------- 环手势：只保留单击（开始/暂停/继续）；完成走大按钮 ---------- */
+  /* ---------- 环手势：单击开始/暂停/继续；长按 650ms 蓄能 → work=完成 / paused=重置 ---------- */
+  ringTouchStart(e) {
+    const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    if (!t) return;
+    const st = this.data.stage;
+    this._rt = { x: t.clientX, y: t.clientY, t0: Date.now(), moved: false, exec: false };
+    this._rtAction = null;
+    this._rtWarn = false;
+    if (st === 'work' && !this.data.timerPaused) {
+      this._rtAction = 'finish';
+      this._rtWarn = this.elapsedSec() < 3; // 刚点开始就长按：琥珀警示
+    } else if (st === 'work' && this.data.timerPaused) {
+      this._rtAction = 'reset';
+    } else {
+      return; // ready/rest 只有单击
+    }
+    this.startCharge(this._rtAction, this._rtWarn);
+  },
+
+  ringTouchMove(e) {
+    const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    if (!this._rt || !t || !this._rtAction) return;
+    if (Math.abs(t.clientX - this._rt.x) > 10 || Math.abs(t.clientY - this._rt.y) > 10) {
+      this._rt.moved = true;
+      this.stopCharge(true);
+    }
+  },
+
+  ringTouchEnd() {
+    const rt = this._rt;
+    this._rt = null;
+    if (!rt) return;
+    const dur = Date.now() - rt.t0;
+    if (rt.exec || rt.moved) { this.stopCharge(true); return; }
+    if (dur >= 250 && this._rtAction) {
+      // 蓄能没满就松手：就地回弹提示，不弹 toast
+      this.stopCharge(true);
+      this.flashChargeTip('再按久一点');
+      return;
+    }
+    this.stopCharge(true);
+    this.ringTap();
+  },
+
+  // 蓄能：650ms 扫满一圈，满即执行；action = finish | reset
+  startCharge(action, warn) {
+    if (this._chargeTimer) clearInterval(this._chargeTimer);
+    this._chargeT0 = Date.now();
+    this._chargeAction = action;
+    this.setData({
+      chargePct: 0.001,
+      chargeColor: (warn || action === 'reset') ? '#E8A93D' : '#3DDCBF',
+      chargeTip: warn ? '刚开始就要完成？' : ''
+    });
+    this.draw();
+    if (warn) wx.vibrateShort({ type: 'light' });
+    this._chargeTimer = setInterval(() => {
+      const p = Math.min(1, (Date.now() - this._chargeT0) / 650);
+      this.setData({ chargePct: p });
+      this.draw();
+      if (p >= 1) {
+        const act = this._chargeAction;
+        if (this._rt) this._rt.exec = true;
+        this.stopCharge(true);
+        wx.vibrateShort({ type: 'heavy' });
+        if (act === 'finish') this.finishSet();
+        else if (act === 'reset') this.resetTimer();
+      }
+    }, 40);
+  },
+
+  stopCharge(silent) {
+    if (this._chargeTimer) { clearInterval(this._chargeTimer); this._chargeTimer = null; }
+    const patch = { chargePct: 0, chargeTip: '' };
+    if (!silent) patch.chargeColor = '#3DDCBF';
+    this.setData(patch);
+    this.draw();
+  },
+
+  flashChargeTip(txt) {
+    this.setData({ chargePct: 0, chargeTip: txt });
+    if (this._tipTimer) clearTimeout(this._tipTimer);
+    this._tipTimer = setTimeout(() => this.setData({ chargeTip: '' }), 900);
+  },
+
+  // 首次引导：点按开始 · 练完长按环结束
+  ringCoachOff() {
+    if (!this.data.ringCoach) return;
+    this.setData({ ringCoach: false });
+    try { wx.setStorageSync('selfagent_coach_ring_v1', 1); } catch (e) {}
+  },
+
   ringTap() {
-    // 蓄能中再点 = 取消重置
-    if (this._resetCharging) { this.cancelCharge(); return; }
     if (this.data.stage === 'ready' && this.data.setTimer) {
+      this.ringCoachOff();
       this.beginSet(false);
       wx.vibrateShort({ type: 'light' });
       return;
     }
     if (this.data.stage === 'work') this.togglePause();
-  },
-
-  // 暂停态环内「重置本组」：点一下开始 800ms 蓄能，期间点环可取消
-  resetArm() {
-    if (this.data.stage !== 'work' || !this.data.timerPaused || this._resetCharging) return;
-    this._resetCharging = true;
-    this._chargeT0 = Date.now();
-    if (this._chargeTimer) clearInterval(this._chargeTimer);
-    this._chargeTimer = setInterval(() => {
-      const p = Math.min(1, (Date.now() - this._chargeT0) / 800);
-      this.setData({ chargePct: p });
-      this.draw();
-      if (p >= 1) {
-        this.stopCharge();
-        wx.vibrateShort({ type: 'heavy' });
-        this.resetTimer();
-      }
-    }, 50);
-    wx.vibrateShort({ type: 'light' });
-  },
-
-  cancelCharge() {
-    if (!this._resetCharging) return;
-    this.stopCharge();
-    wx.showToast({ title: '已取消重置', icon: 'none' });
-  },
-
-  stopCharge() {
-    this._resetCharging = false;
-    if (this._chargeTimer) { clearInterval(this._chargeTimer); this._chargeTimer = null; }
-    if (this.data.chargePct) { this.setData({ chargePct: 0 }); this.draw(); }
   },
 
   noop() {}

@@ -64,19 +64,24 @@
 }
 /* 环是可点区域：单击开始/暂停，长按 800ms 完成，双击重置 */
 .ring-hit { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 50%; z-index: 6; }
-/* 暂停态才出现：重置是丢数据，先蓄能 800ms 再执行 */
-.reset-lnk {
-  position: absolute; left: 0; right: 0; bottom: 132rpx; z-index: 7;
-  text-align: center; font-size: 22rpx; color: #7F8C88; text-decoration: underline;
+/* 蓄能中的就地反馈：再按久一点 / 刚开始就要完成？ */
+.charge-tip {
+  position: absolute; left: 0; right: 0; bottom: 128rpx; z-index: 7;
+  text-align: center; font-size: 22rpx; color: #E8A93D;
 }
-.reset-tip {
-  position: absolute; left: 0; right: 0; bottom: 132rpx; z-index: 7;
-  text-align: center; font-size: 22rpx; color: #3DDCBF;
+/* 首次引导：一次性气泡 */
+.coach {
+  display: flex; justify-content: center; margin-top: 10rpx;
+}
+.coach-t {
+  font-size: 22rpx; color: #9FB0AB; background: rgba(255,255,255,.06);
+  border: 1rpx solid #22302D; border-radius: 999rpx; padding: 8rpx 22rpx;
 }
 .ctr { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-58%); text-align: center; }
 .ctr.cardio { transform: translateY(-50%); }
 .big { display: block; font-size: 92rpx; font-weight: 700; color: #fff; letter-spacing: 2rpx; }
-.unit { display: block; margin-top: 8rpx; font-size: 22rpx; color: #7F8C88; white-space: nowrap; }
+.unit { display: block; margin-top: 8rpx; font-size: 24rpx; color: #A9B7B2; white-space: nowrap; }
+.unit.pd { color: #3DDCBF; }
 .meta { position: absolute; left: 0; right: 0; bottom: 76rpx; text-align: center; font-size: 21rpx; color: #A9B7B2; }
 
 .hint { display: block; text-align: center; font-size: 25rpx; color: #9FB0AB; margin-top: 20rpx; }
