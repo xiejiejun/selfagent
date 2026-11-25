@@ -14,6 +14,7 @@ Page({
     height: '', weight: '', goal: '',
     logsCount: 0, recordsCount: 0, cardioCount: 0,
     syncText: '未同步', syncOn: false, syncAuto: true, cloudReady: false, busy: false,
+    panel: '', panelTitle: '', bodyH: 0,
     typesView: [],
     newTag: '', newType: '',
     restSec: 90, autoNext: false, wStep: 2.5, pureData: false, agentAuto: false,
@@ -35,7 +36,36 @@ Page({
     const p = e.currentTarget.dataset.p;
     if (!p) return;
     ui.light();
-    this.setData({ panel: p, panelTitle: PANEL_TITLE[p] || '' });
+    this.setData({ panel: p, panelTitle: PANEL_TITLE[p] || '', bodyH: 0 });
+    this.fitPanel();
+  },
+
+  // 弹窗内容超过一屏时，scroll-view 必须有确定高度才滚得动：
+  // 量一次内容高度，再按「内容高 / 82vh 上限」取小值写进 style。
+  fitPanel() {
+    setTimeout(() => {
+      if (!this.data.panel) return;
+      const q = wx.createSelectorQuery().in(this);
+      q.select('.p-in').boundingClientRect();
+      q.exec(arr => {
+        const h = arr && arr[0] && arr[0].height;
+        if (!h || !this.data.panel) return;
+        let wh = 0;
+        try {
+          const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+          wh = (info && info.windowHeight) || 0;
+        } catch (e) {}
+        if (!wh) return;
+        const safe = (() => {
+          try {
+            const info = wx.getSystemInfoSync();
+            return Math.max(0, (info.windowHeight || 0) - (info.safeArea ? info.safeArea.bottom : info.windowHeight));
+          } catch (e) { return 0; }
+        })();
+        const cap = Math.round(wh * 0.82) - 96 - safe;
+        this.setData({ bodyH: Math.min(Math.ceil(h), Math.max(220, cap)) });
+      });
+    }, 90);
   },
 
   closePanel() {

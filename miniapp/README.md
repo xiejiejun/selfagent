@@ -349,6 +349,22 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.32：设置页弹窗可滑动
+
+- 现象：二级面板（动作与 AI / 数据等）内容超过一屏时，底部内容被裁掉且滑不动。
+- 原因：`.panel` 只有 `max-height: 82vh`，`scroll-view` 用 `flex:1` 取高，在 WebView 里拿不到确定高度。
+- 改法：`.p-b` 内包 `.p-in`，`openPanel` 后 `fitPanel()` 量内容高度，`bodyH = min(内容高, 0.82×windowHeight − 96 − 安全区)`，作为 `style height` 写给 scroll-view；`.p-b` 改 `flex:0 0 auto`。
+- 验证（模拟器）：
+
+| # | 用例 | 结果 |
+|---|---|---|
+| 1 | 动作与 AI（高级收起） | `bodyH 391`，内容 390，面板 491，无裁切 |
+| 2 | 动作与 AI（高级展开） | 内容 563 > bodyH 454，`scrollTo(0,9999)` 后 `scrollTop 109`，底部 Agent 记忆可见 |
+| 3 | 数据面板 | `bodyH 417`，内容完整 |
+| 4 | 关于面板（短内容） | `bodyH 126`，不留大片空白 |
+
+截图：`t9/s9-panel-ai.png`、`t9/s12-panel-scrolled.png`、`t9/s10-panel-data.png`。
+
 ## 体验版 1.0.31：修「待推 N」清不掉
 
 ### 一、根因

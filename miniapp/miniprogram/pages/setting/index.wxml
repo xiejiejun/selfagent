@@ -68,7 +68,8 @@
     <text class="p-x" bindtap="closePanel">关闭</text>
   </view>
 
-  <scroll-view class="p-b" scroll-y="true" enhanced="true" show-scrollbar="false">
+  <scroll-view class="p-b" scroll-y="true" enhanced="true" show-scrollbar="false" style="{{bodyH ? 'height:' + bodyH + 'px;' : ''}}">
+    <view class="p-in">
     <!-- 个人档案 -->
     <block wx:if="{{panel === 'profile'}}">
       <view class="frow">
@@ -249,5 +250,6 @@
       <text class="tip">悬浮球：拖动换位置，点开是快记面板，长按直接进专注训练。</text>
       <text class="tip">本地优先：日志、训练、设置都在本机；云端只在同步时读写。</text>
     </block>
+    </view>
   </scroll-view>
 </view>

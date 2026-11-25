@@ -69,7 +69,8 @@
 .p-h { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16rpx; border-bottom: 1rpx solid #F0F4F3; }
 .p-t { font-size: 29rpx; font-weight: 600; color: #14181A; }
 .p-x { font-size: 23rpx; color: #12A594; padding: 6rpx 10rpx; }
-.p-b { flex: 1; min-height: 0; padding-top: 18rpx; }
+.p-b { flex: 0 0 auto; min-height: 0; padding-top: 18rpx; }
+.p-in { display: block; }
 .p-sub { display: block; font-size: 21rpx; color: #A9B3AF; margin-bottom: 10rpx; }
 .pbtn { margin-top: 18rpx; height: 80rpx; line-height: 80rpx; text-align: center; background: #12A594; color: #fff; border-radius: 14rpx; font-size: 27rpx; }
 .pbtn.ghost { background: #F4F7F6; color: #5B6461; margin-top: 12rpx; }
