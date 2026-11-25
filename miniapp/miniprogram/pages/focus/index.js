@@ -28,22 +28,26 @@ function loadItems(date) {
         no: g.no || i + 1,
         reps: g.reps || 0,
         weight: g.weight || 0,
+        lw: g.lw,
+        rw: g.rw,
         warmup: false,
-        tag: '',
+        tag: g.tag || '',
         done: !!g.done,
         sec: g.sec || 0
       }));
       if (it.mode === 'sets' && gs.length) {
-        return { type: 'strength', isCardio: true, uid: it.uid, exId: it.exId, name: it.name, part: '有氧', groups: gs };
+        return { type: 'strength', isCardio: true, uid: it.uid, exId: it.exId, name: it.name, part: '有氧', uni: !!it.uni, groups: gs };
       }
       return { type: 'cardio', uid: it.uid, exId: it.exId, name: it.name, min: it.min || 30, done: !!it.done, sec: 0 };
     }
     return {
-      type: 'strength', uid: it.uid, exId: it.exId, name: it.name, part: it.part,
+      type: 'strength', uid: it.uid, exId: it.exId, name: it.name, part: it.part, uni: !!it.uni,
       groups: (it.groups || []).map((g, i) => ({
         no: g.warmup ? 'W' : (g.no || i + 1),
         reps: g.reps || 0,
         weight: g.weight || 0,
+        lw: g.lw,
+        rw: g.rw,
         warmup: !!g.warmup,
         tag: g.tag || (g.warmup ? 'warm' : ''),
         done: !!g.done,
@@ -78,6 +82,8 @@ Page({
     restTotal: 60,
     reps: 0,
     weight: 0,
+    curUni: false,
+    wLabel: '自重',
     rpe: 0,
     warmup: false,
     exSheetVisible: false,
@@ -292,9 +298,9 @@ Page({
       editorVisible: true,
       editorPayload: {
         mode: 'strength', uid: it.uid, name: it.name, part: it.part || '', exId: it.exId || '',
-        date: this.date,
+        date: this.date, uni: !!it.uni,
         groups: (it.groups || []).map(g => ({
-          no: g.no, reps: g.reps || 0, weight: g.weight || 0, done: !!g.done,
+          no: g.no, reps: g.reps || 0, weight: g.weight || 0, lw: g.lw, rw: g.rw, done: !!g.done,
           warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, tag: g.tag || ''
         }))
       }
@@ -316,8 +322,9 @@ Page({
       if (it.uid) actions.saveCardio(Object.assign({}, rec, { uid: it.uid, date: this.date }));
     } else {
       it.name = rec.name || it.name;
+      it.uni = !!rec.uni;
       it.groups = (rec.groups || []).map((g, k) => ({
-        no: g.warmup ? 'W' : (k + 1), reps: g.reps || 0, weight: g.weight || 0,
+        no: g.warmup ? 'W' : (k + 1), reps: g.reps || 0, weight: g.weight || 0, lw: g.lw, rw: g.rw,
         warmup: !!g.warmup, tag: g.tag || (g.warmup ? 'warm' : ''), done: !!g.done,
         rpe: g.rpe || 0, sec: g.sec || 0
       }));
@@ -329,7 +336,7 @@ Page({
             done: (rec.groups || []).length > 0 && (rec.groups || []).every(g => g.done)
           });
         } else {
-          actions.saveStrength(Object.assign({}, rec, { uid: it.uid, date: this.date, groups: rec.groups }));
+          actions.saveStrength(Object.assign({}, rec, { uid: it.uid, date: this.date, groups: rec.groups, uni: !!rec.uni }));
         }
       }
     }
@@ -425,7 +432,7 @@ Page({
     let done = 0, total = 0, vol = 0;
     this.items.forEach(it => {
       if (it.type === 'cardio') return;
-      it.groups.forEach(g => { total++; if (g.done) { done++; vol += (g.reps || 0) * (g.weight || 0); } });
+      it.groups.forEach(g => { total++; if (g.done) { done++; vol += engine.setVolume(g, it.uni); } });
     });
     return { done, total, vol: Math.round(vol) };
   },
@@ -460,7 +467,7 @@ Page({
       stage: 'ready', curType: 'strength', curName: it.name, curPart: it.part || '',
       curCardio: !!it.isCardio,
       setNo: gi + 1, setsDone: it.groups.filter(x => x.done).length, setsTotal: it.groups.length,
-      reps: g.reps || 0, weight: g.weight || 0, mmss: '0:00',
+      reps: g.reps || 0, weight: g.weight || 0, curUni: !!it.uni, wLabel: engine.wText(g.weight, it.uni), mmss: '0:00',
       timerPaused: false,
       rpe: g.rpe || 0, warmup: !!g.warmup,
       detailVisible: false, detail: null,
@@ -475,7 +482,9 @@ Page({
     const next = it.groups.findIndex(g => !g.done);
     return it.groups.map((g, i) => ({
       no: g.no,
-      txt: (g.weight > 0 ? g.weight + 'kg' : '自重') + ' × ' + (g.reps || 0),
+      txt: (g.lw != null || g.rw != null)
+        ? 'L' + (g.lw || 0) + ' R' + (g.rw || 0) + 'kg × ' + (g.reps || 0)
+        : engine.wText(g.weight, it.uni) + ' × ' + (g.reps || 0),
       done: !!g.done,
       warm: !!g.warmup,
       cur: i === next,
@@ -598,6 +607,8 @@ Page({
       setNo: gi + 1,
       reps: g.reps || 0,
       weight: g.weight || 0,
+      curUni: !!it.uni,
+      wLabel: engine.wText(g.weight, it.uni),
       hint: (fromRest ? '休息结束 · ' : '') + '第 ' + (gi + 1) + ' 组进行中，做完点完成'
     });
   },
@@ -711,7 +722,7 @@ Page({
       planSec
     });
     const nextLabel = adv.delta || adv.weight !== (nextG.weight || g.weight)
-      ? '下一组 ' + (adv.weight > 0 ? adv.weight + 'kg × ' + (nextG.reps || g.reps) : '自重 × ' + adv.reps) + ' 开始'
+      ? '下一组 ' + (adv.weight > 0 ? engine.wText(adv.weight, it.uni) + ' × ' + (nextG.reps || g.reps) : '自重 × ' + adv.reps) + ' 开始'
       : '跳过休息，下一组';
     this._restEnd = Date.now() + restSec * 1000;
     this._restPaused = false;
@@ -725,7 +736,7 @@ Page({
       hint: '第 ' + (gi + 1) + ' 组完成 · 休息 ' + restSec + '″，结束做第 ' + (next + 1) + ' 组',
       restTip: '', restAi: '',
       advW: adv.weight, advReps: nextG.reps || g.reps, restNextLabel: nextLabel,
-      restMeta: '下组 ' + (adv.weight > 0 ? adv.weight + 'kg' : '自重') + '×' + (nextG.reps || g.reps) + ' · ' + statAll.done + '/' + statAll.total,
+      restMeta: '下组 ' + engine.wText(adv.weight, it.uni) + '×' + (nextG.reps || g.reps) + ' · ' + statAll.done + '/' + statAll.total,
       restCards: this.buildRestCards(it, g, nextG, adv, restSec, planSec, next),
       restIdx: 0
     });
@@ -739,12 +750,12 @@ Page({
   // 休息轮播：建议不拦路，要用才点
   buildRestCards(it, g, nextG, adv, restSec, planSec, next) {
     const reps = nextG.reps || g.reps;
-    const wTxt = adv.weight > 0 ? adv.weight + 'kg' : '自重';
+    const wTxt = engine.wText(adv.weight, it.uni);
     const cards = [{
       k: 'use',
       t: '建议下一组 ' + wTxt + ' × ' + reps,
       sub: '',
-      lb: adv.weight > 0 ? '用 ' + adv.weight + 'kg' : '用自重',
+      lb: engine.wText(adv.weight, it.uni),
       act: 'use'
     }, {
       k: 'add',
@@ -817,10 +828,10 @@ Page({
     const statAll = this.setsStat();
     this.setData({
       weight: g.weight, reps: g.reps, rows: this.rowsOf(it),
-      restMeta: '下组 ' + (g.weight > 0 ? g.weight + 'kg' : '自重') + '×' + g.reps + ' · ' + statAll.done + '/' + statAll.total
+      restMeta: '下组 ' + engine.wText(g.weight, it.uni) + '×' + g.reps + ' · ' + statAll.done + '/' + statAll.total
     });
     wx.vibrateShort({ type: 'light' });
-    wx.showToast({ title: '已设为 ' + (g.weight > 0 ? g.weight + 'kg × ' + g.reps : '自重 × ' + g.reps), icon: 'none' });
+    wx.showToast({ title: '已设为 ' + engine.wText(g.weight, it.uni) + ' × ' + g.reps, icon: 'none' });
   },
 
   extendRest(sec) {
@@ -885,7 +896,7 @@ Page({
       g.weight = this.data.advW;
       if (this.data.advReps) g.reps = this.data.advReps;
       this.saveStrength(it);
-      this.setData({ weight: g.weight, reps: g.reps, rows: this.rowsOf(it) });
+      this.setData({ weight: g.weight, wLabel: engine.wText(g.weight, it.uni), reps: g.reps, rows: this.rowsOf(it) });
     }
     this.skipRest();
   },
@@ -905,7 +916,7 @@ Page({
     });
     const cur = (g.weight || 0) * (1 + (g.reps || 1) / 30);
     if (g.weight > 0 && cur > best.v + 0.01) {
-      wx.showToast({ title: 'PR · ' + g.weight + 'kg × ' + g.reps, icon: 'none' });
+      wx.showToast({ title: 'PR · ' + engine.wText(g.weight, it.uni) + ' × ' + g.reps, icon: 'none' });
     }
   },
 
@@ -1034,7 +1045,7 @@ Page({
   saveStrength(it) {
     if (!it) return;
     const groups = it.groups.map((g, i) => ({
-      no: g.warmup ? 'W' : (i + 1), reps: g.reps || 0, weight: g.weight || 0,
+      no: g.warmup ? 'W' : (i + 1), reps: g.reps || 0, weight: g.weight || 0, lw: g.lw, rw: g.rw,
       done: !!g.done, warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, tag: g.tag || (g.warmup ? 'warm' : '')
     }));
     const g0 = groups.find(g => g.done) || groups[0] || {};
@@ -1050,6 +1061,7 @@ Page({
         mode: 'sets',
         min: it.min || 0,
         dist: it.dist || 0,
+        uni: !!it.uni,
         groups,
         done: groups.length > 0 && groups.every(g => g.done)
       });
@@ -1062,6 +1074,7 @@ Page({
       exId: it.exId || '',
       name: it.name,
       part: it.part || '',
+      uni: !!it.uni,
       sets: groups.length,
       reps: g0.reps || 10,
       weight: g0.weight || 0,
@@ -1095,7 +1108,7 @@ Page({
     const g = it.groups[this._gi];
     const v = parseFloat(e.detail.value);
     g.weight = isNaN(v) ? 0 : Math.max(0, Math.round(v * 10) / 10);
-    this.setData({ weight: g.weight, rows: this.rowsOf(it) });
+    this.setData({ weight: g.weight, wLabel: engine.wText(g.weight, it.uni), rows: this.rowsOf(it) });
     this.refreshEdit();
   },
   bumpWeight(d) {
@@ -1103,7 +1116,7 @@ Page({
     if (!it || it.type !== 'strength') return;
     const g = it.groups[this._gi];
     g.weight = Math.max(0, Math.round(((g.weight || 0) + d) * 10) / 10);
-    this.setData({ weight: g.weight, rows: this.rowsOf(it) });
+    this.setData({ weight: g.weight, wLabel: engine.wText(g.weight, it.uni), rows: this.rowsOf(it) });
     this.refreshEdit();
   },
 

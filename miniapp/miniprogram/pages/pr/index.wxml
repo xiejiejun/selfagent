@@ -12,7 +12,7 @@
     <view class="row">
       <view class="ml">
         <text class="nm">{{item.name}}</text>
-        <text class="mp">{{item.part || '其他'}} · 最佳 {{item.bestW > 0 ? item.bestW + 'kg' : '自重'}} × {{item.reps}} · {{item.date}}</text>
+        <text class="mp">{{item.part || '其他'}} · 最佳 {{item.bestW > 0 ? item.bestW + 'kg' + (item.uni ? '/侧' : '') : '自重'}} × {{item.reps}} · {{item.date}}</text>
       </view>
       <view class="mr">
         <text class="rm">e1RM</text>

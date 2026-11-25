@@ -13,7 +13,7 @@ function lineOf(i) {
   if (!i) return '';
   const isCd = i.mode === 'sets' || i.mode === 'timer' || !!i.dur;
   if (isCd) return cardioLib.cardioLine(i);
-  return (i.weight > 0 ? i.weight + 'kg ' : '自重 ') + (i.sets || 0) + '×' + (i.reps || 0);
+  return (i.weight > 0 ? engine.wText(i.weight, engine.isUniName(i.name)) + ' ' : '自重 ') + (i.sets || 0) + '×' + (i.reps || 0);
 }
 
 function isCdItem(i) { return !!i && (i.mode === 'sets' || i.mode === 'timer' || !!i.dur); }

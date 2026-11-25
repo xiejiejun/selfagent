@@ -90,7 +90,28 @@
 }
 .num.reps { width: 74rpx; flex: none; }
 .num.weight { width: 96rpx; flex: none; }
+.num.lr { width: 66rpx; flex: none; }
 .unit { font-size: 20rpx; color: #8A9490; flex: none; }
+.unit.lr { font-size: 20rpx; color: #A7B1AD; }
+
+/* 单侧 / 左右分开记 开关 */
+.switches { margin: 4rpx 0 16rpx; background: #F7F9F8; border-radius: 14rpx; padding: 6rpx 16rpx; }
+.sw { display: flex; align-items: center; justify-content: space-between; padding: 10rpx 0; }
+.sw-txt { display: flex; flex-direction: column; gap: 2rpx; }
+.sw-t { font-size: 26rpx; color: #14181A; }
+.sw-s { font-size: 20rpx; color: #8A9490; }
+.sw-k {
+  flex: none; width: 76rpx; height: 44rpx; border-radius: 44rpx;
+  background: #DDE3E1; position: relative; transition: background .18s;
+}
+.sw-k.on { background: #12A594; }
+.knob {
+  position: absolute; top: 4rpx; left: 4rpx;
+  width: 36rpx; height: 36rpx; border-radius: 50%;
+  background: #fff; transition: left .18s;
+  box-shadow: 0 2rpx 6rpx rgba(0,0,0,.14);
+}
+.sw-k.on .knob { left: 36rpx; }
 
 .chip {
   flex: none;
@@ -164,3 +185,8 @@
 .sheet.dark .btn.ghost { background: #1A2321; color: #9FB0AB; }
 .sheet.dark .btn.danger { background: #2A1B1D; color: #E06E78; }
 .sheet.dark .btn.primary { background: #12A594; color: #fff; }
+.sheet.dark .switches { background: #172220; }
+.sheet.dark .sw-t { color: #E8F2EE; }
+.sheet.dark .sw-s { color: #8FA09B; }
+.sheet.dark .sw-k { background: #2A3835; }
+.sheet.dark .sw-k.on { background: #12A594; }

@@ -158,7 +158,7 @@ function genPlan(part, train, custom) {
       reps = Math.max(last.reps || 10, 8) + 1;
       weight = last.weight || 0;
       note = weight > 0
-        ? '上次 ' + last.weight + 'kg × ' + (last.reps || 0) + ' 次（该动作 ' + u.n + ' 次记录）· 重量保持，每组多做 1-2 次'
+        ? '上次 ' + engine.wText(last.weight, engine.isUniName(p.e.n)) + ' × ' + (last.reps || 0) + ' 次（该动作 ' + u.n + ' 次记录）· 重量保持，每组多做 1-2 次'
         : '上次 ' + (last.sets || 0) + '×' + (last.reps || 0) + ' 自重（该动作 ' + u.n + ' 次记录）· 加 1 组或放慢离心';
     } else if (p.src === 'fav') {
       note = '你收藏的常用动作 · 按 3×12 起步';
@@ -167,7 +167,7 @@ function genPlan(part, train, custom) {
     }
     if (!u) {
       const lw = lastWOf(p.e.id);
-      if (lw) { weight = lw; note = '上次 ' + lw + 'kg · 沿用重量，先做 3×12'; }
+      if (lw) { weight = lw; note = '上次 ' + engine.wText(lw, engine.isUniName(p.e.n)) + ' · 沿用重量，先做 3×12'; }
       else if ((p.e.e || '') !== '自重') {
         const pw = peerW(p.e.e || '');
         if (pw) { weight = pw; sugg = true; note = '按同部位最近重量估算 · 采纳后可微调'; }
@@ -188,7 +188,7 @@ function whyOf(p, it) {
   if (p.u && p.u.last) {
     const last = p.u.last;
     const gap = last.date ? Math.round((new Date(engine.dayKey() + 'T00:00:00') - new Date(last.date + 'T00:00:00')) / 864e5) : 0;
-    if (it.weight > 0) return '上次 ' + it.weight + 'kg × ' + (last.reps || 0) + '，隔 ' + gap + ' 天，按渐进超负荷做 ' + it.sets + '×' + it.reps;
+    if (it.weight > 0) return '上次 ' + engine.wText(it.weight, engine.isUniName(p.e.n)) + ' × ' + (last.reps || 0) + '，隔 ' + gap + ' 天，按渐进超负荷做 ' + it.sets + '×' + it.reps;
     return '上次自重 ' + (last.sets || 0) + '×' + (last.reps || 0) + '，这次加量不加时';
   }
   if (p.src === 'fav') return '你收藏的动作，优先排进当天';

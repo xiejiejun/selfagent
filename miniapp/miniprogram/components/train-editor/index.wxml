@@ -25,14 +25,40 @@
       </block>
 
       <block wx:else>
+        <view class="switches">
+          <view class="sw" bindtap="toggleUni">
+            <view class="sw-txt">
+              <text class="sw-t">单侧动作</text>
+              <text class="sw-s">{{uni ? '重量按每侧记 · 容量左右各算一遍' : '双臂/双腿同时做，按总重量记'}}</text>
+            </view>
+            <view class="sw-k {{uni ? 'on' : ''}}"><view class="knob"></view></view>
+          </view>
+          <view class="sw" wx:if="{{uni}}" bindtap="toggleSplit">
+            <view class="sw-txt">
+              <text class="sw-t">左右分开记</text>
+              <text class="sw-s">{{split ? '每组分别填左/右重量' : '左右同重，只填一个数'}}</text>
+            </view>
+            <view class="sw-k {{split ? 'on' : ''}}"><view class="knob"></view></view>
+          </view>
+        </view>
+
         <view class="rows">
-          <view class="row" wx:for="{{rows}}" wx:key="no">
+          <view class="row {{split ? 'split' : ''}}" wx:for="{{rows}}" wx:key="no">
             <text class="no">{{item.no}}</text>
-            <text class="tag {{item.tag}}" data-i="{{index}}" catchtap="cycleTag">{{item.tagLabel || '常规'}}</text>
+            <text class="tag {{item.tag}}" wx:if="{{!split}}" data-i="{{index}}" catchtap="cycleTag">{{item.tagLabel || '常规'}}</text>
             <input class="num reps" type="number" value="{{item.reps}}" data-i="{{index}}" bindinput="onReps" />
-            <text class="unit">次 ×</text>
-            <input class="num weight" type="digit" maxlength="6" value="{{item.wText}}" data-i="{{index}}" bindinput="onWeight" bindblur="onWeightBlur" />
-            <text class="unit">kg</text>
+            <text class="unit">次</text>
+            <block wx:if="{{split}}">
+              <text class="unit lr">左</text>
+              <input class="num lr" type="digit" maxlength="6" value="{{item.lText}}" data-i="{{index}}" data-k="lText" bindinput="onLR" bindblur="onLRBlur" />
+              <text class="unit lr">右</text>
+              <input class="num lr" type="digit" maxlength="6" value="{{item.rText}}" data-i="{{index}}" data-k="rText" bindinput="onLR" bindblur="onLRBlur" />
+              <text class="unit">kg</text>
+            </block>
+            <block wx:else>
+              <input class="num weight" type="digit" maxlength="6" value="{{item.wText}}" data-i="{{index}}" bindinput="onWeight" bindblur="onWeightBlur" />
+              <text class="unit">kg{{uni ? '/侧' : ''}}</text>
+            </block>
             <text class="chip {{item.done ? 'on' : ''}}" data-i="{{index}}" catchtap="toggleDone">{{item.done ? '✓' : '待'}}</text>
             <text class="chip del" data-i="{{index}}" catchtap="delSet">×</text>
           </view>

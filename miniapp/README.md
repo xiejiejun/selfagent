@@ -349,6 +349,14 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.36：单侧动作按「每侧」记录
+
+- 引擎层：`engine.isUniName(name)`（单臂/单腿/单侧/单脚/单边/保加利亚/交替）、`engine.uniOf(rec)`（`rec.uni` > 组的 `tag==='side'` > 名称）、`engine.setVolume(g, uni)`（左右分开记 → `(lw+rw)*reps`；否则 `weight*reps*2`）、`engine.wText(w, uni)`（`12.5kg/侧`）。`stDayItems/cdDayItems` 产出 `uni` 字段，`groupLine(gs, uni)` 带「/侧」、左右分记时输出 `L10 R8kg`。
+- 编辑弹窗：`train-editor` 加两个开关——「单侧动作」（新建按名称自动开，用户拨过就不再覆盖）与「左右分开记」（仅单侧时出现）；行内 `L/R` 双重量输入，`blur` 才取整；保存写 `record.uni` 与 `groups[].lw/rw`，`weight` 取左右较大值兼容旧逻辑。
+- 展示：训练列表行/组行/上次建议、专注环 meta 与组行、组间建议文案、PR 卡与 PR 详情柱、计划卡、训练日志页全部走 `wText`。
+- 容量口径：训练小结、分析页、训练量分布、AI 画像（`agent.js`）、专注页累计容量统一用 `setVolume`，单侧动作不再被低估一半。
+- 验证（模拟器）：`单臂哑铃划船 12.5kg/侧 ×3` → 容量 900、行文案 `12.5kg/侧 3×12`；`保加利亚分腿蹲 L10 R8 ×10` → 容量 180、行文案 `L10 R8kg 1×10`；专注页 `15kg/侧`、组行 `15kg/侧 × 12`，`doneCurrent` 落库后容量 360 且 `uni` 保留；双臂动作（杠铃卧推）开关默认关。截图 `t9/w1-editor-uni.png`、`w2-editor-split.png`、`w5-train-rows.png`、`w6-focus-uni.png`。
+
 ## 体验版 1.0.35：加入动作后的「同部位推荐」
 
 - 触发点两处：① `onEditorConfirm` 里 `isNew` 的器械动作保存后 320ms 弹卡；② 动作行 ⋯ 菜单第 6 项「推荐同部位动作」（有氧行不提供）。

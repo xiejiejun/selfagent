@@ -59,24 +59,25 @@ function buildTimeline() {
           const isSets = it.mode === 'sets';
           return {
             uid: it.uid || '', isCardio: true, cdMode: it.mode || 'timer', name: it.name,
-            line: (isSets ? ((gs.length ? engine.groupLine(gs) : (it.sets || 0) + ' 组')) : ((it.min || 0) + ' 分钟')) + (it.dist ? ' · ' + it.dist + 'km' : ''),
+            line: (isSets ? ((gs.length ? engine.groupLine(gs, it.uni) : (it.sets || 0) + ' 组')) : ((it.min || 0) + ' 分钟')) + (it.dist ? ' · ' + it.dist + 'km' : ''),
             done: !!it.done,
             doneN: isSets ? (it.doneN || 0) : (it.done ? 1 : 0),
             totalN: isSets ? (it.totalN || gs.length) : 1,
             open: !!openMap[l.id + ':' + (it.uid || it.name)],
             key: l.id + ':' + (it.uid || it.name),
-            groups: gs.map(g => ({ no: g.warmup ? 'W' : g.no, txt: (g.weight > 0 ? g.weight + 'kg' : '自重') + ' × ' + g.reps, sec: engine.fmtSec(g.sec), done: !!g.done }))
+            groups: gs.map(g => ({ no: g.warmup ? 'W' : g.no, txt: engine.wText(g.weight, it.uni) + ' × ' + g.reps, sec: engine.fmtSec(g.sec), done: !!g.done }))
           };
         }
         const gs = it.groups || [];
+        const uni = engine.isUniName(it.name);
         return {
           uid: it.uid || '', isCardio: false, name: names[it.exId] || it.name,
-          line: engine.groupLine(gs),
+          line: engine.groupLine(gs, uni),
           doneN: gs.filter(x => x.done).length,
           totalN: gs.length || it.sets || 0,
           open: !!openMap[l.id + ':' + (it.uid || it.name)],
           key: l.id + ':' + (it.uid || it.name),
-          groups: gs.map(g => ({ no: g.warmup ? 'W' : g.no, txt: (g.weight > 0 ? g.weight + 'kg' : '自重') + ' × ' + g.reps, sec: engine.fmtSec(g.sec), done: !!g.done }))
+          groups: gs.map(g => ({ no: g.warmup ? 'W' : g.no, txt: engine.wText(g.weight, uni) + ' × ' + g.reps, sec: engine.fmtSec(g.sec), done: !!g.done }))
         };
       });
       g.logs.push({ id: l.id, kind: 'train', isTrain: true, timeText: engine.fmtTime(l.time), summary: engine.summaryText(items), rows });

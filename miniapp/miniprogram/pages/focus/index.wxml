@@ -77,7 +77,7 @@
       <block wx:else>
         <view class="ctr lite-ctr">
           <text class="big lite-big">{{reps}} 次</text>
-          <text class="unit">{{weight > 0 ? weight + 'kg' : '自重'}} · 第 {{setNo}}/{{setsTotal}} 组</text>
+          <text class="unit">{{wLabel}} · 第 {{setNo}}/{{setsTotal}} 组</text>
         </view>
       </block>
       <view class="meta" wx:if="{{stage !== 'rest'}}">
@@ -107,7 +107,7 @@
         <view class="sbtn" bindtap="addRep">＋</view>
       </view>
       <view class="stp">
-        <text class="stp-l">重量</text>
+        <text class="stp-l">{{curUni ? '重量/侧' : '重量'}}</text>
         <view class="sbtn" bindtap="subWeight">−</view>
         <input class="snum in" type="digit" value="{{weight}}" bindinput="onWeightInput" placeholder="0" />
         <view class="sbtn" bindtap="addWeight">＋</view>

@@ -15,7 +15,7 @@ function prList(train) {
     gs.forEach(g => {
       if (!g.done || g.warmup) return;
       const k = r.name || '未命名';
-      if (!map[k]) map[k] = { name: k, part: r.part || '', bestW: 0, reps: 0, e1rm: 0, date: '', sets: 0, history: [] };
+      if (!map[k]) map[k] = { name: k, part: r.part || '', bestW: 0, reps: 0, e1rm: 0, date: '', sets: 0, history: [], uni: engine.isUniName(k) };
       const it = map[k];
       it.sets++;
       const w = g.weight || 0;
@@ -118,7 +118,7 @@ function progressTop(rs, n) {
         name: x.name, part: x.part,
         from: x.first.w, to: x.last.w, fromReps: x.first.reps, toReps: x.last.reps,
         fromE: x.first.e, toE: x.last.e, pct,
-        text: x.first.w + '→' + x.last.w + 'kg', eText: x.first.e + '→' + x.last.e
+        text: x.first.w + '→' + x.last.w + 'kg' + (engine.isUniName(x.name) ? '/侧' : ''), eText: x.first.e + '→' + x.last.e
       };
     })
     .filter(x => x.pct > 0)

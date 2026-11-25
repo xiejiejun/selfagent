@@ -58,7 +58,7 @@ function buildView(date) {
         uid: it.uid, isCardio: true, exId: exId, cdMode: it.mode,
         name: it.name, part: '有氧',
         line: isSets
-          ? (gs.length ? engine.groupLine(gs) : (it.sets || 0) + ' 组') + (it.dist ? ' · ' + it.dist + 'km' : '')
+          ? (gs.length ? engine.groupLine(gs, it.uni) : (it.sets || 0) + ' 组') + (it.dist ? ' · ' + it.dist + 'km' : '')
           : (it.min || 0) + ' 分钟' + (it.dist ? ' · ' + it.dist + 'km' : ''),
         cdMin: it.min || 0,
         cdDist: it.dist || 0,
@@ -71,7 +71,9 @@ function buildView(date) {
         img: '',
         groups: gs.map(g => ({
           no: g.warmup ? 'W' : g.no,
-          txt: (g.weight > 0 ? g.weight + 'kg' : '自重') + ' × ' + g.reps,
+          txt: g.lw != null || g.rw != null
+            ? 'L' + (g.lw || 0) + ' R' + (g.rw || 0) + 'kg × ' + g.reps
+            : engine.wText(g.weight, it.uni) + ' × ' + g.reps,
           sec: engine.fmtSec(g.sec),
           rpe: g.rpe || 0,
           done: !!g.done,
@@ -81,26 +83,30 @@ function buildView(date) {
       };
     }
     const gs = it.groups || [];
+    const uni = !!it.uni;
     const last = lastSetsOf(train, it.name, date);
     const top = last && last.top;
-    const sug = top ? (top.weight > 0 ? top.weight + 'kg' : '自重') : '';
+    const sug = top ? engine.wText(top.weight, uni) : '';
     return {
       uid: it.uid, isCardio: false, exId: it.exId,
       name: names[it.exId] || it.name,
       rawName: it.name,
       part: it.part,
-      line: engine.groupLine(gs),
+      uni,
+      line: engine.groupLine(gs, uni),
       doneN: gs.filter(g => g.done).length,
       totalN: gs.length || it.sets || 0,
       volume: it.volume || 0,
       open: !!openMap[it.uid],
       fav: favs.indexOf(it.exId) >= 0,
       sug,
-      sugLine: top ? ('上次 ' + (top.weight > 0 ? top.weight + 'kg' : '自重') + ' × ' + (top.reps || 0) + ' 次 · ' + last.date.slice(5) + ' · 组间休 ' + settings.restFor(it.part, it.name) + '″') : '',
+      sugLine: top ? ('上次 ' + engine.wText(top.weight, uni) + ' × ' + (top.reps || 0) + ' 次 · ' + last.date.slice(5) + ' · 组间休 ' + settings.restFor(it.part, it.name) + '″') : '',
       img: '',
       groups: gs.map(g => ({
         no: g.warmup ? 'W' : g.no,
-        txt: (g.weight > 0 ? g.weight + 'kg' : '自重') + ' × ' + g.reps,
+        txt: g.lw != null || g.rw != null
+          ? 'L' + (g.lw || 0) + ' R' + (g.rw || 0) + 'kg × ' + g.reps
+          : engine.wText(g.weight, uni) + ' × ' + g.reps,
         sec: engine.fmtSec(g.sec),
         rpe: g.rpe || 0,
         done: !!g.done,
@@ -118,7 +124,7 @@ function buildView(date) {
       part: r.view,
       recovery: r.recovery ? r.recovery.text : '',
       items: (r.items || []).filter(x => have.indexOf(x.name) < 0).slice(0, 3).map(x => ({
-        name: x.name, exId: x.exId, part: x.part, line: (x.weight > 0 ? x.weight + 'kg' : '自重') + ' × ' + x.reps + ' × ' + x.sets
+        name: x.name, exId: x.exId, part: x.part, line: engine.wText(x.weight, engine.isUniName(x.name)) + ' × ' + x.reps + ' × ' + x.sets
       }))
     };
   }
@@ -486,7 +492,7 @@ Page({
         this.setData({ rest: { show: false, left: 0, label: '' } });
         const next = gs[i + 1];
         if (auto && next) {
-          wx.showToast({ title: '下一组：' + (next.weight > 0 ? next.weight + 'kg' : '自重') + ' × ' + next.reps, icon: 'none' });
+          wx.showToast({ title: '下一组：' + engine.wText(next.weight, engine.uniOf(rec)) + ' × ' + next.reps, icon: 'none' });
         }
         return;
       }
@@ -694,7 +700,7 @@ Page({
       editorVisible: true,
       payload: {
         mode: 'strength', uid: r.uid, name: r.name, part: r.part, exId: r.exId,
-        date: this.data.date, groups: engine.ensureGroups(r)
+        date: this.data.date, uni: engine.uniOf(r), groups: engine.ensureGroups(r)
       }
     });
   },
@@ -710,6 +716,7 @@ Page({
       editorVisible: true,
       payload: {
         mode: 'strength', isNew: true, name: ex.n, part: ex.p, exId: ex.id, date: this.data.date,
+        uni: engine.isUniName(ex.n),
         groups: [{ no: 1, reps: 10, weight: 0, done: false }]
       }
     });

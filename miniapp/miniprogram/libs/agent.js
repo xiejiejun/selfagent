@@ -205,9 +205,10 @@ function buildPersona(logs, d, train) {
       const day = {};
       recs.forEach(r => {
         const dd = day[r.date] = day[r.date] || { vol: 0, hard: 0 };
+        const uni = engine.uniOf(r);
         (r.groups || []).forEach(g => {
           if (!g.done) return;
-          dd.vol += (g.weight || 0) * (g.reps || 0);
+          dd.vol += engine.setVolume(g, uni);
           if (g.rpe === 'hard') dd.hard++;
         });
       });

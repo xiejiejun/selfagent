@@ -36,13 +36,45 @@ function ensureGroups(r) {
   return gs;
 }
 
+/* ---------------- 单侧（每侧）动作 ---------------- */
+// 名称命中即视为单侧：单臂/单腿/单侧/单脚/单边/保加利亚/交替
+const UNI_RE = /单臂|单腿|单侧|单脚|单边|保加利亚|交替/;
+
+function isUniName(name) {
+  return UNI_RE.test(String(name || ''));
+}
+
+// 记录级单侧标记：新记录看 r.uni；老记录看组上的「每侧」tag；再退回名称识别
+function uniOf(r) {
+  if (!r) return false;
+  if (typeof r.uni === 'boolean') return r.uni;
+  if (Array.isArray(r.groups) && r.groups.some(g => g && g.tag === 'side')) return true;
+  return isUniName(r.name);
+}
+
+// 单组容量：左右分开记时按左+右重量，否则按每侧重量 ×2（单侧动作左右各做一遍）
+function setVolume(g, uni) {
+  if (!g) return 0;
+  const reps = Number(g.reps) || 0;
+  if (g.lw != null || g.rw != null) return ((Number(g.lw) || 0) + (Number(g.rw) || 0)) * reps;
+  return (Number(g.weight) || 0) * reps * (uni ? 2 : 1);
+}
+
+// 重量文案：单侧动作带「/侧」
+function wText(w, uni) {
+  const v = Number(w) || 0;
+  if (v <= 0) return '自重';
+  return v + 'kg' + (uni ? '/侧' : '');
+}
+
 /* ---------------- 装配 ---------------- */
 
 function stDayItems(train, dk) {
   return ensureTrain(train).records.filter(r => r && r.date === dk).map(r => {
     const gs = ensureGroups(r);
+    const uni = uniOf(r);
     const done = gs.filter(g => g.done).length;
-    const vol = gs.filter(g => g.done && !g.warmup).reduce((a, g) => a + (g.reps || 0) * (g.weight || 0), 0);
+    const vol = gs.filter(g => g.done && !g.warmup).reduce((a, g) => a + setVolume(g, uni), 0);
     const pick = k => {
       const arr = gs.filter(g => (g[k] || 0) > 0 && !g.warmup);
       const v = arr.slice(-1)[0] || gs.filter(g => (g[k] || 0) > 0).slice(-1)[0];
@@ -51,9 +83,9 @@ function stDayItems(train, dk) {
     return {
       type: 'strength', uid: r.uid || '', exId: r.exId, name: r.name, part: r.part,
       ord: typeof r.ord === 'number' ? r.ord : null,
-      sets: gs.length, reps: pick('reps'), weight: pick('weight'), done,
+      sets: gs.length, reps: pick('reps'), weight: pick('weight'), done, uni,
       volume: Math.round(vol),
-      groups: gs.map(g => ({ no: g.no, reps: g.reps, weight: g.weight, done: !!g.done, warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, uid: g.uid || '' }))
+      groups: gs.map(g => ({ no: g.no, reps: g.reps, weight: g.weight, lw: g.lw, rw: g.rw, done: !!g.done, warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, tag: g.tag || '', uid: g.uid || '' }))
     };
   });
 }
@@ -66,8 +98,9 @@ function cdDayItems(train, dk) {
     const mode = cardioMode(c);
     const min = c.min || c.dur || Math.round((c.sec || 0) / 60) || 0;
     const gs = mode === 'sets' ? ensureGroups(c) : [];
+    const uni = uniOf(c);
     const doneN = gs.filter(g => g.done).length;
-    const vol = gs.filter(g => g.done && !g.warmup).reduce((a, g) => a + (g.reps || 0) * (g.weight || 0), 0);
+    const vol = gs.filter(g => g.done && !g.warmup).reduce((a, g) => a + setVolume(g, uni), 0);
     return {
       type: 'cardio', mode, name: c.modal || c.name || '有氧',
       exId: c.exId || '',
@@ -76,11 +109,12 @@ function cdDayItems(train, dk) {
       sets: gs.length, reps: gs.length ? (gs[gs.length - 1].reps || 0) : 0,
       weight: gs.length ? (gs[gs.length - 1].weight || 0) : 0,
       volume: Math.round(vol),
+      uni,
       done: mode === 'sets' ? (gs.length > 0 && doneN === gs.length) : !!c.done,
       doneN: mode === 'sets' ? doneN : ((c.done ? 1 : 0)),
       totalN: mode === 'sets' ? gs.length : 1,
       dist: Number(c.dist) || 0,
-      groups: gs.map(g => ({ no: g.no, reps: g.reps, weight: g.weight, done: !!g.done, warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, uid: g.uid || '' })),
+      groups: gs.map(g => ({ no: g.no, reps: g.reps, weight: g.weight, lw: g.lw, rw: g.rw, done: !!g.done, warmup: !!g.warmup, rpe: g.rpe || 0, sec: g.sec || 0, tag: g.tag || '', uid: g.uid || '' })),
       uid: c.uid || '',
       ord: typeof c.ord === 'number' ? c.ord : null
     };
@@ -119,14 +153,23 @@ function fmtSec(sec) {
   return s >= 60 ? Math.floor(s / 60) + '′' + pad2(s % 60) + '″' : s + '″';
 }
 
-function groupLine(groups) {
+function groupLine(groups, uni) {
   const a = (groups || []).filter(g => !g.warmup);
   if (!a.length) return '';
-  const one = g => (g.weight > 0 ? g.weight + 'kg' : '自重') + '×' + (g.reps || 0);
-  const same = a.every(g => (g.weight || 0) === (a[0].weight || 0) && (g.reps || 0) === (a[0].reps || 0));
+  const lr = g => g.lw != null || g.rw != null;
+  const one = g => lr(g)
+    ? 'L' + (Number(g.lw) || 0) + ' R' + (Number(g.rw) || 0) + 'kg×' + (g.reps || 0)
+    : wText(g.weight, uni) + '×' + (g.reps || 0);
+  const same = a.every(g => (g.weight || 0) === (a[0].weight || 0) && (g.reps || 0) === (a[0].reps || 0)
+    && (g.lw || 0) === (a[0].lw || 0) && (g.rw || 0) === (a[0].rw || 0));
   const secs = a.filter(g => g.sec > 0);
   const tail = secs.length ? ' · ' + fmtSec(secs.reduce((x, g) => x + g.sec, 0)) : '';
-  if (same) return (a[0].weight > 0 ? a[0].weight + 'kg' : '自重') + ' ' + a.length + '×' + (a[0].reps || 0) + tail;
+  if (same) {
+    const head = lr(a[0])
+      ? 'L' + (Number(a[0].lw) || 0) + ' R' + (Number(a[0].rw) || 0) + 'kg'
+      : wText(a[0].weight, uni);
+    return head + ' ' + a.length + '×' + (a[0].reps || 0) + tail;
+  }
   const parts = a.map(one);
   const line = parts.length > 3 ? parts.slice(0, 3).join(' · ') + ' · +' + (parts.length - 3) : parts.join(' · ');
   return line + tail;
@@ -332,6 +375,7 @@ function fmtTime(iso) {
 
 module.exports = {
   pad2, dayKey, uid, ensureTrain, ensureGroups,
+  isUniName, uniOf, setVolume, wText,
   stDayItems, cdDayItems, dayItems, dayContent,
   groupLine, summarize, summaryText, fmtSec,
   upsertRecord, removeRecord, upsertCardio, removeCardio,

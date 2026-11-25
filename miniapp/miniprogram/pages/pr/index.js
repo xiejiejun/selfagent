@@ -47,8 +47,7 @@ Page({
       date: h.date.slice(5),
       weight: h.weight,
       reps: h.reps,
-      txt: h.weight > 0 ? h.weight + 'kg×' + h.reps : '自重×' + h.reps,
-      h: h.weight ? Math.max(8, Math.round((h.weight / maxW) * 100)) : 0
+      txt: h.weight > 0 ? engine.wText(h.weight, engine.isUniName(name)) + '×' + h.reps : '自重×' + h.reps,      h: h.weight ? Math.max(8, Math.round((h.weight / maxW) * 100)) : 0
     }));
     this.setData({ openName: name, openBars: bars, openInfo: p });
   },

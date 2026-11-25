@@ -51,7 +51,7 @@ Page({
     const joinedIds = (train.records || []).filter(r => r.date === today).map(r => r.exId);
     rec.items = (rec.items || []).map(i => Object.assign({}, i, {
       joined: joinedIds.indexOf(i.exId) >= 0,
-      line: i.dur ? ('有氧 ' + i.dur + '′') : ((i.weight > 0 ? i.weight + 'kg ' : '自重 ') + i.sets + '×' + i.reps)
+      line: i.dur ? ('有氧 ' + i.dur + '′') : ((i.weight > 0 ? engine.wText(i.weight, engine.isUniName(i.name)) + ' ' : '自重 ') + i.sets + '×' + i.reps)
     }));
 
     const wd = decision.weekly(train);
