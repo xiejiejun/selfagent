@@ -4,6 +4,7 @@ const actions = require('../../libs/actions');
 const settings = require('../../libs/settings');
 const recommend = require('../../libs/recommend');
 const cloudurl = require('../../libs/cloudurl');
+const thumb = require('../../libs/thumbcache');
 const data = require('../../libs/data/index');
 const cardioLib = require('../../libs/cardio');
 const CLIP_INDEX = require('../../libs/clip-index.js');
@@ -200,16 +201,29 @@ Page({
         { v: v.list.length, l: '当天动作' }
       ]
     });
-    if (this.data.grid) this.fillGrid(v.list);
+    if (this.data.grid) this.fillGrid(v.list); else this.warmGrid(v.list);
   },
 
-  // 图卡缩略图：命中内存的直接贴，缺的走云函数取 fileID → 临时链接
+  // 图卡缩略图：本机缓存 → 内存 → 空（空则显示部位占位文字）
   withImg(list) {
     if (!this.media) this.media = {};
     return list.map(x => {
-      const u = this.media[String(x.exId || '')] || '';
+      const id = String(x.exId || '');
+      const u = this.media[id] || (id ? thumb.get(id) : '') || '';
+      if (u) this.media[id] = u;
       return u === x.img ? x : Object.assign({}, x, { img: u });
     });
+  },
+
+  // 进页面就预热缩略图（不等切到图卡），切过去时基本已就绪
+  warmGrid(list) {
+    if (!wx.cloud || !wx.cloud.callFunction) return;
+    const ids = (list || []).filter(x => x.exId && /^\d{4}$/.test(String(x.exId)) && !this.media[String(x.exId)])
+      .map(x => String(x.exId));
+    if (!ids.length) return;
+    this.mapChunk(ids.slice(0, 20));
+    const rest = ids.slice(20);
+    if (rest.length) setTimeout(() => this.fillGridIds(rest), 1200);
   },
 
   fillGrid(list) {
@@ -232,9 +246,14 @@ Page({
       .then(r => {
         const map = ((r && r.result) || {}).map || {};
         const keys = Object.keys(map);
+        if (!this.fid) this.fid = {};
+        keys.forEach(k => { this.fid[k] = map[k]; });
         if (!keys.length) { this.applyFallback(todo); return; }
         cloudurl.resolve(keys.map(k => map[k]), (urls) => {
-          keys.forEach(k => { this.media[k] = urls[map[k]] || ''; });
+          keys.forEach(k => {
+            const u = urls[map[k]] || '';
+            if (u) this.media[k] = u;
+          });
           this.applyFallback(keys);
         });
       })
@@ -244,13 +263,34 @@ Page({
   // 映射里没有的：先用 jsDelivr 直连（图挂了由 binderror 再清成占位符）
   applyFallback(ids) {
     (ids || []).forEach(id => {
-      if (this.media[id]) return;
+      if (this.media[id] || (id && thumb.get(id))) return;
       if (/^\d{4}$/.test(String(id))) this.media[id] = 'https://cdn.jsdelivr.net/gh/xiejiejun/selfagent@main/media/thumb/' + id + '.webp';
     });
     this.setData({ list: this.withImg(this.data.list) });
   },
 
-  // 图卡图片加载失败：CDN 直连 → 云下载落本地 → 占位块（三层，绝不白板）
+  // 图片真的画出来了：把这张落成本地文件，下次开页直接读盘
+  gridImgOk(e) {
+    const uid = e.currentTarget.dataset.uid;
+    const it = (this.data.list || []).find(x => x.uid === uid);
+    if (!it) return;
+    const id = String(it.exId || '');
+    if (!/^\d{4}$/.test(id) || thumb.get(id)) return;
+    const fid = (this.fid || {})[id];
+    if (!fid || !wx.cloud || !wx.cloud.downloadFile) return;
+    if (!this.caching) this.caching = {};
+    if (this.caching[id]) return;
+    this.caching[id] = 1;
+    wx.cloud.downloadFile({ fileID: fid })
+      .then(res => {
+        const p = res && res.tempFilePath;
+        const local = p ? thumb.save(id, p) : '';
+        if (local) this.media[id] = local;
+      })
+      .catch(() => {});
+  },
+
+  // 图卡图片加载失败：云下载 → jsDelivr CDN → 占位块（先国内可用的云，CDN 兜底）
   gridImgErr(e) {
     const uid = e.currentTarget.dataset.uid;
     const idx = (this.data.list || []).findIndex(x => x.uid === uid);
@@ -259,22 +299,43 @@ Page({
     const id = String(it.exId || '');
     const cur = it.img || '';
     if (!/^\d{4}$/.test(id)) { this.patchImg(idx, ''); return; }
-    const cdn = 'https://cdn.jsdelivr.net/gh/xiejiejun/selfagent@main/media/thumb/' + id + '.webp';
-    if (cur.indexOf('cdn.jsdelivr.net') < 0) { this.patchImg(idx, cdn); return; }
     if (!this.dlTried) this.dlTried = {};
-    if (this.dlTried[id]) { if (this.media) this.media[id] = ''; this.patchImg(idx, ''); return; }
+    // 已有本地缓存却还报错：文件坏了，丢掉缓存再取
+    const cached = thumb.get(id);
+    if (cached && cur === cached) {
+      this.media[id] = '';
+      try { thumb.drop && thumb.drop(id); } catch (err) {}
+      this.dlTried[id] = 1;
+    }
+    if (this.dlTried[id]) {
+      const cdn = 'https://cdn.jsdelivr.net/gh/xiejiejun/selfagent@main/media/thumb/' + id + '.webp';
+      if (cur.indexOf('cdn.jsdelivr.net') < 0) { this.patchImg(idx, cdn); return; }
+      if (this.media) this.media[id] = '';
+      this.patchImg(idx, '');
+      return;
+    }
     this.dlTried[id] = 1;
     if (!wx.cloud || !wx.cloud.downloadFile) { this.patchImg(idx, ''); return; }
+    const useFid = (this.fid && this.fid[id]) || '';
+    const grab = (fid) => {
+      if (!fid) { this.patchImg(idx, ''); return; }
+      wx.cloud.downloadFile({ fileID: fid })
+        .then(res => {
+          const p = res && res.tempFilePath;
+          if (!p) { this.patchImg(idx, ''); return; }
+          const local = thumb.save(id, p);
+          if (this.media) this.media[id] = local || p;
+          this.patchImg(idx, local || p);
+        })
+        .catch(() => this.patchImg(idx, ''));
+    };
+    if (useFid) { grab(useFid); return; }
     wx.cloud.callFunction({ name: 'gifMigrate', data: { action: 'map', ids: [id] } })
       .then(r => {
         const fid = (((r && r.result) || {}).map || {})[id];
-        if (!fid) { this.patchImg(idx, ''); return; }
-        wx.cloud.downloadFile({ fileID: fid })
-          .then(res => {
-            const p = res && res.tempFilePath;
-            if (p) { this.media[id] = p; this.patchImg(idx, p); } else { this.patchImg(idx, ''); }
-          })
-          .catch(() => this.patchImg(idx, ''));
+        if (!this.fid) this.fid = {};
+        if (fid) this.fid[id] = fid;
+        grab(fid);
       })
       .catch(() => this.patchImg(idx, ''));
   },

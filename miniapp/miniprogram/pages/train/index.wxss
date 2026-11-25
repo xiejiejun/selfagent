@@ -207,7 +207,7 @@
   background: linear-gradient(160deg, #F4F8F7, #E6EFEC);
 }
 .gc-ph.cd { background: linear-gradient(160deg, #EFF7F4, #DCEBE5); }
-.gc-img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; background: #F2F6F4; }
+.gc-img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; background: transparent; z-index: 1; }
 .gc-phn {
   position: absolute; left: 0; top: 0; width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;

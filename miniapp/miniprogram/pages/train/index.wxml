@@ -62,8 +62,8 @@
       <view class="gcard" wx:for="{{list}}" wx:key="uid">
         <text class="cbadge gcb" wx:if="{{item.isCardio}}">有氧</text>
         <view class="gc-ph {{item.isCardio ? 'cd' : ''}}">
-          <image wx:if="{{item.img}}" class="gc-img" src="{{item.img}}" mode="aspectFill" data-uid="{{item.uid}}" binderror="gridImgErr" />
-          <text wx:else class="gc-phn">{{item.isCardio ? item.name : (item.part || '动作')}}</text>
+          <text class="gc-phn">{{item.isCardio ? item.name : (item.part || '动作')}}</text>
+          <image wx:if="{{item.img}}" class="gc-img" src="{{item.img}}" mode="aspectFill" data-uid="{{item.uid}}" bindload="gridImgOk" binderror="gridImgErr" />
         </view>
         <text class="gc-n">{{item.name}}</text>
         <text class="gc-v">{{item.isCardio && item.cdMode !== 'sets' ? (item.done ? '✓' : '—') : item.doneN + '/' + item.totalN}}</text>

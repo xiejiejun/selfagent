@@ -349,6 +349,14 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.38：修图卡缩略图偶发空白
+
+- 症状：训练页「图卡」里偶发图片不显示，只剩一块浅灰；有时要等几秒或重进页面才出。
+- 原因：①缩略图只在切到图卡时才发 `gifMigrate.map` → `getTempFileURL` → 下载，链路两跳，切过去头两秒必然空；②失败回退先换 jsDelivr（国内不稳定），要等它超时才走云下载，期间灰块一直挂着。
+- 改法：`libs/thumbcache.js` 增加本机缓存（`USER_DATA_PATH/thumbs/<id>.webp`）；`gridImgOk` 在图片真正渲染成功后用 `wx.cloud.downloadFile` 拉原图并 `copyFileSync` 落盘；`withImg` 取图顺序改为内存 → 本机文件 → 空；`refresh` 里无条件 `warmGrid`，进页面就预热；`gridImgErr` 回退顺序改为云下载（带本地缓存）→ jsDelivr → 占位。
+- 占位层：wxml 里部位文字常驻在图片下层（`.gc-phn` 在下、`.gc-img` 透明底 `z-index:1` 在上），加载中/失败都先看到部位名而不是纯灰块。
+- 验证（模拟器，冷启动）：`pages/train` → `toggleGrid`，首次 3 张云图渲染成功并落盘；二次 `reLaunch` 后 `img` 变为 `wxfile://usr/thumbs/0025.webp / 0308 / 0577`，无网络请求即出图。截图 `t9/y1-grid-first.png`、`y2-grid-loaded.png`、`y3-grid-cached.png`。
+
 ## 体验版 1.0.37：修动作库详情「加入今天训练」点不中
 
 - 症状：详情页底部「☆ 收藏 / 加入今天训练」必须滚动到内容最底部才响应；在中间点击只会关闭详情退回动作库，不弹重量设置卡。
