@@ -349,6 +349,14 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.40：组前 3 秒倒计时 + 暂停后长按完成本组
+
+- 新增 `stage: 'countdown'`：`beginSet` 不再立刻起表，先设 `_cdEnd = now + 3000`；`tick` 每 0.5s 算剩余秒数写 `cdLeft`，到 0 调 `startWork()` 记 `_workStart`（前面 3 秒不计入组时长）。
+- 动画两层：WXML 大号数字 `3/2/1`（`.cd-num.cd1/.cd2` 两套同参 `@keyframes` 交替，靠 `cdAnim` 切类强制重放，每秒 scale 1.55→0.94→1 的脉冲）；Canvas 圆环按剩余时间收拢 + 每秒向外一圈衰减涟漪，`tick` 期间持续 `draw()`。
+- 倒计时阶段不挂 `.ring-hit` 手势，避免中途误触暂停；`steppers`/首练引导在倒计时屏蔽。
+- 暂停中长按：`ringTouchStart` 不再给 `reset`，直接 `finish`（完成本组），`startCharge` 去掉 reset 分支；wxml 文案“点击继续 · 长按完成本组”。`resetTimer` 保留但无入口。
+- 验证（模拟器）：t=0.5s `countdown/cd=3` → t≈1.1s `cd=2` → t≈3.1s `work/mmss=0:00` → 0:01 → 0:02；暂停长按后 `setsDone` 2→3 并进入“这个动作做完了”。截图 `t9/c1-countdown-3.png`、`c2-countdown-2.png`、`c3-work-start.png`、`c4-paused.png`、`c5-completed.png`。
+
 ## 体验版 1.0.39：有氧默认计时 + 专注模式重进接着计时
 
 - 有氧默认计组方式：`libs/cardio.js` 的 `defaultCardioMode()` 固定返回 `timer`（不再按 跳绳/波比/壶铃 等名称预选计组），新加有氧在详情里就是「计时 20′」，要计组手动切；`libs/recommend.js` 的 `cardioItem` 同步只出计时条目。

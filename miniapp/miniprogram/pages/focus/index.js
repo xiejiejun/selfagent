@@ -71,6 +71,8 @@ Page({
     setsDone: 0,
     setsTotal: 0,
     mmss: '0:00',
+    cdLeft: 0,
+    cdAnim: 0,
     setTimer: true,
     timerPaused: false,
     chargePct: 0,
@@ -553,6 +555,15 @@ Page({
   tick() {
     const now = Date.now();
     const d = {};
+    if (this.data.stage === 'countdown' && this._cdEnd) {
+      const left = Math.ceil((this._cdEnd - now) / 1000);
+      if (left <= 0) { this.startWork(); return; }
+      if (left !== this.data.cdLeft) {
+        d.cdLeft = left;
+        d.cdAnim = this.data.cdAnim === 1 ? 2 : 1;
+        wx.vibrateShort({ type: 'light' });
+      }
+    }
     if (this.data.stage === 'work' && this._workStart && !this.data.timerPaused) {
       d.mmss = mmss(this.elapsedMs() / 1000);
       // 满 1 分钟：白光脉冲，弧重新从 0 起
@@ -581,7 +592,7 @@ Page({
       d.mmss = mmss(s);
     }
     if (Object.keys(d).length) this.setData(d);
-    if (this.data.stage === 'work' || this.data.stage === 'rest' || this.data.stage === 'ready') this.draw();
+    if (this.data.stage === 'work' || this.data.stage === 'rest' || this.data.stage === 'ready' || this.data.stage === 'countdown') this.draw();
   },
 
   /* ---------- 力量 ---------- */
@@ -619,7 +630,7 @@ Page({
     }
   },
 
-  // 重置本组计时：丢数据，回到 ready，等下次点环再开始
+  // 重置入口已取消：暂停后长按改为完成本组（resetTimer 保留但不再挂手势）
   resetTimer() {
     if (this.data.stage !== 'work') return;
     this._workStart = 0;
@@ -650,26 +661,55 @@ Page({
     this.beginSet(false);
   },
 
+  // 点环开始：先 3 秒倒计时（3·2·1 动画），倒完才真正起表
   beginSet(fromRest) {
     const it = this.items[this.idx];
     if (!it || it.type !== 'strength') return;
-    this._workStart = Date.now();
+    this._workStart = 0;
     this._pauseAcc = 0;
     this._pauseAt = 0;
+    this._cdFrom = !!fromRest;
+    this._cdEnd = Date.now() + 3000;
     const gi = this._gi;
     const g = it.groups[gi];
     this.setData({
-      stage: 'work',
+      stage: 'countdown',
       mmss: '0:00',
       timerPaused: false,
+      cdLeft: 3,
+      cdAnim: this.data.cdAnim === 1 ? 2 : 1,
       setNo: gi + 1,
       reps: g.reps || 0,
       weight: g.weight || 0,
       curUni: !!it.uni,
       wLabel: engine.wText(g.weight, it.uni),
-      hint: (fromRest ? '休息结束 · ' : '') + '第 ' + (gi + 1) + ' 组进行中，做完点完成'
+      hint: (fromRest ? '休息结束 · ' : '') + '第 ' + (gi + 1) + ' 组 3 秒后开始'
     });
+    wx.vibrateShort({ type: 'light' });
     this.persistFocus();
+    this.draw();
+  },
+
+  // 倒计时归零：这一刻才记 _workStart，前面 3 秒不计入组时长
+  startWork() {
+    const it = this.items[this.idx];
+    if (!it || it.type !== 'strength') return;
+    this._cdEnd = 0;
+    this._workStart = Date.now();
+    this._pauseAcc = 0;
+    this._pauseAt = 0;
+    const gi = this._gi;
+    this.setData({
+      stage: 'work',
+      mmss: '0:00',
+      cdLeft: 0,
+      timerPaused: false,
+      hint: (this._cdFrom ? '休息结束 · ' : '') + '第 ' + (gi + 1) + ' 组进行中，做完点完成'
+    });
+    this._cdFrom = false;
+    wx.vibrateShort({ type: 'medium' });
+    this.persistFocus();
+    this.tick();
   },
 
   // 无计时模式：当前组一键完成
@@ -1316,7 +1356,7 @@ Page({
     const cx = w / 2, cy = h / 2;
     ctx.clearRect(0, 0, w, h);
     const s = this.data.stage;
-    if (s !== 'rest' && s !== 'work' && s !== 'ready') return;
+    if (s !== 'rest' && s !== 'work' && s !== 'ready' && s !== 'countdown') return;
     const r = Math.min(w, h) / 2 - 26;
     if (r <= 10) return;
 
@@ -1326,6 +1366,25 @@ Page({
     ctx.strokeStyle = s === 'rest' ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.09)';
     ctx.lineWidth = s === 'rest' ? 7 : 8;
     ctx.stroke();
+
+    // 倒计时：环随秒数收拢 + 外圈一圈脉冲（3 → 2 → 1）
+    if (s === 'countdown') {
+      const left = Math.max(0, Math.min(3, this.data.cdLeft || 3));
+      const p = 1 - left / 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, p));
+      ctx.strokeStyle = '#3DDCBF';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+      const ph = ((Date.now() % 1000) / 1000);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 6 + ph * 14, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(61,220,191,' + (0.35 * (1 - ph)).toFixed(3) + ')';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      this.drawCharge(ctx, cx, cy, r);
+      return;
+    }
 
     if (s === 'rest') {
       const p = Math.max(0, Math.min(1, (this.data.restLeft || 0) / (this.data.restTotal || 1)));
@@ -1397,7 +1456,7 @@ Page({
     ctx.stroke();
   },
 
-  /* ---------- 环手势：单击开始/暂停/继续；长按 650ms 蓄能 → work=完成 / paused=重置 ---------- */
+  /* ---------- 环手势：单击开始/暂停/继续；长按 650ms 蓄能 → 完成本组（暂停中也一样） ---------- */
   ringTouchStart(e) {
     const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
     if (!t) return;
@@ -1405,16 +1464,14 @@ Page({
     this._rt = { x: t.clientX, y: t.clientY, t0: Date.now(), moved: false, exec: false };
     this._rtAction = null;
     this._rtWarn = false;
-    if (st === 'work' && !this.data.timerPaused) {
+    if (st === 'work') {
       this._rtAction = 'finish';
-      this._rtWarn = this.elapsedSec() < 3; // 刚点开始就长按：琥珀警示
-    } else if (st === 'work' && this.data.timerPaused) {
-      this._rtAction = 'reset';
+      this._rtWarn = !this.data.timerPaused && this.elapsedSec() < 3; // 刚点开始就长按：琥珀警示
     } else if (st === 'rest') {
       this._rtAction = 'skip';
       this._rtWarn = false;
     } else {
-      return; // ready/rest 只有单击
+      return; // ready/countdown 只有单击（倒计时阶段不吃手势）
     }
     this.startCharge(this._rtAction, this._rtWarn);
   },
@@ -1444,14 +1501,14 @@ Page({
     this.ringTap();
   },
 
-  // 蓄能：650ms 扫满一圈，满即执行；action = finish | reset
+  // 蓄能：650ms 扫满一圈，满即执行；action = finish | skip
   startCharge(action, warn) {
     if (this._chargeTimer) clearInterval(this._chargeTimer);
     this._chargeT0 = Date.now();
     this._chargeAction = action;
     this.setData({
       chargePct: 0.001,
-      chargeColor: (warn || action === 'reset') ? '#E8A93D' : '#3DDCBF',
+      chargeColor: warn ? '#E8A93D' : '#3DDCBF',
       chargeTip: warn ? '刚开始就要完成？' : ''
     });
     this.draw();
@@ -1466,7 +1523,6 @@ Page({
         this.stopCharge(true);
         wx.vibrateShort({ type: 'heavy' });
         if (act === 'finish') this.finishSet();
-        else if (act === 'reset') this.resetTimer();
         else if (act === 'skip') this.applyAdvice();
       }
     }, 40);
