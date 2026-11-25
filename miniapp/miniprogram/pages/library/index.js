@@ -150,14 +150,18 @@ Page({
     };
   },
 
-  // 图卡：先查 media_map（经云函数读，避开集合读权限），再换临时 https 链接（渲染层不认 cloud://）
-  // 有缺失时顺手补产一次（batchgen），让首屏 40 张尽快出图，而不是干等后台游标
+  // 图卡：库动作先查 media_map（经云函数读，避开集合读权限），再换临时 https 链接；
+  // 自定义动作不查映射表，直接用它在云存储里的图
   fillImages(ids) {
-    if (!ids.length || !this.data.cloudReady || !wx.cloud) return;
-    const chunk = ids.slice(0, 20);
+    if (!ids.length) return;
+    const my = ids.filter(id => String(id).indexOf('my') === 0);
+    my.forEach(id => this.resolveCustPoster(id));
+    const rest = ids.filter(id => String(id).indexOf('my') !== 0);
+    if (!rest.length || !this.data.cloudReady || !wx.cloud) return;
+    const chunk = rest.slice(0, 20);
     this.mapIds(chunk).then(missing => {
-      const rest = ids.slice(20);
-      if (rest.length) this.fillImages(rest);
+      const more = rest.slice(20);
+      if (more.length) this.fillImages(more);
       if (missing.length && !this.imgFillBusy) {
         this.imgFillBusy = true;
         wx.cloud.callFunction({ name: 'gifMigrate', data: { action: 'batchgen', ids: missing.slice(0, 20), budget: 12000 } })
@@ -165,7 +169,7 @@ Page({
             const map = ((r && r.result) || {}).map || {};
             if (Object.keys(map).length) this.applyMap(map);
             this.imgFillBusy = false;
-            if (!rest.length) this.migrateMissing();
+            if (!more.length) this.migrateMissing();
           })
           .catch(() => { this.imgFillBusy = false; if (!rest.length) this.migrateMissing(); });
       } else if (!rest.length) {
@@ -568,7 +572,9 @@ Page({
         else if (d && d.id === ex.id) this.setData({ clipReady: true });
       });
     }
-    try { this.ensureClip(ex.id); } catch (e) { console.warn('[library] ensureClip', e && e.message); }
+    if (String(ex.id).indexOf('my') !== 0) {
+      try { this.ensureClip(ex.id); } catch (e) { console.warn('[library] ensureClip', e && e.message); }
+    }
   },
 
   // 学习态详情：AI 一句「常见错误」，只给 1-2 条，失败就不显示，不留空壳
@@ -601,8 +607,42 @@ Page({
     }).catch(() => {});
   },
 
+  // 自定义动作的图：存在云存储（cloud://）就换临时 https；本地临时图直接显示
+  resolveCustPoster(id) {
+    const ex = actions.customList().find(x => x && x.id === id);
+    const raw = String((ex && (ex.img || ex.fileID)) || '');
+    if (!raw) return;
+    if (raw.indexOf('cloud://') !== 0) {
+      if (this.media[id] !== raw) {
+        this.media[id] = raw;
+        this.repaintCard(id, raw);
+      }
+      return;
+    }
+    if (!this.custResolving) this.custResolving = {};
+    if (this.custResolving[id] || !wx.cloud) return;
+    this.custResolving[id] = 1;
+    if (!this.custFid) this.custFid = {};
+    this.custFid[id] = raw;
+    cloudurl.resolve([raw], (urls) => {
+      const u = (urls && urls[raw]) || '';
+      this.custResolving[id] = '';
+      if (!u) return;
+      this.media[id] = u;
+      this.repaintCard(id, u);
+      const d = this.data.detail;
+      if (d && d.id === id) this.setData({ detail: Object.assign({}, d, { fileID: u }) });
+    });
+  },
+
+  repaintCard(id, u) {
+    const list = (this.data.list || []).map(c => (c.id === id ? Object.assign({}, c, { fileID: u }) : c));
+    if (list.length) this.setData({ list });
+  },
+
   // 详情海报兜底：进入时列表还没补到这张图（例如从训练页直接跳转），单独补一次
   fillDetailImage(id) {
+    if (String(id).indexOf('my') === 0) { this.resolveCustPoster(id); return; }
     if (!wx.cloud || !this.data.cloudReady) return;
     wx.cloud.callFunction({ name: 'gifMigrate', data: { action: 'map', ids: [String(id)] } })
       .then(r => {

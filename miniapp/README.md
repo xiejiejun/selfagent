@@ -349,6 +349,14 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.44：自定义动作的图与云同步
+
+- 训练页图卡：`withImg` 对 `my…` 自定义动作直接读 `train.custom.img`，`https`/本地路径直接用，`cloud://` 经 `resolveCustImg` 换临时链接；`warmGrid/fillGrid` 分成「库动作查 gifMigrate 映射 / 自定义用自带图」两路；`gridImgOk` 允许把自定义图缓存到 `thumbs/<my-id>.webp`。
+- 动作库：`fillImages` 把 `my…` 拆出来走 `resolveCustPoster`，列表卡与详情海报都用自定义图；自定义不查短片索引，详情不再把 `clipReady` 置真（否则 `!clipReady` 条件会把海报藏掉）。
+- 自定义动作页：保存时若图还是 `wxfile://` 临时路径，先 `wx.cloud.uploadFile` 换成 fileID 再写库；进页面自动补传老数据里的临时图。
+- 云同步：`actions.saveCustom/removeCustom` 标脏 `trainmeta` 后立即 `sync.flush()`；自定义动作随快照写进 `snapshots`，图片本体在云存储 `custom/`，换机 `syncPull` 可还原。
+- 验证（模拟器，冷启动）：注入 `my_test1` 自定义卷腹后，训练页图卡显示图片、动作库卡与详情 `fileID` 均为图片地址且海报渲染正常（`t9/h5-custom-detail.png`、`h6-train-grid-bottom.png`）；测试数据已清除。
+
 ## 体验版 1.0.43：问「今天」不再拿 30 天汇总糊弄
 
 - `contextText()` 开头加【今天 MM-DD】：当天完成的动作名 + 组数 + 代表重量（自重不写重量）+ 当天总组数/总容量；没练写「无记录」。

@@ -204,35 +204,68 @@ Page({
     if (this.data.grid) this.fillGrid(v.list); else this.warmGrid(v.list);
   },
 
-  // 图卡缩略图：本机缓存 → 内存 → 空（空则显示部位占位文字）
+  // 图卡缩略图：本机缓存 → 内存 → 自定义动作自带图 → 空（空则显示部位占位文字）
   withImg(list) {
     if (!this.media) this.media = {};
+    if (!this.custImg) {
+      this.custImg = {};
+      (actions.customList() || []).forEach(c => {
+        if (c && c.id) this.custImg[String(c.id)] = String(c.img || c.fileID || '');
+      });
+    }
     return list.map(x => {
       const id = String(x.exId || '');
-      const u = this.media[id] || (id ? thumb.get(id) : '') || '';
+      const isMy = id.indexOf('my') === 0;
+      let u = this.media[id] || (id ? thumb.get(id) : '') || '';
+      if (!u && isMy) {
+        const raw = this.custImg[id] || '';
+        if (/^https?:/.test(raw) || raw.indexOf('wxfile://') === 0 || raw.indexOf('/') === 0) u = raw;
+        else if (raw.indexOf('cloud://') === 0) this.resolveCustImg(id, raw);
+      }
       if (u) this.media[id] = u;
       return u === x.img ? x : Object.assign({}, x, { img: u });
     });
   },
 
+  // 自定义动作的图：cloud:// 换成临时 https（<image> 不认 cloud://）
+  resolveCustImg(id, fid) {
+    if (!wx.cloud || !this.data.cloudReady && this.data.cloudReady !== undefined) { /* 无云也试一次 */ }
+    if (!this.custFid) this.custFid = {};
+    if (this.custFid[id] || !fid) return;
+    this.custFid[id] = fid;
+    if (!this.fid) this.fid = {};
+    this.fid[id] = fid;
+    cloudurl.resolve([fid], (urls) => {
+      const u = (urls && urls[fid]) || '';
+      if (!u) { this.custFid[id] = ''; return; }
+      this.media[id] = u;
+      this.setData({ list: this.withImg(this.data.list) });
+    });
+  },
+
   // 进页面就预热缩略图（不等切到图卡），切过去时基本已就绪
   warmGrid(list) {
-    if (!wx.cloud || !wx.cloud.callFunction) return;
-    const ids = (list || []).filter(x => x.exId && /^\d{4}$/.test(String(x.exId)) && !this.media[String(x.exId)])
-      .map(x => String(x.exId));
-    if (!ids.length) return;
-    this.mapChunk(ids.slice(0, 20));
-    const rest = ids.slice(20);
-    if (rest.length) setTimeout(() => this.fillGridIds(rest), 1200);
+    this.gridIds(list);
   },
 
   fillGrid(list) {
-    if (!wx.cloud || !wx.cloud.callFunction) return;
-    const ids = (list || []).filter(x => x.exId && /^\d{4}$/.test(String(x.exId)) && !this.media[String(x.exId)])
-      .map(x => String(x.exId));
-    if (!ids.length) return;
-    this.mapChunk(ids.slice(0, 20));
-    const rest = ids.slice(20);
+    this.gridIds(list);
+  },
+
+  // 库动作走 gifMigrate 映射；自定义动作（my…）直接用自己上传的图
+  gridIds(list) {
+    const ids = (list || []).filter(x => x.exId && !this.media[String(x.exId)]).map(x => String(x.exId));
+    const my = ids.filter(id => id.indexOf('my') === 0);
+    const lib = ids.filter(id => /^\d{4}$/.test(id));
+    my.forEach(id => {
+      if (thumb.get(id)) { this.media[id] = thumb.get(id); return; }
+      const raw = (this.custImg && this.custImg[id]) || '';
+      if (/^https?:/.test(raw) || raw.indexOf('wxfile://') === 0) { this.media[id] = raw; return; }
+      if (raw.indexOf('cloud://') === 0) this.resolveCustImg(id, raw);
+    });
+    if (!lib.length || !wx.cloud || !wx.cloud.callFunction) return;
+    this.mapChunk(lib.slice(0, 20));
+    const rest = lib.slice(20);
     if (rest.length) setTimeout(() => this.fillGridIds(rest), 1200);
   },
 
@@ -275,7 +308,7 @@ Page({
     const it = (this.data.list || []).find(x => x.uid === uid);
     if (!it) return;
     const id = String(it.exId || '');
-    if (!/^\d{4}$/.test(id) || thumb.get(id)) return;
+    if (!(/^\d{4}$/.test(id) || id.indexOf('my') === 0) || thumb.get(id)) return;
     const fid = (this.fid || {})[id];
     if (!fid || !wx.cloud || !wx.cloud.downloadFile) return;
     if (!this.caching) this.caching = {};

@@ -2,6 +2,19 @@
 
 版本号与体验版上传号对应；日期为北京时间。
 
+## 1.0.44 · 2026-11-25
+
+**自定义动作的图：图卡、详情都要出；动作本体和图片一起进云库**
+- 原因一：训练页图卡只认 4 位数字 exId（库内动作），自定义动作 id 是 `my…`，`withImg / warmGrid / fillGrid` 全被过滤掉，只能显示部位占位字。
+- 原因二：动作库卡片与详情都拿 `gifMigrate` 的 media_map 去查图，自定义动作不在那张表里，查不到就白块；详情里又因为「自定义跳过短片」时把 `clipReady` 置真，海报 `<image>` 的条件 `!clipReady` 直接把它藏了。
+- 原因三：自定义动作的图如果当时云上传失败，只剩 `wxfile://` 临时路径；重启后临时文件失效，图就没了；而且只在 `trainmeta` 快照里同步，没有立即上行，换机容易看不到。
+- 改法：
+  - 训练页：`withImg` 对有 `my…` 的卡直接取 `train.custom` 里的图，`https/http` 与本地路径直接用，`cloud://` 走 `resolveCustImg` 换临时链接；`warmGrid/fillGrid` 拆成「库动作走映射、自定义走自带图」；`gridImgOk` 允许缓存 `my…` 的图。
+  - 动作库：`fillImages` 把 `my…` 拆出来走 `resolveCustPoster`，卡片直接用自定义图；详情海报同样解析；自定义不查短片索引，也不再把 `clipReady` 置真，海报正常显示。
+  - 自定义动作页：保存时若图还是本机临时路径，先补传云存储换成 fileID 再落库；进入该页时自动把老数据里只有临时路径的图补传；`actions.saveCustom/removeCustom` 标脏后立刻 `sync.flush()`，不再只等防抖。
+  - 云库侧：自定义动作随 `trainmeta` 快照写入 `snapshots` 集合，图片本体在云存储 `custom/` 下，换设备拉 `syncPull` 即可还原。
+- 验证（模拟器，冷启动；注入一条 `my_test1` 自定义卷腹 + 当天 3 组）：训练页图卡该卡 `img` 为图片地址、截图可见；动作库卡片 `fileID` 为同一地址、`mine=true`；详情 `fileID` 有值且 `clipReady=false`，海报正常渲染（`t9/h5-custom-detail.png`、`h6-train-grid-bottom.png`）。测试数据随后已从本机清除。
+
 ## 1.0.43 · 2026-11-25
 
 **修「问今天，AI 拿近 30 天汇总回答」**

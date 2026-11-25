@@ -11,7 +11,36 @@ Page({
     equips: data.EQUIPS.map(e => e.k).filter(k => k !== '全部')
   },
 
-  onShow() { this.refresh(); },
+  onShow() { this.refresh(); this.retryLocalImgs(); },
+
+  // 老数据里图片只存了本机临时路径：补传到云存储，换回 fileID，才能进数据库、换机也在
+  retryLocalImgs() {
+    if (!wx.cloud || !wx.cloud.uploadFile) return;
+    if (this.imgRetrying) return;
+    this.imgRetrying = 1;
+    const need = actions.customList().filter(x => {
+      const img = String((x && (x.img || x.fileID)) || '');
+      return img && img.indexOf('cloud://') !== 0 && !/^https?:/.test(img);
+    });
+    if (!need.length) { this.imgRetrying = 0; return; }
+    let left = need.length;
+    const done = () => { left--; if (left <= 0) { this.imgRetrying = 0; this.refresh(); } };
+    need.forEach(x => {
+      wx.cloud.uploadFile({
+        cloudPath: 'custom/' + Date.now() + '-' + Math.floor(Math.random() * 1e6) + '.jpg',
+        filePath: x.img || x.fileID,
+        success: (up) => {
+          if (up && up.fileID) {
+            actions.saveCustom(Object.assign({}, x, { img: up.fileID }));
+            const i = (this.data.list || []).findIndex(v => v.id === x.id);
+            if (i >= 0) this.setData({ ['list[' + i + '].img']: up.fileID });
+          }
+          done();
+        },
+        fail: done
+      });
+    });
+  },
 
   refresh() {
     const list = actions.customList().map(x => ({
@@ -84,6 +113,25 @@ Page({
   save() {
     const f = this.data.f;
     if (!(f.name || '').trim()) { wx.showToast({ title: '先给动作起个名', icon: 'none' }); return; }
+    const img = String(f.img || '');
+    // 图还只是本机临时文件：保存前补传云存储，换成 fileID 再入库
+    if (img && img.indexOf('cloud://') !== 0 && !/^https?:/.test(img) && wx.cloud && wx.cloud.uploadFile) {
+      wx.cloud.uploadFile({
+        cloudPath: 'custom/' + Date.now() + '-' + Math.floor(Math.random() * 1e6) + '.jpg',
+        filePath: img,
+        success: (up) => this.persist(f, (up && up.fileID) || ''),
+        fail: () => {
+          this.persist(f, img);
+          wx.showToast({ title: '图片未传上云，仅本机可见', icon: 'none' });
+        }
+      });
+      return;
+    }
+    this.persist(f, img);
+  },
+
+  // 落库 + 立刻同步（自定义动作走 trainmeta 快照，含 img fileID）
+  persist(f, img) {
     actions.saveCustom({
       id: this.data.editId || '',
       n: f.name.trim(),
@@ -91,11 +139,12 @@ Page({
       e: f.equip,
       t: (f.target || '').trim(),
       s: f.steps || '',
-      img: f.img || '',
+      img: img || '',
       custom: true
     });
     this.setData({ formOn: false, editId: '' });
     this.refresh();
+    try { require('../../libs/sync/index').flush(); } catch (e) {}
     wx.showToast({ title: '已保存', icon: 'none' });
   },
 

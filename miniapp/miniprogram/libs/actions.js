@@ -232,6 +232,7 @@ function saveCustom(ex) {
   if (i >= 0) list[i] = Object.assign({}, list[i], rec); else list.push(rec);
   store.setTrain(c.train);
   store.markDirty('snap', 'trainmeta');
+  pushNow();
   return rec;
 }
 
@@ -240,6 +241,12 @@ function removeCustom(id) {
   c.train.custom = (c.train.custom || []).filter(x => !(x && x.id === id));
   store.setTrain(c.train);
   store.markDirty('snap', 'trainmeta');
+  pushNow();
+}
+
+// 自定义动作改了立刻上行，不等防抖；失败就留给下一次自动同步
+function pushNow() {
+  try { require('./sync/index').flush(); } catch (e) {}
 }
 
 /* 拖动排序：把某天的动作（含自定义序）按 uid 顺序写回 ord，力量与有氧同一套序 */
