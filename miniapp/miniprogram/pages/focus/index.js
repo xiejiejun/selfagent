@@ -103,6 +103,10 @@ Page({
     hint: '',
     restTip: '',
     restAi: '',
+    restPaused: false,
+    restMeta: '',
+    restCards: [],
+    restIdx: 0,
     restNextLabel: '跳过休息，下一组',
     advW: 0,
     advReps: 0,
@@ -710,16 +714,145 @@ Page({
       ? '下一组 ' + (adv.weight > 0 ? adv.weight + 'kg × ' + (nextG.reps || g.reps) : '自重 × ' + adv.reps) + ' 开始'
       : '跳过休息，下一组';
     this._restEnd = Date.now() + restSec * 1000;
+    this._restPaused = false;
+    this._restRemain = 0;
+    const statAll = this.setsStat();
     this.setData({
       rows, stage: 'rest', restLeft: restSec, restTotal: restSec, restPct: 100, mmss: '0:00',
+      restPaused: false,
       setNo: next + 1,
       setsDone: it.groups.filter(x => x.done).length, doneSets: stat.done, doneVolume: stat.vol, rpe: 0,
       hint: '第 ' + (gi + 1) + ' 组完成 · 休息 ' + restSec + '″，结束做第 ' + (next + 1) + ' 组',
-      restTip: adv.text, restAi: '', advW: adv.weight, advReps: nextG.reps || g.reps, restNextLabel: nextLabel
+      restTip: '', restAi: '',
+      advW: adv.weight, advReps: nextG.reps || g.reps, restNextLabel: nextLabel,
+      restMeta: '下组 ' + (adv.weight > 0 ? adv.weight + 'kg' : '自重') + '×' + (nextG.reps || g.reps) + ' · ' + statAll.done + '/' + statAll.total,
+      restCards: this.buildRestCards(it, g, nextG, adv, restSec, planSec, next),
+      restIdx: 0
     });
+    this.startCardTimer();
+    wx.hideToast();
     this.aiRest(it, g, adv, planSec);
     this.refreshQueue();
     this.draw();
+  },
+
+  // 休息轮播：建议不拦路，要用才点
+  buildRestCards(it, g, nextG, adv, restSec, planSec, next) {
+    const reps = nextG.reps || g.reps;
+    const wTxt = adv.weight > 0 ? adv.weight + 'kg' : '自重';
+    const cards = [{
+      k: 'use',
+      t: '建议下一组 ' + wTxt + ' × ' + reps,
+      sub: '',
+      lb: adv.weight > 0 ? '用 ' + adv.weight + 'kg' : '用自重',
+      act: 'use'
+    }, {
+      k: 'add',
+      t: '休息 ' + restSec + '″' + (planSec ? '，上次间隔 ' + planSec + '″' : ''),
+      sub: '',
+      lb: '休息 +15s',
+      act: '+15'
+    }];
+    const restGroups = it.groups.length - next;
+    const nextName = (this.items[this.idx + 1] || {}).name;
+    cards.push({
+      k: 'none',
+      t: '本动作还剩 ' + restGroups + ' 组' + (nextName ? '，之后是 ' + nextName : '，之后收工'),
+      sub: '', lb: '', act: ''
+    });
+    if ((g.rpe || 0) >= 9) {
+      cards.push({ k: 'add', t: '上一组 RPE ' + g.rpe + '，可延长休息', sub: '', lb: '休息 +15s', act: '+15' });
+    }
+    return cards;
+  },
+
+  startCardTimer() {
+    this.stopCardTimer();
+    this._cardTimer = setInterval(() => {
+      if (this.data.stage !== 'rest') { this.stopCardTimer(); return; }
+      const n = (this.data.restCards || []).length;
+      if (n < 2) return;
+      this.setData({ restIdx: ((this.data.restIdx || 0) + 1) % n });
+    }, 3500);
+  },
+
+  stopCardTimer() {
+    if (this._cardTimer) { clearInterval(this._cardTimer); this._cardTimer = null; }
+  },
+
+  cardSwipeStart(e) {
+    const t = (e.touches && e.touches[0]) || {};
+    this._cardX = t.clientX || 0;
+  },
+
+  cardSwipeEnd(e) {
+    const t = (e.changedTouches && e.changedTouches[0]) || {};
+    const dx = (t.clientX || 0) - (this._cardX || 0);
+    const n = (this.data.restCards || []).length;
+    if (!n || Math.abs(dx) < 30) return;
+    const i = ((this.data.restIdx || 0) + (dx > 0 ? -1 : 1) + n) % n;
+    this.setData({ restIdx: i });
+    this.startCardTimer();
+  },
+
+  cardTap(e) {
+    const act = e.currentTarget.dataset.act;
+    if (!act) return;
+    if (act === 'use') this.prefillNext();
+    else if (act === '+15') this.extendRest(15);
+  },
+
+  // 行内「用 27.5kg」：只预填下一组，不打断休息
+  prefillNext() {
+    const it = this.items[this.idx];
+    if (!it || it.type !== 'strength') return;
+    const gi = this._gi;
+    const g = it.groups[gi];
+    if (!g) return;
+    const w = this.data.advW;
+    const reps = this.data.advReps;
+    if (w !== undefined && w >= 0) g.weight = w;
+    if (reps) g.reps = reps;
+    this.saveStrength(it);
+    const statAll = this.setsStat();
+    this.setData({
+      weight: g.weight, reps: g.reps, rows: this.rowsOf(it),
+      restMeta: '下组 ' + (g.weight > 0 ? g.weight + 'kg' : '自重') + '×' + g.reps + ' · ' + statAll.done + '/' + statAll.total
+    });
+    wx.vibrateShort({ type: 'light' });
+    wx.showToast({ title: '已设为 ' + (g.weight > 0 ? g.weight + 'kg × ' + g.reps : '自重 × ' + g.reps), icon: 'none' });
+  },
+
+  extendRest(sec) {
+    if (this.data.stage !== 'rest') return;
+    sec = Number(sec) || 15;
+    const restTotal = (this.data.restTotal || 0) + sec;
+    if (this.data.restPaused) {
+      this._restRemain = (this._restRemain || 0) + sec * 1000;
+      this.setData({ restTotal, restLeft: Math.round(this._restRemain / 1000) });
+    } else {
+      this._restEnd = (this._restEnd || Date.now()) + sec * 1000;
+      this.setData({ restTotal });
+    }
+    wx.vibrateShort({ type: 'light' });
+  },
+
+  // 休息态单击 = 暂停/继续倒计时
+  toggleRest() {
+    if (this.data.stage !== 'rest') return;
+    if (this.data.restPaused) {
+      this._restEnd = Date.now() + (this._restRemain || 0);
+      this._restRemain = 0;
+      this._restPaused = false;
+      this.setData({ restPaused: false });
+      this.tick();
+    } else {
+      this._restRemain = Math.max(0, (this._restEnd || 0) - Date.now());
+      this._restEnd = 0;
+      this._restPaused = true;
+      this.setData({ restPaused: true });
+      this.draw();
+    }
   },
 
   // 组间建议的 AI 一句话（规则已算出重量，AI 只负责表达）
@@ -736,7 +869,8 @@ Page({
           if (/[0-9]|[一二三四五六七八九十两]|公斤|千克/.test(t)) return;
           if (adv.delta > 0 && /维持|别加|别急|降|减|巩固/.test(t)) return;
           if (adv.delta < 0 && /加重|加重量|上重量/.test(t)) return;
-          this.setData({ restAi: t });
+          const cards = (this.data.restCards || []).slice();
+          if (cards[0]) { cards[0] = Object.assign({}, cards[0], { sub: t }); this.setData({ restCards: cards }); }
         })
         .catch(() => {});
     } catch (e) {}
@@ -868,10 +1002,12 @@ Page({
   skipRest(auto) {
     auto = auto === true;
     this._restEnd = 0;
-    if (this.data.setTimer) { this.beginSet(true); return; }
+    this._restPaused = false;
+    this._restRemain = 0;
+    this.stopCardTimer();
     this.setData({
-      stage: 'ready', restLeft: 0, restPct: 0, mmss: '0:00',
-      hint: (auto ? '休息结束 · ' : '') + '点「完成第 ' + (this._gi + 1) + ' 组」，或直接点组行打勾'
+      stage: 'ready', restLeft: 0, restPct: 0, mmss: '0:00', restPaused: false,
+      hint: (auto ? '休息结束 · ' : '') + '点环开始第 ' + (this._gi + 1) + ' 组，或先改重量'
     });
     this.draw();
     if (auto) wx.vibrateShort({ type: 'heavy' });
@@ -1124,10 +1260,11 @@ Page({
       if (p > 0) {
         ctx.beginPath();
         ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p);
-        ctx.strokeStyle = '#3DDCBF';
+        ctx.strokeStyle = this.data.restPaused ? 'rgba(61,220,191,0.45)' : '#3DDCBF';
         ctx.lineWidth = 7;
         ctx.stroke();
       }
+      this.drawCharge(ctx, cx, cy, r);
       return;
     }
 
@@ -1175,14 +1312,17 @@ Page({
     }
 
     // 蓄能弧：完成=绿，重置=琥珀（颜色即语义）
+    this.drawCharge(ctx, cx, cy, r);
+  },
+
+  drawCharge(ctx, cx, cy, r) {
     const charge = this.data.chargePct || 0;
-    if (charge > 0) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, charge));
-      ctx.strokeStyle = this.data.chargeColor || '#3DDCBF';
-      ctx.lineWidth = 10;
-      ctx.stroke();
-    }
+    if (!charge) return;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, charge));
+    ctx.strokeStyle = this.data.chargeColor || '#3DDCBF';
+    ctx.lineWidth = 10;
+    ctx.stroke();
   },
 
   /* ---------- 环手势：单击开始/暂停/继续；长按 650ms 蓄能 → work=完成 / paused=重置 ---------- */
@@ -1198,6 +1338,9 @@ Page({
       this._rtWarn = this.elapsedSec() < 3; // 刚点开始就长按：琥珀警示
     } else if (st === 'work' && this.data.timerPaused) {
       this._rtAction = 'reset';
+    } else if (st === 'rest') {
+      this._rtAction = 'skip';
+      this._rtWarn = false;
     } else {
       return; // ready/rest 只有单击
     }
@@ -1252,6 +1395,7 @@ Page({
         wx.vibrateShort({ type: 'heavy' });
         if (act === 'finish') this.finishSet();
         else if (act === 'reset') this.resetTimer();
+        else if (act === 'skip') this.applyAdvice();
       }
     }, 40);
   },
@@ -1278,6 +1422,7 @@ Page({
   },
 
   ringTap() {
+    if (this.data.stage === 'rest') { this.toggleRest(); return; }
     if (this.data.stage === 'ready' && this.data.setTimer) {
       this.ringCoachOff();
       this.beginSet(false);

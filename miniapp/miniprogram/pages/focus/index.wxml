@@ -54,17 +54,18 @@
       <text class="part">{{curPart}} · 第 {{setNo}}/{{setsTotal}} 组 · 已完成 {{setsDone}} 组</text>
     </view>
 
-    <view class="stage {{stage === 'rest' ? 'resting' : ''}} {{timerPaused ? 'paused' : ''}} {{!setTimer && stage !== 'rest' ? 'lite' : ''}}">
+    <view class="stage {{stage === 'rest' ? 'resting' : ''}} {{timerPaused || restPaused ? 'paused' : ''}} {{!setTimer && stage !== 'rest' ? 'lite' : ''}}">
       <canvas type="2d" id="rings" class="rings" disable-scroll="true"></canvas>
       <view class="dial"></view>
-      <view class="ring-hit fmc-in" wx:if="{{stage === 'work' || (stage === 'ready' && setTimer)}}"
+      <view class="ring-hit fmc-in" wx:if="{{stage === 'work' || stage === 'rest' || (stage === 'ready' && setTimer)}}"
         bindtouchstart="ringTouchStart" bindtouchmove="ringTouchMove"
         bindtouchend="ringTouchEnd" bindtouchcancel="ringTouchEnd"></view>
       <text class="charge-tip" wx:if="{{chargeTip}}">{{chargeTip}}</text>
       <block wx:if="{{stage === 'rest'}}">
         <view class="ctr">
           <text class="big">{{restLeft}}</text>
-          <text class="unit">秒 · 做第 {{setNo}} 组</text>
+          <text class="unit {{restPaused ? 'pd' : ''}}">{{restPaused ? '已暂停 · 点击继续' : '点击暂停 · 长按结束休息'}}</text>
+          <text class="unit sub">{{restMeta}}</text>
         </view>
       </block>
       <block wx:elif="{{setTimer}}">
@@ -79,15 +80,23 @@
           <text class="unit">{{weight > 0 ? weight + 'kg' : '自重'}} · 第 {{setNo}}/{{setsTotal}} 组</text>
         </view>
       </block>
-      <view class="meta">
+      <view class="meta" wx:if="{{stage !== 'rest'}}">
         <text>{{setsDoneAll}}/{{setsTotalAll}} 组 · {{doneVolume}} kg</text>
       </view>
     </view>
 
-    <!-- 组间决策：规则算重量，AI 一句话 -->
-    <view class="rest-dec" wx:if="{{stage === 'rest'}}">
-      <text class="rd-star">✦</text>
-      <text class="rd-t">{{restAi || restTip}}</text>
+    <!-- 休息建议轮播：建议不拦路，要用才点行内链接 -->
+    <view class="rcard" wx:if="{{stage === 'rest' && restCards.length}}"
+      bindtouchstart="cardSwipeStart" bindtouchend="cardSwipeEnd">
+      <view class="rc-head"><text class="rc-star">✦</text><text class="rc-k">休息建议</text></view>
+      <view class="rc-body" wx:for="{{restCards}}" wx:for-index="ci" wx:key="ci" wx:if="{{ci === restIdx}}">
+        <text class="rc-t">{{item.t}}</text>
+        <text class="rc-sub" wx:if="{{item.sub}}">{{item.sub}}</text>
+        <text class="rc-lb" wx:if="{{item.act}}" data-act="{{item.act}}" catchtap="cardTap">{{item.lb}}</text>
+      </view>
+      <view class="rc-dots">
+        <view class="rc-dot {{ci === restIdx ? 'on' : ''}}" wx:for="{{restCards}}" wx:for-index="ci" wx:key="ci"></view>
+      </view>
     </view>
 
     <view class="steppers" wx:if="{{stage !== 'rest'}}">
@@ -105,9 +114,8 @@
       </view>
     </view>
 
-    <view class="main" wx:if="{{stage === 'rest' || stage === 'between' || (stage === 'ready' && !setTimer)}}">
+    <view class="main" wx:if="{{stage === 'between' || (stage === 'ready' && !setTimer)}}">
       <view class="go primary" wx:if="{{stage === 'ready' && !setTimer}}" bindtap="primaryTap">完成第 {{setNo}} 组</view>
-      <view class="go primary" wx:if="{{stage === 'rest'}}" bindtap="primaryTap">{{restNextLabel}}</view>
       <view class="go primary" wx:if="{{stage === 'between'}}" bindtap="primaryTap">下一个动作</view>
     </view>
 
