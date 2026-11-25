@@ -14,6 +14,7 @@
       <text class="dlabel">{{dateLabel}}</text>
       <text class="arrow {{isToday ? 'off' : ''}}" bindtap="nextDay">›</text>
       <text class="todaybtn" wx:if="{{!isToday}}" bindtap="backToday">回到今天</text>
+      <text class="libbtn" bindtap="browseLibrary">📚</text>
     </view>
 
     <block wx:if="{{tab === 'today'}}">
@@ -41,6 +42,14 @@
       <text class="rp-l">{{rest.label}}</text>
       <text class="rp-x" bindtap="skipRest">跳过</text>
     </view>
+
+    <scroll-view class="favstrip" wx:if="{{!empty && favStrip.length}}" scroll-x="true" enhanced="true" show-scrollbar="false">
+      <text class="fs-l">★ 收藏</text>
+      <view class="fs-chip" wx:for="{{favStrip}}" wx:key="id" data-id="{{item.id}}" data-name="{{item.n}}" data-part="{{item.p}}" bindtap="addFav">
+        <text class="fsc-n">{{item.n}}</text>
+        <text class="fsc-a">＋</text>
+      </view>
+    </scroll-view>
 
     <view class="modes" wx:if="{{!empty}}">
       <text class="mode {{!grid ? 'on' : ''}}" bindtap="toggleGrid">列表</text>
@@ -133,6 +142,7 @@
       <text class="et">这个日期还没有训练</text>
       <text class="es">挑一个动作就能开始，不用先排计划</text>
       <view class="cta" bindtap="openLibrary">从动作库挑一个开始</view>
+      <text class="cta-sub" bindtap="browseLibrary">先去逛逛动作库 →</text>
       <text class="cta-sub" bindtap="openLibrary" data-part="有氧">或者，先记一条有氧</text>
     </view>
 

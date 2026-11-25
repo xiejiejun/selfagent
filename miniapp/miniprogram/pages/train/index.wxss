@@ -25,8 +25,16 @@
 .arrow.off { opacity: .28; }
 .dlabel { font-size: 38rpx; font-weight: 600; color: #14181A; }
 .todaybtn { margin-left: auto; font-size: 24rpx; color: #12A594; }
+.libbtn { margin-left: auto; font-size: 26rpx; padding: 0 6rpx; }
 
 .sum { display: block; margin: 10rpx 0 18rpx; font-size: 25rpx; color: #5B6461; }
+
+/* 收藏条：学习成果 → 直接加回今天 */
+.favstrip { white-space: nowrap; margin: 0 0 16rpx; }
+.fs-l { display: inline-block; font-size: 22rpx; color: #C08A12; margin-right: 12rpx; vertical-align: middle; }
+.fs-chip { display: inline-flex; align-items: center; gap: 8rpx; padding: 10rpx 18rpx; margin-right: 10rpx; background: #FFF7E8; border-radius: 24rpx; vertical-align: middle; }
+.fsc-n { font-size: 22rpx; color: #7A5A10; }
+.fsc-a { font-size: 22rpx; color: #C08A12; font-weight: 600; }
 
 .card { background: #fff; border-radius: 20rpx; padding: 10rpx 20rpx; }
 

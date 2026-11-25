@@ -150,7 +150,17 @@ Page({
     this.refresh();
   },
 
-  onShow() { this.refresh(); },
+  onShow() { this.refresh(); this.consumeLibPick(); },
+
+  // 动作库学习态「加入今天」：无 pick 通道时经本机中转
+  consumeLibPick() {
+    let p = null;
+    try { p = wx.getStorageSync('selfagent_lib_pick_v1'); } catch (e) { p = null; }
+    if (!p || !p.id) return;
+    try { wx.removeStorageSync('selfagent_lib_pick_v1'); } catch (e) {}
+    if (this.data.tab !== 'today') this.setData({ tab: 'today' });
+    setTimeout(() => this.addPick(p), 80);
+  },
 
   onHide() {
     this.stopRest();
@@ -165,12 +175,18 @@ Page({
     const week = engine.lastNDays(store.getTrain(), 7);
     const weekDone = week.reduce((a, d) => a + d.done, 0);
     const streak = engine.streakDays(store.getTrain());
+    // 收藏条：平时在动作库收藏的动作，练时一键加回今天
+    const favIds = ((store.getTrain() || {}).favs) || [];
+    const favStrip = favIds.slice(0, 20).map(id => {
+      const ex = data.byId(String(id)) || actions.customList().find(x => x && x.id === id);
+      return ex ? { id: String(id), n: ex.n, p: ex.p } : null;
+    }).filter(Boolean);
     this.setData({
       today: engine.dayKey(),
       dateLabel: engine.dateLabel(date),
       isToday: date === engine.dayKey(),
       list: this.withImg(v.list), summary: v.summary, empty: v.empty, rec: v.rec,
-      streak, weekDone,
+      streak, weekDone, favStrip,
       kpis: [
         { v: weekDone, l: '本周组数' },
         { v: streak, l: '连续天数' },
@@ -710,7 +726,18 @@ Page({
     });
   },
 
+  // 只逛不加：学习态打开动作库，不挂 pick 回调
+  browseLibrary() {
+    wx.navigateTo({ url: '/pages/library/index?from=learn' });
+  },
+
   focus(e) { this.openFocusByUid(e.currentTarget.dataset.uid); },
+
+  addFav(e) {
+    const d = e.currentTarget.dataset;
+    if (!d || !d.id) return;
+    this.addPick({ id: d.id, n: d.name || '', p: d.part || '' });
+  },
 
   openFocusByUid(uid) {
     const train = engine.ensureTrain(store.getTrain());

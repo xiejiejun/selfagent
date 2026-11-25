@@ -21,6 +21,7 @@ Component({
     mvY: 0,
     sizeRpx: SIZE_RPX,
     menuOn: false,
+    menuLeft: 0,
     pressing: false,
     noteOn: false,
     noteText: '',
@@ -151,7 +152,11 @@ Component({
     onLong() {
       this._suppressTap = true;
       wx.vibrateShort({ type: 'medium' });
-      this.setData({ menuOn: !this.data.menuOn });
+      const on = !this.data.menuOn;
+      // 三项菜单比球宽：贴右边时向左收，别出屏
+      const menuW = 430 * this._px;
+      const left = Math.max(8, Math.min(this.data.left, this._win.w - menuW - 12));
+      this.setData({ menuOn: on, menuLeft: Math.round(left) });
     },
 
     openNote() {
@@ -181,6 +186,13 @@ Component({
       this.persist();
       this.refreshCount();
       wx.showToast({ title: '已切到专注模式', icon: 'none' });
+    },
+
+    // 第三挡：找动作（学习场景，任意页面两击进动作库）
+    openLibrary() {
+      this._suppressTap = false;
+      this.setData({ menuOn: false });
+      wx.navigateTo({ url: '/pages/library/index?from=learn' });
     },
 
     onNoteInput(e) {

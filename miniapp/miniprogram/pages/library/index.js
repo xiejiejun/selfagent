@@ -3,8 +3,10 @@ const store = require('../../libs/store/index');
 const actions = require('../../libs/actions');
 const cloudurl = require('../../libs/cloudurl');
 const CLIP_INDEX = require('../../libs/clip-index.js');
+const ai = require('../../libs/ai');
 
 const PAGE_SIZE = 40;
+const COACH_KEY = 'selfagent_coach_lib_v1';
 
 Page({
   data: {
@@ -24,7 +26,10 @@ Page({
     imgTotal: 0,
     cloudReady: false,
     detail: null,
-    nameDraft: ''
+    nameDraft: '',
+    learn: false,      // 学习态：只逛不加
+    coach: false,      // 一次性场景提示
+    searching: false
   },
 
   onLoad(opts) {
@@ -35,6 +40,13 @@ Page({
     this.all = [];
     this.migRound = 0;
     this.setData({ cloudReady: !!(app && app.globalData && app.globalData.cloudReady), total: data.total });
+    // 来源：from=learn 是学习态（悬浮球 / 训练页「先逛逛」），其余为训练态
+    const learn = !!(opts && opts.from === 'learn');
+    let coach = false;
+    if (learn) {
+      try { coach = !wx.getStorageSync(COACH_KEY); } catch (e) { coach = true; }
+    }
+    this.setData({ learn, coach, autoFocus: !learn });
     // 从训练页空态「先记一条有氧」进来：预选部位
     const part = (opts && opts.part) ? decodeURIComponent(opts.part) : '';
     if (part && data.PARTS.indexOf(part) >= 0) this.setData({ part });
@@ -264,6 +276,17 @@ Page({
     this.refresh();
   },
 
+  // 学习态一次性提示：看过就记下，不再出现
+  dismissCoach() {
+    this.setData({ coach: false });
+    try { wx.setStorageSync(COACH_KEY, 1); } catch (e) {}
+  },
+
+  focusSearch() {
+    this.setData({ searching: true, autoFocus: true });
+    setTimeout(() => this.setData({ autoFocus: false }), 20);
+  },
+
   toMylib() {
     wx.navigateTo({ url: '/pages/mylib/index' });
   },
@@ -329,6 +352,7 @@ Page({
     });
     this.detailOpen = true;
     this.clipTempTried = false;
+    if (this.data.learn) this.loadErrs(ex);
     if (isCloud) this.resolvePoster(ex.id, poster); else this.resolvePoster(ex.id, '');
     if (isCloudClip) {
       cloudurl.resolve([cid], (urls) => {
@@ -339,6 +363,36 @@ Page({
       });
     }
     try { this.ensureClip(ex.id); } catch (e) { console.warn('[library] ensureClip', e && e.message); }
+  },
+
+  // 学习态详情：AI 一句「常见错误」，只给 1-2 条，失败就不显示，不留空壳
+  loadErrs(ex) {
+    if (!this.errCache) this.errCache = {};
+    const id = ex.id;
+    if (this.errCache[id]) {
+      const d0 = this.data.detail;
+      if (d0 && d0.id === id) this.setData({ detail: Object.assign({}, d0, { errs: this.errCache[id], errsOn: true }) });
+      return;
+    }
+    const d = this.data.detail;
+    if (d && d.id === id) this.setData({ detail: Object.assign({}, d, { errsOn: false }) });
+    const prompt = '动作：' + (ex.n || '') + '；部位：' + (ex.p || '') + '；器械：' + (ex.e || '自重')
+      + '。用中文列出这个动作最常见的 1-2 个错误，每条不超过 16 个字，只输出条目本身，每行一条，不要编号、不要解释、不要前后缀。';
+    ai.ask({
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 120,
+      temperature: 0.2
+    }).then(r => {
+      if (!r || !r.ok || !r.text) return;
+      const lines = String(r.text).split('\n')
+        .map(x => x.replace(/^\s*(?:[-*•]|\d+[.、)])\s*/, '').trim())
+        .filter(x => x && x.length <= 40)
+        .slice(0, 2);
+      if (!lines.length) return;
+      this.errCache[id] = lines;
+      const cur = this.data.detail;
+      if (cur && cur.id === id) this.setData({ detail: Object.assign({}, cur, { errs: lines, errsOn: true }) });
+    }).catch(() => {});
   },
 
   // 详情海报兜底：进入时列表还没补到这张图（例如从训练页直接跳转），单独补一次
@@ -456,8 +510,10 @@ Page({
     const ex = this.byAny(d.id) || { id: d.id, n: d.n, p: d.p, e: d.e, t: d.t };
     const payload = { id: ex.id, n: d.n, p: ex.p, e: ex.e, t: ex.t, s: ex.s };
     const ch = this.getOpenerEventChannel && this.getOpenerEventChannel();
-    if (ch && ch.emit) ch.emit('pick', payload);
-    wx.navigateBack();
+    if (ch && ch.emit) { ch.emit('pick', payload); wx.navigateBack(); return; }
+    // 学习态没有 pick 通道（从悬浮球/任意页进来）：交给训练页 onShow 取走
+    try { wx.setStorageSync('selfagent_lib_pick_v1', payload); } catch (e) {}
+    wx.switchTab({ url: '/pages/train/index' });
   },
 
   pick(e) {

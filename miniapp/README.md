@@ -349,6 +349,42 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.33：动作库独立可达 + 学习化
+
+### 一、入口层
+
+- 悬浮球长按菜单由两项变三项：`随手记 / 专注 / 📚 找动作`。第三项只做跳转（进 `pages/library?from=learn`），不改挡位、不写 `selfagent_orb_v1`；菜单宽 430rpx，靠近右边缘时 `onLong` 会把 `left` 向左收，保证三项不出屏。
+- 训练页 datebar 行尾加 📚（`browseLibrary()`），训练页内一击进学习态；空态新增次链接「先去逛逛动作库 →」，与主 CTA「从动作库挑一个开始」（带 pick 回填）区分「我要练」和「我先看看」。
+- ＋ 在 1.0.2x 起已直接 `openLibrary()`，训练页不再有添加菜单；「一句话 / 拍照识别」两个低频方式只留在库页顶部。
+
+### 二、库页双态
+
+| 来源 | 判定 | 顶部 | 详情主 CTA | 详情次 CTA |
+|---|---|---|---|---|
+| 悬浮球 / 训练页「先逛逛」 | `?from=learn` | 一次性 coach + 搜索/AI/拍照三入口卡 | ☆ 收藏 | ＋ 加入今天 |
+| 训练页 ＋ / 空态 / 记录页 | 无参数 | 原「一句话 / 拍照识别」胶囊 | 加入今天训练 | ☆ 收藏 |
+
+- coach 用 `selfagent_coach_lib_v1` 记录，点「知道了」或后续任意次进入不再显示。
+- 学习态详情：底部按钮 `position: sticky; bottom: 0`，媒体区再高也不用滚到底找 CTA。
+- 「常见错误」：学习态打开详情时 `ai.ask` 取 1–2 条（每条 ≤16 字，剥编号），按动作 id 缓存在页面内存；失败不渲染该段。
+
+### 三、收藏闭环
+
+- 训练页今日列表上方加「★ 收藏」横滚条（`favStrip`，取 `train.favs` 前 20 条，`data.byId` / 自定义动作兜底取名），点一下直接 `addPick` 开编辑弹窗。
+- 学习态「加入今天」在无 opener event channel 时（从悬浮球等任意页进来）写 `selfagent_lib_pick_v1` 后 `switchTab` 到训练页，`onShow` 的 `consumeLibPick()` 取走并打开编辑。
+
+### 四、验证（模拟器）
+
+| # | 用例 | 结果 |
+|---|---|---|
+| 1 | `?from=learn` 进入 | `learn true / coach true / autoFocus false`，coach + 三入口卡渲染正常 |
+| 2 | 学习态详情（0002） | `errsOn true`，AI 返回 2 条；CTA「☆ 收藏」为主、「＋ 加入今天」为次，sticky 常显 |
+| 3 | 训练态详情（0003） | 按钮类名 `d-btn ghost`（☆ 收藏）/ `d-btn primary`（加入今天训练），顺序未变 |
+| 4 | 训练页 datebar 📚 | 点击后路由 `pages/library/index`，`learn true` |
+| 5 | 悬浮球三项菜单 | 菜单三项完整可见（`t9/l6-crop.png`） |
+
+截图：`t9/l1-train-datebar.png`、`l2-lib-learn.png`、`l3-lib-detail.png`、`l7-detail-errs.png`、`l8-detail-train.png`、`l6-orb-menu.png`。
+
 ## 体验版 1.0.32：设置页弹窗可滑动
 
 - 现象：二级面板（动作与 AI / 数据等）内容超过一屏时，底部内容被裁掉且滑不动。

@@ -3,6 +3,15 @@
 .subrow { display: flex; gap: 12rpx; margin-bottom: 14rpx; }
 .subchip { flex: 1; height: 64rpx; line-height: 64rpx; text-align: center; border-radius: 32rpx; background: #EEF4F2; color: #3F4B47; font-size: 23rpx; }
 
+/* 学习态：场景提示 + 三入口卡 */
+.learnhint { display: flex; align-items: center; gap: 12rpx; margin-bottom: 14rpx; padding: 16rpx 20rpx; background: #EAF6F3; border-radius: 16rpx; }
+.lh-t { flex: 1; font-size: 23rpx; color: #0F8C7E; line-height: 1.45; }
+.lh-x { font-size: 21rpx; color: #0F8C7E; padding: 4rpx 8rpx; flex: none; }
+.cards3 { display: flex; gap: 12rpx; margin-bottom: 14rpx; }
+.ecard { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6rpx; height: 118rpx; background: #fff; border-radius: 18rpx; box-shadow: 0 4rpx 14rpx rgba(20,24,26,.05); }
+.ec-ic { font-size: 30rpx; line-height: 1; color: #12A594; }
+.ec-t { font-size: 21rpx; color: #3F4B47; }
+
 .bar { display: flex; align-items: center; gap: 14rpx; }
 .q { flex: 1; height: 72rpx; background: #fff; border-radius: 36rpx; padding: 0 28rpx; font-size: 26rpx; }
 .fav { width: 72rpx; height: 72rpx; line-height: 72rpx; text-align: center; border-radius: 50%; background: #fff; color: #C9D2CE; font-size: 32rpx; }
@@ -61,13 +70,17 @@
 .d-idx { width: 34rpx; height: 34rpx; line-height: 34rpx; text-align: center; border-radius: 50%; background: #EEF4F2; color: #12A594; font-size: 19rpx; flex: none; margin-top: 4rpx; }
 .d-txt { flex: 1; font-size: 24rpx; color: #454F4C; line-height: 1.55; }
 .d-none { display: block; margin-top: 14rpx; font-size: 23rpx; color: #A9B3AF; }
+.d-err { display: flex; gap: 12rpx; margin-top: 12rpx; padding: 14rpx 16rpx; background: #FFF7E8; border-radius: 12rpx; }
+.d-err-ic { font-size: 24rpx; color: #C08A12; line-height: 1.45; }
+.d-err-t { flex: 1; font-size: 23rpx; color: #7A5A10; line-height: 1.45; }
 .pad { height: 20rpx; }
 
-.d-btns { display: flex; gap: 18rpx; padding: 18rpx 30rpx calc(18rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #EEF1F0; background: #fff; }
+.d-btns { position: sticky; bottom: 0; display: flex; gap: 18rpx; margin: 0 -30rpx -26rpx; padding: 18rpx 30rpx calc(18rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #EEF1F0; background: #fff; }
 .d-btn { flex: 1; height: 92rpx; line-height: 92rpx; text-align: center; border-radius: 46rpx; font-size: 27rpx; }
 .d-btn.ghost { background: #F4F7F6; color: #454F4C; }
 .d-btn.ghost.on { color: #C08A12; }
 .d-btn.primary { background: #12A594; color: #fff; font-weight: 600; flex: 1.35; }
+.d-btn.favbtn { flex: 1.35; }
 
 .meta .mylib { margin-left: auto; color: #12A594; font-size: 20rpx; background: #EAF6F3; padding: 6rpx 16rpx; border-radius: 20rpx; }
 .ex-card .mine { position: absolute; left: 10rpx; top: 10rpx; z-index: 3; font-size: 18rpx; color: #fff; background: rgba(18,165,148,.9); padding: 3rpx 10rpx; border-radius: 12rpx; }

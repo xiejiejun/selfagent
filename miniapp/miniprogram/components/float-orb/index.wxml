@@ -1,6 +1,7 @@
-<view class="orb-menu" wx:if="{{menuOn}}" style="left: {{left}}px; top: {{top}}px;">
+<view class="orb-menu" wx:if="{{menuOn}}" style="left: {{menuLeft}}px; top: {{top}}px;">
   <view class="mopt {{mode === 'record' ? 'on' : ''}}" catchtap="pickRecord">随手记</view>
   <view class="mopt {{mode === 'focus' ? 'on' : ''}}" catchtap="pickFocus">专注</view>
+  <view class="mopt" catchtap="openLibrary">📚 找动作</view>
 </view>
 
 <movable-area class="orb-area">

@@ -1,5 +1,14 @@
 <view class="page">
-  <view class="subrow">
+  <view class="learnhint" wx:if="{{learn && coach}}">
+    <text class="lh-t">随便看看——收藏喜欢的，训练时直接用</text>
+    <text class="lh-x" bindtap="dismissCoach">知道了</text>
+  </view>
+  <view class="cards3" wx:if="{{learn}}">
+    <view class="ecard" bindtap="focusSearch"><text class="ec-ic">🔍</text><text class="ec-t">搜索</text></view>
+    <view class="ecard" bindtap="openAiFind"><text class="ec-ic">✦</text><text class="ec-t">AI 找动作</text></view>
+    <view class="ecard" bindtap="openScan"><text class="ec-ic">📷</text><text class="ec-t">拍照识别</text></view>
+  </view>
+  <view class="subrow" wx:else>
     <view class="subchip" bindtap="openAiFind">✦ 用一句话添加</view>
     <view class="subchip" bindtap="openScan">✦ 拍照识别</view>
   </view>
@@ -74,12 +83,22 @@
         </view>
       </view>
       <text class="d-none" wx:else>这个动作还没有要领说明</text>
+      <block wx:if="{{learn && detail.errsOn}}">
+        <view class="d-sec">常见错误</view>
+        <view class="d-err" wx:for="{{detail.errs}}" wx:key="*this"><text class="d-err-ic">⚠</text><text class="d-err-t">{{item}}</text></view>
+      </block>
       <view class="pad"></view>
     </view>
 
     <view class="d-btns">
-      <view class="d-btn ghost {{detail.fav ? 'on' : ''}}" data-id="{{detail.id}}" bindtap="star">{{detail.fav ? '★ 已收藏' : '☆ 收藏'}}</view>
-      <view class="d-btn primary" bindtap="pickNow">加入今天训练</view>
+      <block wx:if="{{learn}}">
+        <view class="d-btn primary favbtn" data-id="{{detail.id}}" bindtap="star">{{detail.fav ? '★ 已收藏' : '☆ 收藏'}}</view>
+        <view class="d-btn ghost" bindtap="pickNow">＋ 加入今天</view>
+      </block>
+      <block wx:else>
+        <view class="d-btn ghost {{detail.fav ? 'on' : ''}}" data-id="{{detail.id}}" bindtap="star">{{detail.fav ? '★ 已收藏' : '☆ 收藏'}}</view>
+        <view class="d-btn primary" bindtap="pickNow">加入今天训练</view>
+      </block>
     </view>
   </view>
 </view>
