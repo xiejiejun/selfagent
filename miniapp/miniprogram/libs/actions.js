@@ -43,6 +43,8 @@ function touchLog(l) {
 function saveStrength(input) {
   const c = ctx();
   const rec = Object.assign({}, input, { groups: (input.groups || []).slice() });
+  // 名称能判定部位就以名称为准，避免历史里 part 写错把核心训练算到背/腿上
+  rec.part = engine.partForName(c.train, rec.name, rec.part);
   ensureUid(rec);
   rec.groups = rec.groups.map((g, i) => Object.assign({}, g, { no: i + 1, uid: rec.uid + 's' + i }));
   // 排序位：编辑已有动作时沿用原 ord，新动作排到当天末尾

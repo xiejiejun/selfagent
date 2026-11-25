@@ -69,9 +69,34 @@ function wText(w, uni) {
 
 /* ---------------- 装配 ---------------- */
 
+/* ---------------- 部位归属 ---------------- */
+// 历史数据里「悬垂卷腹 / 龙门架卷腹」这类自建或导入的动作，part 常被写错（背/胸/上腿/其他），
+// 只按存的 part 统计会把核心训练整段判成没练。这里按名称做一次归位：
+// 1) 动作库同名动作的部位（权威） 2) 自建动作的部位 3) 名称含核心词 → 腰腹 4) 原始 part
+const LIB_DATA = require('../data/lib');
+let LIB_PART = null;
+function libPartOf(name) {
+  if (!LIB_PART) {
+    LIB_PART = {};
+    LIB_DATA.forEach(r => { if (r && r[1] && !LIB_PART[String(r[1]).trim()]) LIB_PART[String(r[1]).trim()] = r[2] || ''; });
+  }
+  return LIB_PART[String(name || '').trim()] || '';
+}
+const CORE_RE = /卷腹|平板支撑|平板撑|举腿|抬腿|仰卧起坐|侧屈|两头起|登山跑|死虫|核心/;
+function partForName(train, name, fallback) {
+  const n = String(name || '').trim();
+  const lp = libPartOf(n);
+  if (lp) return lp;
+  const hit = ((train && train.custom) || []).find(x => x && String(x.n || x.name || '').trim() === n);
+  if (hit) return hit.p || hit.part || fallback || '';
+  if (CORE_RE.test(n)) return '腰腹';
+  return fallback || '';
+}
+
 function stDayItems(train, dk) {
   return ensureTrain(train).records.filter(r => r && r.date === dk).map(r => {
     const gs = ensureGroups(r);
+    const part = partForName(train, r.name, r.part);
     const uni = uniOf(r);
     const done = gs.filter(g => g.done).length;
     const vol = gs.filter(g => g.done && !g.warmup).reduce((a, g) => a + setVolume(g, uni), 0);
@@ -81,7 +106,7 @@ function stDayItems(train, dk) {
       return v ? v[k] : 0;
     };
     return {
-      type: 'strength', uid: r.uid || '', exId: r.exId, name: r.name, part: r.part,
+      type: 'strength', uid: r.uid || '', exId: r.exId, name: r.name, part,
       ord: typeof r.ord === 'number' ? r.ord : null,
       sets: gs.length, reps: pick('reps'), weight: pick('weight'), done, uni,
       volume: Math.round(vol),
@@ -331,10 +356,13 @@ function partStats(train, nDays) {
     d.items.forEach(it => {
       if (it.type === 'cardio') return;
       const k = it.part || '其他';
-      map[k] = (map[k] || 0) + (it.volume || 0);
+      if (!map[k]) map[k] = { part: k, volume: 0, sets: 0 };
+      map[k].volume += it.volume || 0;
+      // 完成的组数：自重动作容量为 0，只有组数能证明这块练过
+      map[k].sets += it.done || 0;
     });
   });
-  return Object.keys(map).map(k => ({ part: k, volume: map[k] })).sort((a, b) => b.volume - a.volume);
+  return Object.keys(map).map(k => map[k]).sort((a, b) => b.volume - a.volume);
 }
 
 function topExercises(train, nDays, limit) {
@@ -381,6 +409,6 @@ module.exports = {
   upsertRecord, removeRecord, upsertCardio, removeCardio,
   addTomb, pruneTomb,
   buildTrainLog, syncTrainLog, dedupeLogs,
-  dayStat, lastNDays, streakDays, partStats, topExercises,
+  dayStat, lastNDays, streakDays, partStats, topExercises, partForName,
   dateLabel, shortDate, fmtTime
 };

@@ -80,12 +80,12 @@
       </view>
 
       <view class="card">
-        <view class="ch"><text class="ct">部位分布</text><text class="cm">按容量占比</text></view>
+        <view class="ch"><text class="ct">部位分布</text><text class="cm">按组数占比 · 自重也计入</text></view>
         <block wx:if="{{unlocked}}">
           <view class="prow" wx:for="{{parts}}" wx:key="part">
             <text class="pname">{{item.part}}</text>
             <view class="ptrack"><view class="pfill" style="width: {{item.w}}%"></view></view>
-            <text class="pval">{{item.volume}}</text>
+            <text class="pval">{{item.sets}}组</text>
           </view>
         </block>
         <view class="unlock" wx:else>

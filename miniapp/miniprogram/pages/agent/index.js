@@ -110,7 +110,9 @@ Page({
     const totalVolume = days.reduce((a, d) => a + d.volume, 0);
     const parts = engine.partStats(train, this.data.range);
     const tops = engine.topExercises(train, this.data.range, 5);
-    const maxPart = parts.reduce((a, p) => Math.max(a, p.volume), 1);
+    // 组数口径：自重动作容量恒为 0，只看容量会把「悬垂卷腹」这类判成没练
+    const setParts = parts.slice().sort((a, b) => (b.sets - a.sets) || (b.volume - a.volume));
+    const totalSets = setParts.reduce((a, p) => a + p.sets, 0);
     const week = engine.lastNDays(train, 7);
     const weekDays = week.filter(d => d.volume > 0 || d.cardioMin > 0);
     const weekSets = week.reduce((a, d) => a + d.done, 0);
@@ -158,7 +160,7 @@ Page({
     const lineOK = recentAsc.filter(l => Number(l.score) > 0 && Number(l.mood) > 0).length >= 3;
 
     // 依据 chips：每张洞察卡都能点开看证据，再跳记录页
-    const evParts = parts.slice(0, 3).map(p => ({ t: p.part, v: p.volume.toLocaleString() + ' kg' }));
+    const evParts = setParts.slice(0, 3).map(p => ({ t: p.part, v: p.sets + ' 组 · ' + p.volume.toLocaleString() + ' kg' }));
     const evTrainDays = days.filter(d => d.volume > 0 || d.cardioMin > 0).slice(0, 3).map(d => {
       const it = d.items && d.items[0];
       return { t: engine.shortDate(d.date) + (it && it.part ? ' · ' + it.part : ''), v: d.done + '组 · ' + d.volume + 'kg' };
@@ -169,18 +171,21 @@ Page({
     }));
 
     const insights = [];
-    const hasVol = parts.some(p => p.volume > 0);
+    const hasVol = parts.some(p => p.volume > 0 || p.sets > 0);
     if (parts.length && hasVol) {
-      const top = parts[0];
-      const least = parts.length > 1 ? parts[parts.length - 1] : null;
-      const topPct = Math.round(top.volume / maxPart * 100);
-      const leastPct = least ? Math.round(least.volume / maxPart * 100) : 0;
+      const top = setParts[0];
+      const pool = setParts.filter(p => p.part !== '其他');
+      const least = pool.length > 1 ? pool[pool.length - 1] : null;
+      const topPct = totalSets ? Math.round(top.sets / totalSets * 100) : 0;
+      const leastPct = least && totalSets ? Math.round(least.sets / totalSets * 100) : 0;
       if (least && leastPct < 15) {
         insights.push({
           k: 'gap',
-          t: least.part + ' 只占容量 ' + leastPct + '%',
-          v: least.volume + ' kg',
-          sub: '下次训练可以补一组 ' + least.part,
+          t: least.part + ' 只占 ' + leastPct + '% 组数',
+          v: least.sets + ' 组',
+          sub: least.sets
+            ? '容量 ' + least.volume + ' kg，下次可以补一组 ' + least.part
+            : '这段时间零组，下次可以补一组 ' + least.part,
           ev: evParts
         });
       }
@@ -188,7 +193,7 @@ Page({
         k: 'part',
         t: top.part + ' 是这段时间的主力',
         v: topPct + '%',
-        sub: '占容量 ' + top.volume + ' kg' + (least ? ' · 最少是 ' + least.part : ''),
+        sub: top.sets + ' 组 · 容量 ' + top.volume + ' kg' + (least ? ' · 最少是 ' + least.part : ''),
         ev: evParts
       });
     }
@@ -226,7 +231,7 @@ Page({
       volume: totalVolume,
       days: trained,
       avgVolume: trained ? Math.round(totalVolume / trained) : 0,
-      parts: parts.slice(0, 6).map(p => ({ part: p.part, volume: p.volume, w: Math.max(8, Math.round(p.volume / maxPart * 100)) })),
+      parts: setParts.slice(0, 6).map(p => ({ part: p.part, volume: p.volume, sets: p.sets, w: Math.max(8, Math.round(p.sets / Math.max(1, setParts[0] && setParts[0].sets) * 100)) })),
       tops,
       kpis,
       bins,
@@ -472,15 +477,31 @@ Page({
     const train = engine.ensureTrain(store.getTrain());
     const days = engine.lastNDays(train, this.data.range);
     const parts = engine.partStats(train, this.data.range);
+    const setParts = parts.slice().sort((a, b) => (b.sets - a.sets) || (b.volume - a.volume));
     const tops = engine.topExercises(train, this.data.range, 5);
     const profile = store.getProfile() || {};
+    // 动作明细按组数排：自重动作容量 0，不列出来模型就以为没练
+    const exMap = {};
+    const cdMap = {};
+    days.forEach(d => (d.items || []).forEach(it => {
+      if (it.type === 'cardio') {
+        if (!it.skipped) cdMap[it.name] = (cdMap[it.name] || 0) + (it.min || 0);
+        return;
+      }
+      if (!it.done) return;
+      exMap[it.name] = (exMap[it.name] || 0) + it.done;
+    }));
+    const exList = Object.keys(exMap).map(k => ({ k, v: exMap[k] })).sort((a, b) => b.v - a.v);
+    const cdList = Object.keys(cdMap).map(k => k + ' ' + cdMap[k] + '分');
     return [
       '【个人】身高' + (profile.height || '-') + 'cm 体重' + (profile.weight || '-') + 'kg 目标' + (profile.goal || '-'),
       '【近' + this.data.range + '天】训练 ' + this.data.days + ' 天，总容量 ' + this.data.volume + 'kg',
-      '【部位分布】' + parts.map(p => p.part + ' ' + p.volume + 'kg').join('，'),
+      '【部位分布（组数/容量）】' + setParts.map(p => p.part + ' ' + p.sets + '组/' + p.volume + 'kg').join('，'),
+      '【动作明细（按组数）】' + (exList.length ? exList.slice(0, 14).map(x => x.k + ' ' + x.v + '组').join('，') : '无'),
+      cdList.length ? '【有氧】' + cdList.slice(0, 5).join('，') : '',
       '【高频动作】' + tops.map(t => t.name + ' ' + t.sets + '组/' + t.volume + 'kg').join('，'),
       '【最近 7 天】' + days.slice(0, 7).map(d => d.date.slice(5) + ':' + d.done + '组/' + d.volume + 'kg').join(' ')
-    ].join('\n');
+    ].filter(Boolean).join('\n');
   },
 
   ask() {
@@ -503,7 +524,7 @@ Page({
     this.setData({ asking: true, q: '', local, chat });
     ai.ask({
       messages: [
-        { role: 'system', content: '你是健身教练兼数据分析助手。依据用户记录回答，中文，简洁，给可执行建议，不超过 200 字。追问时承接上文，不要重复已经说过的结论。' },
+        { role: 'system', content: '你是健身教练兼数据分析助手。依据用户记录回答，中文，简洁，给可执行建议，不超过 200 字。追问时承接上文，不要重复已经说过的结论。注意：自重动作（如卷腹、平板支撑、引体）容量记 0，判断某个部位练没练要看组数和【动作明细】，容量 0 不等于没练。' },
         ...history,
         { role: 'user', content: this.contextText() + '\n\n问题：' + q }
       ],

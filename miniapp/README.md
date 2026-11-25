@@ -349,6 +349,15 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.42：核心训练不再被容量口径漏掉
+
+- `engine.partStats` 返回值加 `sets`（完成组数，跳过热身）：自重动作容量恒为 0，只有组数能证明这块练过。
+- 新增 `engine.partForName(train, name, fallback)` 做部位归位：动作库同名动作部位优先 → 自建动作 `custom.p` → 名称含核心词（卷腹/平板/举腿/仰卧起坐/侧屈/两头起/登山跑/死虫/核心）→ 腰腹 → 原 `part`。`stDayItems` 和 `actions.saveStrength` 都调用，历史里被写成背/胸/上腿的「悬垂卷腹」读数时自动归到腰腹。
+- 分析页改组数口径：部位分布条按组数占比、副标题「按组数占比 · 自重也计入」；主力/短板百分比与依据行（`N 组 · X kg`）同步。
+- 问 AI 的上下文补「动作明细（按组数）」和有氧清单，部位分布改为「组数/容量」；system prompt 增补「自重动作容量记 0，判断部位看组数和动作明细」；计划页 AI 上下文同步带组数。
+- `libs/ask.js` 本地规则的最久未练、按部位筛选、最常练部位都先过 `partForName`。
+- 验证（模拟器，冷启动）：近 30 天 `腰腹 68组/8760kg`（修前 0 组/0 kg）；短板卡从「腰腹 0%」变为「上腿 4%」；`contextText` 含「悬垂卷腹 44组」。截图 `t9/f1-analysis-core.png`。
+
 ## 体验版 1.0.41：已完成的有氧不再停在「准备开始」
 
 - 根因两条：`prepare()` 的 `cardio` 分支不检查 `it.done`（力量分支有 `groups.findIndex(g=>!g.done)` 兜着）；`restoreFocus` 把 `persistFocus` 里旧的 `items`（有氧 `done:false`）整份盖回来，`resumeStage` 又按快照拉回 `cardio`，所以「已标记完成」被现场恢复抹掉。

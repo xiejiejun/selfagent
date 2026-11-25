@@ -82,7 +82,7 @@ function answer(q, train, logs) {
     const parts = ['胸', '背', '腿', '肩', '臂', '腰腹', '有氧'];
     const last = {};
     ((train && train.records) || []).forEach(r => {
-      const m = String(r.part || '').match(PART_RE);
+      const m = String(engine.partForName(train, r.name, r.part) || '').match(PART_RE);
       if (m) { const k = m[0]; if (!last[k] || r.date > last[k]) last[k] = r.date; }
     });
     const rows = parts.map(p => ({ p, d: last[p] || '' })).filter(r => r.d).sort((x, y) => (x.d < y.d ? -1 : 1));
@@ -100,7 +100,7 @@ function answer(q, train, logs) {
   // 3) 训练次数/组数/容量
   if (/练了几次|训练几次|练了[几多]|几次训练|训练了|练了多少|几次/.test(q) || /(组|容量|总重|强度)/.test(q)) {
     const part = (q.match(PART_RE) || [])[0] || '';
-    const recs = part ? sc.recs.filter(r => (r.part || '').indexOf(part) >= 0) : sc.recs;
+    const recs = part ? sc.recs.filter(r => (engine.partForName(train, r.name, r.part) || '').indexOf(part) >= 0) : sc.recs;
     if (!recs.length) return { title: '范围内没有训练', range: rangeLabel, main: rangeLabel + '没有' + (part ? '练' + part + '的' : '') + '训练记录。', sub: '去训练页排个计划，练完自动记账。', refs: [] };
     const days = {};
     recs.forEach(r => { days[r.date] = true; });
@@ -111,7 +111,7 @@ function answer(q, train, logs) {
       gs.forEach(g => { if (g.done) { done++; if (!g.warmup) vol += (g.reps || 0) * (g.weight || 0); } });
     });
     const partCnt = {};
-    recs.forEach(r => { const k = r.part || '其他'; partCnt[k] = (partCnt[k] || 0) + 1; });
+    recs.forEach(r => { const k = engine.partForName(train, r.name, r.part) || '其他'; partCnt[k] = (partCnt[k] || 0) + 1; });
     const topPart = Object.keys(partCnt).sort((x, y) => partCnt[y] - partCnt[x])[0];
     const dayN = Object.keys(days).length;
     if (/(容量|总重|强度|公斤|kg)/.test(q)) {
