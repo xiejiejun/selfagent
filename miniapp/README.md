@@ -349,6 +349,14 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.37：修动作库详情「加入今天训练」点不中
+
+- 症状：详情页底部「☆ 收藏 / 加入今天训练」必须滚动到内容最底部才响应；在中间点击只会关闭详情退回动作库，不弹重量设置卡。
+- 根因：`pages/library/index.wxss` 里 `.d-btns` 用的是 `position: sticky; bottom: 0`，而它与动作图、名称、要领同处一个滚动容器（`.sheet` 自身 `overflow: auto`）。未滚到底时 sticky 未生效，按钮只是夹在内容流中；同时该区域的点击命中落到了外层 `.mask`（`bindtap="closeDetail"`），于是「滑到底才生效、中间一点就退出」。
+- 改法：`.sheet` 改为 `display: flex; flex-direction: column; overflow: hidden`；把 `.d-top` 收进 `.sheet-scroll`（`flex: 1 1 auto; min-height: 0; overflow-y: auto`）统一滚动；`.d-btns` 去掉 sticky，作为 `flex: 0 0 auto` 的固定页脚，任何滚动位置都在最底层且独立命中。
+- 排版：按钮区上间距 16rpx、内容尾部留白 28rpx，滚到底不叠字。
+- 验证（模拟器，冷启动）：`pages/library/index?from=learn` → 打开「3/4仰卧起坐」详情 → **零滚动**直接点「＋ 加入今天」→ 落到 `pages/train/index` 且 `editorVisible=true`，payload 动作名为「3/4仰卧起坐」。截图 `t9/x1-detail-fixed.png`、`x2-after-tap.png`。
+
 ## 体验版 1.0.36：单侧动作按「每侧」记录
 
 - 引擎层：`engine.isUniName(name)`（单臂/单腿/单侧/单脚/单边/保加利亚/交替）、`engine.uniOf(rec)`（`rec.uni` > 组的 `tag==='side'` > 名称）、`engine.setVolume(g, uni)`（左右分开记 → `(lw+rw)*reps`；否则 `weight*reps*2`）、`engine.wText(w, uni)`（`12.5kg/侧`）。`stDayItems/cdDayItems` 产出 `uni` 字段，`groupLine(gs, uni)` 带「/侧」、左右分记时输出 `L10 R8kg`。

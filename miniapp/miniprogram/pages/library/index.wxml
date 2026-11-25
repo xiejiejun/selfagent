@@ -87,28 +87,29 @@
 
 <view class="mask" wx:if="{{detail}}" bindtap="closeDetail">
   <view class="sheet" catchtap="noop">
-    <view class="d-top">
-      <view class="d-media">
-        <video wx:if="{{detail.clipID}}" id="dvideo" class="d-media-in" src="{{detail.clipID}}" poster="{{detail.fileID}}" muted loop autoplay playsinline object-fit="cover" show-center-play-btn="{{false}}" binderror="onClipErr" bindloadedmetadata="onClipReady" />
-        <image wx:if="{{detail.fileID && !clipReady}}" class="d-media-in poster" src="{{detail.fileID}}" mode="aspectFill" data-id="{{detail.id}}" binderror="thumbErr" />
-        <view wx:if="{{!detail.fileID && !detail.clipID}}" class="d-media-in ph"><text class="phn">{{detail.n[0]}}</text></view>
-      </view>
-      <view class="d-tags">
-        <text class="tag">{{detail.p}}</text>
-        <text class="tag">{{detail.e || '自重'}}</text>
-        <text class="tag" wx:if="{{detail.t}}">{{detail.t}}</text>
-        <text class="tag alias" wx:if="{{detail.alias}}">已改名</text>
-        <text class="tag alias" wx:if="{{detail.mine}}">自定义</text>
-      </view>
-
-      <view class="d-row">
-        <input class="d-name" value="{{nameDraft}}" bindinput="onNameInput" maxlength="20" placeholder="动作名称" />
-        <text class="d-save" bindtap="saveName">保存</text>
-      </view>
-      <text class="d-reset" wx:if="{{detail.alias}}" bindtap="resetName">恢复原名（{{detail.raw}}）</text>
-    </view>
-
+    <!-- 内容整体滚动，按钮固定为页脚：不再用 sticky，避免未滚到底时点不中 -->
     <view class="sheet-scroll">
+      <view class="d-top">
+        <view class="d-media">
+          <video wx:if="{{detail.clipID}}" id="dvideo" class="d-media-in" src="{{detail.clipID}}" poster="{{detail.fileID}}" muted loop autoplay playsinline object-fit="cover" show-center-play-btn="{{false}}" binderror="onClipErr" bindloadedmetadata="onClipReady" />
+          <image wx:if="{{detail.fileID && !clipReady}}" class="d-media-in poster" src="{{detail.fileID}}" mode="aspectFill" data-id="{{detail.id}}" binderror="thumbErr" />
+          <view wx:if="{{!detail.fileID && !detail.clipID}}" class="d-media-in ph"><text class="phn">{{detail.n[0]}}</text></view>
+        </view>
+        <view class="d-tags">
+          <text class="tag">{{detail.p}}</text>
+          <text class="tag">{{detail.e || '自重'}}</text>
+          <text class="tag" wx:if="{{detail.t}}">{{detail.t}}</text>
+          <text class="tag alias" wx:if="{{detail.alias}}">已改名</text>
+          <text class="tag alias" wx:if="{{detail.mine}}">自定义</text>
+        </view>
+
+        <view class="d-row">
+          <input class="d-name" value="{{nameDraft}}" bindinput="onNameInput" maxlength="20" placeholder="动作名称" />
+          <text class="d-save" bindtap="saveName">保存</text>
+        </view>
+        <text class="d-reset" wx:if="{{detail.alias}}" bindtap="resetName">恢复原名（{{detail.raw}}）</text>
+      </view>
+
       <view class="d-sec">动作要领</view>
       <view class="d-steps" wx:if="{{detail.steps.length}}">
         <view class="d-step" wx:for="{{detail.steps}}" wx:key="*this">
