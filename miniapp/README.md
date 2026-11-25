@@ -349,6 +349,15 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.41：已完成的有氧不再停在「准备开始」
+
+- 根因两条：`prepare()` 的 `cardio` 分支不检查 `it.done`（力量分支有 `groups.findIndex(g=>!g.done)` 兜着）；`restoreFocus` 把 `persistFocus` 里旧的 `items`（有氧 `done:false`）整份盖回来，`resumeStage` 又按快照拉回 `cardio`，所以「已标记完成」被现场恢复抹掉。
+- `prepare()` cardio 首行跳过已完成：`if (it.done) { this.idx++; return this.prepare(); }`。
+- `onLoad` 留 `_fresh = this.items`（落库最新），`restoreFocus` 盖回快照后按 `uid` 合并：有氧 `done`、力量已完成组及 `sec` 以最新为准。
+- `resumeStage()` 前置判断：当前动作已完成（有氧 `done` / 力量组全 `done`）则不再恢复计时。
+- `showFinish()` 补 `persistFocus()`：整场结束写入 `stage:'finish'` 与最终 `idx`，重进直接进收尾页。
+- 验证（模拟器，冷启动）：最后一组力量长按完成 → 有氧 `ready → start(0:02) → finishCardio` → 训练页 `分腿跳 1/1`；`navigateBack` 后重进专注页 `stage=finish`「这次练完了」。截图 `t9/e1-train-all-done.png`、`e2-focus-finish.png`。
+
 ## 体验版 1.0.40：组前 3 秒倒计时 + 暂停后长按完成本组
 
 - 新增 `stage: 'countdown'`：`beginSet` 不再立刻起表，先设 `_cdEnd = now + 3000`；`tick` 每 0.5s 算剩余秒数写 `cdLeft`，到 0 调 `startWork()` 记 `_workStart`（前面 3 秒不计入组时长）。

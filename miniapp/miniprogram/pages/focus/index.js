@@ -142,6 +142,7 @@ Page({
     try { coach = wx.getStorageSync('selfagent_coach_ring_v1'); } catch (e) {}
     this.setData({ ringCoach: !coach });
     this._sessionStart = Date.now();
+    this._fresh = this.items;        // 落库的最新状态（快照可能早于它）
     this.restoreFocus();
     this.refreshQueue();
     this.prepare();
@@ -159,6 +160,20 @@ Page({
     const same = this.items.every((it, i) => st.items[i] && st.items[i].uid === it.uid);
     if (!same) return;
     this.items = st.items;
+    // 快照早于落库：把已完成的有氧/组从最新数据合并回来，避免恢复出「已完成却还停在 ready」的页
+    const fresh = this._fresh || [];
+    this.items.forEach((it, i) => {
+      const f = fresh[i];
+      if (!f || !f.uid || f.uid !== it.uid) return;
+      if (it.type === 'cardio') {
+        if (f.done) { it.done = true; if (f.min) it.min = f.min; }
+        return;
+      }
+      (it.groups || []).forEach((g, j) => {
+        const fg = (f.groups || [])[j];
+        if (fg && fg.done && !g.done) { g.done = true; if (fg.sec) g.sec = fg.sec; }
+      });
+    });
     const restIdx = Math.min(st.idx || 0, this.items.length - 1);
     // 指定了 uid（从某个动作行点进来）就以它为准，不能被上次的 idx 抢走
     const tgt = this.targetUid ? this.items.findIndex(x => x.uid === this.targetUid) : -1;
@@ -188,6 +203,9 @@ Page({
     if (!r) return;
     const now = Date.now();
     const MAX = 12 * 3600 * 1000;
+    // 这个动作已经做完（或组都做完）就别再恢复计时
+    const cur = this.items[this.idx];
+    if (cur && (cur.done || (cur.type === 'strength' && (cur.groups || []).length && cur.groups.every(g => g.done)))) return;
     // 有氧：接着累计
     if (r.stage === 'cardio' && this.data.stage === 'ready' && this.data.curType === 'cardio') {
       const cs = Number(r.cardioStart || 0);
@@ -499,6 +517,8 @@ Page({
     this._restEnd = 0;
     this._workStart = 0;
     if (it.type === 'cardio') {
+      // 已完成的有氧直接跳过，别停在一个「0:00 准备开始」的死页
+      if (it.done) { this.idx++; return this.prepare(); }
       this._cardioStart = 0;
       this.setData({
         stage: 'ready', curType: 'cardio', curName: it.name, curPart: '有氧',
@@ -1281,6 +1301,7 @@ Page({
       finGoal: null
     });
     this.refreshQueue();
+    this.persistFocus();
     this.draw();
     this.postDecisions(stat, cardio);
     this.aiReview(stat, cardio, sessionSec);

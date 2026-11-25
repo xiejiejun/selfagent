@@ -2,6 +2,18 @@
 
 版本号与体验版上传号对应；日期为北京时间。
 
+## 1.0.41 · 2026-11-25
+
+**修「有氧已标记完成，进专注模式还显示 0:00 准备开始」**
+- 原因一：`prepare()` 的 cardio 分支不看 `it.done`。力量分支会跳过做完的动作，纯计时有氧没有——已完成的椭圆机照样铺 `stage:'ready'`、`cardioSec:0`，于是出现「8/8 动作 · 30/30 组 100%」却停在「准备好后开始有氧计时 / 开始有氧」。
+- 原因二：现场恢复快照早于落库。`persistFocus` 是在有氧 `start` 时写的，那一版 `items` 里 `done` 还是 false；`restoreFocus` 整份盖回去，把已做完的有氧又还原成未做完。`resumeStage` 又照快照把页面拉回 `cardio` 继续计时。
+- 改法：
+  - `prepare()` cardio 分支首行 `if (it.done) { this.idx++; return this.prepare(); }`，已完成直接下一个，到末尾就进收尾。
+  - `onLoad` 先留一份落库最新数据 `_fresh`，`restoreFocus` 盖回快照后按 `uid` 把已完成的有氧、已完成的组（含 `sec`）合并回去，快照旧状态不再覆盖它。
+  - `resumeStage()` 开头判断当前动作是否已完成（上有氧 `done`，或力量全部组 `done`），已完成不恢复计时。
+  - `showFinish()` 补 `persistFocus()`，整场结束的快照写 `stage:'finish'`、`idx` 落到底，下次进来直接是收尾页。
+- 验证（模拟器，冷启动）：完成最后一组力量 → `between` → 有氧 `ready` → `start`（`cardio 0:02`）→ `finishCardio` → 训练页 `分腿跳 1/1`、`8 动作 · 18/18 组·有氧 1′` → 退出重进专注页 `stage=finish`「这次练完了」，不再出现「准备开始有氧计时」。截图 `t9/e1-train-all-done.png`、`e2-focus-finish.png`。
+
 ## 1.0.40 · 2026-11-25
 
 **专注模式：组前 3 秒倒计时 + 暂停后长按改为完成本组**
