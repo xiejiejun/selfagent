@@ -493,14 +493,27 @@ Page({
     }));
     const exList = Object.keys(exMap).map(k => ({ k, v: exMap[k] })).sort((a, b) => b.v - a.v);
     const cdList = Object.keys(cdMap).map(k => k + ' ' + cdMap[k] + '分');
+    // 逐日明细：问「今天/昨天/某天」时必须有当天动作，否则模型只能拿 30 天汇总答
+    const todayKey = engine.dayKey(new Date());
+    const t0 = days.find(d => d.date === todayKey) || engine.dayStat(train, todayKey) || {};
+    const dayLine = d => {
+      if (!d || !d.items || !d.items.length) return '无记录';
+      const ex = d.items.filter(it => it.type !== 'cardio' && it.done)
+        .sort((a, b) => (b.done || 0) - (a.done || 0))
+        .slice(0, 8)
+        .map(it => it.name + ' ' + it.done + '组' + (it.weight ? '/' + it.weight + 'kg' : ''));
+      const cd = d.items.filter(it => it.type === 'cardio').map(it => it.name + ' ' + (it.min || 0) + '分');
+      return ex.concat(cd).join('，');
+    };
     return [
       '【个人】身高' + (profile.height || '-') + 'cm 体重' + (profile.weight || '-') + 'kg 目标' + (profile.goal || '-'),
-      '【近' + this.data.range + '天】训练 ' + this.data.days + ' 天，总容量 ' + this.data.volume + 'kg',
-      '【部位分布（组数/容量）】' + setParts.map(p => p.part + ' ' + p.sets + '组/' + p.volume + 'kg').join('，'),
-      '【动作明细（按组数）】' + (exList.length ? exList.slice(0, 14).map(x => x.k + ' ' + x.v + '组').join('，') : '无'),
-      cdList.length ? '【有氧】' + cdList.slice(0, 5).join('，') : '',
-      '【高频动作】' + tops.map(t => t.name + ' ' + t.sets + '组/' + t.volume + 'kg').join('，'),
-      '【最近 7 天】' + days.slice(0, 7).map(d => d.date.slice(5) + ':' + d.done + '组/' + d.volume + 'kg').join(' ')
+      '【今天 ' + todayKey.slice(5) + '】' + dayLine(t0) + ' · 共 ' + (t0.done || 0) + ' 组 / ' + (t0.volume || 0) + 'kg',
+      '【每日明细·近 7 天】' + days.slice(0, 7).map(d => d.date.slice(5) + ' ' + dayLine(d)).join('；'),
+      '【近' + this.data.range + '天汇总·只作趋势】训练 ' + this.data.days + ' 天，总容量 ' + this.data.volume + 'kg',
+      '【近' + this.data.range + '天部位分布（组数/容量）】' + setParts.map(p => p.part + ' ' + p.sets + '组/' + p.volume + 'kg').join('，'),
+      '【近' + this.data.range + '天动作明细（按组数）】' + (exList.length ? exList.slice(0, 14).map(x => x.k + ' ' + x.v + '组').join('，') : '无'),
+      cdList.length ? '【近' + this.data.range + '天有氧】' + cdList.slice(0, 5).join('，') : '',
+      '【高频动作】' + tops.map(t => t.name + ' ' + t.sets + '组/' + t.volume + 'kg').join('，')
     ].filter(Boolean).join('\n');
   },
 
@@ -524,7 +537,7 @@ Page({
     this.setData({ asking: true, q: '', local, chat });
     ai.ask({
       messages: [
-        { role: 'system', content: '你是健身教练兼数据分析助手。依据用户记录回答，中文，简洁，给可执行建议，不超过 200 字。追问时承接上文，不要重复已经说过的结论。注意：自重动作（如卷腹、平板支撑、引体）容量记 0，判断某个部位练没练要看组数和【动作明细】，容量 0 不等于没练。' },
+        { role: 'system', content: '你是健身教练兼数据分析助手。依据用户记录回答，中文，简洁，给可执行建议，不超过 200 字。追问时承接上文，不要重复已经说过的结论。注意：自重动作（如卷腹、平板支撑、引体）容量记 0，判断某个部位练没练要看组数和【动作明细】，容量 0 不等于没练。时间范围必须按用户问的来：问「今天」只用【今天】那一行，问「昨天/某天」只用【每日明细】里对应那天，问「最近一周」才用近 7 天，【近 30 天汇总】只用于趋势；回答开头写清用的是哪天的数据，不要拿汇总当某一天。' },
         ...history,
         { role: 'user', content: this.contextText() + '\n\n问题：' + q }
       ],
