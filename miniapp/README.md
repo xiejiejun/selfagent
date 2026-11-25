@@ -349,11 +349,18 @@ DECISION_POINTS = [
 - 期间完成 1 组器械三头肌伸展做验证，已用 `tapDot` 反向还原，最终 `器械三头肌伸展 000 / 哑铃凳 110 / 杠铃弯举 111 / ORB 5/36 组`。
 - `wx.pageScrollTo({selector})` 与自定义组件内部节点（`.ta/.mopt`）在 automator 下取不到，属工具限制；弹层靠 `home.openQuickNote()`（`selectComponent('#orb').openNote()`）验证渲染。
 
+## 体验版 1.0.30：详情媒体区正方形
+
+- `.dmedia` 从通栏 340rpx 高改为 **560rpx × 560rpx** 居中正方形，`object-fit: cover`，短片与静态图都是方图。
+- 尺寸不取满宽：满宽方图会把「加入今天的训练」按钮顶出首屏；560rpx 下一步骤与 CTA 仍在一屏内。
+
+截图：`t9/s3-scan-noclip.png`（45度侧屈，方图 + CTA 可见）。
+
 ## 体验版 1.0.29：拍照识别详情补短片 / 图片
 
 ### 一、媒体区
 
-- 弹窗在标题与部位标签之间加 `.dmedia`（340rpx 高、16rpx 圆角），三层回落：短片 → 静态图 → 首字占位。
+- 弹窗在标题与部位标签之间加 `.dmedia`（560rpx 正方形、16rpx 圆角），三层回落：短片 → 静态图 → 首字占位。
 - 短片：`libs/clip-index.js` 命中即播 `media/clip/<4位id>.mp4`；`muted loop autoplay playsinline`、`controls=false`、隐藏中心播放键，效果等同动图（一直循环、无控件）。
 - 索引未命中：调 `gifMigrate` `{action:'batchgen',clip:true,ids:[id],budget:12000}` 后台补产一次（`clipPending` 去重），成功写入 `clip.ids` 再播。
 - 短片 `binderror`：cloud:// 先换临时 https 重试一次（`clipTempTried`），仍失败才撤视频。
