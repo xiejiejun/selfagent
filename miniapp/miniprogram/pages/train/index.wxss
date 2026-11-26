@@ -151,7 +151,7 @@
 .cdn { color: #96660F; }
 
 /* 专注入口条 */
-.focusbar { display: flex; align-items: center; gap: 18rpx; margin-top: 18rpx; padding: 18rpx 22rpx; border-radius: 20rpx; background: linear-gradient(135deg,#0F3A35 0%,#123D38 100%); border: 1rpx solid #1D5C52; }
+.focusbar { display: flex; align-items: center; gap: 18rpx; margin-top: 18rpx; padding: 18rpx 22rpx; border-radius: 20rpx; background: linear-gradient(135deg,#0F3A35 0%,#123D38 100%); border: 1rpx solid #1D5C52; position: relative; z-index: 2; }
 .fb-ic { width: 58rpx; height: 58rpx; line-height: 58rpx; text-align: center; border-radius: 50%; background: #12A594; color: #fff; font-size: 22rpx; flex: none; }
 .fb-l { flex: 1; }
 .fb-t { display: block; font-size: 28rpx; font-weight: 600; color: #E8F2EE; }

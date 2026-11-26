@@ -296,7 +296,7 @@ Page({
     actions.addMeal({
       date: this.data.date,
       meal: this.data.meal,
-      items: items.map(x => ({ name: x.name, portion: x.portion, kcal: x.kcal, confidence: x.confidence })),
+      items: items.map(x => ({ name: x.name, portion: x.portion, kcal: x.kcal, confidence: x.confidence, baseKcal: x.baseKcal || x.kcal, basePortion: x.basePortion || x.portion, factor: x.factor || 1 })),
       confidence: Math.round(avg * 100) / 100,
       image,
       source: this.data.mode === 'text' ? 'text' : (image ? 'photo' : 'photo_once')

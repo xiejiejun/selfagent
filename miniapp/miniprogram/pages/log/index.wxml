@@ -7,15 +7,18 @@
   <!-- 快记 -->
   <block wx:if="{{tab === 'log'}}">
     <view class="quick">
-      <textarea
-        class="qarea"
-        placeholder="今天怎么样？训练感受、体重、睡眠、状态都能记"
-        value="{{quickText}}"
-        bindinput="onQuickInput"
-        maxlength="600"
-        auto-height
-        show-confirm-bar="{{false}}"
-      />
+      <view class="qrow">
+        <textarea
+          class="qarea"
+          placeholder="今天怎么样？训练感受、体重、睡眠、状态都能记"
+          value="{{quickText}}"
+          bindinput="onQuickInput"
+          maxlength="600"
+          auto-height
+          show-confirm-bar="{{false}}"
+        />
+        <text class="qcam" bindtap="goCam" aria-label="拍一张记饮食">📷</text>
+      </view>
       <view class="hintrow" wx:if="{{infer && !todayCount}}">
         <text class="infer" bindtap="applyInfer">识别为 {{infer.key === 'work' ? '工作' : infer.key === 'fit' ? '健身' : '生活习惯'}}{{infer.tags.length ? ' · ' + infer.tags.join(' / ') : ''}} · 采用</text>
       </view>
@@ -47,7 +50,7 @@
                 block-size="20" activeColor="#12A594" backgroundColor="#EDF1F0"
                 data-k="quickEnergy" bindchange="onScoreSlide" />
         <view class="score-lab">
-          <text class="sl-i {{quickEnergy === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this">{{item}}</text>
+          <text class="sl-i {{(quickEnergy || 3) === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this">{{item}}</text>
         </view>
       </view>
       <view class="score-row">
@@ -59,7 +62,7 @@
                 block-size="20" activeColor="#12A594" backgroundColor="#EDF1F0"
                 data-k="quickMood" bindchange="onScoreSlide" />
         <view class="score-lab">
-          <text class="sl-i m {{quickMood === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this">{{item}}</text>
+          <text class="sl-i m {{(quickMood || 3) === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this">{{item}}</text>
         </view>
       </view>
 
@@ -69,7 +72,6 @@
           <text class="demo" bindtap="loadDemo">载入示例</text>
         </view>
         <view class="qright">
-          <text class="qcam" bindtap="goCam" aria-label="拍一张记饮食">📷</text>
           <text class="qs {{quickText ? '' : 'off'}}" bindtap="saveQuick">保存</text>
         </view>
       </view>
@@ -120,12 +122,13 @@
             <text class="mh-k">约 {{lg.kcal}}</text>
             <text class="mh-u">kcal</text>
           </view>
-          <view class="mitem" wx:for="{{lg.items}}" wx:for-item="mi" wx:key="name">
+          <view class="mitem" wx:for="{{lg.items}}" wx:for-item="mi" wx:for-index="mii" wx:key="name" data-id="{{lg.id}}" data-i="{{mii}}" bindtap="fixMeal">
             <text class="mn {{mi.low ? 'low' : ''}}">{{mi.name}}</text>
             <text class="mlow" wx:if="{{mi.low}}">待确认</text>
             <text class="mp">{{mi.portion}}</text>
-            <text class="mk2">{{mi.kcal}}</text>
+            <text class="mk2">{{mi.kcal}}<text class="mku"> kcal</text></text>
           </view>
+          <text class="mhint" wx:if="{{lg.items.length}}">点任一项改份量</text>
           <image class="mpic" wx:if="{{lg.pic}}" src="{{lg.pic}}" mode="aspectFill" />
         </block>
 

@@ -21,7 +21,7 @@
       <text class="sum">{{summary}}</text>
       <kpi-strip items="{{kpis}}" />
 
-      <view class="focusbar" wx:if="{{!empty}}" bindtap="orbFocus">
+      <view class="focusbar" wx:if="{{!empty}}" catchtap="orbFocus">
         <view class="fb-ic">▶</view>
         <view class="fb-l">
           <text class="fb-t">专注训练</text>

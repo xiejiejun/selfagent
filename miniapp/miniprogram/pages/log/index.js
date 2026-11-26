@@ -402,6 +402,40 @@ Page({
     });
   },
 
+  // 饮食卡：点某一行就地改份量（少半份 / 标准 / 多一倍），总热量与日志文案同步重算
+  fixMeal(e) {
+    const ds = e.currentTarget.dataset;
+    const id = ds.id;
+    const idx = Number(ds.i);
+    const logs = store.getLogs() || [];
+    const l = logs.find(x => x && x.id === id);
+    if (!l || !l.meta || !(l.meta.items || [])[idx]) return;
+    const it = l.meta.items[idx];
+    const factor = [0.5, 1, 2];
+    wx.showActionSheet({
+      itemList: ['少半份', '标准', '多一倍'],
+      success: (r) => {
+        const f = factor[r.tapIndex];
+        const base = Number(it.baseKcal) || Number(it.kcal) || 0;
+        const baseP = String(it.basePortion || it.portion || '1 份');
+        const scaled = food.rescale({ name: it.name, portion: baseP, kcal: base, baseKcal: base, factor: 1, confidence: it.confidence }, f);
+        it.baseKcal = base;
+        it.basePortion = baseP;
+        it.factor = f;
+        it.portion = scaled.portion;
+        it.kcal = scaled.kcal;
+        l.meta.totalKcal = food.totalOf(l.meta.items);
+        l.content = (l.meta.meal || '一餐') + ' · 约 ' + l.meta.totalKcal + ' kcal';
+        l.ts = Date.now();
+        store.setLogs(engine.dedupeLogs(logs));
+        store.markDirty('logs', l.id);
+        this.refresh();
+        wx.showToast({ title: '已改为 ' + scaled.portion, icon: 'none' });
+      },
+      fail: () => {}
+    });
+  },
+
   delLog(e) {
     const id = e.currentTarget.dataset.id;
     wx.showModal({

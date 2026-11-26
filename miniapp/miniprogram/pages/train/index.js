@@ -972,6 +972,7 @@ Page({
   // 推荐动作：一键加入今天
   addRec(e) {
     const ds = e.currentTarget.dataset;
+    if (!ds || !ds.exid || !ds.name) return; // 防误触：没有动作参数就不弹编辑层
     const train = engine.ensureTrain(store.getTrain());
     const custom = (train.custom || []).find(x => x.id === ds.exid);
     const item = this.data.rec.items.find(x => x.exId === ds.exid);
