@@ -740,8 +740,16 @@ Page({
   },
 
   // 问 AI 收敛为一处：顶部胶囊 → 半屏 sheet
-  openAsk() { this.setData({ askOpen: true }); },
-  closeAsk() { this.setData({ askOpen: false }); },
+  // 半屏 sheet：原生 tabBar 与 canvas 都会压在上面，打开时一并收掉，关掉再恢复
+  openAsk() {
+    wx.hideTabBar({ animation: false });
+    this.setData({ askOpen: true });
+  },
+  closeAsk() {
+    this.setData({ askOpen: false });
+    wx.showTabBar({ animation: false });
+    setTimeout(() => this.drawProgress(), 120);
+  },
   noop() {},
 
   goEv() { this.goLog(); },

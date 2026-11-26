@@ -2,6 +2,15 @@
 
 版本号与体验版上传号对应；日期为北京时间。
 
+## 1.0.56 · 2026-11-26
+
+**修「问 AI」半屏 sheet 被盖住：原生 tabBar 与 canvas 都压在上面**
+- 问题：真机上点 ✦ 问 AI 弹出半屏 sheet 后，底部 tab 栏仍浮在 sheet 上面（把建议 chips 压掉半行），雷达画布的轴标签（胸/背/核心/肩）也穿过白底直接印在 sheet 内容上——canvas 与原生 tabBar 都属原生层，永远高于页面视图。
+- 修法：打开 sheet 时 `wx.hideTabBar()`、关闭时 `wx.showTabBar()`；打开期间四张画布（卡 A 双柱 / 雷达 / 曲线 / 精力双折线）改为 `wx:if="{{... && !askOpen}}"` 暂时移除，关闭后统一 `drawProgress()` 重绘，图表状态不丢。
+- 结果：sheet 白底完整、建议 chips 与输入框不再被遮，页面内容只透过半透明遮罩变灰，不再有轴标签/柱状图穿过面板。
+
+- 验证（模拟器，冷启动）：打开 sheet 后 tab 栏消失、chips 完整、无画布穿透（`t9/k1-ask-clean.png`）；问一句后本地结论 + 提问气泡 + AI 回答在 sheet 内正常排版与滚动（`k2-ask-chat.png`）；关闭后 tab 栏恢复、双柱与雷达重绘正常（`k3-after-close.png`）；`askOpen` 前后状态 true→false，console 0 error。
+
 ## 1.0.55 · 2026-11-26
 
 **分析页三 tab 合并成单页滚动流（Apple Health 摘要式）**

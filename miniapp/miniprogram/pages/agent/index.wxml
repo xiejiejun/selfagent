@@ -23,7 +23,7 @@
       </view>
     </view>
     <view class="hlc-chart">
-      <canvas wx:if="{{crossOK}}" id="dual" canvas-id="dual" class="eline"></canvas>
+      <canvas wx:if="{{crossOK && !askOpen}}" id="dual" canvas-id="dual" class="eline"></canvas>
       <view class="skeleton" wx:else>
         <text class="sk-t">还没有柱子</text>
         <text class="sk-s">记录 3 天后生成容量与有氧</text>
@@ -55,7 +55,7 @@
   <!-- 卡 B：部位均衡 -->
   <view class="card">
     <view class="ch"><text class="ct">部位均衡</text><text class="cm">容量分布 · 近 {{range}} 天</text></view>
-    <canvas wx:if="{{radarOK}}" canvas-id="radar" class="radar"></canvas>
+    <canvas wx:if="{{radarOK && !askOpen}}" canvas-id="radar" class="radar"></canvas>
     <view class="unlock" wx:else>
       <text class="empty">还没有部位容量，记一次训练就有六边形</text>
       <view class="empty-cta" bindtap="goTrain">去训练页</view>
@@ -79,7 +79,7 @@
     <scroll-view class="chips" scroll-x="true" show-scrollbar="false" wx:if="{{prog.curves.length}}">
       <text class="chip {{curveSel === index ? 'on' : ''}}" wx:for="{{prog.curves}}" wx:key="name" data-i="{{index}}" bindtap="selCurve">{{item.name}}</text>
     </scroll-view>
-    <canvas wx:if="{{prog.curves.length}}" canvas-id="curve" class="curve"></canvas>
+    <canvas wx:if="{{prog.curves.length && !askOpen}}" canvas-id="curve" class="curve"></canvas>
     <view class="cv-meta" wx:if="{{curve}}">
       <text class="cv-d">{{curve.from}} → {{curve.to}} kg e1RM</text>
       <text class="cv-d">{{curve.n}} 个训练日</text>
@@ -112,7 +112,7 @@
       </view>
     </view>
     <view class="hlc-chart">
-      <canvas wx:if="{{lineOK}}" id="eline" canvas-id="eline" class="eline"></canvas>
+      <canvas wx:if="{{lineOK && !askOpen}}" id="eline" canvas-id="eline" class="eline"></canvas>
       <view class="skeleton" wx:elif="{{hasNotes}}">
         <text class="sk-t">还不成线</text>
         <text class="sk-s">记满 3 天精力/情绪，这里给双折线</text>
