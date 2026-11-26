@@ -2,6 +2,21 @@
 
 版本号与体验版上传号对应；日期为北京时间。
 
+## 1.0.59 · 2026-11-26
+
+**折叠行单行化 + 相机入口合并成一处 + 订阅消息断签召回（云函数已部署）**
+- 训练页折叠行：收起状态从两行压成一行（`padding:10rpx 0`、`min-height:56rpx`、动作名 27rpx、右侧 grip/圆点/重量/箭头统一缩小，「3×10」「40kg」这类折行改单行省略 `max-width:42vw`）。展开态保持原来的宽松排版，点开才发现细节。13 个动作时一屏能看 10 行左右，不用再滑着找动作。
+- 相机入口统一：`pages/cam` 变成通用拍摄页，`?src=food|equip` 决定文案与去向；记录页输入行的 📷 走 `src=food`（拍完回 `pages/meal` 自动识别），动作库顶部的 📷 走 `src=equip`（拍完回 `pages/library?img=…&vision=1`，由 `runVision()` 接手 AI 找动作）。动作库原先的 `chooseMedia` 相册路径保留为兜底（相机不可用/用户想选图）。
+- 订阅消息断签召回：`cloudfunctions/notify` 重写为「绑定 / 心跳 / 解绑 / 状态 + 每日定时」四段。定时（20:00，`0 0 20 * * * *`）只推给「有授权 + 今天没练 + 断签 ≥2 天」的人，文案按存量分两档（连续 ≥3 天 = 「已连续 N 天 / 今天练一次就不断签」，否则「好久没练了 / 20 分钟就能续上」），每条控制在 20 字内。订阅消息是一次性的，所以发完即把 `enabled` 置 false，不重复骚扰；失败的人保留 `enabled`，次日重试。
+- 客户端心跳：`app.js` 新增 `touchSub()`，每次进前台（30 分钟节流，键 `selfagent_sub_touch_v1`）把 `streakDays` 与「最近一次有训练量的日期」上报云端——本地数据不完整落在云端，云端只能靠这个知道「今天练没练」。失败也写时间戳并 `console.warn`，不刷屏重试。
+- 计划页订阅区：开启时一并 `bind` 上报 streak/lastDay，提示文案改成「只在『该练而没练』的那天 20:00 提醒一次，连着几天没练会喊你回来」+「已开启 · 断签当天提醒 · 今天练过就不会推」。
+
+- 验证（模拟器冷启动 + 云端实测）：
+  - 折叠行：13 个动作 `rows=13`，首行尺寸 `{width:346,height:40}`（原约 64px），一屏可容纳约 10 行（`t9/u1-compact-13.png`、`u1b-train-final.png`）。
+  - 相机：`src=equip` 文案「对准器械或训练场地，AI 帮你找动作」、右下角按钮「回」（`u2-cam-equip.png`）；`src=food` 文案「对准整盘，AI 自动识别」（`u3-cam-food.png`）；动作库 📷 → `pages/cam/index?src=equip`；`go(path)` 在 equip 下回跳 `pages/library` 并 `src=vision`、`runVision` 走通（假 URL 时正确落到「没认出可用动作」的兜底提示，`u5-library-vision.png`）；food 下回跳 `pages/meal/index`。
+  - 云函数（真机同环境实测，`cli cloud functions deploy --remote-npm-install`）：`bind` / `status` / `unbind` 全部返回 ok 并落库（`subscriptions` 里能看到 `openid/tmplId/time/enabled/streak/lastDay`）；客户端 `touchSub()` 上报后云端 `lastDay` 从 `2026-11-23` 同步到位，30 分钟节流键写入。
+  - 云函数逻辑单测（mock `wx-server-sdk`）：断签 3 天 → 发送并置 `enabled=false`；今天练过 → 跳过；只断 1 天 → 跳过；已关闭 → 不发；连跑两次第二次 0 发；发送失败会进 `failed` 且保留授权。
+
 ## 1.0.58 · 2026-11-26
 
 **精力/情绪档位重做 + AI 质量门补底 + 专注卡文案对齐真实状态**

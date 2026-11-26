@@ -37,6 +37,7 @@ Page({
 
   onShow() {
     const app = getApp();
+    try { if (app && app.touchSub) app.touchSub(); } catch (e) {}
     const s = store.getSettings() || {};
     const plan = s.plan || {};
     const sub = s.sub || {};
@@ -75,7 +76,7 @@ Page({
       ],
       plateau: pl,
       sub: !!sub.enabled,
-      subTs: sub.tmplId ? '模板已绑定' : '',
+      subTs: sub.enabled ? '已开启 · 断签当天提醒' : (sub.tmplId ? '已关闭' : ''),
       week: week.map(d => ({
         label: engine.shortDate(d.date),
         done: d.done,
@@ -252,7 +253,8 @@ Page({
       .catch(() => this.setData({ askingWhy: false, recReason: 'AI 暂不可用' }));
   },
 
-  subscribe() {    wx.requestSubscribeMessage({
+  subscribe() {
+    wx.requestSubscribeMessage({
       tmplIds: [TMPL],
       success: (r) => {
         if (r[TMPL] !== 'accept') {
@@ -262,8 +264,21 @@ Page({
         const s = store.getSettings() || {};
         s.sub = { enabled: true, tmplId: TMPL, remind: this.data.remind, ts: Date.now() };
         store.setSettings(s);
-        this.setData({ sub: true, subTs: '模板已绑定' });
-        wx.cloud.callFunction({ name: 'notify', data: { action: 'bind', tmplId: TMPL, time: this.data.remind } })
+        this.setData({ sub: true, subTs: '已开启 · 断签当天提醒' });
+        // 上报最近训练日与连续天数：云端据此决定「今天该不该提醒」
+        let streak = 0, lastDay = '';
+        try {
+          const engine = require('../../libs/engine/index');
+          const train = engine.ensureTrain(store.getTrain());
+          streak = engine.streakDays(train);
+          const days = engine.lastNDays(train, 30) || [];
+          const hit = days.filter(d => d && d.done > 0)[0];
+          lastDay = hit ? hit.date : '';
+        } catch (e) {}
+        wx.cloud.callFunction({
+          name: 'notify',
+          data: { action: 'bind', tmplId: TMPL, time: this.data.remind, streak, lastDay }
+        })
           .then(() => wx.showToast({ title: '提醒已开启', icon: 'none' }))
           .catch(() => wx.showToast({ title: '已本地开启（云端登记失败）', icon: 'none' }));
       },

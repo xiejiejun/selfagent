@@ -1,9 +1,17 @@
 Page({
-  data: { ok: true, flash: 'off' },
+  data: { ok: true, flash: 'off', src: 'food', tip: '', fbT: '', hasText: true },
 
-  onLoad() {
+  onLoad(q) {
+    const src = q && q.src === 'equip' ? 'equip' : 'food';
+    this.src = src;
     // 模拟器/无摄像头设备：camera 会报错，直接降级成相册 + 打字
-    if (!wx.createCameraContext) this.setData({ ok: false });
+    this.setData({
+      src,
+      ok: !!wx.createCameraContext,
+      tip: src === 'equip' ? '对准器械或训练场地，AI 帮你找动作' : '对准整盘，AI 自动识别',
+      fbT: src === 'equip' ? '用相册选一张，或直接打字找动作' : '用相册选一张，或直接打字记',
+      hasText: src === 'food'
+    });
   },
 
   onErr() {
@@ -41,11 +49,17 @@ Page({
     });
   },
 
+  // 拍完按来源路由：食物 → 热量识别；器械/场地 → 动作库的以图搜动作
   go(path) {
+    if (this.src === 'equip') {
+      wx.navigateTo({ url: '/pages/library/index?img=' + encodeURIComponent(path) + '&vision=1' });
+      return;
+    }
     wx.navigateTo({ url: '/pages/meal/index?src=' + encodeURIComponent(path) + '&auto=1' });
   },
 
   toText() {
+    if (this.src === 'equip') { this.close(); return; }
     wx.navigateTo({ url: '/pages/meal/index?mode=text' });
   }
 });

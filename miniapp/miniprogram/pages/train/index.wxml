@@ -79,7 +79,7 @@
     </view>
 
     <view class="card" wx:if="{{!empty && !grid}}">
-      <view class="ex {{item.open ? 'open' : ''}} {{dragUid === item.uid ? 'dragging' : ''}} {{item.dy && dragUid !== item.uid ? 'shift' : ''}}" style="{{item.dy ? 'transform: translateY(' + item.dy + 'px);' : ''}}" wx:for="{{list}}" wx:key="uid">
+      <view class="ex {{item.open ? 'open' : 'closed'}} {{dragUid === item.uid ? 'dragging' : ''}} {{item.dy && dragUid !== item.uid ? 'shift' : ''}}" style="{{item.dy ? 'transform: translateY(' + item.dy + 'px);' : ''}}" wx:for="{{list}}" wx:key="uid">
         <view class="ex-head" data-uid="{{item.uid}}" bindtap="toggleRow">
           <view class="grip" data-uid="{{item.uid}}" bindlongpress="dragStart" catchtouchmove="dragMove" bindtouchend="dragEnd">≡</view>
           <view class="ex-main">

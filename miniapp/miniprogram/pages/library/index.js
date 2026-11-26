@@ -80,6 +80,9 @@ Page({
     // 从训练页「详情」进来：带 id 就直接展开该动作的详情
     const want = (opts && opts.id) ? decodeURIComponent(opts.id) : '';
     if (want) setTimeout(() => this.openDetail({ currentTarget: { dataset: { id: want } } }), 80);
+    // 统一相机页拍完回传：vision=1 + img，直接跑图片识别
+    const img = (opts && opts.img) ? decodeURIComponent(opts.img) : '';
+    if (img) setTimeout(() => this.runVision(img), 120);
   },
 
   onShow() {
@@ -341,8 +344,12 @@ Page({
     });
   },
 
-  // 图片：识别 → 同一条结果流
+  // 图片：统一走 /pages/cam 全屏相机（src=equip），拍完回传本页 rather than 系统选择器
   takePhoto() {
+    if (wx.navigateTo) {
+      wx.navigateTo({ url: '/pages/cam/index?src=equip' });
+      return;
+    }
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
@@ -350,25 +357,29 @@ Page({
       sizeType: ['compressed'],
       success: (res) => {
         const f = res.tempFiles && res.tempFiles[0];
-        if (!f) return;
-        const seq = this._seq = (this._seq || 0) + 1;
-        this.setData({ busy: true, busyText: 'AI 看图中…', src: 'vision', aiErr: '', list: [] });
-        usearch.visionSearch(f.tempFilePath).then(r => {
-          if (seq !== this._seq) return;
-          if (!r || !r.list.length) {
-            this.setData({ busy: false, aiErr: '没认出可用动作，换个角度拍或直接描述你的场景' });
-            return;
-          }
-          const parts = [];
-          if (r.shot) parts.push(r.shot);
-          if (r.rawText) parts.push(r.rawText);
-          const label = '📷 识别到：' + (parts.join(' · ') || '健身场景');
-          this.applyUnified(r, label, usearch.slotsToChips(r.slots), {});
-        }).catch(() => {
-          if (seq !== this._seq) return;
-          this.setData({ busy: false, aiErr: '看图失败，换一张或直接描述场景' });
-        });
+        if (f) this.runVision(f.tempFilePath);
       }
+    });
+  },
+
+  // 以图搜动作：相机页回传、系统相册、都落到这里
+  runVision(path) {
+    const seq = this._seq = (this._seq || 0) + 1;
+    this.setData({ busy: true, busyText: 'AI 看图中…', src: 'vision', aiErr: '', list: [] });
+    usearch.visionSearch(path).then(r => {
+      if (seq !== this._seq) return;
+      if (!r || !r.list.length) {
+        this.setData({ busy: false, aiErr: '没认出可用动作，换个角度拍或直接描述你的场景' });
+        return;
+      }
+      const parts = [];
+      if (r.shot) parts.push(r.shot);
+      if (r.rawText) parts.push(r.rawText);
+      const label = '📷 识别到：' + (parts.join(' · ') || '健身场景');
+      this.applyUnified(r, label, usearch.slotsToChips(r.slots), {});
+    }).catch(() => {
+      if (seq !== this._seq) return;
+      this.setData({ busy: false, aiErr: '看图失败，换一张或直接描述场景' });
     });
   },
 

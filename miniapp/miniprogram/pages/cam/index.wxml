@@ -3,12 +3,12 @@
 
   <view class="fallback" wx:if="{{!ok}}">
     <text class="fb-t">相机打不开</text>
-    <text class="fb-s">用相册选一张，或直接打字记</text>
+    <text class="fb-s">{{fbT}}</text>
   </view>
 
   <cover-view class="top">
     <cover-view class="x" bindtap="close">✕</cover-view>
-    <cover-view class="tip">对准整盘，AI 自动识别</cover-view>
+    <cover-view class="tip">{{tip}}</cover-view>
   </cover-view>
 
   <cover-view class="frame">
@@ -26,7 +26,7 @@
       <cover-view class="sh-in"></cover-view>
     </cover-view>
     <cover-view class="ib" bindtap="toText">
-      <cover-view class="ic-tx">字</cover-view>
+      <cover-view class="ic-tx">{{hasText ? '字' : '回'}}</cover-view>
     </cover-view>
   </cover-view>
 </view>
