@@ -304,6 +304,13 @@ Component({
       this.setData({ [k]: Number(e.detail.value) });
     },
 
+    // 随手记里的拍照入口：先收面板，再进全屏相机（识别完直接出确认卡）
+    goCam() {
+      if (this._prevTimer) { clearTimeout(this._prevTimer); this._prevTimer = null; }
+      this.setData({ noteOn: false, noteText: '', notePrev: '', sheetDy: 0, noteEnergy: 0, noteMood: 0, menuOn: false });
+      setTimeout(() => { wx.navigateTo({ url: '/pages/cam/index' }); }, 60);
+    },
+
     saveNote() {
       const txt = (this.data.noteText || '').trim();
       if (!txt) { wx.showToast({ title: '先写点什么', icon: 'none' }); return; }

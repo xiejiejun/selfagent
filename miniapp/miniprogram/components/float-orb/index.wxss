@@ -140,6 +140,22 @@
   line-height: 1.55;
 }
 
+/* 随手记里的拍照记饮食入口 */
+.ta-cam {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 12rpx;
+  padding: 14rpx 18rpx;
+  background: #F6F9F8;
+  border: 1rpx solid #E3E8E6;
+  border-radius: 14rpx;
+}
+.tc-i { font-size: 26rpx; }
+.tc-t { font-size: 24rpx; color: #14181A; font-weight: 600; }
+.tc-s { flex: 1; font-size: 19rpx; color: #98A29F; }
+.tc-a { font-size: 24rpx; color: #C2CAC7; }
+
 .sh-btns {
   display: flex;
   gap: 16rpx;
@@ -177,9 +193,9 @@
 .score-v.m.on { color: #6D5FA8; }
 .score-s { margin: 0; padding: 0 4rpx; }
 .score-lab { display: flex; justify-content: space-between; padding: 0 8rpx 0 2rpx; }
-.sl-i { font-size: 20rpx; color: #C2CAC7; transition: color .15s, font-weight .15s; }
-.sl-i.on { color: #0F8C7E; font-weight: 700; font-size: 22rpx; }
-.sl-i.m.on { color: #6D5FA8; }
+.sl-i { font-size: 20rpx; color: #C2CAC7; padding: 3rpx 8rpx; border-radius: 8rpx; transition: color .15s, background .15s; }
+.sl-i.on { color: #fff; background: #12A594; font-weight: 600; }
+.sl-i.m.on { color: #fff; background: #8E7CC3; }
 
 /* 保存前识别预览 */
 .prev {
