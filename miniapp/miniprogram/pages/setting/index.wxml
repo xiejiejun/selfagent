@@ -141,14 +141,6 @@
 
     <!-- 动作与 AI -->
     <block wx:if="{{panel === 'ai'}}">
-      <text class="p-sub">常用</text>
-      <view class="grid two">
-        <view class="gbtn" data-url="/pages/library/index" bindtap="goPage">动作库</view>
-        <view class="gbtn" data-url="/pages/mylib/index" bindtap="goPage">自定义动作</view>
-        <view class="gbtn" bindtap="goScan">✦ 拍照识别</view>
-        <view class="gbtn" bindtap="goAifind">✦ AI 找动作</view>
-      </view>
-
       <view class="lrow">
         <text class="lr-t">纯数据模式（关掉全站 AI 扩写）</text>
         <switch checked="{{pureData}}" color="#12A594" bindchange="togglePure" />
@@ -180,11 +172,10 @@
 
       <view class="adv" bindtap="toggleAdv">
         <text class="adv-t">高级</text>
-        <text class="adv-s">PR 榜 · 完整分析 · 记忆 · API · 报告</text>
+        <text class="adv-s">完整分析 · 记忆 · API · 报告</text>
         <text class="adv-a">{{advOpen ? '收起' : '展开'}} {{advOpen ? '⌃' : '⌄'}}</text>
       </view>
       <block wx:if="{{advOpen}}">
-        <view class="lrow" data-url="/pages/pr/index" bindtap="goPage"><text class="lr-t">PR 榜 / 梯度</text><text class="lr-a">›</text></view>
         <view class="lrow" data-url="/pages/agent-report/index" bindtap="goPage"><text class="lr-t">完整分析报告</text><text class="lr-a">›</text></view>
         <view class="lrow" data-url="/pages/apiconfig/index" bindtap="goPage"><text class="lr-t">Agent API 配置</text><text class="lr-a">›</text></view>
       </block>

@@ -191,6 +191,8 @@
 .mode.ghost { color: #12A594; border-color: #CFE9E3; }
 .mode-sp { flex: 1; }
 .seg-add { width: 62rpx; height: 58rpx; line-height: 58rpx; text-align: center; font-size: 30rpx; background: #12A594; color: #fff; border-radius: 12rpx; }
+.seg-r { display: flex; align-items: center; gap: 12rpx; }
+.seg-pr { height: 58rpx; line-height: 56rpx; padding: 0 18rpx; font-size: 22rpx; color: #12A594; background: #F2FAF8; border: 1rpx solid #CFE8E3; border-radius: 12rpx; }
 
 /* 图卡 */
 .grid { display: flex; flex-wrap: wrap; gap: 14rpx; }

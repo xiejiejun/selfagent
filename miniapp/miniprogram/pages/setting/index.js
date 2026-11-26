@@ -407,8 +407,6 @@ Page({
   goLibrary() { wx.navigateTo({ url: '/pages/library/index' }); },
   goImport() { wx.navigateTo({ url: '/pages/import/index' }); },
   goPage(e) { const url = e.currentTarget.dataset.url; if (url) wx.navigateTo({ url }); },
-  goScan() { wx.navigateTo({ url: '/pages/scan/index' }); },
-  goAifind() { wx.navigateTo({ url: '/pages/aifind/index' }); },
 
   clearAll() {
     wx.showModal({

@@ -857,6 +857,9 @@ Page({
     wx.navigateTo({ url: '/pages/library/index?from=learn' });
   },
 
+  // PR 榜 / 梯度：成绩榜与逐日增长，入口从设置挪到训练页顶栏
+  goPr() { wx.navigateTo({ url: '/pages/pr/index' }); },
+
   focus(e) { this.openFocusByUid(e.currentTarget.dataset.uid); },
 
   addFav(e) {

@@ -6,7 +6,10 @@
         <text class="sg {{tab === 'plan' ? 'on' : ''}}" data-t="plan" bindtap="switchTab">计划</text>
         <text class="sg {{tab === 'log' ? 'on' : ''}}" data-t="log" bindtap="switchTab">记录</text>
       </view>
-      <text class="seg-add" wx:if="{{tab === 'today'}}" bindtap="openAddSheet">＋</text>
+      <view class="seg-r">
+        <text class="seg-pr" bindtap="goPr">PR 榜</text>
+        <text class="seg-add" wx:if="{{tab === 'today'}}" bindtap="openAddSheet">＋</text>
+      </view>
     </view>
 
     <view class="datebar" wx:if="{{tab !== 'plan'}}">
