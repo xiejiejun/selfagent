@@ -68,6 +68,7 @@ Component({
       try { cfg = wx.getStorageSync(CFG_KEY) || {}; } catch (e) { cfg = {}; }
       this._cfg = {
         mode: cfg.mode === 'focus' ? 'focus' : 'record',
+        manual: !!cfg.manual,   // 用户长按菜单手动选过挡位 → 换页不再自动改
         side: cfg.side === 'left' ? 'left' : 'right',
         bottom: typeof cfg.bottom === 'number' ? cfg.bottom : this.data.bottom,
         leftRpx: typeof cfg.leftRpx === 'number' ? cfg.leftRpx : null,
@@ -79,11 +80,13 @@ Component({
     sizePx() { return SIZE_RPX * this._px; },
 
     // 挡位跟场景走：刚练完 → 小结；专注中/今天有没做完的组 → 练；否则 → 记
+    // 用户长按菜单手动选过挡位后，换页只认手动选择（刚练完的小结仍然优先）
     autoMode() {
       let mode = 'record';
       try {
         const pend = Number(wx.getStorageSync(FINISH_KEY) || 0);
         if (pend && Date.now() - pend < 3 * 3600 * 1000) mode = 'summary';
+        else if (this._cfg.manual) mode = this._cfg.mode;
         else {
           const fs = wx.getStorageSync(FOCUS_KEY);
           const today = engine.dayKey();
@@ -140,6 +143,7 @@ Component({
       const size = this.sizePx();
       const cfg = {
         mode: this._cfg.mode,
+        manual: !!this._cfg.manual,
         side: this.data.left + size / 2 < this._win.w / 2 ? 'left' : 'right',
         bottom: Math.round((this._win.h - this.data.top - size) / this._px),
         leftRpx: Math.round(this.data.left / this._px),
@@ -217,6 +221,7 @@ Component({
     pickRecord() {
       this._suppressTap = false;
       this._cfg.mode = 'record';
+      this._cfg.manual = true;
       this.setData({ mode: 'record', menuOn: false, countText: '' });
       this.persist();
       wx.showToast({ title: '已切到随手记', icon: 'none' });
@@ -225,6 +230,7 @@ Component({
     pickFocus() {
       this._suppressTap = false;
       this._cfg.mode = 'focus';
+      this._cfg.manual = true;
       this.setData({ mode: 'focus', menuOn: false });
       this.persist();
       this.refreshCount();
