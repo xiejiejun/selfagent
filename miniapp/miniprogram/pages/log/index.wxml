@@ -44,25 +44,27 @@
       <view class="score-row">
         <view class="score-top">
           <text class="score-l">精力</text>
-          <text class="score-v">{{quickEnergy ? quickEnergy + ' 分 · ' + energyLabels[quickEnergy - 1] : '滑动打分'}}</text>
+          <view class="score-vw">
+            <text class="score-num {{quickEnergy ? 'on' : ''}}">{{quickEnergy || '—'}}</text>
+            <text class="score-u">/5</text>
+            <text class="score-w {{quickEnergy ? 'on' : ''}}">{{quickEnergy ? energyLabels[quickEnergy - 1] : '点一档'}}</text>
+          </view>
         </view>
-        <slider class="score-s" min="1" max="5" step="1" value="{{quickEnergy || 3}}"
-                block-size="20" activeColor="#12A594" backgroundColor="#EDF1F0"
-                data-k="quickEnergy" bindchange="onScoreSlide" />
         <view class="score-lab">
-          <text class="sl-i {{(quickEnergy || 3) === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this">{{item}}</text>
+          <view class="sl-i {{quickEnergy === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this" data-k="quickEnergy" data-v="{{index + 1}}" bindtap="pickScore">{{item}}</view>
         </view>
       </view>
       <view class="score-row">
         <view class="score-top">
           <text class="score-l">情绪</text>
-          <text class="score-v">{{quickMood ? quickMood + ' 分 · ' + moodLabels[quickMood - 1] : '滑动打分'}}</text>
+          <view class="score-vw">
+            <text class="score-num m {{quickMood ? 'on' : ''}}">{{quickMood || '—'}}</text>
+            <text class="score-u">/5</text>
+            <text class="score-w m {{quickMood ? 'on' : ''}}">{{quickMood ? moodLabels[quickMood - 1] : '点一档'}}</text>
+          </view>
         </view>
-        <slider class="score-s" min="1" max="5" step="1" value="{{quickMood || 3}}"
-                block-size="20" activeColor="#12A594" backgroundColor="#EDF1F0"
-                data-k="quickMood" bindchange="onScoreSlide" />
         <view class="score-lab">
-          <text class="sl-i m {{(quickMood || 3) === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this">{{item}}</text>
+          <view class="sl-i m {{quickMood === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this" data-k="quickMood" data-v="{{index + 1}}" bindtap="pickScore">{{item}}</view>
         </view>
       </view>
 

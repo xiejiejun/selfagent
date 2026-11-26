@@ -188,14 +188,32 @@
 /* 滑条 + 档位文案 */
 .score-row { display: block; margin-top: 18rpx; }
 .score-top { display: flex; align-items: center; justify-content: space-between; }
-.score-v { font-size: 24rpx; color: #98A29F; font-weight: 500; }
-.score-v.on { color: #0F8C7E; font-size: 28rpx; font-weight: 700; }
-.score-v.m.on { color: #6D5FA8; }
+/* 当前值：大字 + 档位词 */
+.score-vw { display: flex; align-items: baseline; gap: 6rpx; }
+.score-num { font-size: 38rpx; line-height: 1; font-weight: 700; color: #CBD4D1; }
+.score-num.on { color: #0F8C7E; }
+.score-num.m.on { color: #6D5FA8; }
+.score-u { font-size: 18rpx; color: #B6BEBB; }
+.score-w { font-size: 23rpx; color: #98A29F; margin-left: 6rpx; }
+.score-w.on { color: #0F8C7E; font-weight: 600; }
+.score-w.m.on { color: #6D5FA8; font-weight: 600; }
 .score-s { margin: 0; padding: 0 4rpx; }
-.score-lab { display: flex; justify-content: space-between; padding: 0 8rpx 0 2rpx; }
-.sl-i { font-size: 20rpx; color: #C2CAC7; padding: 3rpx 8rpx; border-radius: 8rpx; transition: color .15s, background .15s; }
-.sl-i.on { color: #fff; background: #12A594; font-weight: 600; }
-.sl-i.m.on { color: #fff; background: #8E7CC3; }
+/* 五档：整块可点，选中实心 */
+.score-lab { display: flex; gap: 8rpx; margin-top: 12rpx; }
+.sl-i {
+  flex: 1;
+  height: 58rpx;
+  line-height: 58rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #8A9490;
+  background: #FFF;
+  border: 1rpx solid #E3EAE8;
+  border-radius: 10rpx;
+  transition: color .15s, background .15s;
+}
+.sl-i.on { color: #fff; background: #12A594; border-color: #12A594; font-weight: 600; }
+.sl-i.m.on { color: #fff; background: #8E7CC3; border-color: #8E7CC3; }
 
 /* 保存前识别预览 */
 .prev {

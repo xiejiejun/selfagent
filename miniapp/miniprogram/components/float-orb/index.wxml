@@ -48,21 +48,27 @@
     <view class="score-row">
       <view class="score-top">
         <text class="score-l">精力</text>
-        <text class="score-v {{noteEnergy ? 'on' : ''}}">{{noteEnergy ? noteEnergy + ' 分 · ' + energyLabels[noteEnergy - 1] : '滑动打分'}}</text>
+        <view class="score-vw">
+          <text class="score-num {{noteEnergy ? 'on' : ''}}">{{noteEnergy || '—'}}</text>
+          <text class="score-u">/5</text>
+          <text class="score-w {{noteEnergy ? 'on' : ''}}">{{noteEnergy ? energyLabels[noteEnergy - 1] : '点一档'}}</text>
+        </view>
       </view>
-      <slider class="score-s" min="1" max="5" step="1" value="{{noteEnergy || 3}}" activeColor="#12A594" block-size="20" data-k="noteEnergy" bindchange="onSlide" bindchanging="onSlide" />
       <view class="score-lab">
-        <text class="sl-i {{(noteEnergy || 3) === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this">{{item}}</text>
+        <view class="sl-i {{noteEnergy === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this" data-k="noteEnergy" data-v="{{index + 1}}" bindtap="pickScore">{{item}}</view>
       </view>
     </view>
     <view class="score-row">
       <view class="score-top">
         <text class="score-l">情绪</text>
-        <text class="score-v m {{noteMood ? 'on' : ''}}">{{noteMood ? noteMood + ' 分 · ' + moodLabels[noteMood - 1] : '滑动打分'}}</text>
+        <view class="score-vw">
+          <text class="score-num m {{noteMood ? 'on' : ''}}">{{noteMood || '—'}}</text>
+          <text class="score-u">/5</text>
+          <text class="score-w m {{noteMood ? 'on' : ''}}">{{noteMood ? moodLabels[noteMood - 1] : '点一档'}}</text>
+        </view>
       </view>
-      <slider class="score-s" min="1" max="5" step="1" value="{{noteMood || 3}}" activeColor="#8E7CC3" block-size="20" data-k="noteMood" bindchange="onSlide" bindchanging="onSlide" />
       <view class="score-lab">
-        <text class="sl-i m {{(noteMood || 3) === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this">{{item}}</text>
+        <view class="sl-i m {{noteMood === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this" data-k="noteMood" data-v="{{index + 1}}" bindtap="pickScore">{{item}}</view>
       </view>
     </view>
     <view class="sh-btns">

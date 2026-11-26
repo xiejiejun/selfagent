@@ -137,7 +137,7 @@ Page({
     date: '', dateLabel: '', isToday: true,
     today: '',                        // 计划分段恒用「今天」，datebar 只在今天/记录出现
     tab: 'today',                      // today | plan | log —— 三个分段全部页内切换
-    list: [], summary: '—', empty: true,
+    list: [], summary: '—', empty: true, fbDone: false,
     editorVisible: false, payload: null,
     streak: 0, weekDone: 0, kpis: [],
     grid: false,
@@ -203,11 +203,15 @@ Page({
       const ex = data.byId(String(id)) || actions.customList().find(x => x && x.id === id);
       return ex ? { id: String(id), n: ex.n, p: ex.p } : null;
     }).filter(Boolean);
+    const allDone = !!v.list.length && v.list.every(it => (it.type === 'cardio'
+      ? !!it.done
+      : ((it.groups || []).length ? (it.groups || []).every(g => g.done) : false)));
     this.setData({
       today: engine.dayKey(),
       dateLabel: engine.dateLabel(date),
       isToday: date === engine.dayKey(),
       list: this.withImg(v.list), summary: v.summary, empty: v.empty, rec: v.rec,
+      fbDone: allDone,
       streak, weekDone, favStrip,
       kpis: [
         { v: weekDone, l: '本周组数' },

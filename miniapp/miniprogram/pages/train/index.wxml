@@ -27,10 +27,10 @@
       <view class="focusbar" wx:if="{{!empty}}" catchtap="orbFocus">
         <view class="fb-ic">▶</view>
         <view class="fb-l">
-          <text class="fb-t">专注训练</text>
-          <text class="fb-s">一场做完今天的 {{list.length}} 个动作，逐组记录</text>
+          <text class="fb-t">{{fbDone ? '今天的组都完成了' : '专注训练'}}</text>
+          <text class="fb-s">{{fbDone ? '点开看小结、加练或收工' : '一场做完今天的 ' + list.length + ' 个动作，逐组记录'}}</text>
         </view>
-        <text class="fb-go">开始 ›</text>
+        <text class="fb-go">{{fbDone ? '看小结 ›' : '开始 ›'}}</text>
       </view>
     </block>
 

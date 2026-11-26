@@ -131,15 +131,34 @@
 
 .gsec { font-size: 20rpx; color: #12A594; }
 
-.score-row { display: block; margin-top: 14rpx; }
+.score-row { display: block; margin-top: 16rpx; }
 .score-top { display: flex; align-items: center; justify-content: space-between; }
 .score-l { font-size: 24rpx; color: #5B6461; }
-.score-v { font-size: 22rpx; color: #12A594; }
-.score-s { margin: 0 0 0 0; padding: 0 6rpx; }
-.score-lab { display: flex; justify-content: space-between; padding: 0 10rpx 0 4rpx; }
-.sl-i { font-size: 19rpx; color: #B6BEBB; padding: 3rpx 8rpx; border-radius: 8rpx; }
-.sl-i.on { color: #fff; background: #12A594; font-weight: 600; }
-.sl-i.m.on { color: #fff; background: #8E7CC3; }
+/* 当前值：大字 + 档位词 */
+.score-vw { display: flex; align-items: baseline; gap: 6rpx; }
+.score-num { font-size: 36rpx; line-height: 1; font-weight: 700; color: #C6CFCC; }
+.score-num.on { color: #12A594; }
+.score-num.m.on { color: #8E7CC3; }
+.score-u { font-size: 18rpx; color: #B6BEBB; }
+.score-w { font-size: 22rpx; color: #A9B3AF; margin-left: 6rpx; }
+.score-w.on { color: #12A594; font-weight: 600; }
+.score-w.m.on { color: #7A69B8; font-weight: 600; }
+/* 五档：整块可点，选中实心 */
+.score-lab { display: flex; gap: 8rpx; margin-top: 10rpx; }
+.sl-i {
+  flex: 1;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #7E8A87;
+  background: #FFF;
+  border: 1rpx solid #E3EAE8;
+  border-radius: 10rpx;
+  transition: background .15s, color .15s;
+}
+.sl-i.on { color: #fff; background: #12A594; border-color: #12A594; font-weight: 600; }
+.sl-i.m.on { color: #fff; background: #8E7CC3; border-color: #8E7CC3; }
 .dots { flex: 1; display: flex; gap: 14rpx; }
 .dot { width: 56rpx; height: 56rpx; line-height: 56rpx; text-align: center; border-radius: 50%; background: #F0F4F3; color: #8A9490; font-size: 22rpx; }
 .dot.on { background: #12A594; color: #fff; }

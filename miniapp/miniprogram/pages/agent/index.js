@@ -52,6 +52,8 @@ function similar(a, b) {
 function aiGood(text, ctx) {
   const t = String(text || '').trim();
   if (!t) return false;
+  // 文案质量底线：占位符/黑名单词/截断/乱码，命中直接退回规则文案
+  if (!sanity.ok(t, { max: 100 })) return false;
   if (t.length < 10 || t.length > 90) return false;
   if (!/\d/.test(t)) return false;                       // 至少一个数字对比
   if (!ACTION_RE.test(t)) return false;                  // 至少一个行动

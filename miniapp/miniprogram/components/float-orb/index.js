@@ -301,7 +301,8 @@ Component({
 
     pickScore(e) {
       const k = e.currentTarget.dataset.k;
-      const v = Number(e.detail ? e.detail.value : e.currentTarget.dataset.v);
+      const dv = e.currentTarget.dataset.v;
+      const v = Number(dv != null ? dv : (e.detail ? e.detail.value : 0));
       this.setData({ [k]: v });
     },
 
