@@ -6,40 +6,34 @@
       <text class="done-t">已记入{{date}}</text>
       <text class="done-s">趋势比精度重要，明天再看一眼就行</text>
       <view class="done-btns">
-        <text class="dbtn" bindtap="again">再记一顿</text>
+        <text class="dbtn" bindtap="again">{{hasShot ? '再拍一张' : '再记一笔'}}</text>
         <text class="dbtn main" bindtap="back">回记录页</text>
       </view>
     </view>
   </block>
 
   <block wx:else>
-    <!-- 拍照区 -->
-    <block wx:if="{{mode === 'photo'}}">
+    <!-- 照片缩略 + 识别中 -->
+    <block wx:if="{{hasShot}}">
       <view class="shot {{img ? 'has' : ''}}">
         <image wx:if="{{img}}" class="shot-img" src="{{img}}" mode="aspectFill" />
-        <view class="shot-empty" wx:if="{{!img && !busy}}">
-          <text class="se-t">拍一张就能记</text>
-          <text class="se-s">按常见餐具估份量，不用称重</text>
-        </view>
         <view class="shot-busy" wx:if="{{busy}}">
           <view class="skel"></view>
           <text class="sb-t">{{hint || '识别中…'}}</text>
         </view>
-      </view>
-      <view class="shot-btns">
-        <text class="sbtn" bindtap="shoot">拍一张</text>
-        <text class="sbtn" bindtap="album">从相册选</text>
-        <text class="sbtn ghost" bindtap="toText">打字记</text>
+        <text class="reshoot" bindtap="toCam">重拍</text>
       </view>
     </block>
 
     <!-- 文字兜底 -->
     <block wx:if="{{mode === 'text'}}">
       <view class="txcard">
-        <text class="tx-t">写一句话就行</text>
+        <view class="tx-h">
+          <text class="tx-t">写一句话就行</text>
+          <text class="tx-cam" bindtap="toCam">去拍一张 ›</text>
+        </view>
         <textarea class="txa" placeholder="米饭一碗，红烧鸡块半盘，青菜一份" value="{{textInput}}" bindinput="onTextInput" auto-height maxlength="120" show-confirm-bar="{{false}}" />
         <view class="tx-btns">
-          <text class="sbtn ghost" bindtap="album">改拍照</text>
           <text class="sbtn" bindtap="estimateText">估算</text>
         </view>
         <text class="tx-tip">按本地常见份量表算，不联网也能记</text>
@@ -51,7 +45,7 @@
       <text class="fail-t">{{err}}</text>
       <text class="fail-s" wx:if="{{tip}}">{{tip}}</text>
       <view class="fail-btns">
-        <text class="fbtn" wx:if="{{mode === 'photo' && img}}" bindtap="retry">再试一次</text>
+        <text class="fbtn" wx:if="{{hasShot}}" bindtap="retry">再试一次</text>
         <text class="fbtn" bindtap="toText">改打字记</text>
       </view>
     </view>

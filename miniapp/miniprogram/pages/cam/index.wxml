@@ -1,0 +1,32 @@
+<view class="cam">
+  <camera wx:if="{{ok}}" class="cam-v" device-position="back" flash="{{flash}}" binderror="onErr"></camera>
+
+  <view class="fallback" wx:if="{{!ok}}">
+    <text class="fb-t">相机打不开</text>
+    <text class="fb-s">用相册选一张，或直接打字记</text>
+  </view>
+
+  <cover-view class="top">
+    <cover-view class="x" bindtap="close">✕</cover-view>
+    <cover-view class="tip">对准整盘，AI 自动识别</cover-view>
+  </cover-view>
+
+  <cover-view class="frame">
+    <cover-view class="c tl"></cover-view>
+    <cover-view class="c tr"></cover-view>
+    <cover-view class="c bl"></cover-view>
+    <cover-view class="c br"></cover-view>
+  </cover-view>
+
+  <cover-view class="bot">
+    <cover-view class="ib" bindtap="album">
+      <cover-view class="ic-img"></cover-view>
+    </cover-view>
+    <cover-view class="sh" bindtap="shot">
+      <cover-view class="sh-in"></cover-view>
+    </cover-view>
+    <cover-view class="ib" bindtap="toText">
+      <cover-view class="ic-tx">字</cover-view>
+    </cover-view>
+  </cover-view>
+</view>

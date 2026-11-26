@@ -19,6 +19,7 @@
     "pages/aifind/index",
     "pages/scan/index",
     "pages/meal/index",
+    "pages/cam/index",
     "pages/apiconfig/index",
     "pages/agent-report/index"
   ],

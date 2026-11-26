@@ -42,7 +42,8 @@ Page({
     err: '',
     tip: '',
     saved: false,
-    mode: 'photo',          // photo | text
+    mode: 'text',           // text | photo（有照片直接进 photo）
+    hasShot: false,
     channel: '',
     meals: ['早餐', '午餐', '晚餐', '加餐'],
     meal: '午餐',
@@ -62,32 +63,19 @@ Page({
     const date = (q && q.date) || engine.dayKey();
     const st = store.getSettings() || {};
     const c = ai.cfg();
+    const src = q && q.src ? decodeURIComponent(q.src) : '';
     this.setData({
       date,
       meal: nowMeal(),
       keep: !!st.mealKeep,
+      mode: src || q.mode === 'photo' ? 'photo' : 'text',
+      img: src,
+      hasShot: !!src,
       channel: ai.usingCustom()
         ? ('直连 ' + String(c.baseUrl || '').replace(/^https?:\/\//, ''))
         : '云端 aiProxy'
     });
-  },
-
-  shoot() { this.choose('camera'); },
-  album() { this.choose('album'); },
-
-  choose(source) {
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: [source],
-      sizeType: ['compressed'],
-      success: (res) => {
-        const f = res.tempFiles && res.tempFiles[0];
-        if (!f) return;
-        this.setData({ img: f.tempFilePath, err: '', tip: '', saved: false, items: [], lowConf: false, editIdx: -1, mode: 'photo' });
-        this.recognize(f.tempFilePath);
-      }
-    });
+    if (src) this.recognize(src);
   },
 
   recognize(path) {
@@ -220,6 +208,8 @@ Page({
 
   retry() { if (this.shotPath || this.data.img) this.recognize(this.shotPath || this.data.img); },
 
+  toCam() { wx.redirectTo({ url: '/pages/cam/index' }); },
+
   toText() { this.setData({ mode: 'text', err: '', tip: '', items: [], totalKcal: 0 }); },
 
   pickMeal(e) {
@@ -328,8 +318,10 @@ Page({
   },
 
   again() {
-    this.setData({ saved: false, mode: 'photo', img: '', textInput: '', meal: nowMeal() });
+    const wasShot = this.data.hasShot;
+    this.setData({ saved: false, mode: 'text', img: '', hasShot: false, textInput: '', meal: nowMeal() });
+    if (wasShot) wx.redirectTo({ url: '/pages/cam/index' });
   },
 
-  back() { wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/log/index' }) }); }
+  back() { wx.switchTab({ url: '/pages/log/index' }); }
 });

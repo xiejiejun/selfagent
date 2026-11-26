@@ -16,18 +16,11 @@
         auto-height
         show-confirm-bar="{{false}}"
       />
-      <view class="hintrow" wx:if="{{infer}}">
+      <view class="hintrow" wx:if="{{infer && !todayCount}}">
         <text class="infer" bindtap="applyInfer">识别为 {{infer.key === 'work' ? '工作' : infer.key === 'fit' ? '健身' : '生活习惯'}}{{infer.tags.length ? ' · ' + infer.tags.join(' / ') : ''}} · 采用</text>
       </view>
       <view class="hintrow" wx:if="{{parseHint}}">
         <text class="infer fit" bindtap="convertTrain">这句像训练：{{parseHint.name}} {{parseHint.sets}}×{{parseHint.reps}}{{parseHint.weight ? ' ' + parseHint.weight + 'kg' : ''}} · 转成训练 ›</text>
-      </view>
-
-      <view class="mealbar" bindtap="goMeal">
-        <text class="mb-ic">📷</text>
-        <text class="mb-t">拍一张记饮食</text>
-        <text class="mb-n">{{todayKcal ? '今天约 ' + todayKcal + ' kcal' : 'AI 估份量，一屏确认'}}</text>
-        <text class="mb-a">›</text>
       </view>
 
       <view class="trow">
@@ -75,7 +68,10 @@
           <text class="yt {{yesterday ? 'on' : ''}}" bindtap="toggleYesterday">{{yesterday ? '✓ ' : ''}}记到昨天</text>
           <text class="demo" bindtap="loadDemo">载入示例</text>
         </view>
-        <text class="qs {{quickText ? '' : 'off'}}" bindtap="saveQuick">保存</text>
+        <view class="qright">
+          <text class="qcam" bindtap="goCam" aria-label="拍一张记饮食">📷</text>
+          <text class="qs {{quickText ? '' : 'off'}}" bindtap="saveQuick">保存</text>
+        </view>
       </view>
     </view>
 

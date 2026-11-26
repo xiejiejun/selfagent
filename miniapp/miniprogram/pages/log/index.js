@@ -177,7 +177,7 @@ Page({
     if (this.data.tab === 'stats') this.buildMealTrend();
   },
 
-  goMeal() { wx.navigateTo({ url: '/pages/meal/index' }); },
+  goCam() { wx.navigateTo({ url: '/pages/cam/index' }); },
 
   // 周热量趋势：规则句先上屏，AI 一句话过质量门再补
   buildMealTrend() {
