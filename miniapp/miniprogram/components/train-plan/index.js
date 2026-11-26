@@ -4,6 +4,7 @@ const engine = require('../../libs/engine/index');
 const actions = require('../../libs/actions');
 const recommend = require('../../libs/recommend');
 const ai = require('../../libs/ai');
+const sanity = require('../../libs/sanity');
 const cardioLib = require('../../libs/cardio');
 
 const TMPL = 'whCghbXJjZbMzZACF7k5lhLSPynVFAUPzFvf7gXrWqM';
@@ -331,7 +332,10 @@ Component({
         ],
         max_tokens: 160,
         temperature: 0.3
-      }).then(r => this.setData({ askingWhy: false, recReason: r.ok ? (r.text || '').trim() : 'AI 暂不可用' }))
+      }).then(r => {
+        const t = r.ok ? sanity.check(r.text, rec.recovery.text, { max: 80, minCjk: 0.3 }) : 'AI 暂不可用';
+        this.setData({ askingWhy: false, recReason: t });
+      })
         .catch(() => this.setData({ askingWhy: false, recReason: 'AI 暂不可用' }));
     },
 

@@ -4,6 +4,7 @@ const actions = require('../../libs/actions');
 const cloudurl = require('../../libs/cloudurl');
 const CLIP_INDEX = require('../../libs/clip-index.js');
 const ai = require('../../libs/ai');
+const sanity = require('../../libs/sanity');
 const usearch = require('../../libs/usearch.js');
 
 const PAGE_SIZE = 40;
@@ -598,7 +599,7 @@ Page({
       if (!r || !r.ok || !r.text) return;
       const lines = String(r.text).split('\n')
         .map(x => x.replace(/^\s*(?:[-*•]|\d+[.、)])\s*/, '').trim())
-        .filter(x => x && x.length <= 40)
+        .filter(x => x && x.length <= 40 && sanity.ok(x, { max: 40 }))
         .slice(0, 2);
       if (!lines.length) return;
       this.errCache[id] = lines;

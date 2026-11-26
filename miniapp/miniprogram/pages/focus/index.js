@@ -1302,6 +1302,8 @@ Page({
     });
     this.refreshQueue();
     this.persistFocus();
+    // 悬浮球据此显示「结」挡：刚练完、小结还没看
+    try { wx.setStorageSync('selfagent_finish_pending_v1', Date.now()); } catch (e) {}
     this.draw();
     this.postDecisions(stat, cardio);
     this.aiReview(stat, cardio, sessionSec);

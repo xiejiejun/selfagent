@@ -381,5 +381,7 @@ Page({
 
   orbFocus() { wx.navigateTo({ url: '/pages/focus/index?date=' + engine.dayKey() }); },
 
+  orbSummary() { wx.switchTab({ url: '/pages/train/index' }); },
+
   afterOrbNote() { this.refresh(); }
 });

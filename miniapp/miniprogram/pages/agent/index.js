@@ -5,6 +5,7 @@ const ask = require('../../libs/ask');
 const settings = require('../../libs/settings');
 const progress = require('../../libs/progress');
 const polish = require('../../libs/aipolish');
+const sanity = require('../../libs/sanity');
 
 const MOOD_WORD = ['很糟', '低落', '一般', '不错', '很好'];
 function moodLabel(v) { return MOOD_WORD[Math.max(0, Math.min(4, Math.round(v) - 1))]; }
@@ -544,7 +545,11 @@ Page({
       max_tokens: 400,
       temperature: 0.4
     }).then(res => {
-      const t = res.ok ? cleanMd(res.text || '（空回答）') : ('调用失败：' + (res.error || '未知'));
+      const raw = res.ok ? cleanMd(res.text || '') : '';
+      // 质量门：不合格就用本地规则结论，别把半句乱码丢给用户
+      const t = res.ok
+        ? sanity.check(raw, local || '这次 AI 没把话说清，先看上面的数据。', { max: 400, minCjk: 0.3 })
+        : ('调用失败：' + (res.error || '未知'));
       this.setData({ asking: false, chat: chat.concat([{ r: 'a', t }]) });
     }).catch(err => {
       this.setData({ asking: false, chat: chat.concat([{ r: 'a', t: '调用失败：' + (err && err.errMsg ? err.errMsg : err) }]) });
@@ -569,6 +574,10 @@ Page({
 
   orbFocus() {
     wx.navigateTo({ url: '/pages/focus/index' });
+  },
+
+  orbSummary() {
+    wx.switchTab({ url: '/pages/train/index' });
   },
 
   orbNoted() {

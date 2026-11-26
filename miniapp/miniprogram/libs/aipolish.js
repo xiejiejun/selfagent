@@ -2,6 +2,7 @@
 // 同 facts 内容命中缓存，不重复烧 token；可在设置里关掉（纯数据模式）
 const ai = require('./ai');
 const store = require('./store/index');
+const sanity = require('./sanity');
 
 const CACHE_KEY = 'selfagent_ai_polish_v1';
 const TTL = 24 * 3600 * 1000;
@@ -56,7 +57,10 @@ function polish(key, facts, instr, opts) {
   const cache = readCache();
   const hit = cache[key];
   if (hit && hit.h === h && Date.now() - hit.at < TTL) {
-    return Promise.resolve({ ok: true, text: hit.t, cached: true });
+    if (sanity.ok(hit.t, { max: o.max || 40, minCjk: 0.35 })) {
+      return Promise.resolve({ ok: true, text: hit.t, cached: true });
+    }
+    clearCacheEntry(key);
   }
   const messages = [
     {
@@ -71,6 +75,9 @@ function polish(key, facts, instr, opts) {
       if (!r || !r.ok || !r.text) return { ok: false, text: '', error: (r && r.error) || 'AI 不可用' };
       const t = clean(r.text);
       if (!t) return { ok: false, text: '', error: '空回答' };
+      // 上屏前质量门：长度按触点上限，坏文案不缓存、直接交给页面用规则模板
+      const ins = sanity.inspect(t, { max: o.max || 40, minCjk: 0.35 });
+      if (!ins.ok) { clearCacheEntry(key); return { ok: false, text: '', error: '文案质量门：' + ins.reason }; }
       const c = readCache();
       c[key] = { h, t, at: Date.now() };
       // 只留最近 40 条
@@ -83,6 +90,14 @@ function polish(key, facts, instr, opts) {
 
 function clearCache() {
   try { wx.removeStorageSync(CACHE_KEY); } catch (e) {}
+}
+
+// 单条缓存剔除：坏文案以前被写进去过，命中时也要作废
+function clearCacheEntry(key) {
+  try {
+    const c = readCache();
+    if (c && c[key]) { delete c[key]; writeCache(c); }
+  } catch (e) {}
 }
 
 module.exports = { polish, enabled, setPureData, clearCache, hashOf };

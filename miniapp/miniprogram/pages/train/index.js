@@ -158,7 +158,21 @@ Page({
     this.refresh();
   },
 
-  onShow() { this.refresh(); this.consumeLibPick(); },
+  onShow() {
+    this.refresh();
+    this.consumeLibPick();
+    this.consumeSummaryPending();
+  },
+
+  // 刚练完：悬浮球「结」挡点进来，或从别的 tab 切回来时补看小结
+  consumeSummaryPending() {
+    let pend = 0;
+    try { pend = Number(wx.getStorageSync('selfagent_finish_pending_v1') || 0); } catch (e) {}
+    if (!pend || Date.now() - pend > 3 * 3600 * 1000) return;
+    setTimeout(() => this.showSummary(), 500);
+  },
+
+  orbSummary() { this.showSummary(); },
 
   // 动作库学习态「加入今天」：无 pick 通道时经本机中转
   consumeLibPick() {
@@ -758,6 +772,7 @@ Page({
 
   // 训练小结：全部做完时给一次
   showSummary() {
+    try { wx.removeStorageSync('selfagent_finish_pending_v1'); } catch (e) {}
     const items = engine.dayItems(engine.ensureTrain(store.getTrain()), this.data.date);
     const s = engine.summarize(items);
     const vol = s.volume;

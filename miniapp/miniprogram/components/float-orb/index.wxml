@@ -6,7 +6,7 @@
 
 <movable-area class="orb-area">
   <movable-view
-    class="orb {{mode === 'focus' ? 'is-focus' : ''}} {{pressing ? 'pressing' : ''}}"
+    class="orb {{mode === 'focus' ? 'is-focus' : ''}} {{mode === 'summary' ? 'is-sum' : ''}} {{pressing ? 'pressing' : ''}}"
     style="width: {{sizeRpx}}rpx; height: {{sizeRpx}}rpx;"
     direction="all"
     out-of-bounds="false"
@@ -16,7 +16,7 @@
     bindtap="onTap"
     bindlongpress="onLong"
   >
-    <text class="orb-ch">{{mode === 'focus' ? '练' : '记'}}</text>
+    <text class="orb-ch">{{mode === 'focus' ? '练' : (mode === 'summary' ? '结' : '记')}}</text>
     <text class="orb-badge" wx:if="{{mode === 'focus' && countText}}">{{countText}}</text>
   </movable-view>
 </movable-area>

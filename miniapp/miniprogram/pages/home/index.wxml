@@ -124,7 +124,7 @@
       <view class="it" wx:for="{{items}}" wx:key="name">
         <view class="it-m">
           <text class="it-n">{{item.name}}</text>
-          <text class="it-p">{{item.type === 'cardio' ? (item.min + '′ 有氧') : (item.part + ' · ' + item.done + '/' + item.sets + ' 组')}}</text>
+          <text class="it-p">{{item.type === 'cardio' ? (item.min ? ('有氧 ' + item.min + '′') : '有氧 1 次未完成') : (item.part + ' · ' + item.done + '/' + item.sets + ' 组')}}</text>
         </view>
         <view class="dots" wx:if="{{item.type !== 'cardio'}}">
           <view class="dot {{d.on ? 'on' : ''}} {{d.warm ? 'warm' : ''}}"
@@ -141,7 +141,7 @@
   </view>
 </view>
 
-<float-orb id="orb" bottom="{{190}}" bind:focus="orbFocus" bind:noted="refresh" />
+<float-orb id="orb" bottom="{{320}}" bind:focus="orbFocus" bind:summary="orbSummary" bind:noted="refresh" />
 
 <train-editor
   visible="{{editorVisible}}"

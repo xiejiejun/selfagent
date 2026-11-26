@@ -218,13 +218,18 @@ function summarize(items) {
 
 function summaryText(items) {
   const s = summarize(items);
-  const cd = s.cardio.length
-    ? ' · 有氧 ' + s.cardio.map(c => {
-      const km = (c.dist || 0) > 0 ? ' · ' + c.dist + 'km' : '';
-      return (c.mode === 'sets' ? (c.name + ' ' + c.sets + '×' + (c.reps || 0)) : (c.name + ' ' + c.min + '′')) + km;
-    }).join('、')
-    : '';
-  return s.n + ' 动作 · ' + s.done + '/' + s.total + ' 组' + cd + ' · ' + (s.volume ? s.volume.toLocaleString() + ' kg' : '—');
+  // 有氧只报总时长，不再逐个动作名拼接（名称+分钟拼在一行容易读成乱码）
+  const cdTimer = s.cardio.filter(c => c.mode !== 'sets' && (c.min || 0) > 0);
+  const cdMin = cdTimer.reduce((a, c) => a + (c.min || 0), 0);
+  const cdKm = s.cardio.reduce((a, c) => a + (c.dist || 0), 0);
+  const cdSets = s.cardio.filter(c => c.mode === 'sets');
+  const cdSetsN = cdSets.reduce((a, c) => a + (c.sets || (c.groups || []).length || 0), 0);
+  let cd = '';
+  if (cdMin) cd += ' · 有氧 ' + cdMin + '′';
+  if (cdSetsN) cd += ' · 有氧 ' + cdSetsN + ' 组';
+  if (cdKm) cd += ' · ' + (Math.round(cdKm * 10) / 10) + 'km';
+  const head = s.total ? (s.n + ' 动作 · ' + s.done + '/' + s.total + ' 组') : (s.n ? (s.n + ' 项有氧') : '无记录');
+  return head + cd + ' · ' + (s.volume ? s.volume.toLocaleString() + ' kg' : '—');
 }
 
 /* ---------------- 写入 ---------------- */

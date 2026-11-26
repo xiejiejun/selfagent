@@ -7,6 +7,7 @@ const decision = require('../../libs/decision');
 const polish = require('../../libs/aipolish');
 const cardioLib = require('../../libs/cardio');
 const ai = require('../../libs/ai');
+const sanity = require('../../libs/sanity');
 const ui = require('../../libs/ui');
 
 const REVIEW_SEEN = 'selfagent_review_seen';
@@ -183,7 +184,7 @@ Page({
         { v: todayMood == null ? '—' : settings.moodText(Math.round(todayMood)), l: '今日情绪' },
         { v: weekCount, l: '本周记录' },
         { v: t.volume, l: '总容量 kg' },
-        { v: t.cardioMin + '′', l: '有氧' }
+        { v: t.cardioMin ? t.cardioMin + '′' : '—', l: '有氧' }
       ]
     }, () => this.drawOrb());
 
@@ -342,8 +343,13 @@ Page({
         temperature: 0.4
       }).then(r => {
         if (!r.ok) return;
-        const t = String(r.text || '').replace(/["“”']/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
-        if (!t) return;
+        const raw = String(r.text || '').replace(/["“”']/g, '').replace(/\s+/g, ' ').trim();
+        const weekDays = week.filter(d => d.done || d.cardioMin).length;
+        const sets = week.reduce((a, d) => a + d.done, 0);
+        const volume = week.reduce((a, d) => a + d.volume, 0);
+        // 规则兜底句：AI 文案不合格时用它，绝不上屏半句乱码
+        const fb = '近 7 天练了 ' + weekDays + ' 天、共 ' + sets + ' 组' + (volume ? '，容量 ' + volume + ' kg' : '') + '。';
+        const t = sanity.check(raw, fb, { max: 60, minCjk: 0.3 });
         this.setData({ aiInsight: t });
         try { wx.setStorageSync('selfagent_ai_home_v1', today); } catch (e) {}
       });
@@ -736,6 +742,11 @@ Page({
   // 悬浮球在首页的「专注」= 去训练页
   orbFocus() {
     this.gotoFocus();
+  },
+
+  // 「结」挡：切到训练页，训练页 onShow 会把小结弹出来
+  orbSummary() {
+    wx.switchTab({ url: '/pages/train/index' });
   },
 
   // 打开随手记弹层（供快捷入口/测试调用）

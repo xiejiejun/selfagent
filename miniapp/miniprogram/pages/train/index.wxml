@@ -214,7 +214,7 @@
   </view>
 </view>
 
-<float-orb wx:if="{{tab === 'today' && !exSheetVisible}}" id="orb" bottom="{{190}}" bind:focus="orbFocus" bind:noted="afterNote" />
+<float-orb wx:if="{{tab === 'today' && !exSheetVisible}}" id="orb" bottom="{{190}}" bind:focus="orbFocus" bind:summary="orbSummary" bind:noted="afterNote" />
 
 <train-editor id="editor"
   visible="{{editorVisible}}"

@@ -4,6 +4,9 @@ const store = require('../../libs/store/index');
 const mdimport = require('../../libs/mdimport');
 
 const CFG_KEY = 'selfagent_orb_v1';
+const FINISH_KEY = 'selfagent_finish_pending_v1';
+const FOCUS_KEY = 'selfagent_focus_v1';
+const TIP_KEY = 'selfagent_orb_tip_v1';
 const SIZE_RPX = 104;      // 容器直径，rpx
 const MARGIN_RPX = 20;     // 贴边留白，rpx
 const SAFE_TOP = 96;       // 顶部安全距离，px
@@ -41,7 +44,9 @@ Component({
       this._px = this._win.w / 750;
       this.readCfg();
       this.place();
+      this.autoMode();
       this.refreshCount();
+      this.tipOnce();
     }
   },
 
@@ -50,6 +55,7 @@ Component({
       // 切回页面时重新读全局位置：其他页面拖动后，本页实例不能保留旧坐标
       this.readCfg();
       this.place();
+      this.autoMode();
       this.refreshCount();
     }
   },
@@ -71,6 +77,42 @@ Component({
     },
 
     sizePx() { return SIZE_RPX * this._px; },
+
+    // 挡位跟场景走：刚练完 → 小结；专注中/今天有没做完的组 → 练；否则 → 记
+    autoMode() {
+      let mode = 'record';
+      try {
+        const pend = Number(wx.getStorageSync(FINISH_KEY) || 0);
+        if (pend && Date.now() - pend < 3 * 3600 * 1000) mode = 'summary';
+        else {
+          const fs = wx.getStorageSync(FOCUS_KEY);
+          const today = engine.dayKey();
+          const live = fs && fs.stage && fs.stage !== 'finish' && fs.date === today
+            && fs.startAt && (Date.now() - fs.startAt) < 8 * 3600 * 1000;
+          if (live) mode = 'focus';
+          else {
+            const st = engine.dayStat(engine.ensureTrain(store.getTrain()), today);
+            const total = (st.total || 0) + (st.cardioSets || 0);
+            if (st.done > 0 && total > st.done) mode = 'focus';
+            else mode = 'record';
+          }
+        }
+      } catch (e) { mode = this._cfg.mode; }
+      this._cfg.mode = mode;
+      if (this.data.mode !== mode) this.setData({ mode });
+      return mode;
+    },
+
+    // 第一次出现提示一次可拖动，避免它一直挡着信号条
+    tipOnce() {
+      try {
+        if (wx.getStorageSync(TIP_KEY)) return;
+        setTimeout(() => {
+          wx.showToast({ title: '可拖动到顺手的位置', icon: 'none', duration: 1600 });
+          try { wx.setStorageSync(TIP_KEY, 1); } catch (e) {}
+        }, 1500);
+      } catch (e) {}
+    },
 
     place() {
       const size = this.sizePx();
@@ -167,6 +209,7 @@ Component({
       if (this._suppressTap) { this._suppressTap = false; return; }
       if (this._lastMoved) return;
       if (this.data.menuOn) { this.setData({ menuOn: false }); return; }
+      if (this.data.mode === 'summary') { this.triggerEvent('summary'); return; }
       if (this.data.mode === 'focus') { this.triggerEvent('focus'); return; }
       this.openNote();
     },

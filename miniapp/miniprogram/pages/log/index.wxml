@@ -41,25 +41,25 @@
       <view class="score-row">
         <view class="score-top">
           <text class="score-l">精力</text>
-          <text class="score-v">{{quickEnergy ? energyLabels[quickEnergy - 1] : '滑动打分'}}</text>
+          <text class="score-v">{{quickEnergy ? quickEnergy + ' 分 · ' + energyLabels[quickEnergy - 1] : '滑动打分'}}</text>
         </view>
         <slider class="score-s" min="1" max="5" step="1" value="{{quickEnergy || 3}}"
                 block-size="20" activeColor="#12A594" backgroundColor="#EDF1F0"
                 data-k="quickEnergy" bindchange="onScoreSlide" />
         <view class="score-lab">
-          <text class="sl-i {{quickEnergy >= index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this">{{item}}</text>
+          <text class="sl-i {{quickEnergy === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this">{{item}}</text>
         </view>
       </view>
       <view class="score-row">
         <view class="score-top">
           <text class="score-l">情绪</text>
-          <text class="score-v">{{quickMood ? moodLabels[quickMood - 1] : '滑动打分'}}</text>
+          <text class="score-v">{{quickMood ? quickMood + ' 分 · ' + moodLabels[quickMood - 1] : '滑动打分'}}</text>
         </view>
         <slider class="score-s" min="1" max="5" step="1" value="{{quickMood || 3}}"
                 block-size="20" activeColor="#12A594" backgroundColor="#EDF1F0"
                 data-k="quickMood" bindchange="onScoreSlide" />
         <view class="score-lab">
-          <text class="sl-i m {{quickMood >= index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this">{{item}}</text>
+          <text class="sl-i m {{quickMood === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this">{{item}}</text>
         </view>
       </view>
 
@@ -239,4 +239,4 @@
   bind:delete="onEditorDelete"
 />
 
-<float-orb id="orb" bottom="190" bind:focus="orbFocus" bind:noted="afterOrbNote" />
+<float-orb id="orb" bottom="190" bind:focus="orbFocus" bind:summary="orbSummary" bind:noted="afterOrbNote" />

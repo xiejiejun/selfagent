@@ -24,6 +24,11 @@
   box-shadow: 0 8rpx 24rpx rgba(20, 24, 26, .3);
 }
 
+.orb.is-sum {
+  background: #C08A12;
+  box-shadow: 0 8rpx 24rpx rgba(192, 138, 18, .32);
+}
+
 .orb.pressing {
   transform: scale(.94);
 }

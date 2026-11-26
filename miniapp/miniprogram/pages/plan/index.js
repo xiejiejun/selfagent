@@ -4,6 +4,7 @@ const actions = require('../../libs/actions');
 const recommend = require('../../libs/recommend');
 const decision = require('../../libs/decision');
 const ai = require('../../libs/ai');
+const sanity = require('../../libs/sanity');
 
 const TMPL = 'whCghbXJjZbMzZACF7k5lhLSPynVFAUPzFvf7gXrWqM';
 
@@ -182,13 +183,15 @@ Page({
       max_tokens: 220,
       temperature: 0.3
     }).then(res => {
-      if (res.ok && res.text) this.setData({ asking: false, planText: res.text });
-      else this.fallbackPlan(parts, tops, res.error || '');
+      if (res.ok && res.text) {
+        const t = sanity.check(res.text, this.fallbackText(parts, tops), { max: 240, minCjk: 0.3 });
+        this.setData({ asking: false, planText: t });
+      } else this.fallbackPlan(parts, tops, res.error || '');
     }).catch(e => this.fallbackPlan(parts, tops, e && e.errMsg ? e.errMsg : ''));
   },
 
   // AI 不可用（超时/未配 Key）时按记录本地生成一份可执行计划
-  fallbackPlan(parts, tops, err) {
+  fallbackText(parts, tops) {
     const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
     const days = Math.max(2, Math.min(6, this.data.days || 3));
     const picks = (tops || []).slice(0, days).map(t => t.name);
@@ -197,9 +200,12 @@ Page({
     const per = Math.max(3, Math.round((this.data.setsPerDay || 12) / 3));
     const lines = picks.map((n, i) => dayNames[i] + ' ' + n + ' ' + per + '组×8-12次');
     const weight = (parts || []).slice(0, 2).map(p => p.part).join('/');
-    const head = '按每周 ' + days + ' 天安排：';
     const tail = weight ? '注意：' + weight + '为主，隔天练、留 1 天休息。' : '注意：隔天练、留 1 天休息。';
-    this.setData({ asking: false, planText: head + lines.join('；') + '。' + tail + (err ? '' : '') });
+    return '按每周 ' + days + ' 天安排：' + lines.join('；') + '。' + tail;
+  },
+
+  fallbackPlan(parts, tops, err) {
+    this.setData({ asking: false, planText: this.fallbackText(parts, tops) });
     wx.showToast({ title: 'AI 超时，已用本地计划', icon: 'none' });
   },
 
@@ -239,7 +245,10 @@ Page({
       ],
       max_tokens: 160,
       temperature: 0.3
-    }).then(r => this.setData({ askingWhy: false, recReason: r.ok ? (r.text || '').trim() : 'AI 暂不可用' }))
+    }).then(r => {
+      const t = r.ok ? sanity.check(r.text, rec.recovery.text, { max: 80, minCjk: 0.3 }) : 'AI 暂不可用';
+      this.setData({ askingWhy: false, recReason: t });
+    })
       .catch(() => this.setData({ askingWhy: false, recReason: 'AI 暂不可用' }));
   },
 
