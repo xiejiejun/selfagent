@@ -1,0 +1,65 @@
+.ao-area {
+  position: fixed;
+  left: 0; top: 0;
+  width: 100vw; height: 100vh;
+  pointer-events: none;   /* 透明区域不挡页面点击 */
+  z-index: 90;
+}
+
+.ao {
+  pointer-events: auto;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #11201F;
+  box-shadow: 0 8rpx 24rpx rgba(17, 32, 31, .32);
+  overflow: visible;
+}
+
+.ao.pressing { transform: scale(.94); }
+
+.ao-ch {
+  display: block;
+  width: 100%;
+  font-size: 40rpx;
+  line-height: 1;
+  color: #4FE3C6;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 未读：AI 答完了但面板关着 */
+.ao-dot {
+  position: absolute;
+  right: 4rpx;
+  top: 4rpx;
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.ao-dot .ao-core {
+  position: absolute;
+  left: 4rpx; top: 4rpx;
+  width: 16rpx; height: 16rpx;
+  border-radius: 50%;
+  background: #3DDCBF;
+}
+
+.ao-dot .ao-ring {
+  position: absolute;
+  left: 0; top: 0;
+  width: 24rpx; height: 24rpx;
+  border-radius: 50%;
+  background: #3DDCBF;
+  opacity: .6;
+  animation: ao-pulse 1.6s ease-out infinite;
+}
+
+@keyframes ao-pulse {
+  0%   { transform: scale(.6); opacity: .55; }
+  70%  { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}

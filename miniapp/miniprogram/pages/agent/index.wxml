@@ -238,6 +238,7 @@
         bindconfirm="ask"
         show-confirm-bar="{{false}}"
       />
+      <view class="qclear" wx:if="{{q}}" bindtap="clearQ">✕</view>
       <view class="send {{asking || !q ? 'off' : ''}}" bindtap="ask">{{asking ? '…' : '发送'}}</view>
     </view>
 
@@ -263,4 +264,4 @@
   </view>
 </view>
 
-<float-orb id="orb" bottom="{{190}}" bind:focus="orbFocus" bind:summary="orbSummary" bind:noted="orbNoted" />
+<ask-orb wx:if="{{!askOpen}}" id="askorb" bottom="{{190}}" unread="{{askUnread}}" bind:open="openAsk" />

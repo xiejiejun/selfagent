@@ -68,6 +68,21 @@
   color: #14181A;
   line-height: 1.45;
 }
+
+/* 一键清空草稿：只在有输入时占位 */
+.qclear {
+  flex: 0 0 44rpx;
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 44rpx;
+  margin: 0 0 20rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #7E8A87;
+  background: #EDF2F0;
+  border-radius: 50%;
+}
+
 .send {
   flex: 0 0 104rpx;
   height: 84rpx;

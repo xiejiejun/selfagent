@@ -95,6 +95,7 @@ Page({
     lineOK: false,
     openIns: -1,
     askOpen: false,
+    askUnread: false,
     insights: [],
     heat: [],
     heatMax: 0,
@@ -743,7 +744,7 @@ Page({
   // 半屏 sheet：原生 tabBar 与 canvas 都会压在上面，打开时一并收掉，关掉再恢复
   openAsk() {
     wx.hideTabBar({ animation: false });
-    this.setData({ askOpen: true });
+    this.setData({ askOpen: true, askUnread: false });
   },
   closeAsk() {
     this.setData({ askOpen: false });
@@ -842,10 +843,15 @@ Page({
       const t = res.ok
         ? sanity.check(raw, local || '这次 AI 没把话说清，先看上面的数据。', { max: 400, minCjk: 0.3 })
         : ('调用失败：' + (res.error || '未知'));
-      this.setData({ asking: false, chat: chat.concat([{ r: 'a', t }]) });
+      this.setData({ asking: false, chat: chat.concat([{ r: 'a', t }]), askUnread: !this.data.askOpen });
     }).catch(err => {
-      this.setData({ asking: false, chat: chat.concat([{ r: 'a', t: '调用失败：' + (err && err.errMsg ? err.errMsg : err) }]) });
+      this.setData({ asking: false, chat: chat.concat([{ r: 'a', t: '调用失败：' + (err && err.errMsg ? err.errMsg : err) }]), askUnread: !this.data.askOpen });
     });
+  },
+
+  clearQ() {
+    wx.vibrateShort({ type: 'light' });
+    this.setData({ q: '' });
   },
 
   clearChat() {
@@ -866,17 +872,5 @@ Page({
 
   goTrain() {
     wx.switchTab({ url: '/pages/train/index' });
-  },
-
-  orbFocus() {
-    wx.navigateTo({ url: '/pages/focus/index' });
-  },
-
-  orbSummary() {
-    wx.switchTab({ url: '/pages/train/index' });
-  },
-
-  orbNoted() {
-    this.refresh();
   }
 });

@@ -1,0 +1,19 @@
+<movable-area class="ao-area">
+  <movable-view
+    class="ao {{pressing ? 'pressing' : ''}}"
+    style="width: {{sizeRpx}}rpx; height: {{sizeRpx}}rpx;"
+    direction="all"
+    out-of-bounds="false"
+    damping="60"
+    x="{{mvX}}" y="{{mvY}}"
+    bindchange="onMvChange"
+    bindtap="onTap"
+    bindlongpress="onLong"
+  >
+    <text class="ao-ch">✦</text>
+    <view class="ao-dot" wx:if="{{unread}}">
+      <view class="ao-ring"></view>
+      <view class="ao-core"></view>
+    </view>
+  </movable-view>
+</movable-area>

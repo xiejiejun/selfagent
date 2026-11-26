@@ -1,7 +1,7 @@
 {
   "navigationBarTitleText": "分析",
   "usingComponents": {
-    "float-orb": "/components/float-orb/index",
+    "ask-orb": "/components/ask-orb/index",
     "kpi-strip": "/components/kpi-strip/index",
     "mini-chart": "/components/mini-chart/index"
   }
