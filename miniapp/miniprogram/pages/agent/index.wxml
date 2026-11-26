@@ -180,6 +180,12 @@
       <text class="rl-s">画像 · 规划 · 趋势推演</text>
       <text class="rl-a">›</text>
     </view>
+
+    <view class="rep-link" wx:if="{{tab === 'overview'}}" style="order: 11" bindtap="goReviewHub">
+      <text class="rl-t">回顾与档案</text>
+      <text class="rl-s">每日复盘 · 周报 · 月度 · 身体数据</text>
+      <text class="rl-a">›</text>
+    </view>
   </view>
 </view>
 

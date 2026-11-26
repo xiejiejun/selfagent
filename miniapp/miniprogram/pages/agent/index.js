@@ -589,6 +589,10 @@ Page({
     wx.navigateTo({ url: '/pages/agent-report/index' });
   },
 
+  goReviewHub() {
+    wx.navigateTo({ url: '/pages/reviewhub/index' });
+  },
+
   goTrain() {
     wx.switchTab({ url: '/pages/train/index' });
   },

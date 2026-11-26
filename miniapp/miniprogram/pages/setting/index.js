@@ -17,10 +17,11 @@ Page({
     panel: '', panelTitle: '', bodyH: 0,
     typesView: [],
     newTag: '', newType: '',
-    restSec: 90, autoNext: false, wStep: 2.5, pureData: false, agentAuto: false, mealKeep: false,
-    memList: [],
+    restSec: 90, autoNext: false, wStep: 2.5, pureData: false, agentAuto: false, mealKeep: false,    memList: [],
     opList: [],
     activeType: '',
+    stepOpts: [0.5, 1, 2.5, 5],
+    syncSummary: '',
     panel: '', panelTitle: '', advOpen: false,
     version: 'v0.9',
     sum: { profile: '', prefs: '', train: '', ai: '', data: '', about: '' }
@@ -86,6 +87,9 @@ Page({
     const last = pendN
       ? ((ts ? '已同步 · ' + engine.fmtTime(new Date(ts).toISOString()) : '未同步') + ' · 待推 ' + pendN)
       : (ts ? '已同步 · ' + engine.fmtTime(new Date(ts).toISOString()) : '未同步');
+    const syncSummary = ts
+      ? '最近同步 ' + engine.fmtTime(new Date(ts).toISOString()) + (pendN ? ' · 待推 ' + pendN + ' 条' : ' · 已是最新')
+      : '本机数据 · 还没有云端记录';
     const cfg = settings.trainCfg();
     const typesView = settings.types().map(t => ({ key: t.key, label: t.label, color: settings.colorFor(t.key), tags: t.tags || [] }));
     const tagCount = typesView.reduce((n, t) => n + t.tags.length, 0);
@@ -116,6 +120,7 @@ Page({
       recordsCount,
       cardioCount,
       syncText: last,
+      syncSummary,
       syncOn: !!ts,
       syncAuto: (store.getSettings() || {}).syncAuto !== false,
       typesView,
@@ -226,6 +231,12 @@ Page({
     const v = Number(e.detail.value) || 0;
     this.setData({ restSec: v });
     settings.setTrainCfg({ rest: v });
+  },
+
+  pickStep(e) {
+    const v = Number(e.currentTarget.dataset.v) || 2.5;
+    this.setData({ wStep: v });
+    settings.setTrainCfg({ step: v });
   },
 
   onStep(e) {

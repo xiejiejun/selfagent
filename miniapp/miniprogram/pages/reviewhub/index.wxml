@@ -1,0 +1,37 @@
+<view class="page">
+  <view class="hd">
+    <text class="h-t">回顾与档案</text>
+    <text class="h-s">训练之外，也把每天、每周、每月回头看一眼</text>
+  </view>
+
+  <view class="grp">
+    <view class="row" data-url="/pages/review/index" bindtap="go">
+      <view class="r-l">
+        <text class="r-t">每日复盘</text>
+        <text class="r-s">今天练了啥、吃得怎么样、状态几分</text>
+      </view>
+      <text class="r-a">›</text>
+    </view>
+    <view class="row" data-url="/pages/report/index" bindtap="go">
+      <view class="r-l">
+        <text class="r-t">周报</text>
+        <text class="r-s">本周容量、部位分布、连续记录</text>
+      </view>
+      <text class="r-a">›</text>
+    </view>
+    <view class="row" data-url="/pages/archive/index" bindtap="go">
+      <view class="r-l">
+        <text class="r-t">月度档案</text>
+        <text class="r-s">按月归档的训练与身体变化</text>
+      </view>
+      <text class="r-a">›</text>
+    </view>
+    <view class="row" data-url="/pages/body/index" bindtap="go">
+      <view class="r-l">
+        <text class="r-t">身体数据</text>
+        <text class="r-s">体重、围度与趋势</text>
+      </view>
+      <text class="r-a">›</text>
+    </view>
+  </view>
+</view>

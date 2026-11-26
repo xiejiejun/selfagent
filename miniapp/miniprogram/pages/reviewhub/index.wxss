@@ -1,0 +1,12 @@
+.page { padding: 28rpx 24rpx 60rpx; }
+.hd { padding: 8rpx 6rpx 22rpx; }
+.h-t { display: block; font-size: 36rpx; font-weight: 700; color: #14181A; }
+.h-s { display: block; margin-top: 8rpx; font-size: 22rpx; color: #8A9490; }
+
+.grp { background: #fff; border-radius: 20rpx; padding: 4rpx 22rpx; }
+.row { display: flex; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.row:last-child { border-bottom: 0; }
+.r-l { flex: 1; min-width: 0; }
+.r-t { display: block; font-size: 26rpx; color: #14181A; }
+.r-s { display: block; margin-top: 6rpx; font-size: 20rpx; color: #A9B3AF; }
+.r-a { font-size: 24rpx; color: #C2CAC7; padding-left: 12rpx; }

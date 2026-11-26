@@ -20,6 +20,7 @@
     "pages/scan/index",
     "pages/meal/index",
     "pages/cam/index",
+    "pages/reviewhub/index",
     "pages/apiconfig/index",
     "pages/agent-report/index"
   ],
