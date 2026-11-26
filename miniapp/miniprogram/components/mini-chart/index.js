@@ -8,7 +8,8 @@ Component({
     series: { type: Array, value: [] },        // line 用：[{ data: [], color }]
     height: { type: Number, value: 150 },
     todayIndex: { type: Number, value: -1 },
-    play: { type: Boolean, value: true }       // 首次生长动画
+    play: { type: Boolean, value: true },      // 首次生长动画
+    cid: { type: String, value: '0' }          // 同页多图时区分画布节点
   },
 
   data: { tip: '' },
@@ -25,33 +26,50 @@ Component({
   methods: {
     paint() {
       if (this._raf) { clearTimeout(this._raf); this._raf = null; }
-      const q = this.createSelectorQuery();
-      q.select('.cv').fields({ node: true, size: true }).exec((res) => {
-        const r = res && res[0];
-        if (!r || !r.node) return;
-        const W = r.width || r.w;
-        const H = this.data.height;
-        if (!W || !H) return;
-        const dpr = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 2;
-        r.node.width = Math.round(W * dpr);
-        r.node.height = Math.round(H * dpr);
-        const ctx = r.node.getContext('2d');
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        this.node = r.node;
-        this.ctx = ctx;
-        this.W = W;
-        this.H = H;
+      this._retry = 0;
+      this.query();
+    },
 
-        if (!this.data.play || this.playDone) { this.draw(1); this.playDone = true; return; }
-        const t0 = Date.now();
-        const step = () => {
-          const k = Math.min(1, (Date.now() - t0) / 320);
-          this.draw(k);
-          if (k < 1) this._raf = setTimeout(step, 16);
-          else this.playDone = true;
-        };
-        step();
+    // 组件内查询画布；查不到（隐藏/首帧未布局）就把 id 放到页面级再试，最多 6 次
+    query() {
+      const sel = q => q.select('#cv-' + this.data.cid).fields({ node: true, size: true });
+      const run = (scope, done) => {
+        const q = scope === 'comp' ? wx.createSelectorQuery().in(this) : wx.createSelectorQuery();
+        sel(q).exec(res => {
+          const r = res && res[0];
+          if (r && r.node && (r.width || r.w)) { this.mount(r); return; }
+          done();
+        });
+      };
+      run('comp', () => {
+        run('page', () => {
+          if (this._retry++ < 6) setTimeout(() => this.query(), 120);
+        });
       });
+    },
+
+    mount(r) {
+      const W = r.width || r.w;
+      const H = this.data.height;
+      if (!W || !H) return;
+      const dpr = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 2;
+      r.node.width = Math.round(W * dpr);
+      r.node.height = Math.round(H * dpr);
+      const ctx = r.node.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this.node = r.node;
+      this.ctx = ctx;
+      this.W = W;
+      this.H = H;
+      if (!this.data.play || this.playDone) { this.draw(1); this.playDone = true; return; }
+      const t0 = Date.now();
+      const step = () => {
+        const k = Math.min(1, (Date.now() - t0) / 320);
+        this.draw(k);
+        if (k < 1) this._raf = setTimeout(step, 16);
+        else this.playDone = true;
+      };
+      step();
     },
 
     draw(p) {

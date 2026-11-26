@@ -85,7 +85,7 @@ Page({
     parts: [],
     tops: [],
     kpis: [],
-    kl: { train: '训练', energy: '精力', mood: '情绪', part: '部位', gap: '补短板', note: '记录', fill: '待补', rest: '进步' },
+    kl: { train: '训练', energy: '精力', mood: '情绪', part: '部位', gap: '补短板', meal: '饮食', note: '记录', fill: '待补', rest: '进步' },
     bins: [],
     barLabels: [],
     barVals: [],
@@ -124,16 +124,15 @@ Page({
     const app = getApp();
     this.setData({ cloudReady: !!(app && app.globalData && app.globalData.cloudReady) });
     this.refresh();
+    setTimeout(() => this.drawProgress(), 220);
   },
 
-  switchTab(e) {
-    const tab = e.currentTarget.dataset.t;
-    this.setData({ tab }, () => {
-      if (tab === 'progress') {
-        setTimeout(() => this.drawProgress(), 120);
-      }
-    });
+  onReady() {
+    setTimeout(() => this.drawProgress(), 320);
   },
+
+  // 单页流：没有子分段了，切时间窗后图表重画
+  switchTab() {},
 
   refresh() {
     const train = engine.ensureTrain(store.getTrain());
@@ -163,15 +162,18 @@ Page({
     const prevCardio = prevDays.reduce((a, d) => a + (d.cardioMin || 0), 0);
     const prevWeek = engine.lastNDays(train, 14).slice(7);
     const prevWeekSets = prevWeek.reduce((a, d) => a + d.done, 0);
+    // 组数按当前时间窗取，KPI 与卡片全页同一口径
+    const setsRange = days.reduce((a, d) => a + (d.done || 0), 0);
+    const prevSetsRange = prevDays.reduce((a, d) => a + (d.done || 0), 0);
     const dv1 = deltaText(trained, prevTrained);
-    const dv2 = deltaText(weekSets, prevWeekSets);
+    const dv2 = deltaText(setsRange, prevSetsRange);
     const dv3 = deltaText(totalVolume, prevVolume);
     const dv4 = deltaText(cardioMin, prevCardio);
 
     const kpis = [
       { v: trained, l: '训练天数', d: dv1.d, tone: dv1.tone, n: '近 ' + this.data.range + ' 天' },
-      { v: weekSets, l: '本周组数', d: dv2.d, tone: dv2.tone, n: weekDays.length + ' 天' },
-      { v: totalVolume, l: '总容量', d: dv3.d, tone: dv3.tone, n: trained ? '日均 ' + Math.round(totalVolume / trained) + ' kg' : '' },
+      { v: setsRange, l: '组数', d: dv2.d, tone: dv2.tone, n: '近 ' + this.data.range + ' 天' },
+      { v: totalVolume > 9999 ? (Math.round(totalVolume / 100) / 10) + 't' : totalVolume, l: '总容量', d: dv3.d, tone: dv3.tone, n: trained ? '日均 ' + Math.round(totalVolume / trained) + ' kg' : '' },
       { v: cardioMin, l: '有氧分钟', d: dv4.d, tone: dv4.tone, n: cardioMin ? '近 ' + this.data.range + ' 天' : '还没记有氧' }
     ];
 
@@ -192,14 +194,34 @@ Page({
     ];
     const lineOK = recentAsc.filter(l => Number(l.score) > 0 && Number(l.mood) > 0).length >= 3;
 
-    // 训练 tab：容量 + 有氧双柱（时间正序，最多 14 天，柱才不会细成头发丝）
-    const crossAsc = days.slice().reverse().slice(-14);
-    const crossLabels = crossAsc.map(d => engine.shortDate(d.date));
-    const crossVol = crossAsc.map(d => d.volume || 0);
-    const crossCd = crossAsc.map(d => d.cardioMin || 0);
+    // 训练量与规律：7/30/90 全局联动。≤14 天按日，>14 天按周聚合（否则柱子细成头发丝）
+    const crossDays = days.slice().reverse();
+    let crossLabels = [], crossVol = [], crossCd = [];
+    if (crossDays.length <= 14) {
+      crossLabels = crossDays.map(d => engine.shortDate(d.date));
+      crossVol = crossDays.map(d => d.volume || 0);
+      crossCd = crossDays.map(d => d.cardioMin || 0);
+    } else {
+      // 按整周切桶（砍掉最前面不足 7 天的零头，避免首桶只有 1–2 天）
+      const useDays = crossDays.slice(-(Math.floor(crossDays.length / 7) * 7));
+      const buckets = [];
+      for (let end = useDays.length - 1; end >= 0; end -= 7) {
+        const chunk = useDays.slice(Math.max(0, end - 6), end + 1);
+        buckets.push({
+          label: engine.shortDate(chunk[0].date),
+          v: chunk.reduce((a, d) => a + (d.volume || 0), 0),
+          c: chunk.reduce((a, d) => a + (d.cardioMin || 0), 0)
+        });
+      }
+      buckets.reverse();
+      crossLabels = buckets.map(b => b.label);
+      crossVol = buckets.map(b => b.v);
+      crossCd = buckets.map(b => b.c);
+    }
     const crossOK = crossVol.some(v => v > 0) || crossCd.some(v => v > 0);
     const crossVolSum = crossVol.reduce((a, v) => a + v, 0);
     const crossCdSum = crossCd.reduce((a, v) => a + v, 0);
+    const crossToday = crossLabels.length - 1;
     // 有氧构成：按项目汇总分钟
     const cdMap = {};
     days.forEach(d => (d.items || []).forEach(it => {
@@ -258,21 +280,21 @@ Page({
       ev: evNotes
     });
 
-    // 高亮卡 2：训练容量（周柱 + 数字对比 + 一句话）
+    // 高亮卡 2：训练量与规律（双柱 + 数字对比 + 一句话）
     insights.push({
-      hi: true, chart: 'bar', k: 'train', t: '训练容量',
-      v: weekVolume > 9999 ? (Math.round(weekVolume / 100) / 10) + 't' : String(weekVolume),
-      stat: '本周 ' + weekDays.length + ' 天 · ' + weekSets + ' 组 · 有氧 ' + weekCardio + '′',
-      sub: '近 7 天容量 · 环比 ' + dv3.d,
-      fb: weekDays.length
-        ? '本周 ' + weekSets + ' 组 / ' + weekVolume + 'kg，容量环比 ' + dv3.d + '；下次给' + (leastSet ? leastSet.part : '最弱部位') + '加 1 组。'
-        : '本周 0 组，曲线还没有起点；今天做完第一个动作的 3 组，就有第一根柱。',
+      hi: true, chart: 'bar', k: 'train', t: '训练量与规律',
+      v: totalVolume > 9999 ? (Math.round(totalVolume / 100) / 10) + 't' : String(totalVolume),
+      unit: totalVolume > 9999 ? '' : 'kg',
+      stat: '近 ' + this.data.range + ' 天 ' + trained + ' 天 · ' + setsRange + ' 组 · 有氧 ' + cardioMin + '′',
+      sub: (prevVolume > 0 ? '容量环比 ' + dv3.d : '本期首份容量') + (trained ? ' · 日均 ' + Math.round(totalVolume / trained) + 'kg' : ''),
+      fb: trained
+        ? '近 ' + this.data.range + ' 天 ' + setsRange + ' 组 / ' + totalVolume + 'kg，容量环比 ' + dv3.d + '；下次给' + (leastSet ? leastSet.part : '最弱部位') + '加 1 组。'
+        : '这 ' + this.data.range + ' 天还是 0 组，曲线没有起点；今天做完第一个动作的 3 组，就有一根柱。',
       ev: evTrainDays
     });
 
     const hasVol = parts.some(p => p.volume > 0 || p.sets > 0);
-    if (parts.length && hasVol) {
-      const top = setParts[0];
+    if (parts.length && hasVol) {      const top = setParts[0];
       const least = poolParts.length > 1 ? poolParts[poolParts.length - 1] : null;
       const topPct = totalSets ? Math.round(top.sets / totalSets * 100) : 0;
       const leastPct = least && totalSets ? Math.round(least.sets / totalSets * 100) : 0;
@@ -340,9 +362,14 @@ Page({
       crossOK,
       crossVolSum,
       crossCdSum,
+      crossToday,
+      radarOK: hasVol,
       cdComp,
       cdTotal,
       insights,
+      hiTrain: insights.find(x => x.k === 'train') || {},
+      hiEnergy: insights.find(x => x.k === 'energy') || {},
+      more: insights.filter(x => !x.hi).map(x => Object.assign({}, x, { i: insights.indexOf(x) })),
       heat: heat.rows,
       heatMax: heat.max,
       restNotes: heat.notes,
@@ -364,15 +391,133 @@ Page({
       curveSel: p.curves.indexOf(curve) >= 0 ? p.curves.indexOf(curve) : 0,
       aiPure: !polish.enabled()
     }, () => {
-      if (this.data.tab === 'progress') this.drawProgress();
+      setTimeout(() => this.drawProgress(), 120);
     });
     this.aiProgress(p);
   },
 
   drawProgress() {
     const p = this.data.prog || {};
-    this.drawRadar(p.radar || []);
-    this.drawCurve(this.data.curve);
+    if (this.data.radarOK) this.drawRadar(p.radar || []);
+    if (this.data.curve) this.drawCurve(this.data.curve);
+    if (this.data.lineOK) this.drawEnergy();
+    if (this.data.crossOK) this.drawDual();
+  },
+
+  // 卡 A 双柱：容量（左）+ 有氧（右），今天加深。页面级画布，避免和组件抢节点
+  drawDual() {
+    const labels = this.data.crossLabels || [];
+    const a = this.data.crossVol || [];
+    const b = this.data.crossCd || [];
+    if (!labels.length) return;
+    const H = 140, top = 18, base = H - 26;
+    wx.createSelectorQuery().in(this).select('#dual').boundingClientRect((rect) => {
+      if (!rect || !rect.width) return;
+      const W = rect.width;
+      const n = Math.max(1, labels.length);
+      const slot = (W - 8) / n;
+      const bw = Math.min(13, slot * 0.34);
+      const maxA = Math.max.apply(null, a.concat([1]));
+      const maxB = Math.max.apply(null, b.concat([1]));
+      const ctx = wx.createCanvasContext('dual', this);
+      for (let i = 0; i < n; i++) {
+        const cx = 4 + slot * i + slot / 2;
+        const today = i === this.data.crossToday;
+        const va = a[i] || 0, vb = b[i] || 0;
+        const ha = va > 0 ? (base - top) * (va / maxA) : 2;
+        ctx.setFillStyle(today ? '#12A594' : (va > 0 ? '#CDEDE6' : '#EFF3F2'));
+        this.roundRect(ctx, cx - bw - 2, base - ha, bw, ha, Math.min(4, bw / 2));
+        ctx.fill();
+        const hb = vb > 0 ? (base - top) * (vb / maxB) : 2;
+        ctx.setFillStyle(today ? '#E3B341' : (vb > 0 ? '#F5E3B8' : '#F4F1EA'));
+        this.roundRect(ctx, cx + 2, base - hb, bw, hb, Math.min(4, bw / 2));
+        ctx.fill();
+      }
+      ctx.setFillStyle('#A9B3AF');
+      ctx.setFontSize(9);
+      ctx.setTextAlign('center');
+      const step = n > 8 ? Math.ceil(n / 6) : 1;
+      labels.forEach((l, i) => {
+        if (i % step !== 0) return;
+        const cx = 4 + slot * i + slot / 2;
+        ctx.fillText(String(l).replace('-', '.'), cx, base + 13);
+      });
+      ctx.draw();
+    }).exec();
+  },
+
+  roundRect(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.lineTo(x + w - rr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+    ctx.lineTo(x + w, y + h - rr);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+    ctx.lineTo(x + rr, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+    ctx.lineTo(x, y + rr);
+    ctx.quadraticCurveTo(x, y, x + rr, y);
+    ctx.closePath();
+  },
+
+  // 精力/情绪双折线：页面级画布（不与卡 A 的 mini-chart 抢节点）
+  drawEnergy() {
+    const labels = this.data.lineLabels || [];
+    const series = this.data.lineSeries || [];
+    if (labels.length < 2) return;
+    const H = 140, padL = 8, padR = 8, padT = 12, padB = 20;
+    wx.createSelectorQuery().in(this).select('.eline').boundingClientRect((rect) => {
+      if (!rect || !rect.width) return;
+      const W = rect.width;
+      const x0 = padL, x1 = W - padR, y0 = padT, y1 = H - padB;
+      const n = labels.length;
+      const mapY = v => y1 - (Math.max(0, Math.min(5, v)) / 5) * (y1 - y0);
+      const mapX = i => x0 + (x1 - x0) * (n > 1 ? i / (n - 1) : 0);
+      const ctx = wx.createCanvasContext('eline', this);
+      ctx.setLineWidth(1);
+      for (let g = 1; g <= 5; g++) {
+        ctx.setStrokeStyle('#F0F4F3');
+        ctx.beginPath(); ctx.moveTo(x0, mapY(g)); ctx.lineTo(x1, mapY(g)); ctx.stroke();
+      }
+      series.forEach((se, si) => {
+        const data = se.data || [];
+        const color = se.color || (si === 0 ? '#12A594' : '#E3B341');
+        const full = data.every(v => v != null) && data.length > 1;
+        if (si === 0 && full) {
+          ctx.setFillStyle('rgba(18,165,148,.12)');
+          ctx.beginPath();
+          ctx.moveTo(mapX(0), mapY(data[0]));
+          data.forEach((v, i) => ctx.lineTo(mapX(i), mapY(v)));
+          ctx.lineTo(mapX(data.length - 1), y1);
+          ctx.lineTo(mapX(0), y1);
+          ctx.closePath(); ctx.fill();
+        }
+        ctx.setStrokeStyle(color); ctx.setLineWidth(1.8); ctx.setLineJoin('round');
+        ctx.beginPath();
+        let started = false;
+        data.forEach((v, i) => {
+          if (v == null) { started = false; return; }
+          if (started) ctx.lineTo(mapX(i), mapY(v));
+          else { ctx.moveTo(mapX(i), mapY(v)); started = true; }
+        });
+        ctx.stroke();
+        ctx.setFillStyle(color);
+        data.forEach((v, i) => {
+          if (v == null) return;
+          ctx.beginPath(); ctx.arc(mapX(i), mapY(v), 2.4, 0, Math.PI * 2); ctx.fill();
+        });
+      });
+      ctx.setFillStyle('#A9B3AF');
+      ctx.setFontSize(9);
+      ctx.setTextAlign('center');
+      const step = n > 8 ? Math.ceil(n / 6) : 1;
+      labels.forEach((l, i) => {
+        if (i % step !== 0) return;
+        ctx.fillText(String(l).replace('-', '.'), mapX(i), y1 + 13);
+      });
+      ctx.draw();
+    }).exec();
   },
 
   // 六边形雷达（周容量分布）
@@ -475,17 +620,17 @@ Page({
     this.setData({ curveSel: i, curve: c }, () => this.drawCurve(c));
   },
 
-  // 进步 tab 三条 AI 洞察：规则数字已在本地算好，AI 只做一句话表达
+  // 三处 AI 结论同一把尺：数字对比 + 原因 + 行动，不合格就让规则文案顶上
   aiProgress(p) {
     if (!p || !this.data.cloudReady || !polish.enabled()) return;
-    polish.polish('pushpull', p.pushPull, '一句话指出推拉是否均衡，给一个补的动作方向')
-      .then(r => { if (r.ok) this.setData({ aiPush: r.text }); });
-    if (p.forecast) {
-      polish.polish('forecast', p.forecast, '一句话说明当前趋势和达成时间，别重复数字堆砌')
-        .then(r => { if (r.ok) this.setData({ aiTrend: r.text }); });
-    }
-    polish.polish('tomorrow', p.tomorrow, '一句话说明明天该练哪个部位，理由简短')
-      .then(r => { if (r.ok) this.setData({ aiTomorrow: r.text }); });
+    const gate = (key, facts, ask, slot) => polish.polish(key, facts, ask)
+      .then(r => {
+        const ok = r.ok && aiGood(r.text, { t: facts.text || '', sub: '' });
+        this.setData({ [slot]: ok ? r.text : '' });
+      });
+    gate('pushpull', p.pushPull, '一句话：给一个推拉比数字，点出失衡原因，再给一个补的动作', 'aiPush');
+    if (p.forecast) gate('forecast', p.forecast, '一句话：给一个重量数字与达成周期，理由简短，给一个推进动作', 'aiTrend');
+    gate('tomorrow', p.tomorrow, '一句话：说说明天练哪、给一个数字依据、点一个今天的准备动作', 'aiTomorrow');
   },
 
   // 洞察卡 AI 扩写：过质量门（数字对比+原因+行动、不复读），不合格就退回本地模板
@@ -508,8 +653,20 @@ Page({
           if (!out) return;
           const cur = this.data.insights || [];
           const idx = cur.findIndex(x => x.k === it.k && x.t === it.t);
-          if (idx >= 0) this.setData({ ['insights[' + idx + '].ai']: out });
+          if (idx >= 0) {
+            this.setData({ ['insights[' + idx + '].ai']: out }, () => this.syncIns());
+          }
         });
+    });
+  },
+
+  // insights 是唯一数据源，hiTrain/hiEnergy/more 是它的渲染投影
+  syncIns() {
+    const ins = this.data.insights || [];
+    this.setData({
+      hiTrain: ins.find(x => x.k === 'train') || {},
+      hiEnergy: ins.find(x => x.k === 'energy') || {},
+      more: ins.filter(x => !x.hi).map(x => Object.assign({}, x, { i: ins.indexOf(x) }))
     });
   },
 
@@ -575,7 +732,10 @@ Page({
 
   // 洞察卡展开依据 / 收起（同一条目点击切换）
   toggleIns(e) {
-    const i = Number(e.currentTarget.dataset.i);
+    const ds = e.currentTarget.dataset;
+    const i = ds.k
+      ? (this.data.insights || []).findIndex(x => x.k === ds.k)
+      : Number(ds.i);
     this.setData({ openIns: this.data.openIns === i ? -1 : i });
   },
 

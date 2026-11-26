@@ -1,3 +1,3 @@
 <view class="wrap" style="height: {{height}}px">
-  <canvas type="2d" class="cv" style="height: {{height}}px" bindtouchstart="onTouch" bindtouchmove="onTouch" bindtouchend="onTouchEnd"></canvas>
+  <canvas id="cv-{{cid}}" type="2d" class="cv" style="height: {{height}}px" bindtouchstart="onTouch" bindtouchmove="onTouch" bindtouchend="onTouchEnd"></canvas>
 </view>

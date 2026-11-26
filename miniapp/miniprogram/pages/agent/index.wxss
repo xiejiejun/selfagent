@@ -1,6 +1,6 @@
 .page { padding: 24rpx 24rpx 200rpx; }
-/* 页内不再放大标题：导航栏已有「分析」，这里只留右侧控件 */
-.head { display: flex; align-items: center; justify-content: flex-end; padding: 0 6rpx 12rpx; min-height: 56rpx; }
+/* 单页流：顶部只留时间窗 + 问 AI */
+.head { display: flex; align-items: center; justify-content: space-between; padding: 0 6rpx 12rpx; min-height: 56rpx; }
 .head-r { display: flex; align-items: center; gap: 12rpx; }
 
 .ranges { display: flex; gap: 8rpx; }
@@ -28,6 +28,11 @@
   border-radius: 14rpx;
   margin-bottom: 20rpx;
 }
+/* 竖排单页流：卡片向下堆叠，段间 16rpx */
+.body { display: flex; flex-direction: column; }
+.card { background: #fff; border-radius: 20rpx; padding: 18rpx; margin-bottom: 16rpx; }
+.kpiwrap { margin-bottom: 16rpx; }
+.tops { margin-top: 6rpx; border-top: 1rpx solid #F1F4F3; }
 .sg {
   min-width: 118rpx;
   height: 56rpx;
@@ -39,11 +44,6 @@
 }
 .sg.on { background: #fff; color: #14181A; font-weight: 600; }
 
-.body { display: flex; flex-direction: column; }
-.body .card { margin-bottom: 18rpx; }
-.kpiwrap { margin-bottom: 18rpx; }
-
-.card { background: #fff; border-radius: 20rpx; padding: 18rpx; }
 .ch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
 .ct { font-size: 30rpx; font-weight: 600; color: #14181A; }
 .cm { font-size: 22rpx; color: #A9B3AF; }
@@ -244,6 +244,7 @@
 .rl-a { font-size: 24rpx; color: #C3CCC8; }
 
 .emptycard { padding: 26rpx 24rpx; }
+.emptycard.flat { padding: 20rpx 0 0; background: transparent; }
 .empty-t { display: block; font-size: 26rpx; color: #14181A; }
 .empty-s { display: block; margin-top: 8rpx; font-size: 22rpx; color: #8A9490; line-height: 1.5; }
 .empty-cta {
@@ -303,6 +304,10 @@
 .pure.on { color: #8A9490; background: #F2F5F4; }
 .radar { width: 600rpx; height: 600rpx; margin: 0 auto; display: block; }
 .curve { width: 600rpx; height: 300rpx; display: block; margin: 0 auto; }
+.eline { width: 100%; height: 140px; display: block; }
+.skeleton { height: 132rpx; display: flex; flex-direction: column; justify-content: center; padding-left: 6rpx; }
+.sk-t { font-size: 24rpx; color: #8A9490; }
+.sk-s { font-size: 22rpx; color: #A9B3AF; margin-top: 4rpx; }
 .ai-line { display: flex; align-items: flex-start; gap: 8rpx; margin-top: 12rpx; background: #F3F9F7; border-left: 4rpx solid #12A594; border-radius: 10rpx; padding: 12rpx 14rpx; }
 .ai-line.rule { background: #F7F9F8; border-left-color: #C9D8D4; }
 .ai-sp { font-size: 24rpx; color: #12A594; flex-shrink: 0; }
