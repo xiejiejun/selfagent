@@ -204,3 +204,17 @@
 .pr-vv { flex-shrink: 0; font-size: 21rpx; color: #14181A; }
 .pr-empty { font-size: 22rpx; color: #A6AFAB; }
 .pr-go { font-size: 28rpx; color: #B6BEBB; line-height: 1; padding-bottom: 6rpx; }
+/* 统计 tab：只留 KPI + 去分析页的入口 */
+.stat-link {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: #fff;
+  border-radius: 18rpx;
+  padding: 22rpx 24rpx;
+  margin-top: 18rpx;
+}
+.sl-l { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
+.sl-t { font-size: 28rpx; font-weight: 600; color: #14181A; }
+.sl-s { font-size: 22rpx; color: #A9B3AF; }
+.sl-a { font-size: 24rpx; color: #12A594; }

@@ -184,83 +184,13 @@
       </view>
 
       <block wx:else>
-        <view class="card" wx:if="{{mealTrend && mealTrend.dayCount}}">
-          <view class="ch"><text class="ct">近 7 天热量</text><text class="cm">日均 {{mealTrend.avg}} kcal · {{mealTrend.dayCount}} 天有记录</text></view>
-          <view class="kbar">
-            <view class="kb-col" wx:for="{{mealTrend.bars}}" wx:key="dk">
-              <view class="kb-track">
-                <view class="kb-v {{item.train ? 'tr' : ''}}" style="height: {{item.h}}%"></view>
-              </view>
-              <text class="kb-k">{{item.kcal || '—'}}</text>
-              <text class="kb-l">{{item.label}}</text>
-            </view>
+        <!-- 记录页只留 KPI 与快记；趋势图统一在分析页 -->
+        <view class="stat-link" bindtap="goAgent">
+          <view class="sl-l">
+            <text class="sl-t">趋势与图表</text>
+            <text class="sl-s">精力情绪 · 容量有氧 · 部位均衡 · PR 曲线</text>
           </view>
-          <text class="knote" wx:if="{{mealAi}}">✦ {{mealAi}}</text>
-          <text class="knote plain" wx:else>{{mealTrend.text}}</text>
-        </view>
-
-        <view class="card">
-          <view class="ch"><text class="ct">容量 & 有氧</text><text class="cm">{{stats.noteLoad}}</text></view>
-          <scroll-view class="load" scroll-x="true" enhanced="true" show-scrollbar="false">
-            <view class="ld-col" wx:for="{{stats.load}}" wx:key="label">
-              <view class="ld-pair">
-                <view class="ld-v" style="height: {{item.vh}}%"></view>
-                <view class="ld-m" style="height: {{item.mh}}%"></view>
-              </view>
-              <text class="ld-l">{{item.label}}</text>
-            </view>
-          </scroll-view>
-          <view class="ld-lg"><text class="lg-d v"></text><text>容量 kg</text><text class="lg-d m"></text><text>有氧分钟</text></view>
-          <text class="cnote">{{stats.noteLoad}}</text>
-        </view>
-
-        <view class="card">
-          <view class="ch"><text class="ct">部位分布</text><text class="cm">组数占比 · {{stats.noteParts}}</text></view>
-          <view class="pd-row" wx:for="{{stats.parts}}" wx:key="part">
-            <text class="pd-n">{{item.part}}</text>
-            <view class="pd-bar"><view class="pd-in {{item.low ? 'low' : ''}}" style="width: {{item.pct}}%"></view></view>
-            <text class="pd-v {{item.low ? 'low' : ''}}">{{item.sets}} 组 · {{item.pct}}%</text>
-          </view>
-          <view class="pd-none" wx:if="{{!stats.parts.length}}">这段还没有力量训练</view>
-        </view>
-
-        <view class="card">
-          <view class="ch"><text class="ct">进步榜</text><text class="cm">{{stats.noteProgress}}</text></view>
-          <view class="pg-row" wx:for="{{stats.progress}}" wx:key="name">
-            <text class="pg-n">{{item.name}}</text>
-            <text class="pg-w">{{item.text}}</text>
-            <text class="pg-p">↑{{item.pct}}%</text>
-          </view>
-          <view class="pd-none" wx:if="{{!stats.progress.length}}">同一动作练满两次后才会出涨幅榜（按 e1RM 估算）</view>
-        </view>
-
-        <view class="card">
-          <view class="ch"><text class="ct">有氧构成</text><text class="cm">{{stats.noteCd}}</text></view>
-          <view class="pd-row" wx:for="{{stats.cdComp}}" wx:key="label">
-            <text class="pd-n">{{item.label}}</text>
-            <view class="pd-bar"><view class="pd-in cd" style="width: {{item.pct}}%"></view></view>
-            <text class="pd-v">{{item.min}}′ · {{item.pct}}%</text>
-          </view>
-          <view class="pd-none" wx:if="{{!stats.cdComp.length}}">这段还没有有氧</view>
-        </view>
-
-        <view class="card pr-card" bindtap="goPR">
-          <view class="ch"><text class="ct">PR 记录</text><text class="cm">{{stats.notePr}}</text></view>
-          <view class="pr-row">
-            <view class="pr-top">
-              <view class="pr-num"><text class="pr-v">{{stats.prs.count}}</text><text class="pr-u">个新纪录</text></view>
-              <text class="pr-go">›</text>
-            </view>
-            <view class="pr-list">
-              <block wx:for="{{stats.prs.list}}" wx:key="name">
-                <view class="pr-it" wx:if="{{index < 3}}">
-                  <text class="pr-nm">{{item.name}}</text>
-                  <text class="pr-vv">{{item.weight}}kg×{{item.reps}}</text>
-                </view>
-              </block>
-              <text class="pr-empty" wx:if="{{!stats.prs.count}}">本期还没有新 PR，去练一组冲一下</text>
-            </view>
-          </view>
+          <text class="sl-a">去分析页 ›</text>
         </view>
       </block>
     </block>

@@ -29,6 +29,37 @@ function avgOf(list) {
   return Math.round((a.reduce((x, y) => x + y, 0) / a.length) * 10) / 10;
 }
 
+// ---- AI 扩写质量门：必须“数字对比 + 原因 + 行动”，且不许复读卡片标题 ----
+const ACTION_RE = /(加|减|补|安排|换|降|提前|练|吃|睡|休息|调整|走|跑|多|少|控制|拆分|延长)/;
+function bigrams(s) {
+  const t = String(s || '').replace(/[\s，。、·：:；;！!？?（）()「」“”"'—\-]/g, '');
+  const out = {};
+  for (let i = 0; i < t.length - 1; i++) {
+    const g = t.slice(i, i + 2);
+    out[g] = (out[g] || 0) + 1;
+  }
+  return out;
+}
+function similar(a, b) {
+  const A = bigrams(a), B = bigrams(b);
+  let inter = 0, total = 0;
+  Object.keys(A).forEach(k => { total += A[k]; });
+  Object.keys(B).forEach(k => { total += B[k]; if (A[k]) inter += Math.min(A[k], B[k]); });
+  if (!total) return 1;
+  return (2 * inter) / total;
+}
+// ctx: 该卡片的标题 + 主数值，用来判“是否在复读”
+function aiGood(text, ctx) {
+  const t = String(text || '').trim();
+  if (!t) return false;
+  if (t.length < 10 || t.length > 90) return false;
+  if (!/\d/.test(t)) return false;                       // 至少一个数字对比
+  if (!ACTION_RE.test(t)) return false;                  // 至少一个行动
+  const ref = ((ctx && ctx.t) || '') + ' ' + ((ctx && ctx.sub) || '');
+  if (similar(t, ref) > 0.6) return false;               // 复读标题/副标题
+  return true;
+}
+
 // 模型回答里常带 Markdown 标记和分片解码残留的替换符，纯文本展示前先清洗
 function cleanMd(s) {
   return String(s || '')
@@ -161,6 +192,26 @@ Page({
     ];
     const lineOK = recentAsc.filter(l => Number(l.score) > 0 && Number(l.mood) > 0).length >= 3;
 
+    // 训练 tab：容量 + 有氧双柱（时间正序，最多 14 天，柱才不会细成头发丝）
+    const crossAsc = days.slice().reverse().slice(-14);
+    const crossLabels = crossAsc.map(d => engine.shortDate(d.date));
+    const crossVol = crossAsc.map(d => d.volume || 0);
+    const crossCd = crossAsc.map(d => d.cardioMin || 0);
+    const crossOK = crossVol.some(v => v > 0) || crossCd.some(v => v > 0);
+    const crossVolSum = crossVol.reduce((a, v) => a + v, 0);
+    const crossCdSum = crossCd.reduce((a, v) => a + v, 0);
+    // 有氧构成：按项目汇总分钟
+    const cdMap = {};
+    days.forEach(d => (d.items || []).forEach(it => {
+      if (it.type !== 'cardio' || it.skipped) return;
+      cdMap[it.name] = (cdMap[it.name] || 0) + (it.min || 0);
+    }));
+    const cdList = Object.keys(cdMap).map(k => ({ name: k, min: cdMap[k] })).sort((a, b) => b.min - a.min);
+    const cdTotal = cdList.reduce((a, x) => a + x.min, 0);
+    const cdComp = cdList.slice(0, 5).map(x => ({
+      name: x.name, min: x.min, pct: cdTotal ? Math.round(x.min / cdTotal * 100) : 0
+    }));
+
     // 依据 chips：每张洞察卡都能点开看证据，再跳记录页
     const evParts = setParts.slice(0, 3).map(p => ({ t: p.part, v: p.sets + ' 组 · ' + p.volume.toLocaleString() + ' kg' }));
     const evTrainDays = days.filter(d => d.volume > 0 || d.cardioMin > 0).slice(0, 3).map(d => {
@@ -172,12 +223,57 @@ Page({
       v: (Number(l.score) > 0 ? '精力 ' + Number(l.score) : '') + (Number(l.mood) > 0 ? ' 情绪 ' + moodLabel(Number(l.mood)) : '')
     }));
 
+    // 近 7 条 vs 上一个 7 条：高亮卡的对比箭头
+    const noteDesc = notes.filter(l => Number(l.score) > 0 || Number(l.mood) > 0)
+      .sort((a, b) => String(b.time || b.date).localeCompare(String(a.time || a.date)));
+    const lastSeven = noteDesc.slice(0, 7);
+    const prevSeven = noteDesc.slice(7, 14);
+    const ePrev = avgOf(prevSeven.map(l => Number(l.score)));
+    const mPrev = avgOf(prevSeven.map(l => Number(l.mood)));
+    const darrow = (cur, prev) => {
+      if (cur == null) return '';
+      if (prev == null) return ' 新增';
+      const d = Math.round((cur - prev) * 10) / 10;
+      if (!d) return ' → 持平';
+      return ' ' + (d > 0 ? '↑' : '↓') + Math.abs(d);
+    };
+    const lowE = lastSeven.filter(l => Number(l.score) > 0 && Number(l.score) <= 2).length;
+    const weekCardio = week.reduce((a, d) => a + (d.cardioMin || 0), 0);
+    const poolParts = setParts.filter(p => p.part !== '其他');
+    const leastSet = poolParts.length ? poolParts[poolParts.length - 1] : null;
+
     const insights = [];
+
+    // 高亮卡 1：精力与情绪（折线 + 数字对比 + 一句话）
+    insights.push({
+      hi: true, chart: 'line', k: 'energy', t: '精力与情绪',
+      v: energy == null ? '—' : energy.toFixed(1),
+      stat: energy == null
+        ? '还没有精力/情绪打分'
+        : '精力 ' + energy.toFixed(1) + darrow(energy, ePrev) + ' · 情绪 ' + (mood == null ? '—' : mood.toFixed(1) + darrow(mood, mPrev)),
+      sub: '近 ' + recent.length + ' 条记录 · ' + (lineOK ? '7 日双线' : '不足 3 条，先看示意'),
+      fb: energy == null
+        ? '先记满 3 条精力打分，这里才出可比曲线；单看一天的数字判断不了状态。'
+        : '精力均值 ' + energy.toFixed(1) + '，最近 7 条里 ' + lowE + ' 条低于 3；连着低就先降一组重量再练。',
+      ev: evNotes
+    });
+
+    // 高亮卡 2：训练容量（周柱 + 数字对比 + 一句话）
+    insights.push({
+      hi: true, chart: 'bar', k: 'train', t: '训练容量',
+      v: weekVolume > 9999 ? (Math.round(weekVolume / 100) / 10) + 't' : String(weekVolume),
+      stat: '本周 ' + weekDays.length + ' 天 · ' + weekSets + ' 组 · 有氧 ' + weekCardio + '′',
+      sub: '近 7 天容量 · 环比 ' + dv3.d,
+      fb: weekDays.length
+        ? '本周 ' + weekSets + ' 组 / ' + weekVolume + 'kg，容量环比 ' + dv3.d + '；下次给' + (leastSet ? leastSet.part : '最弱部位') + '加 1 组。'
+        : '本周 0 组，曲线还没有起点；今天做完第一个动作的 3 组，就有第一根柱。',
+      ev: evTrainDays
+    });
+
     const hasVol = parts.some(p => p.volume > 0 || p.sets > 0);
     if (parts.length && hasVol) {
       const top = setParts[0];
-      const pool = setParts.filter(p => p.part !== '其他');
-      const least = pool.length > 1 ? pool[pool.length - 1] : null;
+      const least = poolParts.length > 1 ? poolParts[poolParts.length - 1] : null;
       const topPct = totalSets ? Math.round(top.sets / totalSets * 100) : 0;
       const leastPct = least && totalSets ? Math.round(least.sets / totalSets * 100) : 0;
       if (least && leastPct < 15) {
@@ -188,6 +284,7 @@ Page({
           sub: least.sets
             ? '容量 ' + least.volume + ' kg，下次可以补一组 ' + least.part
             : '这段时间零组，下次可以补一组 ' + least.part,
+          fb: least.part + ' 只有 ' + least.sets + ' 组，占总组数 ' + leastPct + '%；下一场先做它，放在最前面才不会省掉。',
           ev: evParts
         });
       }
@@ -196,16 +293,10 @@ Page({
         t: top.part + ' 是这段时间的主力',
         v: topPct + '%',
         sub: top.sets + ' 组 · 容量 ' + top.volume + ' kg' + (least ? ' · 最少是 ' + least.part : ''),
+        fb: top.part + ' 占 ' + topPct + '% 组数，容量 ' + top.volume + 'kg；比最少部位多 ' + Math.max(0, top.sets - (least ? least.sets : 0)) + ' 组，下周把比例往回匀一点。',
         ev: evParts
       });
     }
-    insights.push({
-      k: 'train',
-      t: weekDays.length ? '本周已经练了 ' + weekDays.length + ' 天' : '本周还没有训练',
-      v: weekDays.length ? weekSets + ' 组' : '0 组',
-      sub: weekDays.length ? (weekVolume > 0 ? weekVolume.toLocaleString() + ' kg 总容量' : '有训练，但容量还没数') : '从动作库挑一个开始',
-      ev: evTrainDays
-    });
     // 饮食 vs 训练联动：训练日/休息日摄入对比（估算，只看趋势）
     const mtr = food.trend(store.getLogs(), this.data.range, train);
     if (mtr.dayCount >= 2) {
@@ -215,23 +306,10 @@ Page({
         t: gap > 100 ? '训练日吃得更够' : (gap < -100 ? '训练日反而吃得少' : '摄入基本持平'),
         v: mtr.avg + ' kcal',
         sub: '记录日均 · ' + mtr.text + (gap < -100 ? ' · 练完那顿可以补点蛋白' : ''),
+        fb: gap < -100
+          ? '训练日比休息日少 ' + Math.abs(gap) + 'kcal，练完那顿补 20g 蛋白更划算。'
+          : '日均 ' + mtr.avg + 'kcal，训练日与休息日差 ' + Math.abs(gap) + 'kcal；先不调总量，把碳水上到练前那顿。',
         ev: [{ t: '记录', v: mtr.dayCount + ' 天' }, { t: '训练日', v: (mtr.trainAvg || 0) + ' kcal' }]
-      });
-    }
-
-    if (energy !== null) {
-      insights.push({ k: 'energy', t: '精力均值 ' + energy.toFixed(1), v: energy.toFixed(1) + '/5', sub: '近 7 条记录的均值', ev: evNotes });
-    }
-    if (mood !== null) {
-      insights.push({ k: 'mood', t: '情绪落在「' + moodLabel(mood) + '」', v: mood.toFixed(1) + '/5', sub: '近 7 条记录的均值', ev: evNotes });
-    }
-    if (energy === null || mood === null) {
-      insights.push({
-        k: 'fill',
-        t: '补两笔就能看精力与情绪趋势',
-        v: '待补数据',
-        sub: '随手记里滑动打分，记录时也可以选档位',
-        ev: []
       });
     }
 
@@ -256,6 +334,14 @@ Page({
       lineLabels,
       lineSeries,
       lineOK,
+      crossLabels,
+      crossVol,
+      crossCd,
+      crossOK,
+      crossVolSum,
+      crossCdSum,
+      cdComp,
+      cdTotal,
       insights,
       heat: heat.rows,
       heatMax: heat.max,
@@ -402,18 +488,27 @@ Page({
       .then(r => { if (r.ok) this.setData({ aiTomorrow: r.text }); });
   },
 
-  // 洞察卡 AI 扩写（同 facts 命中缓存）
+  // 洞察卡 AI 扩写：过质量门（数字对比+原因+行动、不复读），不合格就退回本地模板
   aiInsights(insights) {
-    if (!this.data.cloudReady || !polish.enabled()) return;
-    const list = insights.slice(0, 3);
+    const list = (insights || []).slice(0, 3);
+    // 纯数据模式 / 未连接：直接用本地模板，卡片不留空
+    if (!this.data.cloudReady || !polish.enabled()) {
+      const patch = {};
+      list.forEach((it, i) => { if (it.fb) patch['insights[' + i + '].ai'] = it.fb; });
+      if (Object.keys(patch).length) this.setData(patch);
+      return;
+    }
     list.forEach((it, i) => {
-      polish.polish('ins:' + i + ':' + it.k, { t: it.t, v: it.v, sub: it.sub },
-        '用一句人话点评这张洞察卡，别加建议清单')
+      polish.polish('ins:' + it.k + ':' + i, { t: it.t, v: it.v, stat: it.stat, sub: it.sub },
+        '一句话写法：给一个数字对比，点一个可能原因，再给今天能做的动作；40 字内，别复述卡片标题，别列清单')
         .then(r => {
-          if (!r.ok) return;
+          const txt = r.ok ? String(r.text || '').trim() : '';
+          const ok = r.ok && aiGood(txt, { t: it.t, sub: it.sub });
+          const out = ok ? txt : (it.fb || '');
+          if (!out) return;
           const cur = this.data.insights || [];
-          const idx = cur.findIndex(x => x.t === it.t && x.k === it.k);
-          if (idx >= 0) this.setData({ ['insights[' + idx + '].ai']: r.text });
+          const idx = cur.findIndex(x => x.k === it.k && x.t === it.t);
+          if (idx >= 0) this.setData({ ['insights[' + idx + '].ai']: out });
         });
     });
   },
@@ -422,7 +517,15 @@ Page({
     const next = !polish.enabled() ? false : true;
     polish.setPureData(next);
     this.setData({ aiPure: next, aiPush: '', aiTrend: '', aiTomorrow: '' });
-    if (!next) this.aiProgress(this.data.prog);
+    if (next) {
+      // 切纯数据：AI 句退回本地模板，卡片不空
+      const patch = {};
+      (this.data.insights || []).slice(0, 3).forEach((it, i) => { if (it.fb) patch['insights[' + i + '].ai'] = it.fb; });
+      this.setData(patch);
+    } else {
+      this.aiInsights(this.data.insights);
+      this.aiProgress(this.data.prog);
+    }
     wx.showToast({ title: next ? '纯数据模式：AI 扩写已关' : 'AI 扩写已开', icon: 'none' });
   },
 

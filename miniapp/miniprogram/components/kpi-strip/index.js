@@ -54,15 +54,15 @@ Component({
         const e = 1 - Math.pow(1 - k, 3);
         const shown = items.map((it, i) => {
           const t = targets[i];
-          if (t == null) return { v: it.v, l: it.l, n: it.n || '', d: it.d || '', tone: it.tone || '', num: null, fs: this.fsOf(it.v, base) };
+          if (t == null) return { v: it.v, l: it.l, n: it.n || '', d: it.d || '', tone: it.tone || '', num: null, zero: false, fs: this.fsOf(it.v, base) };
           const cur = from[i] + (t - from[i]) * e;
           const txt = this.fmt(cur, it.v);
-          return { v: txt, l: it.l, n: it.n || '', d: it.d || '', tone: it.tone || '', num: Math.round(cur * 10) / 10, fs: this.fsOf(txt, base) };
+          return { v: txt, l: it.l, n: it.n || '', d: it.d || '', tone: it.tone || '', num: Math.round(cur * 10) / 10, zero: t === 0, fs: this.fsOf(txt, base) };
         });
         this.setData({ shown });
         if (k < 1) this._tm = setTimeout(step, 16);
         else {
-          const fin = items.map((it, i) => ({ v: it.v, l: it.l, n: it.n || '', d: it.d || '', tone: it.tone || '', num: targets[i], fs: this.fsOf(it.v, base) }));
+          const fin = items.map((it, i) => ({ v: it.v, l: it.l, n: it.n || '', d: it.d || '', tone: it.tone || '', num: targets[i], zero: targets[i] === 0, fs: this.fsOf(it.v, base) }));
           this.setData({ shown: fin });
         }
       };

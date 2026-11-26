@@ -1,6 +1,5 @@
 <view class="page">
   <view class="head">
-    <text class="hl">分析</text>
     <view class="head-r">
       <view class="ranges" wx:if="{{tab === 'train'}}">
         <text class="rg {{range === 7 ? 'on' : ''}}" data-n="7" bindtap="switchRange">7 天</text>
@@ -24,28 +23,37 @@
     <block wx:if="{{tab === 'overview'}}">
       <view class="kpiwrap"><kpi-strip items="{{kpis}}" size="lg" /></view>
 
-      <view class="card chart-card" wx:if="{{lineOK}}">
-        <view class="ch"><text class="ct">精力 · 情绪</text><text class="cm">近 7 条</text></view>
-        <mini-chart type="line" labels="{{lineLabels}}" series="{{lineSeries}}" height="152" />
-        <view class="lgd">
-          <view class="lg-i"><view class="lg-d s1"></view><text>精力</text></view>
-          <view class="lg-i"><view class="lg-d s2"></view><text>情绪</text></view>
-        </view>
-      </view>
+      <!-- 高亮卡：每张 = 图表 + 数字结论 + ✦ 一句话 + 依据 -->
+      <block wx:for="{{insights}}" wx:key="t">
+        <view class="hlc {{item.k}}" wx:if="{{item.hi}}" data-i="{{index}}" bindtap="toggleIns">
+          <view class="hlc-h">
+            <text class="hlc-t">{{item.t}}</text>
+            <view class="hlc-num">
+              <text class="hlc-v">{{item.v}}</text>
+              <text class="hlc-u">{{item.k === 'train' ? 'kg' : '/5'}}</text>
+            </view>
+          </view>
 
-      <view class="feed" wx:if="{{insights.length}}">
-        <view class="ins {{item.k}} {{openIns === index ? 'open' : ''}}" wx:for="{{insights}}" wx:key="t" data-i="{{index}}" bindtap="toggleIns" style="animation-delay: {{index * 40}}ms">
-          <view class="ins-h">
-            <text class="ins-badge">{{kl[item.k]}}</text>
-            <text class="ins-tt">{{item.t}}</text>
+          <view class="hlc-chart">
+            <mini-chart wx:if="{{item.chart === 'line' && lineOK}}" type="line" labels="{{lineLabels}}" series="{{lineSeries}}" height="120" />
+            <mini-chart wx:elif="{{item.chart === 'bar' && barOK}}" type="bar" labels="{{barLabels}}" values="{{barVals}}" height="120" today-index="{{6}}" play="{{true}}" />
+            <mini-chart wx:else type="ghost" labels="{{lineLabels}}" height="120" />
+            <text class="hlc-wait" wx:if="{{(item.chart === 'line' && !lineOK) || (item.chart === 'bar' && !barOK)}}">记录 3 天后生成</text>
+            <view class="lgd" wx:if="{{item.chart === 'line'}}">
+              <view class="lg-i"><view class="lg-d s1"></view><text>精力</text></view>
+              <view class="lg-i"><view class="lg-d s2"></view><text>情绪</text></view>
+            </view>
           </view>
-          <view class="ins-b">
-            <text class="ins-v">{{item.v}}</text>
-            <text class="ins-s">{{item.sub}}</text>
+
+          <view class="hlc-stat">
+            <text class="hlc-s">{{item.stat}}</text>
+            <text class="hlc-sub">{{item.sub}}</text>
           </view>
-          <view class="ai-line" wx:if="{{item.ai}}">
+
+          <view class="hlc-ai" wx:if="{{item.ai}}">
             <text class="ai-sp">✦</text><text class="ai-tx">{{item.ai}}</text>
           </view>
+
           <view class="ev-h" wx:if="{{item.ev.length}}">
             <text class="evd">{{item.conf}}</text>
             <text class="ev-t">依据 {{item.ev.length}} 条</text>
@@ -59,6 +67,37 @@
             <text class="ev-go" catchtap="goEv">查看记录页 ›</text>
           </view>
         </view>
+      </block>
+
+      <!-- 其余洞察：轻量列表 -->
+      <view class="feed" wx:if="{{insights.length}}">
+        <block wx:for="{{insights}}" wx:key="t">
+          <view class="ins {{item.k}} {{openIns === index ? 'open' : ''}}" wx:if="{{!item.hi}}" data-i="{{index}}" bindtap="toggleIns" style="animation-delay: {{index * 40}}ms">
+            <view class="ins-h">
+              <text class="ins-badge">{{kl[item.k]}}</text>
+              <text class="ins-tt">{{item.t}}</text>
+            </view>
+            <view class="ins-b">
+              <text class="ins-v">{{item.v}}</text>
+              <text class="ins-s">{{item.sub}}</text>
+            </view>
+            <view class="ai-line" wx:if="{{item.ai}}">
+              <text class="ai-sp">✦</text><text class="ai-tx">{{item.ai}}</text>
+            </view>
+            <view class="ev-h" wx:if="{{item.ev.length}}">
+              <text class="evd">{{item.conf}}</text>
+              <text class="ev-t">依据 {{item.ev.length}} 条</text>
+              <text class="ev-a">{{openIns === index ? '收起' : '展开'}}</text>
+            </view>
+            <view class="ev" wx:if="{{openIns === index && item.ev.length}}">
+              <view class="ev-row" wx:for="{{item.ev}}" wx:for-item="ev" wx:key="t">
+                <text class="ev-k">{{ev.t}}</text>
+                <text class="ev-v">{{ev.v}}</text>
+              </view>
+              <text class="ev-go" catchtap="goEv">查看记录页 ›</text>
+            </view>
+          </view>
+        </block>
       </view>
 
       <view class="card emptycard" wx:if="{{!hasNotes}}">
@@ -72,10 +111,22 @@
       <view class="kpiwrap"><kpi-strip items="{{kpis}}" size="lg" /></view>
 
       <view class="card chart-card">
-        <view class="ch"><text class="ct">近 7 天容量</text><text class="cm">kg · 按天</text></view>
-        <mini-chart wx:if="{{barOK}}" type="bar" labels="{{barLabels}}" values="{{barVals}}" height="132" today-index="{{6}}" play="{{true}}" />
-        <view class="chart-empty" wx:else>
-          <text class="empty">这几天没有容量数据 — 记一次带重量的训练就有了</text>
+        <view class="ch"><text class="ct">容量 & 有氧</text><text class="cm">近 {{crossLabels.length}} 天 · kg / 分钟</text></view>
+        <mini-chart wx:if="{{crossOK}}" type="dualbar" labels="{{crossLabels}}" values="{{crossVol}}" values2="{{crossCd}}" height="132" today-index="{{crossLabels.length - 1}}" play="{{true}}" />
+        <mini-chart wx:else type="ghost" height="132" />
+        <view class="lgd" wx:if="{{crossOK}}">
+          <view class="lg-i"><view class="lg-d s1"></view><text>容量 {{crossVolSum}} kg</text></view>
+          <view class="lg-i"><view class="lg-d s3"></view><text>有氧 {{crossCdSum}}′</text></view>
+        </view>
+        <text class="chart-empty" wx:else>这几天没有容量数据 — 记一次带重量的训练就有了</text>
+      </view>
+
+      <view class="card" wx:if="{{cdComp.length}}">
+        <view class="ch"><text class="ct">有氧构成</text><text class="cm">{{cdTotal}}′ · 按项目</text></view>
+        <view class="prow" wx:for="{{cdComp}}" wx:key="name">
+          <text class="pname">{{item.name}}</text>
+          <view class="ptrack"><view class="pfill cdc" style="width: {{item.pct}}%"></view></view>
+          <text class="pval">{{item.min}}′</text>
         </view>
       </view>
 

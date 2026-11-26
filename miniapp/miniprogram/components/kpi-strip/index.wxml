@@ -1,5 +1,5 @@
 <view class="strip {{shown.length > 5 ? 'six' : ''}} {{size === 'lg' ? 'lg' : ''}}">
-  <view class="cell" wx:for="{{shown}}" wx:key="l">
+  <view class="cell {{item.zero ? 'zero' : ''}}" wx:for="{{shown}}" wx:key="l">
     <text class="v" style="{{item.fs ? 'font-size:' + item.fs + 'rpx;' : ''}}">{{item.v}}</text>
     <text class="l">{{item.l}}</text>
     <view class="meta">

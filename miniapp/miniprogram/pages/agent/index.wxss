@@ -1,6 +1,6 @@
-.page { padding: 28rpx 24rpx 200rpx; }
-.head { display: flex; align-items: center; justify-content: space-between; padding: 4rpx 6rpx 14rpx; }
-.hl { font-size: 40rpx; font-weight: 600; color: #14181A; }
+.page { padding: 24rpx 24rpx 200rpx; }
+/* 页内不再放大标题：导航栏已有「分析」，这里只留右侧控件 */
+.head { display: flex; align-items: center; justify-content: flex-end; padding: 0 6rpx 12rpx; min-height: 56rpx; }
 .head-r { display: flex; align-items: center; gap: 12rpx; }
 
 .ranges { display: flex; gap: 8rpx; }
@@ -43,10 +43,10 @@
 .body .card { margin-bottom: 18rpx; }
 .kpiwrap { margin-bottom: 18rpx; }
 
-.card { background: #fff; border-radius: 20rpx; padding: 22rpx; }
-.ch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14rpx; }
-.ct { font-size: 27rpx; font-weight: 600; color: #14181A; }
-.cm { font-size: 21rpx; color: #A9B3AF; }
+.card { background: #fff; border-radius: 20rpx; padding: 18rpx; }
+.ch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
+.ct { font-size: 30rpx; font-weight: 600; color: #14181A; }
+.cm { font-size: 22rpx; color: #A9B3AF; }
 
 /* ---- 问 AI ---- */
 .ai-state { display: flex; align-items: center; gap: 8rpx; }
@@ -93,21 +93,67 @@
 .local-s { display: block; margin-top: 8rpx; font-size: 20rpx; color: #8A99A5; line-height: 1.5; }
 
 /* ---- 图表卡 ---- */
-.chart-card { padding: 22rpx 16rpx 18rpx 22rpx; }
+.chart-card { padding: 18rpx 14rpx 14rpx 18rpx; }
 .chart-card .ch { padding-right: 8rpx; }
-.lgd { display: flex; gap: 20rpx; padding: 6rpx 0 0 6rpx; }
-.lg-i { display: flex; align-items: center; gap: 6rpx; font-size: 19rpx; color: #8A9490; }
+.lgd { display: flex; gap: 20rpx; padding: 4rpx 0 0 6rpx; }
+.lg-i { display: flex; align-items: center; gap: 6rpx; font-size: 22rpx; color: #8A9490; }
 .lg-d { width: 14rpx; height: 14rpx; border-radius: 7rpx; }
 .lg-d.s1 { background: #12A594; }
 .lg-d.s2 { background: #E3B341; }
+.lg-d.s3 { background: #E3B341; }
+.chart-empty { display: block; font-size: 22rpx; color: #A9B3AF; padding: 18rpx 0 6rpx; }
+
+/* ---- 高亮卡（Apple Health 式：图 + 数字 + 一句话 + 依据） ---- */
+.hlc {
+  background: #fff;
+  border-radius: 18rpx;
+  padding: 18rpx 18rpx 14rpx;
+  margin-bottom: 14rpx;
+  animation: insIn 320ms ease-out both;
+}
+.hlc-h { display: flex; align-items: baseline; justify-content: space-between; }
+.hlc-t { font-size: 30rpx; font-weight: 600; color: #14181A; }
+.hlc-num { display: flex; align-items: baseline; gap: 4rpx; }
+.hlc-v {
+  font-size: 40rpx;
+  font-weight: 250;
+  color: #14181A;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+.hlc-u { font-size: 20rpx; color: #A9B3AF; }
+.hlc-chart { position: relative; margin: 10rpx 0 6rpx; }
+.hlc-wait {
+  position: absolute;
+  right: 8rpx;
+  top: 6rpx;
+  font-size: 20rpx;
+  color: #A9B3AF;
+  background: rgba(255,255,255,.9);
+  border-radius: 8rpx;
+  padding: 4rpx 10rpx;
+}
+.hlc-stat { display: flex; flex-direction: column; gap: 4rpx; }
+.hlc-s { font-size: 26rpx; color: #14181A; font-variant-numeric: tabular-nums; }
+.hlc-sub { font-size: 22rpx; color: #8A9490; }
+.hlc-ai {
+  display: flex;
+  align-items: flex-start;
+  gap: 8rpx;
+  margin-top: 10rpx;
+  background: #F3F9F7;
+  border-left: 4rpx solid #12A594;
+  border-radius: 10rpx;
+  padding: 12rpx 14rpx;
+}
 
 /* ---- 洞察卡：色条 + 类别徽标 + 主文案 + 置信度 + 可展开依据 ---- */
-.feed { display: flex; flex-direction: column; gap: 10rpx; margin-bottom: 18rpx; }
+.feed { display: flex; flex-direction: column; gap: 8rpx; margin-bottom: 16rpx; }
 .ins {
   position: relative;
   background: #fff;
-  border-radius: 18rpx;
-  padding: 16rpx 18rpx 16rpx 20rpx;
+  border-radius: 16rpx;
+  padding: 14rpx 16rpx 14rpx 18rpx;
   animation: insIn 320ms ease-out both;
 }
 .ins::before {
@@ -144,22 +190,22 @@
   padding: 2rpx 8rpx;
   line-height: 1.5;
 }
-.ins-tt { flex: 1; font-size: 25rpx; font-weight: 600; color: #14181A; line-height: 1.4; }
+.ins-tt { flex: 1; font-size: 28rpx; font-weight: 600; color: #14181A; line-height: 1.4; }
 .ins-b { display: flex; align-items: baseline; gap: 10rpx; margin-top: 4rpx; }
-.ins-v { font-size: 26rpx; font-weight: 300; color: #12A594; font-variant-numeric: tabular-nums; }
+.ins-v { font-size: 28rpx; font-weight: 300; color: #12A594; font-variant-numeric: tabular-nums; }
 .ins.gap .ins-v { color: #E06E78; }
-.ins-s { flex: 1; font-size: 20rpx; color: #6E7874; line-height: 1.45; }
+.ins-s { flex: 1; font-size: 22rpx; color: #6E7874; line-height: 1.5; }
 
-.ev-h { display: flex; align-items: center; gap: 8rpx; margin-top: 6rpx; }
-.evd { font-size: 16rpx; color: #12A594; letter-spacing: 2rpx; }
-.ev-t { font-size: 19rpx; color: #8A9490; }
-.ev-a { margin-left: auto; font-size: 19rpx; color: #12A594; }
+.ev-h { display: flex; align-items: center; gap: 8rpx; margin-top: 8rpx; }
+.evd { font-size: 18rpx; color: #12A594; letter-spacing: 2rpx; }
+.ev-t { font-size: 22rpx; color: #8A9490; }
+.ev-a { margin-left: auto; font-size: 22rpx; color: #12A594; }
 
 .ev { margin-top: 10rpx; border-top: 1rpx solid #F1F4F3; padding-top: 10rpx; }
 .ev-row { display: flex; align-items: center; gap: 12rpx; padding: 5rpx 0; }
-.ev-k { flex: 1; font-size: 20rpx; color: #5B6461; }
-.ev-v { font-size: 20rpx; color: #14181A; }
-.ev-go { display: block; margin-top: 6rpx; font-size: 19rpx; color: #12A594; }
+.ev-k { flex: 1; font-size: 22rpx; color: #5B6461; }
+.ev-v { font-size: 22rpx; color: #14181A; }
+.ev-go { display: block; margin-top: 6rpx; font-size: 22rpx; color: #12A594; }
 
 /* ---- 问 AI 半屏 sheet ---- */
 .askmask {
@@ -217,6 +263,7 @@
 .pname { width: 72rpx; font-size: 24rpx; color: #5B6461; }
 .ptrack { flex: 1; height: 14rpx; background: #EEF2F1; border-radius: 8rpx; overflow: hidden; }
 .pfill { height: 100%; background: #3DDCBF; border-radius: 8rpx; }
+.pfill.cdc { background: #E3B341; }
 .pval { width: 96rpx; text-align: right; font-size: 20rpx; color: #8A9490; }
 
 .trow { display: flex; align-items: center; gap: 10rpx; padding: 12rpx 0; border-top: 1rpx solid #F3F6F5; }
@@ -258,8 +305,8 @@
 .curve { width: 600rpx; height: 300rpx; display: block; margin: 0 auto; }
 .ai-line { display: flex; align-items: flex-start; gap: 8rpx; margin-top: 12rpx; background: #F3F9F7; border-left: 4rpx solid #12A594; border-radius: 10rpx; padding: 12rpx 14rpx; }
 .ai-line.rule { background: #F7F9F8; border-left-color: #C9D8D4; }
-.ai-sp { font-size: 22rpx; color: #12A594; flex-shrink: 0; }
-.ai-tx { flex: 1; font-size: 23rpx; color: #4B5551; line-height: 1.55; }
+.ai-sp { font-size: 24rpx; color: #12A594; flex-shrink: 0; }
+.ai-tx { flex: 1; font-size: 26rpx; color: #4B5551; line-height: 1.6; }
 .chips { white-space: nowrap; margin-bottom: 8rpx; }
 .chip { display: inline-block; font-size: 22rpx; color: #5B6461; background: #F3F6F5; border-radius: 16rpx; padding: 8rpx 18rpx; margin-right: 12rpx; }
 .chip.on { background: #12A594; color: #fff; }

@@ -58,10 +58,15 @@
 .d.down { color: #E06E78; }
 .d.flat { color: #A9B3AF; }
 
-/* 4 格（概览/训练）放大到 26–28px 量级 */
+/* 4 格（概览/训练）26px 量级；零值弱化成灰，不抢视线 */
 .lg .cell { padding: 22rpx 18rpx 18rpx; }
-.lg .v { font-size: 56rpx; font-weight: 250; }
+.lg .v { font-size: 52rpx; font-weight: 250; }
 .lg .l { font-size: 20rpx; margin-top: 10rpx; }
+
+/* 零值：数字转灰、标签同色，冷启动不做四个大零 */
+.zero .v { color: #C3CCC8; }
+.zero .l { color: #A9B3AF; }
+.zero .n { color: #B6BEBB; }
 
 /* 6 格（首页）保持紧凑 */
 .six { gap: 8rpx; }

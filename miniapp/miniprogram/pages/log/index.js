@@ -455,6 +455,7 @@ Page({
   },
 
   goPR() { wx.navigateTo({ url: '/pages/pr/index' }); },
+  goAgent() { wx.switchTab({ url: '/pages/agent/index' }); },
 
   onEditorClose() { this.setData({ editorVisible: false, payload: null }); },
 

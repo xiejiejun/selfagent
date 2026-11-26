@@ -1,9 +1,10 @@
-// 轻量图表：柱状（7 天容量）/ 双折线（精力·情绪），canvas 2d 自绘，不依赖 ECharts
+// 轻量图表：柱状（7 天容量）/ 双柱（容量+有氧）/ 双折线（精力·情绪）/ 虚线占位，canvas 2d 自绘，不依赖 ECharts
 Component({
   properties: {
-    type: { type: String, value: 'bar' },     // bar | line
+    type: { type: String, value: 'bar' },     // bar | dualbar | line | ghost
     labels: { type: Array, value: [] },
-    values: { type: Array, value: [] },        // bar 用
+    values: { type: Array, value: [] },        // bar / dualbar 第一序列
+    values2: { type: Array, value: [] },       // dualbar 第二序列（有氧分钟）
     series: { type: Array, value: [] },        // line 用：[{ data: [], color }]
     height: { type: Number, value: 150 },
     todayIndex: { type: Number, value: -1 },
@@ -13,7 +14,7 @@ Component({
   data: { tip: '' },
 
   observers: {
-    'values, labels, series, type, height, todayIndex': function () { this.paint(); }
+    'values, values2, labels, series, type, height, todayIndex': function () { this.paint(); }
   },
 
   lifetimes: {
@@ -58,6 +59,8 @@ Component({
       const W = this.W, H = this.H;
       ctx.clearRect(0, 0, W, H);
       if (this.data.type === 'bar') this.drawBar(ctx, W, H, p);
+      else if (this.data.type === 'dualbar') this.drawDualBar(ctx, W, H, p);
+      else if (this.data.type === 'ghost') this.drawGhost(ctx, W, H);
       else this.drawLine(ctx, W, H, p);
     },
 
@@ -89,9 +92,80 @@ Component({
       });
 
       ctx.fillStyle = '#A9B3AF';
+      const step = this.labelStep(n);
       labels.forEach((l, i) => {
+        if (i % step !== 0) return;
         const cx = 4 + slot * i + slot / 2;
         ctx.fillText(String(l), cx, base + 13);
+      });
+    },
+
+    // 天多时抽稀日期：30 天只标 6–7 个，不然全叠在一起
+    labelStep(n) { return n > 8 ? Math.ceil(n / 6) : 1; },
+
+    // ---- 双柱：同一天并排 容量(kg) / 有氧(min) ----
+    drawDualBar(ctx, W, H, p) {
+      const labels = this.data.labels || [];
+      const a = this.data.values || [];
+      const b = this.data.values2 || [];
+      const n = Math.max(1, labels.length);
+      const top = 18, base = H - 18;
+      const maxA = Math.max.apply(null, a.concat([1]));
+      const maxB = Math.max.apply(null, b.concat([1]));
+      const slot = (W - 8) / n;
+      const bw = Math.min(13, slot * 0.34);
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+
+      for (let i = 0; i < n; i++) {
+        const cx = 4 + slot * i + slot / 2;
+        const today = i === this.data.todayIndex;
+        const va = a[i] || 0, vb = b[i] || 0;
+        // 容量：左柱
+        const ha = va > 0 ? ((base - top) * (va / maxA)) * p : 2;
+        ctx.fillStyle = today ? '#12A594' : (va > 0 ? '#CDEDE6' : '#EFF3F2');
+        this.roundRect(ctx, cx - bw - 2, base - ha, bw, ha, Math.min(4, bw / 2));
+        ctx.fill();
+        // 有氧：右柱
+        const hb = vb > 0 ? ((base - top) * (vb / maxB)) * p : 2;
+        ctx.fillStyle = today ? '#E3B341' : (vb > 0 ? '#F5E3B8' : '#F4F1EA');
+        this.roundRect(ctx, cx + 2, base - hb, bw, hb, Math.min(4, bw / 2));
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#A9B3AF';
+      const st2 = this.labelStep(n);
+      labels.forEach((l, i) => {
+        if (i % st2 !== 0) return;
+        const cx = 4 + slot * i + slot / 2;
+        ctx.fillText(String(l), cx, base + 13);
+      });
+    },
+
+    // ---- 虚线占位：还没有数据时先给“将来长什么样” ----
+    drawGhost(ctx, W, H) {
+      const padL = 10, padR = 10, padT = 16, padB = 20;
+      const x0 = padL, x1 = W - padR, y0 = padT, y1 = H - padB;
+      ctx.strokeStyle = '#F0F4F3'; ctx.lineWidth = 1;
+      for (let g = 0; g <= 3; g++) {
+        const y = y0 + ((y1 - y0) / 3) * g;
+        ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+      }
+      const pts = [.82, .68, .74, .55, .46, .38, .3];
+      const step = (x1 - x0) / (pts.length - 1);
+      ctx.strokeStyle = '#D7E2DE'; ctx.lineWidth = 1.4;
+      ctx.setLineDash && ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      pts.forEach((v, i) => {
+        const x = x0 + step * i, y = y1 - (y1 - y0) * v;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.setLineDash && ctx.setLineDash([]);
+      ctx.fillStyle = '#E3EAE7';
+      pts.forEach((v, i) => {
+        const x = x0 + step * i, y = y1 - (y1 - y0) * v;
+        ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
       });
     },
 
@@ -148,8 +222,9 @@ Component({
       // 标签
       ctx.fillStyle = '#A9B3AF'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
       const labs = this.data.labels || [];
+      const st3 = this.labelStep(n);
       labs.forEach((l, i) => {
-        if (n > 7 && i % 2 === 1) return;
+        if (i % st3 !== 0) return;
         const tw = ctx.measureText(String(l)).width;
         const x = Math.min(Math.max(mapX(i, 1), tw / 2 + 2), W - tw / 2 - 2);
         ctx.fillText(String(l), x, H - 6);
