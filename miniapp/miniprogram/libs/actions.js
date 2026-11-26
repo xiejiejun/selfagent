@@ -178,6 +178,46 @@ function addNote(text, opts) {
   commit(c, dk, { sync: false });
 }
 
+/* 饮食：一条 meal 日志，表结构零改动（meta 存明细） */
+function addMeal(input) {
+  const o = input || {};
+  const items = (o.items || []).filter(x => x && x.name).map(x => ({
+    name: String(x.name).slice(0, 20),
+    portion: String(x.portion || ''),
+    kcal: Math.max(0, Math.round(Number(x.kcal) || 0)),
+    confidence: x.confidence == null ? 1 : Math.max(0, Math.min(1, Number(x.confidence)))
+  })).slice(0, 12);
+  const totalKcal = items.reduce((a, x) => a + x.kcal, 0);
+  const meal = String(o.meal || '').slice(0, 6);
+  const now = new Date();
+  const dk = o.date || engine.dayKey();
+  const c = ctx();
+  const log = {
+    id: engine.uid('meal'),
+    kind: 'meal',
+    type: 'life',
+    tags: '饮食',
+    score: null,
+    mood: null,
+    content: (meal ? meal + ' · ' : '') + '约 ' + totalKcal + ' kcal',
+    time: new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes()).toISOString(),
+    date: dk,
+    source: o.source || 'photo',
+    meta: {
+      meal,
+      items,
+      totalKcal,
+      confidence: o.confidence == null ? null : Number(o.confidence),
+      imageKept: !!o.image,
+      image: String(o.image || '')
+    }
+  };
+  c.logs.push(log);
+  touchLog(log);
+  commit(c, dk, { sync: false });
+  return log;
+}
+
 function removeLog(id) {
   const c = ctx();
   const hit = c.logs.filter(l => String(l.id) === String(id))[0];
@@ -271,6 +311,6 @@ function rebuildDay(date) {
 
 module.exports = {
   ctx, saveStrength, deleteStrength, saveCardio, deleteCardio,
-  toggleGroup, toggleCardioGroup, addNote, removeLog, rebuildDay, toggleFav, reorderDay,
+  toggleGroup, toggleCardioGroup, addNote, addMeal, removeLog, rebuildDay, toggleFav, reorderDay,
   setExName, exNameMap, customList, saveCustom, removeCustom
 };

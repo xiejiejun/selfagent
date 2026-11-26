@@ -17,7 +17,7 @@ Page({
     panel: '', panelTitle: '', bodyH: 0,
     typesView: [],
     newTag: '', newType: '',
-    restSec: 90, autoNext: false, wStep: 2.5, pureData: false, agentAuto: false,
+    restSec: 90, autoNext: false, wStep: 2.5, pureData: false, agentAuto: false, mealKeep: false,
     memList: [],
     opList: [],
     activeType: '',
@@ -123,6 +123,7 @@ Page({
       autoNext: cfg.autoNext,
       wStep: cfg.step,
       pureData: !polish.enabled(),
+      mealKeep: !!((store.getSettings() || {}).mealKeep),
       agentAuto: decision.autoOn(),
       memList,
       opList,
@@ -237,6 +238,15 @@ Page({
     const v = !!e.detail.value;
     this.setData({ autoNext: v });
     settings.setTrainCfg({ autoNext: v });
+  },
+
+  // 饮食照片默认即焚；打开后留本机
+  toggleMealKeep(e) {
+    const v = !!e.detail.value;
+    const st = store.getSettings() || {};
+    store.setSettings(Object.assign({}, st, { mealKeep: v }));
+    this.setData({ mealKeep: v });
+    wx.showToast({ title: v ? '饮食照片会留在本机' : '饮食照片用完即弃', icon: 'none' });
   },
 
   togglePure(e) {

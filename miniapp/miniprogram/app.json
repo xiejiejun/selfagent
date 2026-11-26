@@ -18,6 +18,7 @@
     "pages/mylib/index",
     "pages/aifind/index",
     "pages/scan/index",
+    "pages/meal/index",
     "pages/apiconfig/index",
     "pages/agent-report/index"
   ],

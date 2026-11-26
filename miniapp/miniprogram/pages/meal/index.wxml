@@ -1,0 +1,120 @@
+<view class="page">
+  <!-- 已保存 -->
+  <block wx:if="{{saved}}">
+    <view class="done">
+      <text class="done-i">✓</text>
+      <text class="done-t">已记入{{date}}</text>
+      <text class="done-s">趋势比精度重要，明天再看一眼就行</text>
+      <view class="done-btns">
+        <text class="dbtn" bindtap="again">再记一顿</text>
+        <text class="dbtn main" bindtap="back">回记录页</text>
+      </view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <!-- 拍照区 -->
+    <block wx:if="{{mode === 'photo'}}">
+      <view class="shot {{img ? 'has' : ''}}">
+        <image wx:if="{{img}}" class="shot-img" src="{{img}}" mode="aspectFill" />
+        <view class="shot-empty" wx:if="{{!img && !busy}}">
+          <text class="se-t">拍一张就能记</text>
+          <text class="se-s">按常见餐具估份量，不用称重</text>
+        </view>
+        <view class="shot-busy" wx:if="{{busy}}">
+          <view class="skel"></view>
+          <text class="sb-t">{{hint || '识别中…'}}</text>
+        </view>
+      </view>
+      <view class="shot-btns">
+        <text class="sbtn" bindtap="shoot">拍一张</text>
+        <text class="sbtn" bindtap="album">从相册选</text>
+        <text class="sbtn ghost" bindtap="toText">打字记</text>
+      </view>
+    </block>
+
+    <!-- 文字兜底 -->
+    <block wx:if="{{mode === 'text'}}">
+      <view class="txcard">
+        <text class="tx-t">写一句话就行</text>
+        <textarea class="txa" placeholder="米饭一碗，红烧鸡块半盘，青菜一份" value="{{textInput}}" bindinput="onTextInput" auto-height maxlength="120" show-confirm-bar="{{false}}" />
+        <view class="tx-btns">
+          <text class="sbtn ghost" bindtap="album">改拍照</text>
+          <text class="sbtn" bindtap="estimateText">估算</text>
+        </view>
+        <text class="tx-tip">按本地常见份量表算，不联网也能记</text>
+      </view>
+    </block>
+
+    <!-- 错误兜底 -->
+    <view class="fail" wx:if="{{err}}">
+      <text class="fail-t">{{err}}</text>
+      <text class="fail-s" wx:if="{{tip}}">{{tip}}</text>
+      <view class="fail-btns">
+        <text class="fbtn" wx:if="{{mode === 'photo' && img}}" bindtap="retry">再试一次</text>
+        <text class="fbtn" bindtap="toText">改打字记</text>
+      </view>
+    </view>
+
+    <!-- 一屏确认卡 -->
+    <view class="card" wx:if="{{items.length}}">
+      <view class="chead">
+        <view class="cl">
+          <text class="ct">✦ AI 识别结果</text>
+          <view class="csum">
+            <text class="cm">{{meal}}</text>
+            <text class="cdot">·</text>
+            <text class="ck">约 {{totalKcal}}</text>
+            <text class="cu">kcal</text>
+          </view>
+        </view>
+        <image wx:if="{{img}}" class="cthumb" src="{{img}}" mode="aspectFill" />
+      </view>
+
+      <view class="mealrow">
+        <text class="mr-l">餐次</text>
+        <text class="mchip {{meal === item ? 'on' : ''}}" wx:for="{{meals}}" wx:key="*this" data-m="{{item}}" bindtap="pickMeal">{{item}}</text>
+      </view>
+
+      <view class="rows">
+        <block wx:for="{{items}}" wx:for-item="it" wx:for-index="i" wx:key="k">
+          <view class="row {{it.low ? 'low' : ''}}" data-i="{{i}}" bindtap="toggleItem">
+            <view class="rl">
+              <text class="rn">{{it.name}}</text>
+              <text class="rp">{{it.portion}}</text>
+              <text class="rwarn" wx:if="{{it.low}}">待确认</text>
+            </view>
+            <text class="rk">{{it.kcal}}</text>
+            <text class="ru">kcal</text>
+            <text class="rx" data-i="{{i}}" catchtap="delItem">✕</text>
+          </view>
+          <view class="chips" wx:if="{{it.chips}}">
+            <text class="chip {{it.factor === 0.5 ? 'on' : ''}}" data-i="{{i}}" data-f="0.5" catchtap="setFactor">少半份</text>
+            <text class="chip {{it.factor === 1 ? 'on' : ''}}" data-i="{{i}}" data-f="1" catchtap="setFactor">标准</text>
+            <text class="chip {{it.factor === 2 ? 'on' : ''}}" data-i="{{i}}" data-f="2" catchtap="setFactor">多一倍</text>
+            <text class="chip-tip">点一下改份量，下次按你的习惯估</text>
+          </view>
+        </block>
+      </view>
+
+      <view class="addrow" wx:if="{{!addOpen}}" bindtap="toggleAdd">
+        <text class="addt">＋ 补充食物（AI 没认全的）</text>
+      </view>
+      <view class="addbox" wx:if="{{addOpen}}">
+        <input class="addin" placeholder="米饭一碗 / 鸡胸100g / 两个鸡蛋" value="{{addText}}" bindinput="onAddInput" confirm-type="done" bindconfirm="addItem" focus="{{addOpen}}" />
+        <text class="addok" bindtap="addItem">加入</text>
+      </view>
+
+      <view class="conf">
+        <text class="cdots">{{conf}}</text>
+        <text class="ctx">置信度{{lowConf ? ' · 标黄的项确认一下' : ''}}</text>
+      </view>
+      <text class="cnote">份量按常见餐具估算，误差 ±20-40% 属正常，看趋势就够</text>
+
+      <text class="c-corr" bindtap="hintEdit" wx:if="{{editIdx < 0}}">份量不准？点上面任一项改一下</text>
+
+      <text class="save" bindtap="save">保存到今天</text>
+      <text class="savenote">图片默认用完即弃，可在设置里改成保留</text>
+    </view>
+  </block>
+</view>

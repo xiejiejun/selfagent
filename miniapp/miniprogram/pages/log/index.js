@@ -5,6 +5,9 @@ const settings = require('../../libs/settings');
 const stats = require('../../libs/stats');
 const data = require('../../libs/data/index');
 const ui = require('../../libs/ui');
+const food = require('../../libs/food');
+const ai = require('../../libs/ai');
+const sanity = require('../../libs/sanity');
 
 let openMap = {};
 
@@ -84,6 +87,30 @@ function buildTimeline() {
       return;
     }
 
+    if (l.kind === 'meal') {
+      const m = l.meta || {};
+      const items = (m.items || []).map(x => ({
+        name: String(x.name || ''),
+        portion: String(x.portion || ''),
+        kcal: Number(x.kcal) || 0,
+        low: x.confidence != null && Number(x.confidence) < 0.6
+      }));
+      g.logs.push({
+        id: l.id, kind: 'meal', isMeal: true, isTrain: false, timeText: engine.fmtTime(l.time),
+        meal: String(m.meal || ''),
+        kcal: Number(m.totalKcal) || 0,
+        items,
+        text: items.length ? items.map(x => x.name + (x.portion ? ' ' + x.portion : '')).join(' · ') : (l.content || ''),
+        pic: String(m.image || ''),
+        tags: l.tags || '饮食',
+        type: l.type || 'life',
+        typeLabel: '饮食',
+        typeColor: '#C08A12',
+        score: 0, mood: 0, moodText: ''
+      });
+      return;
+    }
+
     g.logs.push({
       id: l.id, kind: l.kind || 'note', isTrain: false, timeText: engine.fmtTime(l.time),
       text: l.content || '', tags: l.tags || '',
@@ -116,6 +143,9 @@ Page({
     infer: null,
     parseHint: null,
     stats: null,
+    mealTrend: null,
+    mealAi: '',
+    todayKcal: 0,
     range: 30,
     cStart: '',
     cEnd: '',
@@ -136,18 +166,55 @@ Page({
     const t = groups.find(g => g.date === today);
     const types = settings.types().map(x => ({ key: x.key, label: x.label, color: settings.colorFor(x.key) }));
     const typeKey = this.data.typeKey || (types[0] || {}).key || 'life';
+    const logs = store.getLogs();
     this.setData({
       groups, todayCount: t ? t.logs.length : 0,
       types, typeKey,
       typeTags: settings.tagsOf(typeKey),
+      todayKcal: food.kcalOfDay(logs, today),
       stats: this.data.tab === 'stats' ? this.buildStats() : null
     });
+    if (this.data.tab === 'stats') this.buildMealTrend();
+  },
+
+  goMeal() { wx.navigateTo({ url: '/pages/meal/index' }); },
+
+  // 周热量趋势：规则句先上屏，AI 一句话过质量门再补
+  buildMealTrend() {
+    const tr = food.trend(store.getLogs(), 7, store.getTrain());
+    this.setData({ mealTrend: tr });
+    if (!tr.dayCount) return;
+    const key = 'selfagent_meal_ai_v1';
+    const sig = tr.dayCount + ':' + tr.avg + ':' + tr.trainAvg + ':' + tr.restAvg + ':' + engine.dayKey();
+    let seen = '';
+    try { seen = wx.getStorageSync(key) || ''; } catch (e) {}
+    if (seen === sig) return;
+    if (this.mealAiAsked) return;
+    this.mealAiAsked = true;
+    const fb = tr.text + '，趋势够用就行。';
+    this.setData({ mealAi: fb });
+    setTimeout(() => {
+      ai.ask({
+        messages: [
+          { role: 'system', content: '你是训练与饮食教练。只输出一句 40 字内中文，说饮食和训练的配合，带数字，不加引号，不评判。' },
+          { role: 'user', content: '近7天饮食：记录' + tr.dayCount + '天，日均' + tr.avg + 'kcal；训练日' + (tr.trainAvg || '—') + 'kcal，休息日' + (tr.restAvg || '—') + 'kcal。' }
+        ],
+        max_tokens: 80,
+        temperature: 0.4
+      }).then(r => {
+        if (!r.ok) return;
+        const raw = String(r.text || '').replace(/["“”']/g, '').replace(/\s+/g, ' ').trim();
+        const t = sanity.check(raw, fb, { max: 60, minCjk: 0.3 });
+        this.setData({ mealAi: t });
+        try { wx.setStorageSync(key, sig); } catch (e) {}
+      });
+    }, 800);
   },
 
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab;
     this.setData({ tab });
-    if (tab === 'stats') this.setData({ stats: this.buildStats() });
+    if (tab === 'stats') { this.setData({ stats: this.buildStats() }); this.buildMealTrend(); }
   },
 
   setRange(e) {

@@ -12,12 +12,13 @@
 | 今天 | `pages/home` | 今日容量/组数/有氧/连续天数四格、近 7 天容量柱、今日动作 chips、三个跳转 |
 | 训练 | `pages/train` | 日期前后切换、当日摘要、点组直接打卡（震动反馈）、⋯ 编辑/删除、＋ 添加动作、＋ 有氧、查看记录 |
 | 分析 | `pages/agent` | 7/30/90 天切换、训练天数/总容量/日均、部位分布条、高频动作、问 AI（走 `aiProxy` 云函数） |
-| 记录 | `pages/log` | 快记输入并落库、按日期分组时间线、训练卡摘要 + 动作行、⋯ 编辑、＋ 添加动作、删除记录 |
+| 记录 | `pages/log` | 快记输入并落库、按日期分组时间线、训练卡摘要 + 动作行、饮食卡（餐次/总额/逐项 kcal）、📷 拍一张记饮食入口、⋯ 删除；统计 tab 含近 7 天热量迷你条 |
 | 我的 | `pages/setting` | 身高/体重/目标、数据统计、导出/导入（剪贴板 JSON）、云同步上传/拉取、清空本机 |
 | 选动作 | `pages/picker` | 5,632 条动作词库：搜索 + 部位筛选，选中回传给训练/记录页 |
 | 动作库 | `pages/library` | 40/页图卡网格、搜索、部位筛选、★收藏筛选、点击选中回传、无图占位首字 |
 | 专注模式 | `pages/focus` | 三环 canvas（组进度/时长/容量）、ready→work→rest→finish 状态机、组间倒计时、逐组打卡即时落库、完成后生成训练日志 |
 | 计划 | `pages/plan` | 周节奏柱、每周天数/每天组数/提醒时间、AI 周计划（`aiProxy`）、订阅消息授权与云端登记 |
+| 饮食 | `pages/meal` | 拍照/相册 → 压缩 → base64 → `food.visionMessages` 多模态识别；一屏确认卡（餐次、约 N kcal、逐项删/改份量 chips 少半份-标准-多一倍、补项、置信度、待确认标黄）；文字兜底走本地食物份量表；图片默认即焚，设置可留 |
 
 组件：
 
@@ -38,12 +39,13 @@ miniapp/
 ├── project.config.json           # appid / miniprogramRoot / cloudfunctionRoot
 ├── miniprogram/
 │   ├── app.js / app.json / app.wxss
-│   ├── pages/{home,train,agent,log,setting,picker}/
+│   ├── pages/{home,train,agent,log,setting,picker,meal}/
 │   ├── components/train-editor/
 │   └── libs/
 │       ├── store/                # 9 个存储键读写（与网页版同名）
 │       ├── engine/               # 规则引擎/装配/文案/统计，纯函数无 wx
 │       ├── actions.js            # 改训练 → 重建当天 auto 日志 → 落 storage → 墓碑
+│       ├── food.js               # 常见食物份量表 / 拍照识别 prompt / 文字解析 / 热量趋势
 │       ├── sync/                 # 水位 / LWW / 墓碑合并，传输层是云函数
 │       └── data/                 # 动作词库 lib.js（5,632 条，244KB）+ 查询层
 └── cloudfunctions/{aiProxy,syncPush,syncPull,gifMigrate,notify}/
@@ -70,8 +72,21 @@ miniapp/
 ## 数据模型
 
 - `train = { records:[{date,exId,name,part,sets,reps,weight,dur,uid,groups:[{no,reps,weight,done,warmup,rpe,sec}]}], cardio:[{uid,date,modal,min,sec,done}], custom, favs, renames }`
-- `logs = [{id,kind:'train'|'note',type,tags,content,time,date,source:'auto'|'manual',meta:{items,volume}}]`，训练日志 id 固定 `autotr-<date>`，同日唯一
+- `logs = [{id,kind:'train'|'note'|'meal',type,tags,content,time,date,source:'auto'|'manual'|'photo'|'photo_once'|'text',meta}]`，训练日志 id 固定 `autotr-<date>`，同日唯一；`kind:'meal'` 的 `meta = {meal, items:[{name,portion,kcal,confidence}], totalKcal, confidence, imageKept, image}`
 - 墓碑 `selfagent_del_v1 = [{k:'train'|'cardio'|'log', u:uid, t:ts}]`
+
+## 饮食拍照记录（1.0.47）
+
+定位是趋势记录，不做精确计量：视觉估算 ±20-40% 是物理上限（油、酱料看不见），所以份量按「常见餐具」估，界面只说“约”。
+
+- **链路**：`chooseMedia → compressImage(55) → readFile base64 → food.visionMessages(url, habitHint) → ai.ask(max_tokens 900, t=0.1) → extractJson → 确认卡`。同图 md5 缓存 `selfagent_meal_cache_v1`（20 条 / 7 天），同图不重复请求。
+- **确认卡**（`pages/meal`）：餐次（早/午/晚/加餐）+ 约 N kcal；逐项名称/份量/kcal/✕；点项展开 `少半份 / 标准 / 多一倍`（按该项标准份量折算）；`＋ 补充食物` 走 `food.parseText`；低置信度（<0.6）标黄 + `待确认`；置信度 `●●○`；`保存到今天` → `actions.addMeal()` 写一条 `kind:'meal'` 日志（`sync:false` + `markDirty('logs')`，复用现有同步）。
+- **文字兜底**：`food.parseText` 本地解析「米饭一碗，红烧鸡块半盘，鸡胸100g，两个鸡蛋」——先摘食物名再解析数量与单位（避免「鸡块」的“块”被当单位），未知食物保留名称并标待确认；48 条常见食物份量表，零网络。
+- **隐私**：图片默认用完即弃；设置 → 记录偏好 → `保留饮食照片`（`settings.mealKeep`）打开后 `copyFileSync` 到 `USER_DATA_PATH/meals/`，记录卡显示缩略图；不随同步上传。
+- **Agent 联动**：首页简报证据「昨天饮食 约 N kcal」；首页信号仅在昨天热量比 7 天日均高/低 ≥25% 时出现；分析页 insight 对比训练日/休息日摄入；问 AI 上下文注入【今天饮食】【近 7 天饮食·估算】，并要求只讲趋势、不精确到个位；统计 tab「近 7 天热量」迷你条（训练日蓝 / 休息日绿）+ `sanity` 质量门后的 AI 一句话。
+- **修正闭环**：每次改份量写 `selfagent_meal_habit_v1`（≤30 个食物），下次拍照 prompt 附「以前修正过的份量习惯」做 few-shot。
+- **容错**：非食物图 `isFood:false` → “没认出食物，试试对准整盘拍”；域名白名单 / aiProxy 3s 超时 / 401-403 分别提示，始终可切「打字记」本地表单，记录不被堵死。
+- **验证**（模拟器冷启动，注入 3 天饮食 + 1 条训练）：记录饮食卡 680 kcal 与逐项、待确认标黄；统计日均 717 kcal 柱图；文字路径 600→改份量 830→删项 520 落库；首页证据「昨天饮食 约 900 kcal」；分析页「摄入基本持平 890 kcal」；问 AI 上下文含当天 1200kcal。截图 `t9/m11-log-final.png`、`m2-log-stat.png`、`m4-meal-confirm.png`、`m5-meal-chips.png`、`m6-meal-saved.png`、`m7-home.png`、`m9-setting-mealkeep.png`、`m10-agent-meal.png`。拍照识别与图片保留分支未实点（原生选图会阻塞 automator，链路与 1.0.34 拍照识别相同）。
 
 ## 部署步骤
 

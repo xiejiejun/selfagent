@@ -6,6 +6,7 @@ const settings = require('../../libs/settings');
 const progress = require('../../libs/progress');
 const polish = require('../../libs/aipolish');
 const sanity = require('../../libs/sanity');
+const food = require('../../libs/food');
 
 const MOOD_WORD = ['很糟', '低落', '一般', '不错', '很好'];
 function moodLabel(v) { return MOOD_WORD[Math.max(0, Math.min(4, Math.round(v) - 1))]; }
@@ -205,6 +206,19 @@ Page({
       sub: weekDays.length ? (weekVolume > 0 ? weekVolume.toLocaleString() + ' kg 总容量' : '有训练，但容量还没数') : '从动作库挑一个开始',
       ev: evTrainDays
     });
+    // 饮食 vs 训练联动：训练日/休息日摄入对比（估算，只看趋势）
+    const mtr = food.trend(store.getLogs(), this.data.range, train);
+    if (mtr.dayCount >= 2) {
+      const gap = mtr.trainAvg && mtr.restAvg ? (mtr.trainAvg - mtr.restAvg) : 0;
+      insights.push({
+        k: 'meal',
+        t: gap > 100 ? '训练日吃得更够' : (gap < -100 ? '训练日反而吃得少' : '摄入基本持平'),
+        v: mtr.avg + ' kcal',
+        sub: '记录日均 · ' + mtr.text + (gap < -100 ? ' · 练完那顿可以补点蛋白' : ''),
+        ev: [{ t: '记录', v: mtr.dayCount + ' 天' }, { t: '训练日', v: (mtr.trainAvg || 0) + ' kcal' }]
+      });
+    }
+
     if (energy !== null) {
       insights.push({ k: 'energy', t: '精力均值 ' + energy.toFixed(1), v: energy.toFixed(1) + '/5', sub: '近 7 条记录的均值', ev: evNotes });
     }
@@ -506,6 +520,11 @@ Page({
       const cd = d.items.filter(it => it.type === 'cardio').map(it => it.name + ' ' + (it.min || 0) + '分');
       return ex.concat(cd).join('，');
     };
+    // 饮食：今天各餐热量 + 近 7 天训练日/休息日对比
+    const mToday = food.mealLogs(store.getLogs(), todayKey)
+      .map(l => ((l.meta || {}).meal || '一餐') + ' ' + ((l.meta || {}).totalKcal || 0) + 'kcal')
+      .join('，');
+    const mTrend = food.trend(store.getLogs(), 7, train);
     return [
       '【个人】身高' + (profile.height || '-') + 'cm 体重' + (profile.weight || '-') + 'kg 目标' + (profile.goal || '-'),
       '【今天 ' + todayKey.slice(5) + '】' + dayLine(t0) + ' · 共 ' + (t0.done || 0) + ' 组 / ' + (t0.volume || 0) + 'kg',
@@ -514,7 +533,9 @@ Page({
       '【近' + this.data.range + '天部位分布（组数/容量）】' + setParts.map(p => p.part + ' ' + p.sets + '组/' + p.volume + 'kg').join('，'),
       '【近' + this.data.range + '天动作明细（按组数）】' + (exList.length ? exList.slice(0, 14).map(x => x.k + ' ' + x.v + '组').join('，') : '无'),
       cdList.length ? '【近' + this.data.range + '天有氧】' + cdList.slice(0, 5).join('，') : '',
-      '【高频动作】' + tops.map(t => t.name + ' ' + t.sets + '组/' + t.volume + 'kg').join('，')
+      '【高频动作】' + tops.map(t => t.name + ' ' + t.sets + '组/' + t.volume + 'kg').join('，'),
+      '【今天饮食】' + (mToday || '还没记') + (food.kcalOfDay(store.getLogs(), todayKey) ? '，共 ' + food.kcalOfDay(store.getLogs(), todayKey) + 'kcal' : ''),
+      mTrend.dayCount ? '【近 7 天饮食·估算】记录' + mTrend.dayCount + '天，日均' + mTrend.avg + 'kcal' + (mTrend.trainAvg ? '，训练日' + mTrend.trainAvg + 'kcal' : '') + (mTrend.restAvg ? '，休息日' + mTrend.restAvg + 'kcal' : '') : ''
     ].filter(Boolean).join('\n');
   },
 
@@ -538,7 +559,7 @@ Page({
     this.setData({ asking: true, q: '', local, chat });
     ai.ask({
       messages: [
-        { role: 'system', content: '你是健身教练兼数据分析助手。依据用户记录回答，中文，简洁，给可执行建议，不超过 200 字。追问时承接上文，不要重复已经说过的结论。注意：自重动作（如卷腹、平板支撑、引体）容量记 0，判断某个部位练没练要看组数和【动作明细】，容量 0 不等于没练。时间范围必须按用户问的来：问「今天」只用【今天】那一行，问「昨天/某天」只用【每日明细】里对应那天，问「最近一周」才用近 7 天，【近 30 天汇总】只用于趋势；回答开头写清用的是哪天的数据，不要拿汇总当某一天。' },
+        { role: 'system', content: '你是健身教练兼数据分析助手。依据用户记录回答，中文，简洁，给可执行建议，不超过 200 字。追问时承接上文，不要重复已经说过的结论。注意：自重动作（如卷腹、平板支撑、引体）容量记 0，判断某个部位练没练要看组数和【动作明细】，容量 0 不等于没练。时间范围必须按用户问的来：问「今天」只用【今天】那一行，问「昨天/某天」只用【每日明细】里对应那天，问「最近一周」才用近 7 天，【近 30 天汇总】只用于趋势；回答开头写清用的是哪天的数据，不要拿汇总当某一天。饮食热量是按餐具份量估的（误差 ±20-40%），提到饮食只讲趋势和大致量，不要精确到个位、不要照抄单餐明细当结论。' },
         ...history,
         { role: 'user', content: this.contextText() + '\n\n问题：' + q }
       ],

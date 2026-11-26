@@ -5,6 +5,7 @@ const settings = require('../../libs/settings');
 const recommend = require('../../libs/recommend');
 const decision = require('../../libs/decision');
 const polish = require('../../libs/aipolish');
+const food = require('../../libs/food');
 const cardioLib = require('../../libs/cardio');
 const ai = require('../../libs/ai');
 const sanity = require('../../libs/sanity');
@@ -189,6 +190,14 @@ Page({
     }, () => this.drawOrb());
 
     const dec = decision.daily(train, logs, actions.customList());
+    // 简报理由行多一个饮食维度：昨天的摄入量
+    if (dec) {
+      const yk = engine.dayKey(new Date(Date.now() - 864e5));
+      const yCal = food.kcalOfDay(logs, yk);
+      if (yCal && Array.isArray(dec.evidence)) {
+        dec.evidence = dec.evidence.concat([{ t: '昨天饮食', v: '约 ' + yCal + ' kcal' }]).slice(0, 4);
+      }
+    }
     this.setData({ decision: dec }, () => {
       this.autoDaily(dec);
       this.maybeDailyAi(dec);
@@ -404,6 +413,17 @@ Page({
       const b = otherS.reduce((x, y) => x + y, 0) / otherS.length;
       if (Math.abs(a - b) >= 0.3) {
         out.push({ t: '训练次日精力 ' + a.toFixed(1) + '，其它日 ' + b.toFixed(1) + (a < b ? ' · 强度可能偏高' : ' · 训练在帮你'), go: 'agent' });
+      }
+    }
+
+    // 饮食：昨天热量 vs 本周记录日均，只在差得明显时说
+    const yk = engine.dayKey(new Date(Date.now() - 864e5));
+    const yCal = food.kcalOfDay(logs, yk);
+    const mt = food.trend(logs, 7, train);
+    if (yCal > 0 && mt.dayCount >= 2 && mt.avg > 0) {
+      const diff = Math.round((yCal - mt.avg) / mt.avg * 100);
+      if (Math.abs(diff) >= 25) {
+        out.push({ t: '昨天约 ' + yCal + ' kcal · 比这周日均' + (diff > 0 ? '高 ' : '低 ') + Math.abs(diff) + '%', go: 'log' });
       }
     }
 

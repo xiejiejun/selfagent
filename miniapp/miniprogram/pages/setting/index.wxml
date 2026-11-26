@@ -113,6 +113,12 @@
         <input class="fi" value="{{newType}}" bindinput="onNewType" placeholder="如 学习 / 社交" />
         <text class="fbtn" bindtap="addType">新建</text>
       </view>
+      <view class="srow">
+        <text class="sl">保留饮食照片</text>
+        <switch checked="{{mealKeep}}" color="#12A594" bindchange="toggleMealKeep" />
+      </view>
+      <text class="tip">默认用完即弃（不上传、不占空间）；打开后照片留在本机，当饮食进度照用。</text>
+
       <text class="tip">点标签可删除；删掉的只是选项，已有记录里的标签原样保留。</text>
     </block>
 

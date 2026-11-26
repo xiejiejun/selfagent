@@ -23,6 +23,13 @@
         <text class="infer fit" bindtap="convertTrain">这句像训练：{{parseHint.name}} {{parseHint.sets}}×{{parseHint.reps}}{{parseHint.weight ? ' ' + parseHint.weight + 'kg' : ''}} · 转成训练 ›</text>
       </view>
 
+      <view class="mealbar" bindtap="goMeal">
+        <text class="mb-ic">📷</text>
+        <text class="mb-t">拍一张记饮食</text>
+        <text class="mb-n">{{todayKcal ? '今天约 ' + todayKcal + ' kcal' : 'AI 估份量，一屏确认'}}</text>
+        <text class="mb-a">›</text>
+      </view>
+
       <view class="trow">
         <text class="tl">类型</text>
         <scroll-view class="tchips" scroll-x="true" enhanced="true" show-scrollbar="false">
@@ -111,6 +118,21 @@
           </view>
         </block>
 
+        <block wx:elif="{{lg.isMeal}}">
+          <view class="mcard-h">
+            <text class="mh-l">{{lg.meal || '一餐'}}</text>
+            <text class="mh-k">约 {{lg.kcal}}</text>
+            <text class="mh-u">kcal</text>
+          </view>
+          <view class="mitem" wx:for="{{lg.items}}" wx:for-item="mi" wx:key="name">
+            <text class="mn {{mi.low ? 'low' : ''}}">{{mi.name}}</text>
+            <text class="mlow" wx:if="{{mi.low}}">待确认</text>
+            <text class="mp">{{mi.portion}}</text>
+            <text class="mk2">{{mi.kcal}}</text>
+          </view>
+          <image class="mpic" wx:if="{{lg.pic}}" src="{{lg.pic}}" mode="aspectFill" />
+        </block>
+
         <block wx:else>
           <text class="ctext">{{lg.text}}</text>
           <view class="score-tags" wx:if="{{lg.score || lg.mood}}">
@@ -163,6 +185,21 @@
       </view>
 
       <block wx:else>
+        <view class="card" wx:if="{{mealTrend && mealTrend.dayCount}}">
+          <view class="ch"><text class="ct">近 7 天热量</text><text class="cm">日均 {{mealTrend.avg}} kcal · {{mealTrend.dayCount}} 天有记录</text></view>
+          <view class="kbar">
+            <view class="kb-col" wx:for="{{mealTrend.bars}}" wx:key="dk">
+              <view class="kb-track">
+                <view class="kb-v {{item.train ? 'tr' : ''}}" style="height: {{item.h}}%"></view>
+              </view>
+              <text class="kb-k">{{item.kcal || '—'}}</text>
+              <text class="kb-l">{{item.label}}</text>
+            </view>
+          </view>
+          <text class="knote" wx:if="{{mealAi}}">✦ {{mealAi}}</text>
+          <text class="knote plain" wx:else>{{mealTrend.text}}</text>
+        </view>
+
         <view class="card">
           <view class="ch"><text class="ct">容量 & 有氧</text><text class="cm">{{stats.noteLoad}}</text></view>
           <scroll-view class="load" scroll-x="true" enhanced="true" show-scrollbar="false">
