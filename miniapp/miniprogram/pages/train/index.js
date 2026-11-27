@@ -137,6 +137,7 @@ Page({
     date: '', dateLabel: '', dateText: '', isToday: true,
     today: '',
     barDate: '', planOpen: false,
+    scrollDim: false,
     list: [], summary: '—', empty: true, fbDone: false, prToday: 0, prTxt: 'PR 榜',
     editorVisible: false, payload: null,
     streak: 0, weekDone: 0, kpis: [],
@@ -173,6 +174,16 @@ Page({
   },
 
   orbSummary() { this.showSummary(); },
+
+  // 滚动时把悬浮球压淡，别挡行尾的 ⋯ / ＋ 加入
+  onPageScroll() {
+    if (!this.data.scrollDim) this.setData({ scrollDim: true });
+    if (this._dimT) clearTimeout(this._dimT);
+    this._dimT = setTimeout(() => {
+      this._dimT = null;
+      this.setData({ scrollDim: false });
+    }, 700);
+  },
 
   // 动作库学习态「加入今天」：无 pick 通道时经本机中转
   consumeLibPick() {

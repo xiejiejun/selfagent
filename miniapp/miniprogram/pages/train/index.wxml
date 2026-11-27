@@ -191,3 +191,5 @@
   bind:confirm="onEditorConfirm"
   bind:delete="onEditorDelete"
 />
+
+<float-orb id="orb" bottom="{{240}}" dim="{{scrollDim}}" bind:focus="orbFocus" bind:summary="orbSummary" bind:noted="refresh" />
