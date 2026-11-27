@@ -2,6 +2,27 @@
 
 .head { padding: 4rpx 6rpx 18rpx; }
 
+/* 只有日期栏吸顶：滚进历史区后日期跟着当前看到的那一天走 */
+.datebar {
+  position: sticky; top: 0; z-index: 8;
+  display: flex; align-items: center; gap: 14rpx;
+  background: #F5F7F7;
+  padding: 6rpx 0;
+}
+
+/* 滚动后的浮动日期条（sticky 在小程序里会被父级布局打断，用固定条兜底） */
+.fixbar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 9;
+  display: flex; align-items: center; gap: 12rpx;
+  height: 84rpx; padding: 0 24rpx;
+  background: rgba(245, 247, 247, .96);
+  box-shadow: 0 2rpx 12rpx rgba(20, 24, 26, .06);
+  box-sizing: border-box;
+}
+.fb-d { font-size: 28rpx; font-weight: 600; color: #14181A; max-width: 52vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fb-cal { margin-left: auto; font-size: 28rpx; }
+.fixbar .prmini { margin-left: 0; }
+
 .segrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
 .seg {
   display: inline-flex;
@@ -281,3 +302,56 @@
 .lr-dots { display: flex; gap: 6rpx; margin-top: 8rpx; flex-wrap: wrap; }
 .ld { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: #E6ECEA; }
 .ld.on { background: #12A594; }
+
+/* ================= 单流历史：之前的训练 ================= */
+.datebar .prmini { margin-left: 0; flex: none; }
+.datebar .dlabel { max-width: 46vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.datebar.locked .dlabel { color: #0E8677; }
+.db-r { margin-left: auto; display: flex; align-items: center; gap: 10rpx; }
+.db-r .libbtn { margin-left: 0; font-size: 30rpx; padding: 0 6rpx; }
+/* 今天 / 历史之间的全宽分隔带（iOS 分组列表惯例） */
+.stream-sep {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 26rpx -24rpx 0; padding: 14rpx 24rpx;
+  background: #EDF1F0;
+}
+.ss-t { font-size: 24rpx; font-weight: 600; color: #5B6461; letter-spacing: .02em; }
+.ss-n { font-size: 20rpx; color: #A0AAA6; }
+
+.hist { margin-top: 6rpx; }
+.hg { background: #fff; border-radius: 18rpx; padding: 0 22rpx 6rpx; margin-top: 16rpx; }
+.hg-head { display: flex; align-items: baseline; gap: 12rpx; padding: 18rpx 0 12rpx; border-bottom: 1rpx solid #F2F5F4; }
+.hg-d { font-size: 22rpx; color: #7C8783; font-weight: 600; flex: none; }
+.hg-s { font-size: 22rpx; color: #5B6461; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.hrow { padding: 16rpx 0; border-bottom: 1rpx solid #F6F8F7; }
+.hrow:last-child { border-bottom: none; }
+.hr-top { display: flex; align-items: center; gap: 10rpx; }
+.hr-n { flex: 1; min-width: 0; font-size: 27rpx; font-weight: 600; color: #14181A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hr-v { font-size: 21rpx; color: #7C8783; font-variant-numeric: tabular-nums; flex: none; }
+.hr-ar { font-size: 20rpx; color: #BFC8C5; flex: none; }
+.hrow.on .hr-ar { color: #12A594; }
+.hr-l { display: block; margin-top: 4rpx; font-size: 21rpx; color: #8A9490; }
+.hr-sets { margin-top: 10rpx; background: #F7FAF9; border-radius: 12rpx; padding: 6rpx 14rpx; }
+.hr-set { display: flex; align-items: center; gap: 14rpx; padding: 8rpx 0; }
+.hr-no { width: 40rpx; font-size: 20rpx; color: #A0AAA6; text-align: center; flex: none; }
+.hr-tx { flex: 1; font-size: 22rpx; color: #14181A; font-variant-numeric: tabular-nums; }
+.hr-ok { font-size: 20rpx; color: #12A594; flex: none; }
+.hr-empty { display: block; padding: 8rpx 0; font-size: 21rpx; color: #8A9490; }
+.more-h { margin: 18rpx 0 4rpx; text-align: center; font-size: 24rpx; color: #12A594; padding: 16rpx; background: #fff; border-radius: 16rpx; }
+.hist-end { display: block; text-align: center; font-size: 20rpx; color: #A9B3AF; padding: 18rpx 0 4rpx; }
+.hist-none { display: block; text-align: center; font-size: 21rpx; color: #A9B3AF; padding: 40rpx 0; }
+
+/* ================= 计划弹层（📅） ================= */
+.psmask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(20, 24, 26, .4); z-index: 96; }
+.psheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 97;
+  height: 78vh; background: #F5F7F7;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 10rpx 0 calc(16rpx + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column;
+}
+.ps-bar { width: 64rpx; height: 8rpx; border-radius: 4rpx; background: #DDE4E2; margin: 4rpx auto 6rpx; flex: none; }
+.ps-head { display: flex; align-items: center; justify-content: space-between; padding: 6rpx 24rpx 12rpx; flex: none; }
+.ps-t { font-size: 30rpx; font-weight: 600; color: #14181A; }
+.ps-x { font-size: 30rpx; color: #8A9490; padding: 0 8rpx; }
+.ps-body { flex: 1; min-height: 0; padding: 0 24rpx 20rpx; box-sizing: border-box; }

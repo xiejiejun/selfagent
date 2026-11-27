@@ -1,44 +1,36 @@
 <view class="page">
-  <view class="head">
-    <view class="segrow">
-      <view class="seg">
-        <text class="sg {{tab === 'today' ? 'on' : ''}}" data-t="today" bindtap="switchTab">今天</text>
-        <text class="sg {{tab === 'plan' ? 'on' : ''}}" data-t="plan" bindtap="switchTab">计划</text>
-        <text class="sg {{tab === 'log' ? 'on' : ''}}" data-t="log" bindtap="switchTab">记录</text>
-      </view>
-      <view class="seg-r">
-        <text class="seg-add" wx:if="{{tab === 'today'}}" bindtap="openAddSheet">＋</text>
-      </view>
-    </view>
-
-    <view class="datebar" wx:if="{{tab !== 'plan'}}">
-      <text class="arrow" bindtap="prevDay">‹</text>
-      <text class="dlabel">{{dateText}}</text>
-      <text class="arrow {{isToday ? 'off' : ''}}" bindtap="nextDay">›</text>
-      <text class="todaybtn" wx:if="{{!isToday}}" bindtap="backToday">回到今天</text>
-      <text class="prmini {{prToday ? 'has' : ''}}" bindtap="goPr">{{prTxt}}</text>
-      <text class="libbtn" bindtap="browseLibrary">📚</text>
-    </view>
-
-    <block wx:if="{{tab === 'today'}}">
-      <text class="sum">{{summary}}</text>
-      <kpi-strip items="{{kpis}}" />
-
-      <view class="focusbar" wx:if="{{!empty}}" catchtap="orbFocus">
-        <view class="fb-ic">▶</view>
-        <view class="fb-l">
-          <text class="fb-t">{{fbDone ? '今天的组都完成了' : '专注训练'}}</text>
-          <text class="fb-s">{{fbDone ? '点开看小结、加练或收工' : '一场做完今天的 ' + list.length + ' 个动作，逐组记录'}}</text>
-        </view>
-        <text class="fb-go">{{fbDone ? '看小结 ›' : '开始 ›'}}</text>
-      </view>
-    </block>
-
-    <text class="sum" wx:elif="{{tab === 'log'}}">{{empty ? '这一天没有训练' : summary}}</text>
+  <!-- 吸顶日期条：滚过页面头部后浮出来，日期跟着当前看到的日志走 -->
+  <view class="fixbar {{barFixed ? 'on' : ''}}" wx:if="{{barFixed}}" bindtap="scrollTop">
+    <text class="fb-d">{{barDate}}</text>
+    <text class="prmini {{prToday ? 'has' : ''}}" catchtap="goPr">{{prTxt}}</text>
+    <text class="fb-cal" catchtap="openPlan">📅</text>
   </view>
 
-  <!-- ================= 今天 ================= -->
-  <block wx:if="{{tab === 'today'}}">
+  <view class="head">
+    <view class="datebar {{barLocked ? 'locked' : ''}}">
+      <text class="dlabel" bindtap="scrollTop">{{barDate}}</text>
+      <text class="prmini {{prToday ? 'has' : ''}}" bindtap="goPr">{{prTxt}}</text>
+      <view class="db-r">
+        <text class="libbtn" bindtap="browseLibrary">📚</text>
+        <text class="libbtn" bindtap="openPlan">📅</text>
+        <text class="seg-add" bindtap="openAddSheet">＋</text>
+      </view>
+    </view>
+
+    <text class="sum">{{summary}}</text>
+    <kpi-strip items="{{kpis}}" />
+
+    <view class="focusbar" wx:if="{{!empty}}" catchtap="orbFocus">
+      <view class="fb-ic">▶</view>
+      <view class="fb-l">
+        <text class="fb-t">{{fbDone ? '今天的组都完成了' : '专注训练'}}</text>
+        <text class="fb-s">{{fbDone ? '点开看小结、加练或收工' : '一场做完今天的 ' + list.length + ' 个动作，逐组记录'}}</text>
+      </view>
+      <text class="fb-go">{{fbDone ? '看小结 ›' : '开始 ›'}}</text>
+    </view>
+  </view>
+
+  <!-- ================= 今天（单流第一段） ================= -->
     <!-- 组间休息 pill -->
     <view class="restpill" wx:if="{{rest.show}}">
       <text class="rp-t">休息 {{rest.left}}″</text>
@@ -158,37 +150,54 @@
         <text class="ri-add">＋ 加入</text>
       </view>
     </view>
-  </block>
 
-  <!-- ================= 计划（页内组件，不跳页） ================= -->
-  <view class="tabbody" wx:if="{{tab === 'plan'}}">
-    <train-plan id="planCard" date="{{today}}" date-label="今天" bind:changed="onPlanChanged" />
-  </view>
+    <!-- ================= 单流第二段：之前的训练（原「记录」分段并入） ================= -->
+    <view class="stream-sep">
+      <text class="ss-t">之前的训练</text>
+      <text class="ss-n" wx:if="{{histCount}}">共 {{histCount}} 天有训练</text>
+    </view>
 
-  <!-- ================= 记录：所选日期的训练历史（只读） ================= -->
-  <block wx:if="{{tab === 'log'}}">
-    <view class="card logcard" wx:if="{{!empty}}">
-      <view class="lr" wx:for="{{list}}" wx:key="uid">
-        <view class="lr-h">
-          <view class="lr-nrow">
-            <text class="lr-n">{{item.name}}</text>
-            <text class="cbadge" wx:if="{{item.isCardio}}">有氧</text>
-          </view>
-          <text class="lr-v">{{item.isCardio && item.cdMode !== 'sets' ? (item.done ? '✓ 完成' : '未完成') : item.doneN + '/' + item.totalN + ' 组'}}</text>
+    <view class="hist" wx:if="{{histGroups.length}}">
+      <view class="hg" wx:for="{{histGroups}}" wx:key="date" wx:for-item="g">
+        <view class="hg-head" data-date="{{g.date}}">
+          <text class="hg-d">{{g.label}}</text>
+          <text class="hg-s">{{g.sum}}</text>
         </view>
-        <text class="lr-s">{{item.line}}</text>
-        <view class="lr-dots" wx:if="{{!item.isCardio || item.cdMode === 'sets'}}">
-          <text class="ld {{idx < item.doneN ? 'on' : ''}}" wx:for="{{item.groups}}" wx:for-item="g" wx:for-index="idx" wx:key="no"></text>
+        <view class="hrow {{it.open ? 'on' : ''}}" wx:for="{{g.rows}}" wx:key="key" wx:for-item="it" data-key="{{it.key}}" bindtap="toggleHist">
+          <view class="hr-top">
+            <text class="hr-n">{{it.name}}</text>
+            <text class="cbadge" wx:if="{{it.isCardio}}">有氧</text>
+            <text class="hr-v">{{it.v}}</text>
+            <text class="hr-ar">{{it.open ? '▾' : '▸'}}</text>
+          </view>
+          <text class="hr-l" wx:if="{{!it.open}}">{{it.line}}</text>
+          <view class="hr-sets" wx:if="{{it.open}}">
+            <view class="hr-set" wx:for="{{it.sets}}" wx:key="no" wx:for-item="set">
+              <text class="hr-no">{{set.no}}</text>
+              <text class="hr-tx">{{set.txt}}</text>
+              <text class="hr-ok" wx:if="{{set.done}}">✓</text>
+            </view>
+            <text class="hr-empty" wx:if="{{!it.sets.length}}">{{it.line}}</text>
+          </view>
         </view>
       </view>
-      <text class="hint">只读视图 · 去「今天」分段修改这一天的训练</text>
+      <view class="more-h" wx:if="{{histMore}}" bindtap="loadMoreHist">查看更早</view>
+      <text class="hist-end" wx:else>已经到最早的一条了</text>
     </view>
-    <view class="empty" wx:if="{{empty}}">
-      <text class="et">这一天没有训练记录</text>
-      <text class="es">切到「今天」给这一天加动作或记有氧</text>
-      <view class="cta" data-t="today" bindtap="switchTab">切到今天</view>
-    </view>
-  </block>
+    <view class="hist-none" wx:else>还没有更早的训练</view>
+</view>
+
+<!-- 计划：从常驻 tab 降为日期栏 📅 半屏弹层 -->
+<view class="psmask" wx:if="{{planOpen}}" bindtap="closePlan"></view>
+<view class="psheet" wx:if="{{planOpen}}">
+  <view class="ps-bar"></view>
+  <view class="ps-head">
+    <text class="ps-t">计划</text>
+    <text class="ps-x" catchtap="closePlan">✕</text>
+  </view>
+  <scroll-view class="ps-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+    <train-plan id="planCard" date="{{today}}" date-label="今天" bind:changed="onPlanChanged" />
+  </scroll-view>
 </view>
 
 <!-- 动作详情浮层：只展示当前这一个动作，不跳动作库 -->
