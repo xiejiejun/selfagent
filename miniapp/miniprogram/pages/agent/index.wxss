@@ -323,6 +323,11 @@
 .skeleton { height: 132rpx; display: flex; flex-direction: column; justify-content: center; padding-left: 6rpx; }
 .sk-t { font-size: 24rpx; color: #8A9490; }
 .sk-s { font-size: 22rpx; color: #A9B3AF; margin-top: 4rpx; }
+/* 空态骨架条：只占一行，不再用整卡高度装一个空图 */
+.skrow { display: flex; align-items: center; gap: 10rpx; padding: 18rpx 4rpx 6rpx; }
+.skrow-t { font-size: 22rpx; color: #7C8783; font-weight: 600; }
+.skrow-s { font-size: 21rpx; color: #A9B3AF; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.skrow-a { font-size: 21rpx; color: #12A594; }
 .ai-line { display: flex; align-items: flex-start; gap: 8rpx; margin-top: 12rpx; background: #F3F9F7; border-left: 4rpx solid #12A594; border-radius: 10rpx; padding: 12rpx 14rpx; }
 .ai-line.rule { background: #F7F9F8; border-left-color: #C9D8D4; }
 .ai-sp { font-size: 24rpx; color: #12A594; flex-shrink: 0; }

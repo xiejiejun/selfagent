@@ -7,10 +7,10 @@
 
   <text class="dc-q" wx:if="{{question}}">{{question}}</text>
 
-  <view class="dc-opts">
-    <view class="opt {{item.rec ? 'rec' : ''}}" wx:for="{{options}}" wx:key="key" data-i="{{index}}" bindtap="pick">
-      <text class="opt-b" wx:if="{{item.rec}}">推荐</text>
-      <text class="opt-l">{{item.label}}</text>
+  <view class="dc-opts {{sel >= 0 ? 'has' : ''}}">
+    <view class="opt {{item.rec ? 'rec' : ''}} {{sel === index ? 'on' : ''}}" wx:for="{{options}}" wx:key="key" data-i="{{index}}" bindtap="pick">
+      <text class="opt-b" wx:if="{{item.rec}}">✦ 推荐</text>
+      <text class="opt-l">{{sel === index ? '✓ ' : ''}}{{item.label}}</text>
       <text class="opt-s">{{item.sub}}</text>
     </view>
   </view>

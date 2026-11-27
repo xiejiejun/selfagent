@@ -1,11 +1,11 @@
 <view class="page">
   <view class="top">
-    <text class="quit" bindtap="quit">结束</text>
+    <view class="tslot"></view>
     <view class="prog">
       <view class="prog-bar"><view class="prog-in" style="width: {{pct}}%"></view></view>
       <text class="prog-t">{{doneTotal || 0}}/{{total}} 动作 · {{setsDoneAll || 0}}/{{setsTotalAll || 0}} 组 {{setsPct || 0}}%</text>
     </view>
-    <text class="quit ghost" wx:if="{{stage !== 'finish'}}" bindtap="skipItem">跳过</text>
+    <text class="quit skip-ic" wx:if="{{stage !== 'finish'}}" bindtap="skipItem" aria-label="跳过这个动作">⏭</text>
   </view>
 
   <view class="qbar">
@@ -41,6 +41,7 @@
     </scroll-view>
     <view class="ls-add" wx:if="{{stage !== 'finish'}}" catchtap="addMore">＋ 中途加个动作</view>
     <view class="ls-tip" wx:else>点任意一项回到该动作；组行点「重做」可重做某一组</view>
+    <view class="ls-quit" wx:if="{{stage !== 'finish'}}" catchtap="quit">结束这次训练</view>
   </view>
 
   <!-- 训练中 / 休息 / 准备 -->
@@ -86,9 +87,6 @@
           <text class="unit">{{wLabel}} · 第 {{setNo}}/{{setsTotal}} 组</text>
         </view>
       </block>
-      <view class="meta" wx:if="{{stage !== 'rest'}}">
-        <text>{{setsDoneAll}}/{{setsTotalAll}} 组 · {{doneVolume}} kg</text>
-      </view>
     </view>
 
     <!-- 休息建议轮播：建议不拦路，要用才点行内链接 -->
@@ -108,15 +106,16 @@
     <view class="steppers" wx:if="{{stage !== 'rest' && stage !== 'countdown'}}">
       <view class="stp">
         <text class="stp-l">次数</text>
-        <view class="sbtn" bindtap="subRep">−</view>
+        <view class="sbtn" bindtap="subRep" bindlongpress="subRepBig">−</view>
         <text class="snum">{{reps}}</text>
-        <view class="sbtn" bindtap="addRep">＋</view>
+        <view class="sbtn" bindtap="addRep" bindlongpress="addRepBig">＋</view>
       </view>
       <view class="stp">
         <text class="stp-l">{{curUni ? '重量/侧' : '重量'}}</text>
-        <view class="sbtn" bindtap="subWeight">−</view>
+        <view class="sbtn" bindtap="subWeight" bindlongpress="subWeightBig">−</view>
         <input class="snum in" type="digit" value="{{weight}}" bindinput="onWeightInput" placeholder="0" />
-        <view class="sbtn" bindtap="addWeight">＋</view>
+        <text class="sunit">kg</text>
+        <view class="sbtn" bindtap="addWeight" bindlongpress="addWeightBig">＋</view>
       </view>
     </view>
 
@@ -150,7 +149,7 @@
         <text class="redo" wx:if="{{item.done}}" data-i="{{index}}" catchtap="redoRow">重做</text>
       </view>
     </view>
-    <view class="addq" bindtap="addMore">＋ 中途加个动作</view>
+    <view class="addq link" bindtap="addMore">＋ 中途加个动作</view>
   </block>
 
   <!-- 有氧 -->

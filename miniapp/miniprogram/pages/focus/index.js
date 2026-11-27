@@ -1210,6 +1210,9 @@ Page({
   /* ---------- 编辑当前组 ---------- */
   addRep() { this.bumpRep(1); },
   subRep() { this.bumpRep(-1); },
+  // 长按 = 大步进（次数 ±3），点按仍是 ±1
+  addRepBig() { this.bumpRep(3); wx.vibrateShort({ type: 'light' }); },
+  subRepBig() { this.bumpRep(-3); wx.vibrateShort({ type: 'light' }); },
   bumpRep(d) {
     const it = this.items[this.idx];
     if (!it || it.type !== 'strength') return;
@@ -1221,6 +1224,9 @@ Page({
 
   addWeight() { this.bumpWeight(2.5); },
   subWeight() { this.bumpWeight(-2.5); },
+  // 长按 = 大步进（+5 / −2.5 的一次跳 5），点按仍是 +2.5 / −2.5
+  addWeightBig() { this.bumpWeight(5); wx.vibrateShort({ type: 'light' }); },
+  subWeightBig() { this.bumpWeight(-5); wx.vibrateShort({ type: 'light' }); },
   onWeightInput(e) {
     const it = this.items[this.idx];
     if (!it || it.type !== 'strength') return;

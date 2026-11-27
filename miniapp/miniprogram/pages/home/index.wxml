@@ -1,22 +1,25 @@
 <view class="page">
   <view class="head">
-    <text class="hl">{{todayLabel}}</text>
     <text class="hs">{{sub || (hasToday ? '今天已练 ' + today.done + '/' + today.total + ' 组' : '今天还没开始')}}</text>
   </view>
 
   <!-- 训练环：今天 x/y 组，点进专注 -->
-  <view class="orb" bindtap="mainCta">
+  <view class="orb {{orb.total ? '' : 'empty'}}" bindtap="mainCta">
     <view class="orb-l">
       <canvas type="2d" id="orbCv" class="orb-cv"></canvas>
       <view class="orb-in">
-        <text class="orb-n">{{orb.done}}/{{orb.total}}</text>
-        <text class="orb-u">组</text>
+        <text class="orb-q" wx:if="{{!orb.total}}">今天练什么？</text>
+        <block wx:else>
+          <text class="orb-n">{{orb.done}}/{{orb.total}}</text>
+          <text class="orb-u">组</text>
+        </block>
       </view>
     </view>
     <view class="orb-r">
       <text class="orb-k">{{orb.kick}}</text>
       <text class="orb-t">{{orb.text}}</text>
-      <text class="orb-s">{{orb.pct}}% 完成 · 点这里开始</text>
+      <text class="orb-s" wx:if="{{orb.total}}">{{orb.pct}}% 完成 · 点这里开始</text>
+      <text class="orb-s" wx:else>从动作库挑一个 · 或让 ✦ 排今天</text>
     </view>
   </view>
 

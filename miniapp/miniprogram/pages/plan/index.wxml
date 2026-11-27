@@ -7,19 +7,25 @@
         <text class="bl">{{item.label}}</text>
       </view>
     </view>
-  </view>
+    <!-- 排期信息只出现一次：已排 / 缺口 / 休息，八个格子不再单独占一屏 -->
+    <view class="wstats">
+      <text class="ws">已排 <text class="ws-v">{{weekTrained}}</text> 天</text>
+      <text class="ws">缺口 <text class="ws-v {{weekGap ? 'warn' : ''}}">{{weekGap}}</text> 天</text>
+      <text class="ws">休息 <text class="ws-v">{{weekRest}}</text> 天</text>
+    </view>
 
-  <!-- 下周排布：一键套用 / 我自己排 -->
-  <decision-card
-    wx:if="{{weeklyOpen && weekly}}"
-    title="下周排布"
-    question="{{weekly.question}}"
-    reason="{{weekly.basis}}"
-    meta="{{weekly.text}}"
-    options="{{weeklyOpts}}"
-    note=""
-    bind:pick="onWeeklyPick"
-  />
+    <!-- 下周排布收进同一张卡：一条问题 + 两个选项，不再另起一屏 -->
+    <decision-card
+      wx:if="{{weeklyOpen && weekly}}"
+      title="下周怎么排"
+      question=""
+      reason="{{weekly.basis}}"
+      meta="{{weekly.text}}"
+      options="{{weeklyOpts}}"
+      note=""
+      bind:pick="onWeeklyPick"
+    />
+  </view>
 
   <!-- 平台期检测：加量 / 换动作 / 减量，三选一 -->
   <view class="card" wx:if="{{plateau.length}}">

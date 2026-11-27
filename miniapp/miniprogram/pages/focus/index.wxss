@@ -3,6 +3,11 @@
 .top { display: flex; align-items: center; gap: 18rpx; }
 .quit { font-size: 24rpx; color: #9FB0AB; padding: 10rpx 20rpx; border-radius: 24rpx; background: #1A2422; }
 .quit.ghost { color: #7F8C88; }
+/* 顶栏：左侧留出与右侧图标等宽的占位，进度条居中不偏 */
+.tslot { width: 62rpx; flex: none; }
+.skip-ic { flex: none; font-size: 30rpx; line-height: 1; padding: 12rpx 18rpx; color: #CFF3EA; background: #1E2B28; }
+.skip-ic:active { background: #263734; }
+.ls-quit { margin-top: 14rpx; text-align: center; font-size: 22rpx; color: #8A9490; padding: 14rpx 0; border-top: 1rpx solid #1E2B28; }
 .prog { flex: 1; }
 .prog-bar { height: 8rpx; border-radius: 4rpx; background: #202C2A; overflow: hidden; }
 .prog-in { height: 8rpx; background: #12A594; }
@@ -120,7 +125,8 @@
 .stp-l { flex: none; white-space: nowrap; font-size: 19rpx; color: #7F8C88; }
 .sbtn { flex: none; width: 56rpx; height: 56rpx; line-height: 52rpx; text-align: center; border-radius: 50%; background: #22302D; color: #CFF3EA; font-size: 28rpx; }
 .snum { min-width: 74rpx; text-align: center; font-size: 27rpx; font-weight: 600; }
-.snum.in { background: #0F1715; border-radius: 10rpx; padding: 6rpx 10rpx; color: #E8F2EE; }
+.snum.in { min-width: 86rpx; background: #0F1715; border-radius: 10rpx; padding: 6rpx 10rpx; color: #E8F2EE; }
+.sunit { flex: none; font-size: 20rpx; color: #7F8C88; margin-right: 4rpx; }
 
 .main { margin-top: 30rpx; }
 .go { height: 104rpx; line-height: 104rpx; text-align: center; border-radius: 52rpx; font-size: 30rpx; font-weight: 600; }
@@ -160,6 +166,9 @@
 .rtag { font-size: 17rpx; color: #7F8C88; border: 1rpx solid #2A3835; border-radius: 6rpx; padding: 1rpx 8rpx; }
 .rtag.rpe { color: #D8A23E; border-color: #4A3C22; }
 .addq { margin-top: 18rpx; text-align: center; font-size: 22rpx; color: #3DDCBF; border: 1rpx dashed #2C403B; border-radius: 12rpx; padding: 16rpx 0; }
+/* 入口降级：一行小字右对齐，不再抢主操作 */
+.addq.link { border: 0; padding: 8rpx 4rpx; text-align: right; font-size: 22rpx; color: #6E8A85; }
+.addq.link:active { color: #3DDCBF; }
 .go.hold { letter-spacing: 1rpx; }
 .fin-mgr {
   display: flex; align-items: center; justify-content: space-between;

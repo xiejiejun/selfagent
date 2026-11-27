@@ -29,21 +29,21 @@
       <view class="trow">
         <text class="tl">类型</text>
         <scroll-view class="tchips" scroll-x="true" enhanced="true" show-scrollbar="false">
-          <text class="chip {{typeKey === item.key ? 'on' : ''}}" wx:for="{{types}}" wx:key="key" data-k="{{item.key}}" bindtap="pickType">{{item.label}}</text>
+          <text class="chip {{typeKey === item.key ? 'on' : ''}}" wx:for="{{types}}" wx:key="key" data-k="{{item.key}}" bindtap="pickType">{{typeKey === item.key ? '✓ ' : ''}}{{item.label}}</text>
         </scroll-view>
       </view>
 
       <view class="trow">
         <text class="tl">标签</text>
         <scroll-view class="tchips" scroll-x="true" enhanced="true" show-scrollbar="false">
-          <text class="chip sm {{pickedTags.indexOf(item) >= 0 ? 'on' : ''}}" wx:for="{{typeTags}}" wx:key="*this" data-tag="{{item}}" bindtap="toggleTag">{{item}}</text>
+          <text class="chip sm {{pickedTags.indexOf(item) >= 0 ? 'on' : ''}}" wx:for="{{typeTags}}" wx:key="*this" data-tag="{{item}}" bindtap="toggleTag">{{pickedTags.indexOf(item) >= 0 ? '✓ ' : ''}}{{item}}</text>
           <text class="chip sm none" bindtap="goSetting">{{typeTags.length ? '＋ 管理' : '去设置里加标签'}}</text>
         </scroll-view>
       </view>
 
-      <view class="score-row">
+      <view class="score-row {{quickEnergy ? '' : 'idle'}}">
         <view class="score-top">
-          <text class="score-l">精力</text>
+          <text class="score-l">精力{{quickEnergy ? ' · ' + energyLabels[quickEnergy - 1] : ''}}</text>
           <view class="score-vw">
             <text class="score-num {{quickEnergy ? 'on' : ''}}">{{quickEnergy || '—'}}</text>
             <text class="score-u">/5</text>
@@ -51,12 +51,12 @@
           </view>
         </view>
         <view class="score-lab">
-          <view class="sl-i {{quickEnergy === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this" data-k="quickEnergy" data-v="{{index + 1}}" bindtap="pickScore">{{item}}</view>
+          <view class="sl-i {{quickEnergy === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this" data-k="quickEnergy" data-v="{{index + 1}}" bindtap="pickScore">{{quickEnergy === index + 1 ? '✓ ' : ''}}{{item}}</view>
         </view>
       </view>
-      <view class="score-row">
+      <view class="score-row {{quickMood ? '' : 'idle'}}">
         <view class="score-top">
-          <text class="score-l">情绪</text>
+          <text class="score-l">情绪{{quickMood ? ' · ' + moodLabels[quickMood - 1] : ''}}</text>
           <view class="score-vw">
             <text class="score-num m {{quickMood ? 'on' : ''}}">{{quickMood || '—'}}</text>
             <text class="score-u">/5</text>
@@ -64,7 +64,7 @@
           </view>
         </view>
         <view class="score-lab">
-          <view class="sl-i m {{quickMood === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this" data-k="quickMood" data-v="{{index + 1}}" bindtap="pickScore">{{item}}</view>
+          <view class="sl-i m {{quickMood === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this" data-k="quickMood" data-v="{{index + 1}}" bindtap="pickScore">{{quickMood === index + 1 ? '✓ ' : ''}}{{item}}</view>
         </view>
       </view>
 

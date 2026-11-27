@@ -55,7 +55,7 @@
         </view>
       </view>
       <view class="score-lab">
-        <view class="sl-i {{noteEnergy === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this" data-k="noteEnergy" data-v="{{index + 1}}" bindtap="pickScore">{{item}}</view>
+        <view class="sl-i {{noteEnergy === index + 1 ? 'on' : ''}}" wx:for="{{energyLabels}}" wx:key="*this" data-k="noteEnergy" data-v="{{index + 1}}" bindtap="pickScore">{{noteEnergy === index + 1 ? '✓ ' : ''}}{{item}}</view>
       </view>
     </view>
     <view class="score-row">
@@ -68,7 +68,7 @@
         </view>
       </view>
       <view class="score-lab">
-        <view class="sl-i m {{noteMood === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this" data-k="noteMood" data-v="{{index + 1}}" bindtap="pickScore">{{item}}</view>
+        <view class="sl-i m {{noteMood === index + 1 ? 'on' : ''}}" wx:for="{{moodLabels}}" wx:key="*this" data-k="noteMood" data-v="{{index + 1}}" bindtap="pickScore">{{noteMood === index + 1 ? '✓ ' : ''}}{{item}}</view>
       </view>
     </view>
     <view class="sh-btns">

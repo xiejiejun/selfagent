@@ -6,7 +6,7 @@
 
   <view class="bar">
     <view class="qwrap">
-      <input class="q" value="{{q}}" bindinput="onInput" focus="{{autoFocus}}" placeholder="搜索或描述，如：卧推 / 家里只有哑铃练背" confirm-type="search" />
+      <input class="q" value="{{q}}" bindinput="onInput" focus="{{autoFocus}}" placeholder="✦ 搜动作、部位或器械，如「只有哑铃练胸」" confirm-type="search" />
       <text class="cam" bindtap="takePhoto">📷</text>
     </view>
     <view class="fav {{favOnly ? 'on' : ''}}" bindtap="toggleFavView">★</view>
@@ -62,8 +62,8 @@
     <view class="ex-card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="openDetail">
       <image wx:if="{{item.fileID}}" class="thumb" src="{{item.fileID}}" mode="aspectFill" lazy-load="true" data-id="{{item.id}}" binderror="thumbErr" />
       <view wx:else class="thumb ph">
-        <text class="phn">{{item.n[0]}}</text>
-                <text class="phs">{{item.p}}</text>
+        <view class="phb"><text class="phn">{{item.n[0]}}</text></view>
+        <text class="phs">{{item.p}}</text>
       </view>
       <text class="star {{item.fav ? 'on' : ''}}" data-id="{{item.id}}" catchtap="star">{{item.fav ? '★' : '☆'}}</text>
       <text class="mine" wx:if="{{item.mine}}">自定义</text>

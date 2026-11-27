@@ -9,12 +9,13 @@ Component({
     note: { type: String, value: '' },
     meta: { type: String, value: '' }
   },
-  data: { evOpen: false },
+  data: { evOpen: false, sel: -1 },
   methods: {
     pick(e) {
       const i = Number(e.currentTarget.dataset.i);
       const opt = (this.data.options || [])[i];
       if (!opt) return;
+      this.setData({ sel: i });
       this.triggerEvent('pick', { key: opt.key, index: i, option: opt });
     },
     toggle() { this.setData({ evOpen: !this.data.evOpen }); }

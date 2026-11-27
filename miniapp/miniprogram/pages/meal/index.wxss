@@ -89,3 +89,14 @@
 .done-btns { display: flex; gap: 16rpx; margin-top: 40rpx; }
 .dbtn { font-size: 26rpx; color: #12A594; background: #EFF9F7; border-radius: 14rpx; padding: 20rpx 40rpx; }
 .dbtn.main { color: #fff; background: #12A594; }
+
+/* 今日已记 */
+.hist { margin-top: 48rpx; background: #fff; border-radius: 18rpx; padding: 18rpx 22rpx 10rpx; }
+.hist.empty { margin-top: 32rpx; }
+.hist-h { display: flex; align-items: baseline; justify-content: space-between; }
+.hist-t { font-size: 24rpx; font-weight: 600; color: #14181A; }
+.hist-s { font-size: 21rpx; color: #8A9490; }
+.hist-r { display: flex; align-items: center; gap: 12rpx; padding: 12rpx 0; border-bottom: 1rpx solid #F4F7F6; }
+.hist-m { font-size: 23rpx; color: #5B6461; width: 96rpx; flex: none; }
+.hist-k { font-size: 23rpx; font-weight: 600; color: #14181A; flex: 1; }
+.hist-tm { font-size: 20rpx; color: #A9B3AF; }

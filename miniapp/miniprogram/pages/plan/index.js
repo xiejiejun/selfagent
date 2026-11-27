@@ -75,6 +75,9 @@ Page({
         { key: 'me', label: '我自己排', sub: '保留现有计划', rec: false }
       ],
       plateau: pl,
+      weekTrained: week.filter(d => d.done > 0).length,
+      weekGap: Math.max(0, (plan.days || this.data.days) - week.filter(d => d.done > 0).length),
+      weekRest: Math.max(0, 7 - (plan.days || this.data.days)),
       sub: !!sub.enabled,
       subTs: sub.enabled ? '已开启 · 断签当天提醒' : (sub.tmplId ? '已关闭' : ''),
       week: week.map(d => ({

@@ -42,6 +42,8 @@ Page({
     err: '',
     tip: '',
     saved: false,
+    hist: [],
+    histKcal: 0,
     mode: 'text',           // text | photo（有照片直接进 photo）
     hasShot: false,
     channel: '',
@@ -59,8 +61,24 @@ Page({
     keep: false
   },
 
+  // 今日已记：这张页不能只有一句话 + 按钮，至少把今天吃过的列出来
+  refreshHistory(date) {
+    let list = [], sum = 0;
+    try {
+      const logs = store.getLogs() || [];
+      list = logs.filter(l => l && l.kind === 'meal' && (!date || l.date === date)).map(l => {
+        const m = l.meta || l || {};
+        const k = Number(m.totalKcal) || Number(l.kcal) || 0;
+        sum += k;
+        return { id: l.id || l.time, meal: String(m.meal || l.meal || '一餐'), kcal: k, t: engine.fmtTime(l.time) };
+      });
+    } catch (e) {}
+    this.setData({ hist: list, histKcal: sum });
+  },
+
   onLoad(q) {
     const date = (q && q.date) || engine.dayKey();
+    this.refreshHistory(date);
     const st = store.getSettings() || {};
     const c = ai.cfg();
     const src = q && q.src ? decodeURIComponent(q.src) : '';
@@ -302,6 +320,7 @@ Page({
       source: this.data.mode === 'text' ? 'text' : (image ? 'photo' : 'photo_once')
     });
     this.setData({ saved: true, items: [], totalKcal: 0, img: '', editIdx: -1 });
+    this.refreshHistory(this.data.date);
     wx.showToast({ title: '已记入今天', icon: 'success' });
   },
 

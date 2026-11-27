@@ -25,6 +25,13 @@
   display: flex; flex-direction: column; justify-content: center;
 }
 .opt.rec { background: #EDF9F6; border-color: #12A594; }
+/* 选中态：实心 + 勾；没被选的那张整体降饱和，一眼看出点的是哪张 */
+.opt.on { background: #12A594; border-color: #12A594; box-shadow: 0 4rpx 12rpx rgba(18,165,148,.22); }
+.dc-opts.has .opt { opacity: .55; }
+.dc-opts.has .opt.on { opacity: 1; }
+.opt.on .opt-l { color: #fff; }
+.opt.on .opt-s { color: #D5F1EB; }
+.opt.on .opt-b { background: #0B8C7D; }
 .opt-l { display: block; font-size: 24rpx; font-weight: 600; color: #14181A; line-height: 1.3; }
 .opt.rec .opt-l { color: #0C7C6E; }
 .opt-s { display: block; margin-top: 6rpx; font-size: 18rpx; color: #8A9490; line-height: 1.35; }

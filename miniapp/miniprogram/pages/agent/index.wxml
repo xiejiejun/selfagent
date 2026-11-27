@@ -24,9 +24,10 @@
     </view>
     <view class="hlc-chart">
       <canvas wx:if="{{crossOK && !askOpen}}" id="dual" canvas-id="dual" class="eline"></canvas>
-      <view class="skeleton" wx:else>
-        <text class="sk-t">还没有柱子</text>
-        <text class="sk-s">记录 3 天后生成容量与有氧</text>
+      <view class="skrow" wx:if="{{!crossOK}}" data-go="log" catchtap="goEv">
+        <text class="skrow-t">容量与有氧</text>
+        <text class="skrow-s">还没有记录</text>
+        <text class="skrow-a">去记一次 ›</text>
       </view>
       <view class="lgd" wx:if="{{crossOK}}">
         <view class="lg-i"><view class="lg-d s1"></view><text>容量 {{crossVolSum}} kg</text></view>
@@ -56,9 +57,10 @@
   <view class="card">
     <view class="ch"><text class="ct">部位均衡</text><text class="cm">容量分布 · 近 {{range}} 天</text></view>
     <canvas wx:if="{{radarOK && !askOpen}}" canvas-id="radar" class="radar"></canvas>
-    <view class="unlock" wx:else>
-      <text class="empty">还没有部位容量，记一次训练就有六边形</text>
-      <view class="empty-cta" bindtap="goTrain">去训练页</view>
+    <view class="skrow" wx:if="{{!radarOK}}" bindtap="goTrain">
+      <text class="skrow-t">部位均衡</text>
+      <text class="skrow-s">还没有部位容量</text>
+      <text class="skrow-a">去训练页 ›</text>
     </view>
     <view class="ai-line" wx:if="{{aiPush}}"><text class="ai-sp">✦</text><text class="ai-tx">{{aiPush}}</text></view>
     <view class="ai-line rule" wx:elif="{{prog.pushPull.text}}"><text class="ai-sp">✦</text><text class="ai-tx">{{prog.pushPull.text}}</text></view>
@@ -86,9 +88,10 @@
     </view>
     <view class="ai-line" wx:if="{{aiTrend}}"><text class="ai-sp">✦</text><text class="ai-tx">{{aiTrend}}</text></view>
     <view class="ai-line rule" wx:elif="{{prog.forecast}}"><text class="ai-sp">✦</text><text class="ai-tx">{{prog.forecast.text}}</text></view>
-    <view class="unlock" wx:if="{{!prog.curves.length}}">
-      <text class="empty">同一动作练满两次带重量记录，这里才画得出曲线</text>
-      <view class="empty-cta" bindtap="goTrain">去训练页</view>
+    <view class="skrow" wx:if="{{!prog.curves.length}}" bindtap="goTrain">
+      <text class="skrow-t">进步曲线</text>
+      <text class="skrow-s">同一动作练满两次带重量记录才画得出</text>
+      <text class="skrow-a">去训练页 ›</text>
     </view>
   </view>
 
@@ -113,9 +116,10 @@
     </view>
     <view class="hlc-chart">
       <canvas wx:if="{{lineOK && !askOpen}}" id="eline" canvas-id="eline" class="eline"></canvas>
-      <view class="skeleton" wx:elif="{{hasNotes}}">
-        <text class="sk-t">还不成线</text>
-        <text class="sk-s">记满 3 天精力/情绪，这里给双折线</text>
+      <view class="skrow" wx:if="{{!lineOK}}" bindtap="goLog">
+        <text class="skrow-t">精力与情绪</text>
+        <text class="skrow-s">{{hasNotes ? '还差几天才成线' : '还没有生活记录'}}</text>
+        <text class="skrow-a">去写一条 ›</text>
       </view>
       <view class="lgd" wx:if="{{lineOK}}">
         <view class="lg-i"><view class="lg-d s1"></view><text>精力</text></view>
@@ -138,11 +142,6 @@
         <text class="ev-v">{{ev.v}}</text>
       </view>
       <text class="ev-go" catchtap="goEv">查看记录页 ›</text>
-    </view>
-    <view class="emptycard flat" wx:if="{{!hasNotes}}">
-      <text class="empty-t">还没有生活记录</text>
-      <text class="empty-s">用右下角悬浮球随手记一句，精力/情绪就会开始累积</text>
-      <view class="empty-cta" bindtap="goLog">去写一条</view>
     </view>
   </view>
 

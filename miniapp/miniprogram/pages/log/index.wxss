@@ -131,7 +131,9 @@
 
 .gsec { font-size: 20rpx; color: #12A594; }
 
-.score-row { display: block; margin-top: 16rpx; }
+.score-row { display: block; margin-top: 16rpx; transition: opacity .2s; }
+/* 这一行还没选：整行降到 60%，选过的行回到全亮，层次立刻出来 */
+.score-row.idle { opacity: .6; }
 .score-top { display: flex; align-items: center; justify-content: space-between; }
 .score-l { font-size: 24rpx; color: #5B6461; }
 /* 当前值：大字 + 档位词 */
@@ -171,10 +173,10 @@
 .qcam { width: 72rpx; height: 72rpx; line-height: 72rpx; text-align: center; font-size: 34rpx; flex: none; opacity: .85; }
 .qright { display: flex; align-items: center; }
 
-.mcard-h { display: flex; align-items: baseline; gap: 8rpx; margin: 14rpx 0 6rpx; }
-.mh-l { font-size: 24rpx; color: #5B6461; }
-.mh-k { margin-left: auto; font-size: 30rpx; font-weight: 700; color: #14181A; }
-.mh-u { font-size: 19rpx; color: #A9B3AF; }
+.mcard-h { display: flex; align-items: baseline; gap: 6rpx; margin: 14rpx 0 6rpx; min-width: 0; }
+.mh-l { font-size: 24rpx; color: #5B6461; flex: none; }
+.mh-k { margin-left: auto; font-size: 28rpx; font-weight: 700; color: #14181A; white-space: nowrap; flex: none; }
+.mh-u { font-size: 19rpx; color: #A9B3AF; flex: none; }
 .mitem { display: flex; align-items: center; gap: 10rpx; padding: 6rpx 0; }
 .mn { flex: 1; min-width: 0; font-size: 24rpx; color: #14181A; }
 .mn.low { color: #A87400; }

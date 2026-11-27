@@ -7,16 +7,16 @@
         <text class="sg {{tab === 'log' ? 'on' : ''}}" data-t="log" bindtap="switchTab">记录</text>
       </view>
       <view class="seg-r">
-        <text class="seg-pr" bindtap="goPr">PR 榜</text>
         <text class="seg-add" wx:if="{{tab === 'today'}}" bindtap="openAddSheet">＋</text>
       </view>
     </view>
 
     <view class="datebar" wx:if="{{tab !== 'plan'}}">
       <text class="arrow" bindtap="prevDay">‹</text>
-      <text class="dlabel">{{dateLabel}}</text>
+      <text class="dlabel">{{dateText}}</text>
       <text class="arrow {{isToday ? 'off' : ''}}" bindtap="nextDay">›</text>
       <text class="todaybtn" wx:if="{{!isToday}}" bindtap="backToday">回到今天</text>
+      <text class="prmini {{prToday ? 'has' : ''}}" bindtap="goPr">{{prTxt}}</text>
       <text class="libbtn" bindtap="browseLibrary">📚</text>
     </view>
 
@@ -216,8 +216,6 @@
     <view class="ss-btn ghost" catchtap="nextSame">继续推荐下一个</view>
   </view>
 </view>
-
-<float-orb wx:if="{{tab === 'today' && !exSheetVisible}}" id="orb" bottom="{{190}}" bind:focus="orbFocus" bind:summary="orbSummary" bind:noted="afterNote" />
 
 <train-editor id="editor"
   visible="{{editorVisible}}"

@@ -134,10 +134,10 @@ function buildView(date) {
 
 Page({
   data: {
-    date: '', dateLabel: '', isToday: true,
+    date: '', dateLabel: '', dateText: '', isToday: true,
     today: '',                        // 计划分段恒用「今天」，datebar 只在今天/记录出现
     tab: 'today',                      // today | plan | log —— 三个分段全部页内切换
-    list: [], summary: '—', empty: true, fbDone: false,
+    list: [], summary: '—', empty: true, fbDone: false, prToday: 0, prTxt: 'PR 榜',
     editorVisible: false, payload: null,
     streak: 0, weekDone: 0, kpis: [],
     grid: false,
@@ -206,12 +206,22 @@ Page({
     const allDone = !!v.list.length && v.list.every(it => (it.type === 'cardio'
       ? !!it.done
       : ((it.groups || []).length ? (it.groups || []).every(g => g.done) : false)));
+    // 今日 PR 数：全库最佳成绩正好落在今天的动作个数（PR 入口降级成一个小灰字用）
+    let prToday = 0;
+    try {
+      const dk = engine.dayKey();
+      prToday = (require('../../libs/stats').prList(store.getTrain()) || []).filter(p => p && p.date === dk).length;
+    } catch (e) {}
     this.setData({
       today: engine.dayKey(),
       dateLabel: engine.dateLabel(date),
+      // 页内不再重复写「今天」（tab 已经说了），这里只给日期本身
+      dateText: date === engine.dayKey() ? engine.shortDate(date) : engine.dateLabel(date),
       isToday: date === engine.dayKey(),
       list: this.withImg(v.list), summary: v.summary, empty: v.empty, rec: v.rec,
       fbDone: allDone,
+      prToday,
+      prTxt: prToday ? 'PR×' + prToday : 'PR 榜',
       streak, weekDone, favStrip,
       kpis: [
         { v: weekDone, l: '本周组数' },

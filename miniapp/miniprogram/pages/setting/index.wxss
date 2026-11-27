@@ -23,7 +23,8 @@
 
 .tip { display: block; margin-top: 12rpx; font-size: 21rpx; color: #A9B3AF; line-height: 1.5; }
 
-.danger { height: 80rpx; line-height: 80rpx; text-align: center; color: #E06E78; background: #FDF1F2; border-radius: 14rpx; font-size: 26rpx; }
+/* 清空本机数据：破坏性但低频，灰字 + 二次确认就够；红色留给「断签提醒」这种真该被看见的 */
+.danger { height: 80rpx; line-height: 80rpx; text-align: center; color: #8A9490; background: #F7F9F8; border-radius: 14rpx; font-size: 24rpx; }
 
 .foot { display: block; text-align: center; font-size: 20rpx; color: #B6BEBB; margin-top: 20rpx; }
 

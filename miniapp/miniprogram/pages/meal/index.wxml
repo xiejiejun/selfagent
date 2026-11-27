@@ -10,6 +10,22 @@
         <text class="dbtn main" bindtap="back">回记录页</text>
       </view>
     </view>
+
+    <!-- 今日已记：别让这页只剩一句「已记入」 -->
+    <view class="hist" wx:if="{{hist.length}}">
+      <view class="hist-h">
+        <text class="hist-t">今天已记</text>
+        <text class="hist-s">合计 {{histKcal}} kcal</text>
+      </view>
+      <view class="hist-r" wx:for="{{hist}}" wx:key="id">
+        <text class="hist-m">{{item.meal}}</text>
+        <text class="hist-k">{{item.kcal}} kcal</text>
+        <text class="hist-tm">{{item.t}}</text>
+      </view>
+    </view>
+    <view class="hist empty" wx:else>
+      <text class="hist-t">今天还没有别的饮食记录</text>
+    </view>
   </block>
 
   <block wx:else>
@@ -109,6 +125,19 @@
 
       <text class="save" bindtap="save">保存到今天</text>
       <text class="savenote">图片默认用完即弃，可在设置里改成保留</text>
+    </view>
+
+    <!-- 今日已记：没识别结果时这页也不该是一块空白 -->
+    <view class="hist" wx:if="{{hist.length}}">
+      <view class="hist-h">
+        <text class="hist-t">今天已记</text>
+        <text class="hist-s">合计 {{histKcal}} kcal</text>
+      </view>
+      <view class="hist-r" wx:for="{{hist}}" wx:key="id">
+        <text class="hist-m">{{item.meal}}</text>
+        <text class="hist-k">{{item.kcal}} kcal</text>
+        <text class="hist-tm">{{item.t}}</text>
+      </view>
     </view>
   </block>
 </view>
