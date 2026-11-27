@@ -2,6 +2,16 @@
 
 版本号与体验版上传号对应；日期为北京时间。
 
+## 1.0.66 · 2026-11-27
+
+**修「专注中途中加个动作，点加入没反应」**
+
+- 原因一（主因）：`pages/focus` 的 `addMore()` 回调只做了 `appendItem(ex)` + 一条 toast，没有 `refreshQueue()` / `persistFocus()`。动作确实进了内存队列，但 `data.queue` 没刷新、页面顶部的 `n 个动作 · x/y 组` 不变，看起来就是“点了没反应”；退出再进还会因为没落盘而丢。
+- 原因二（顺带）：`pages/library` 的 `pickNow()` 用 `if (ch && ch.emit)` 判断有没有 pick 回调。`getOpenerEventChannel()` 在打开方**没挂 events** 时照样返回带 `emit` 的对象，判断恒真 → 学习态（`?from=learn`，悬浮球/训练页“先逛逛”进来）的「加入今天」把事件发给了空气，既没回训练页也没加进今天。
+- 改法：`addMore` 补齐 `refreshQueue + persistFocus`（在准备态/组间还会顺手 `prepare()` 刷新当前项行）；`pickNow` 改为按 `data.learn` 分流——训练态走事件通道，学习态走 `selfagent_lib_pick_v1` 存储 + `switchTab` 回训练页，由 `consumeLibPick()` 取走。
+
+验证（模拟器冷启动，真机链路复刻）：专注页 2 项 → `addMore` → 动作库搜到「3/4仰卧起坐」→ 详情「加入今天」→ 回专注页，`total 1→2`、队列 `深蹲 > 3/4仰卧起坐`、`setsTotalAll 4→5`、`selfagent_focus_v1` 落盘 2 项、当天记录多出一条「3/4仰卧起坐」；学习态进库点「加入今天」回到训练页并弹出「添加动作」编辑器（原来停在动作库不动）。
+
 ## 1.0.65 · 2026-11-27
 
 **训练页把悬浮球加回来**

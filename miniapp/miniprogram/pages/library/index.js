@@ -775,8 +775,12 @@ Page({
     if (!d) return;
     const ex = this.byAny(d.id) || { id: d.id, n: d.n, p: d.p, e: d.e, t: d.t };
     const payload = { id: ex.id, n: d.n, p: ex.p, e: ex.e, t: ex.t, s: ex.s };
-    const ch = this.getOpenerEventChannel && this.getOpenerEventChannel();
-    if (ch && ch.emit) { ch.emit('pick', payload); wx.navigateBack(); return; }
+    // 只有训练态（opener 挂了 pick 回调）才走事件通道；学习态根本没有监听者，
+    // getOpenerEventChannel() 照样返回带 emit 的对象，emit 出去等于石沉大海
+    if (!this.data.learn) {
+      const ch = this.getOpenerEventChannel && this.getOpenerEventChannel();
+      if (ch && ch.emit) { ch.emit('pick', payload); wx.navigateBack(); return; }
+    }
     // 学习态没有 pick 通道（从悬浮球/任意页进来）：交给训练页 onShow 取走
     try { wx.setStorageSync('selfagent_lib_pick_v1', payload); } catch (e) {}
     wx.switchTab({ url: '/pages/train/index' });

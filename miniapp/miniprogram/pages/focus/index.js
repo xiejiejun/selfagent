@@ -1090,7 +1090,11 @@ Page({
     this.openPicker(ex => {
       if (!ex) return;
       this.appendItem(ex);
-      wx.showToast({ title: '已加入队列', icon: 'none' });
+      // 追加完必须立刻刷队列 + 落盘，否则界面上看不出变化、页面重进还会丢
+      this.refreshQueue();
+      this.persistFocus();
+      if (this.data.stage === 'ready' || this.data.stage === 'between') this.prepare();
+      wx.showToast({ title: '已加入队列：' + (ex.n || ''), icon: 'none' });
     });
   },
 
