@@ -2,6 +2,17 @@
 
 版本号与体验版上传号对应；日期为北京时间。
 
+## 1.0.67 · 2026-11-27
+
+**修「专注模式的休息时间退出再进就清零」**
+
+- 原因：`persistFocus()` 只存了动作队列 + 本组计时（`workStart/pauseAcc/pauseAt`），组间休息的 `_restEnd / _restRemain / restPaused / restTotal` 全在内存里；`resumeStage()` 也只认 `work` 和 `cardio` 两种阶段，`rest` 直接被跳过 → 重进后被 `prepare()` 铺成 ready，倒计时归零。
+- 改法：`persistFocus` 追加休息快照（绝对结束时刻 `restEnd`、暂停态剩余 `restRemain`、`restPaused/restTotal`，以及界面上那三张轮播卡与 `advW/advReps/restNextLabel/restMeta`，避免恢复出一张空壳休息页）；`restoreFocus` 一并读回；`resumeStage` 新增 `rest` 分支——未暂停按绝对时刻算剩余、暂停态接着剩余毫秒，恢复圆环百分比与建议卡并继续 `tick()`。
+- 顺带补了落盘时机：进休息后立刻 `persistFocus()`（原来那次落盘发生在进休息之前，存的是「还在上一组」的旧快照）；`extendRest`（+15s）与 `toggleRest`（暂停/继续）之后也落一次，保证退出时的休息状态是最新的。
+- 边界：`restEnd` 已过期（离开太久）→ 自动 `skipRest` 落到本组 ready，不会卡在 0″ 的休息页；超过 12 小时视为新一场。
+
+验证（模拟器冷启动，三组深蹲，第 1 组完成后进入 150″ 休息）：退出→重进，`stage=rest`、`restLeft` 由 150 接着走（142→139），建议卡 3 张、`advW 62.5/×8` 都在；暂停（131″）后退出→重进仍是 `restPaused=true`、131→130，点环继续后正常倒数；把 `restEnd` 改成已过期再进 → `stage=ready`、`restLeft=0`、`setNo=2`。
+
 ## 1.0.66 · 2026-11-27
 
 **修「专注中途中加个动作，点加入没反应」**

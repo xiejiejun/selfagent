@@ -190,7 +190,16 @@ Page({
         pauseAcc: Number(st.pauseAcc || 0),
         pauseAt: Number(st.pauseAt || 0),
         timerPaused: !!st.timerPaused,
-        cardioStart: Number(st.cardioStart || 0)
+        cardioStart: Number(st.cardioStart || 0),
+        restEnd: Number(st.restEnd || 0),
+        restRemain: Number(st.restRemain || 0),
+        restPaused: !!st.restPaused,
+        restTotal: Number(st.restTotal || 0),
+        restAdvW: (st.restAdvW === null || st.restAdvW === undefined) ? null : Number(st.restAdvW),
+        restAdvReps: Number(st.restAdvReps || 0),
+        restNextLabel: st.restNextLabel || '',
+        restMeta: st.restMeta || '',
+        restCards: Array.isArray(st.restCards) ? st.restCards : []
       };
     }
     wx.showToast({ title: '已恢复上次进度', icon: 'none' });
@@ -217,6 +226,51 @@ Page({
       }
       return;
     }
+    // 组间休息：接着上次的倒计时（暂停态接着剩余，未暂停按绝对结束时刻算）
+    if (r.stage === 'rest' && this.data.stage === 'ready') {
+      const total = r.restTotal > 0 ? r.restTotal : 90;
+      if (r.restPaused) {
+        const rem = Math.max(0, r.restRemain);
+        const left = Math.round(rem / 1000);
+        this._restEnd = 0;
+        this._restRemain = rem;
+        this._restPaused = true;
+        this.setData({
+          stage: 'rest', restPaused: true, restTotal: total, restLeft: left,
+          restPct: Math.max(0, Math.min(100, Math.round(left / total * 100))),
+          mmss: '0:00', restCards: r.restCards, restIdx: 0,
+          restNextLabel: r.restNextLabel || this.data.restNextLabel || '',
+          restMeta: r.restMeta || this.data.restMeta || '',
+          hint: '休息已暂停 · 剩 ' + left + '″，点环继续'
+        });
+        if (r.restAdvW !== null) this.setData({ advW: r.restAdvW });
+        if (r.restAdvReps) this.setData({ advReps: r.restAdvReps });
+        if (r.restCards.length > 1) this.startCardTimer();
+        this.draw();
+        return;
+      }
+      const end = r.restEnd;
+      if (!end || now - end > MAX || end - now > total * 1000 + 60000) return;
+      const left = Math.max(0, Math.round((end - now) / 1000));
+      if (left <= 0) { this.skipRest(true); return; }
+      this._restEnd = end;
+      this._restRemain = 0;
+      this._restPaused = false;
+      this.setData({
+        stage: 'rest', restPaused: false, restTotal: total, restLeft: left,
+        restPct: Math.max(0, Math.min(100, Math.round(left / total * 100))),
+        mmss: '0:00', restCards: r.restCards, restIdx: 0,
+        restNextLabel: r.restNextLabel || this.data.restNextLabel || '',
+        restMeta: r.restMeta || this.data.restMeta || '',
+        hint: '休息中 · 剩 ' + left + '″（接着上次）'
+      });
+      if (r.restAdvW !== null) this.setData({ advW: r.restAdvW });
+      if (r.restAdvReps) this.setData({ advReps: r.restAdvReps });
+      if (r.restCards.length > 1) this.startCardTimer();
+      this.draw();
+      this.tick();
+      return;
+    }
     // 力量：恢复当前组的计时起点、暂停累计与暂停状态
     if (r.stage !== 'work' || this.data.stage !== 'ready') return;
     const ws = Number(r.workStart || 0);
@@ -237,6 +291,7 @@ Page({
 
   persistFocus() {
     try {
+      const isRest = this.data.stage === 'rest';
       wx.setStorageSync(FOCUS_KEY, {
         date: this.date, idx: this.idx, items: this.items,
         stage: this.data.stage,
@@ -245,7 +300,17 @@ Page({
         startAt: this._sessionStart || 0,
         pauseAcc: this._pauseAcc || 0,
         pauseAt: this._pauseAt || 0,
-        timerPaused: !!this.data.timerPaused
+        timerPaused: !!this.data.timerPaused,
+        // 组间休息也要能接着走：存绝对结束时刻（暂停态存剩余毫秒）+ 界面上的建议卡
+        restEnd: isRest ? (this._restEnd || 0) : 0,
+        restRemain: isRest && this.data.restPaused ? (this._restRemain || 0) : 0,
+        restPaused: isRest ? !!this.data.restPaused : false,
+        restTotal: isRest ? (this.data.restTotal || 0) : 0,
+        restAdvW: isRest ? this.data.advW : null,
+        restAdvReps: isRest ? this.data.advReps : 0,
+        restNextLabel: isRest ? (this.data.restNextLabel || '') : '',
+        restMeta: isRest ? (this.data.restMeta || '') : '',
+        restCards: isRest ? (this.data.restCards || []) : []
       });
     } catch (e) {}
   },
@@ -860,6 +925,8 @@ Page({
       restIdx: 0
     });
     this.startCardTimer();
+    // 休息态本身也要落盘（上面的 persistFocus 早于这里，落的是「还在上一组」的旧快照）
+    this.persistFocus();
     wx.hideToast();
     this.aiRest(it, g, adv, planSec);
     this.refreshQueue();
@@ -964,6 +1031,7 @@ Page({
       this._restEnd = (this._restEnd || Date.now()) + sec * 1000;
       this.setData({ restTotal });
     }
+    this.persistFocus();
     wx.vibrateShort({ type: 'light' });
   },
 
@@ -983,6 +1051,7 @@ Page({
       this.setData({ restPaused: true });
       this.draw();
     }
+    this.persistFocus();
   },
 
   // 组间建议的 AI 一句话（规则已算出重量，AI 只负责表达）
