@@ -1,13 +1,6 @@
 <view class="page">
-  <!-- 吸顶日期条：滚过页面头部后浮出来，日期跟着当前看到的日志走 -->
-  <view class="fixbar {{barFixed ? 'on' : ''}}" wx:if="{{barFixed}}" bindtap="scrollTop">
-    <text class="fb-d">{{barDate}}</text>
-    <text class="prmini {{prToday ? 'has' : ''}}" catchtap="goPr">{{prTxt}}</text>
-    <text class="fb-cal" catchtap="openPlan">📅</text>
-  </view>
-
   <view class="head">
-    <view class="datebar {{barLocked ? 'locked' : ''}}">
+    <view class="datebar">
       <text class="dlabel" bindtap="scrollTop">{{barDate}}</text>
       <text class="prmini {{prToday ? 'has' : ''}}" bindtap="goPr">{{prTxt}}</text>
       <view class="db-r">
@@ -150,41 +143,6 @@
         <text class="ri-add">＋ 加入</text>
       </view>
     </view>
-
-    <!-- ================= 单流第二段：之前的训练（原「记录」分段并入） ================= -->
-    <view class="stream-sep">
-      <text class="ss-t">之前的训练</text>
-      <text class="ss-n" wx:if="{{histCount}}">共 {{histCount}} 天有训练</text>
-    </view>
-
-    <view class="hist" wx:if="{{histGroups.length}}">
-      <view class="hg" wx:for="{{histGroups}}" wx:key="date" wx:for-item="g">
-        <view class="hg-head" data-date="{{g.date}}">
-          <text class="hg-d">{{g.label}}</text>
-          <text class="hg-s">{{g.sum}}</text>
-        </view>
-        <view class="hrow {{it.open ? 'on' : ''}}" wx:for="{{g.rows}}" wx:key="key" wx:for-item="it" data-key="{{it.key}}" bindtap="toggleHist">
-          <view class="hr-top">
-            <text class="hr-n">{{it.name}}</text>
-            <text class="cbadge" wx:if="{{it.isCardio}}">有氧</text>
-            <text class="hr-v">{{it.v}}</text>
-            <text class="hr-ar">{{it.open ? '▾' : '▸'}}</text>
-          </view>
-          <text class="hr-l" wx:if="{{!it.open}}">{{it.line}}</text>
-          <view class="hr-sets" wx:if="{{it.open}}">
-            <view class="hr-set" wx:for="{{it.sets}}" wx:key="no" wx:for-item="set">
-              <text class="hr-no">{{set.no}}</text>
-              <text class="hr-tx">{{set.txt}}</text>
-              <text class="hr-ok" wx:if="{{set.done}}">✓</text>
-            </view>
-            <text class="hr-empty" wx:if="{{!it.sets.length}}">{{it.line}}</text>
-          </view>
-        </view>
-      </view>
-      <view class="more-h" wx:if="{{histMore}}" bindtap="loadMoreHist">查看更早</view>
-      <text class="hist-end" wx:else>已经到最早的一条了</text>
-    </view>
-    <view class="hist-none" wx:else>还没有更早的训练</view>
 </view>
 
 <!-- 计划：从常驻 tab 降为日期栏 📅 半屏弹层 -->

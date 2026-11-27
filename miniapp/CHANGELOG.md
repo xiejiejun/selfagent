@@ -2,6 +2,17 @@
 
 版本号与体验版上传号对应；日期为北京时间。
 
+## 1.0.64 · 2026-11-27
+
+**训练页去掉「之前的训练」板块**
+
+- 删掉 1.0.62 加在「今天」下面的历史流：`.stream-sep` 灰带、按日分组、行内展开、`查看更早` 全部移除；训练页现在到「推荐 · 部位」为止。
+- 连带删掉为历史流服务的吸顶日期条（`.fixbar` + `onPageScroll` + `measureHist`）与相关样式；日期栏恢复为一行静态的 `11-27 · PR×n · 📚 · 📅 · ＋`，点日期只回顶。
+- 代码侧一并清掉 `buildHistView / shiftDay / buildHist / loadMoreHist / toggleHist` 与 `histDays/histGroups/histMore/histCount/barLocked/barFixed` 数据字段，不留死代码。
+- 不动的东西：三 tab 已合单流的结构、今天区块（KPI / 专注卡 / 列表 / 推荐）、计划 📅 半屏弹层、tabBar。
+
+验证（模拟器冷启动，写入 5 天训练数据）：`.hist / .stream-sep / .fixbar / .seg` 均不存在，`histGroups` 已不在 data；页面滚到 2000px 不再出现历史列表、日期栏不浮动；`summary=1 动作 · 2/2 组 · 1,080 kg`；`openPlan → true`、`closePlan → false`。
+
 ## 1.0.63 · 2026-11-27
 
 **修「同步失败 / 吃的东西传不上去」：云函数 3 秒超时**

@@ -132,54 +132,11 @@ function buildView(date) {
   return { list, summary: engine.summaryText(items), empty: !list.length, rec };
 }
 
-function shiftDay(dk, n) {
-  const d = new Date(dk + 'T00:00:00');
-  d.setDate(d.getDate() + n);
-  const p = x => (x < 10 ? '0' + x : '' + x);
-  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
-}
-
-// 历史流：某个过去日期的只读行（按日分组，行可展开看每组）
-function buildHistView(date, openSel, nameMap) {
-  const train = engine.ensureTrain(store.getTrain());
-  const names = nameMap || actions.exNameMap();
-  const items = engine.dayItems(train, date);
-  const rows = items.map(it => {
-    const isCd = it.type === 'cardio';
-    const isSets = !isCd || it.mode === 'sets';
-    const gs = it.groups || [];
-    const uni = !!it.uni;
-    const total = isSets ? (gs.length || it.sets || it.totalN || 0) : 1;
-    const done = isSets ? (gs.length ? gs.filter(g => g.done).length : (it.doneN || 0)) : (it.done ? 1 : 0);
-    const key = date + '_' + it.uid;
-    return {
-      key,
-      name: isCd ? it.name : (names[it.exId] || it.name),
-      isCardio: isCd,
-      v: isSets ? (done + '/' + total + ' 组') : ((it.min || 0) + '′' + (it.done ? ' ✓' : '')),
-      line: isCd && it.mode !== 'sets'
-        ? ((it.min || 0) + ' 分钟' + (it.dist ? ' · ' + it.dist + 'km' : ''))
-        : engine.groupLine(gs, uni),
-      open: !!openSel[key],
-      sets: gs.map(g => ({
-        no: g.warmup ? 'W' : g.no,
-        txt: (g.lw != null || g.rw != null)
-          ? 'L' + (g.lw || 0) + ' R' + (g.rw || 0) + 'kg × ' + g.reps
-          : engine.wText(g.weight, uni) + ' × ' + g.reps,
-        done: !!g.done
-      }))
-    };
-  });
-  return { date, label: engine.dateLabel(date), rows, sum: engine.summaryText(items) };
-}
-
 Page({
   data: {
     date: '', dateLabel: '', dateText: '', isToday: true,
     today: '',
-    // 单流：今天在最上，下面直接接「之前的训练」（原「记录」分段并入）
-    histDays: 14, histGroups: [], histMore: false, histCount: 0,
-    barDate: '', barLocked: false, barFixed: false, planOpen: false,
+    barDate: '', planOpen: false,
     list: [], summary: '—', empty: true, fbDone: false, prToday: 0, prTxt: 'PR 榜',
     editorVisible: false, payload: null,
     streak: 0, weekDone: 0, kpis: [],
@@ -269,85 +226,15 @@ Page({
         { v: weekDone, l: '本周组数' },
         { v: streak, l: '连续天数' }
       ],
-      barDate: this.data.barLocked ? this.data.barDate : engine.shortDate(engine.dayKey())
-    }, () => this.buildHist());
+      barDate: engine.shortDate(engine.dayKey())
+    });
     if (this.data.grid) this.fillGrid(v.list); else this.warmGrid(v.list);
-  },
-
-  /* ---------- 单流历史：之前的训练（按日分组、点击展开、向上加载） ---------- */
-  buildHist() {
-    const today = engine.dayKey();
-    const days = this.data.histDays || 14;
-    const names = actions.exNameMap();
-    const groups = [];
-    let more = false;
-    for (let i = 1; i <= days; i++) {
-      const dk = shiftDay(today, -i);
-      const v = buildHistView(dk, this._histOpen || {}, names);
-      if (!v.rows.length) continue;
-      groups.push(v);
-    }
-    // 窗口之外还有没有更早的训练？多探 30 天判断「查看更早」要不要出
-    for (let i = days + 1; i <= days + 30; i++) {
-      const dk = shiftDay(today, -i);
-      if (buildHistView(dk, {}, names).rows.length) { more = true; break; }
-    }
-    this.setData({ histGroups: groups, histMore: more, histCount: groups.length });
-    this.measureHist();
-  },
-
-  loadMoreHist() {
-    this.setData({ histDays: (this.data.histDays || 14) + 14 }, () => this.buildHist());
-  },
-
-  toggleHist(e) {
-    const key = e.currentTarget.dataset.key;
-    if (!key) return;
-    this._histOpen = this._histOpen || {};
-    this._histOpen[key] = !this._histOpen[key];
-    wx.vibrateShort && wx.vibrateShort({ type: 'light' });
-    this.buildHist();
-  },
-
-  // 记录历史组头的页面绝对位置，滚动时切换日期栏文案（吸顶日期联动）
-  measureHist() {
-    if (this._hmT) clearTimeout(this._hmT);
-    this._hmT = setTimeout(() => {
-      this._hmT = null;
-      const q = wx.createSelectorQuery().in(this);
-      q.selectAll('.hg-head').boundingClientRect();
-      q.selectViewport().scrollOffset();
-      q.exec((res) => {
-        const rects = (res && res[0]) || [];
-        const vp = (res && res[1]) || { scrollTop: 0 };
-        this._hgRects = rects.map((r, i) => ({
-          top: r.top + (vp.scrollTop || 0),
-          label: (this.data.histGroups[i] || {}).label || ''
-        }));
-      });
-    }, 320);
-  },
-
-  onPageScroll(e) {
-    const st = (e && e.scrollTop) || 0;
-    const fix = st > 110;
-    if (fix !== this.data.barFixed) this.setData({ barFixed: fix });
-    const rects = this._hgRects;
-    if (!rects || !rects.length) return;
-    let label = engine.shortDate(engine.dayKey());
-    let locked = false;
-    for (let i = 0; i < rects.length; i++) {
-      if (rects[i].top <= st + 70 && rects[i].label) { label = rects[i].label; locked = true; }
-    }
-    if (label !== this.data.barDate || locked !== this.data.barLocked) {
-      this.setData({ barDate: label, barLocked: locked });
-    }
   },
 
   // 点日期栏回到今天
   scrollTop() {
     wx.pageScrollTo({ scrollTop: 0, duration: 260 });
-    this.setData({ barDate: engine.shortDate(engine.dayKey()), barLocked: false, barFixed: false });
+    this.setData({ barDate: engine.shortDate(engine.dayKey()) });
   },
 
   openPlan() {
