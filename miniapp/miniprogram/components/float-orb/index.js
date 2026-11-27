@@ -8,12 +8,13 @@ const FINISH_KEY = 'selfagent_finish_pending_v1';
 const FOCUS_KEY = 'selfagent_focus_v1';
 const TIP_KEY = 'selfagent_orb_tip_v1';
 const SIZE_RPX = 104;      // 容器直径，rpx
-const MARGIN_RPX = 20;     // 贴边留白，rpx
+const MARGIN_RPX = 32;     // 贴边留白（≈16px），rpx
 const SAFE_TOP = 96;       // 顶部安全距离，px
 
 Component({
   properties: {
-    bottom: { type: Number, value: 190 }   // 距屏幕底部，rpx（页面自己按底栏高度给）
+    bottom: { type: Number, value: 190 },  // 距屏幕底部，rpx（页面自己按底栏高度给）
+    dim: { type: Boolean, value: false }   // 页面滚动中：球压淡，让开内容（金额/行尾）
   },
 
   data: {
@@ -182,15 +183,23 @@ Component({
       if (!this._drag.moved) return;
       const size = this.sizePx();
       const left = Math.max(0, Math.min(this._win.w - size, this._drag.left + dx));
-      const top = Math.max(SAFE_TOP, Math.min(this._win.h - size - 12, this._drag.top + dy));
-      this.setData({ left: Math.round(left), top: Math.round(top), menuOn: false });
+      const top = Math.max(SAFE_TOP, Math.min(this._win.h - size - 12, this._drag.top + dy));      this.setData({ left: Math.round(left), top: Math.round(top), menuOn: false });
     },
 
     onEnd() {
       const moved = !!(this._drag && this._drag.moved);
       this._lastMoved = moved;
+      // 松手吸边：贴左右边时保证至少 16px（32rpx）安全距，别压住行尾金额
+      if (moved) {
+        const size = this.sizePx();
+        const margin = MARGIN_RPX * this._px;
+        let left = this.data.left;
+        if (left < margin) left = margin;
+        else if (left > this._win.w - size - margin) left = this._win.w - size - margin;
+        this.setData({ left: Math.round(left), mvX: Math.round(left) });
+        this.persist();
+      }
       this.setData({ pressing: false });
-      if (moved) this.persist();
       this._drag = null;
       if (moved) setTimeout(() => { this._lastMoved = false; }, 260);
     },
@@ -320,13 +329,15 @@ Component({
 
     saveNote() {
       const txt = (this.data.noteText || '').trim();
-      if (!txt) { wx.showToast({ title: '先写点什么', icon: 'none' }); return; }
       const score = this.data.noteEnergy || null;
       const mood = this.data.noteMood || null;
-      actions.addNote(txt, { score, mood });
+      // 只点了档位也能存：用档位词兜底，不逼用户必须先写一句话
+      if (!txt && !score && !mood) { wx.showToast({ title: '写一句或点一档', icon: 'none' }); return; }
+      const body = txt || [score ? '精力' + this.data.energyLabels[score - 1] : '', mood ? '情绪' + this.data.moodLabels[mood - 1] : ''].filter(Boolean).join(' · ');
+      actions.addNote(body, { score, mood });
       this.setData({ noteOn: false, noteText: '', notePrev: '', sheetDy: 0, noteEnergy: 0, noteMood: 0 });
       wx.showToast({ title: '已记录', icon: 'none' });
-      this.triggerEvent('noted', { text: txt });
+      this.triggerEvent('noted', { text: body });
     }
   }
 });

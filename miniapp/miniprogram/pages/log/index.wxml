@@ -74,7 +74,7 @@
           <text class="demo" bindtap="loadDemo">载入示例</text>
         </view>
         <view class="qright">
-          <text class="qs {{quickText ? '' : 'off'}}" bindtap="saveQuick">保存</text>
+          <text class="qs {{saveOn ? 'on' : 'off'}}" bindtap="saveQuick">保存</text>
         </view>
       </view>
     </view>
@@ -207,4 +207,4 @@
   bind:delete="onEditorDelete"
 />
 
-<float-orb id="orb" bottom="190" bind:focus="orbFocus" bind:summary="orbSummary" bind:noted="afterOrbNote" />
+<float-orb id="orb" bottom="40" dim="{{scrollDim}}" bind:focus="orbFocus" bind:summary="orbSummary" bind:noted="afterOrbNote" />

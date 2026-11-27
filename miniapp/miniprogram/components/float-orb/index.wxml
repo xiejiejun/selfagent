@@ -6,7 +6,7 @@
 
 <movable-area class="orb-area">
   <movable-view
-    class="orb {{mode === 'focus' ? 'is-focus' : ''}} {{mode === 'summary' ? 'is-sum' : ''}} {{pressing ? 'pressing' : ''}}"
+    class="orb {{mode === 'focus' ? 'is-focus' : ''}} {{mode === 'summary' ? 'is-sum' : ''}} {{dim ? 'is-dim' : ''}} {{pressing ? 'pressing' : ''}}"
     style="width: {{sizeRpx}}rpx; height: {{sizeRpx}}rpx;"
     direction="all"
     out-of-bounds="false"

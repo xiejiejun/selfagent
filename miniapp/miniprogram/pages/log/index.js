@@ -139,6 +139,9 @@ Page({
     typeKey: '',
     typeTags: [],
     pickedTags: [],
+    typePicked: false,
+    saveOn: false,
+    scrollDim: false,
     yesterday: false,
     infer: null,
     parseHint: null,
@@ -243,11 +246,28 @@ Page({
     this.setData({ cEnd: v, stats: stats.rangeStats(store.getTrain(), store.getLogs(), 'custom', { start: this.data.cStart || stats.shiftDay(engine.dayKey(), -29), end: v }) });
   },
 
+  // 滚动时把悬浮球压淡，避免它盖住行尾金额；停下 700ms 复原
+  onPageScroll() {
+    if (!this.data.scrollDim) this.setData({ scrollDim: true });
+    if (this._dimT) clearTimeout(this._dimT);
+    this._dimT = setTimeout(() => {
+      this._dimT = null;
+      this.setData({ scrollDim: false });
+    }, 700);
+  },
+
   onQuickInput(e) {
     const v = e.detail.value;
     const infer = inferOf(v);
     const parseHint = this.parseTrain(v);
     this.setData({ quickText: v, infer, parseHint });
+    this.syncSave();
+  },
+
+  // 任一输入变化后重算保存按钮的可用态（WXML 不能调方法，只能走 data）
+  syncSave() {
+    const on = this.canSave();
+    if (on !== this.data.saveOn) this.setData({ saveOn: on });
   },
 
   // "12×4 22.5kg 深蹲" → 提示可转成训练
@@ -288,7 +308,8 @@ Page({
 
   pickType(e) {
     const key = e.currentTarget.dataset.k;
-    this.setData({ typeKey: key, typeTags: settings.tagsOf(key), pickedTags: [] });
+    this.setData({ typeKey: key, typeTags: settings.tagsOf(key), pickedTags: [], typePicked: true });
+    this.syncSave();
   },
 
   toggleTag(e) {
@@ -297,12 +318,14 @@ Page({
     const i = arr.indexOf(tag);
     if (i >= 0) arr.splice(i, 1); else arr.push(tag);
     this.setData({ pickedTags: arr });
+    this.syncSave();
   },
 
   applyInfer() {
     const inf = this.data.infer;
     if (!inf) return;
-    this.setData({ typeKey: inf.key, typeTags: settings.tagsOf(inf.key), pickedTags: (inf.tags || []).slice() });
+    this.setData({ typeKey: inf.key, typeTags: settings.tagsOf(inf.key), pickedTags: (inf.tags || []).slice(), typePicked: true });
+    this.syncSave();
   },
 
   toggleYesterday() { this.setData({ yesterday: !this.data.yesterday }); },
@@ -316,6 +339,7 @@ Page({
       const inf = inferOf(this.data.quickText);
       this.setData({ infer: inf });
       if (inf) this.setData({ typeKey: inf.key, typeTags: settings.tagsOf(inf.key), pickedTags: (inf.tags || []).slice() });
+      this.syncSave();
     });
   },
 
@@ -324,12 +348,14 @@ Page({
   pickScore(e) {
     const k = e.currentTarget.dataset.k;
     this.setData({ [k]: Number(e.currentTarget.dataset.v) });
+    this.syncSave();
   },
 
   onScoreSlide(e) {
     const k = e.currentTarget.dataset.k;
     ui.light();
     this.setData({ [k]: Number(e.detail.value) });
+    this.syncSave();
   },
 
   openLogMenu(e) {
@@ -344,9 +370,34 @@ Page({
     });
   },
 
+  // 保存门槛：正文 / 精力档 / 情绪档 / 标签 / 用户主动点过的类型，任一有内容即可存
+  canSave() {
+    const t = (this.data.quickText || '').trim();
+    return !!(t || this.data.quickEnergy || this.data.quickMood
+      || (this.data.pickedTags || []).length || this.data.typePicked);
+  },
+
+  // 没写正文但有档位/标签时，生成一句可读的兜底正文，避免时间线出现空白条目
+  fallbackText() {
+    const parts = [];
+    const e = this.data.quickEnergy;
+    const m = this.data.quickMood;
+    const eLab = ['很低', '偏低', '一般', '不错', '充沛'];
+    const mLab = ['很糟', '低落', '一般', '不错', '很好'];
+    if (e) parts.push('精力' + eLab[e - 1]);
+    if (m) parts.push('情绪' + mLab[m - 1]);
+    const tags = (this.data.pickedTags || []).slice(0, 3);
+    if (tags.length) parts.push(tags.join('、'));
+    if (!parts.length) {
+      const ty = (this.data.types || []).filter(t => t.key === this.data.typeKey)[0];
+      parts.push(ty ? ty.label : '随手记');
+    }
+    return parts.join(' · ');
+  },
+
   saveQuick() {
-    const txt = (this.data.quickText || '').trim();
-    if (!txt) return;
+    if (!this.canSave()) return;
+    const txt = (this.data.quickText || '').trim() || this.fallbackText();
     const date = this.data.yesterday ? stats.shiftDay(engine.dayKey(), -1) : engine.dayKey();
     actions.addNote(txt, {
       score: this.data.quickEnergy || null,
@@ -355,7 +406,7 @@ Page({
       tags: this.data.pickedTags.join(','),
       date
     });
-    this.setData({ quickText: '', quickEnergy: 0, quickMood: 0, pickedTags: [], infer: null, parseHint: null, yesterday: false });
+    this.setData({ quickText: '', quickEnergy: 0, quickMood: 0, pickedTags: [], typePicked: false, infer: null, parseHint: null, yesterday: false, saveOn: false });
     ui.ok();
     this.refresh();
     wx.showToast({ title: '已记录', icon: 'none' });

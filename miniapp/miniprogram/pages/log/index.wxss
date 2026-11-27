@@ -1,4 +1,4 @@
-.page { padding: 24rpx 24rpx 60rpx; }
+.page { padding: 24rpx 24rpx 200rpx; }
 
 /* 记录/统计 切换 */
 .seg { display: inline-flex; padding: 4rpx; background: #EAEFED; border-radius: 14rpx; margin-bottom: 18rpx; }
@@ -149,18 +149,18 @@
 .score-lab { display: flex; gap: 8rpx; margin-top: 10rpx; }
 .sl-i {
   flex: 1;
-  height: 56rpx;
-  line-height: 56rpx;
+  height: 60rpx;
+  line-height: 60rpx;
   text-align: center;
   font-size: 22rpx;
-  color: #7E8A87;
-  background: #FFF;
-  border: 1rpx solid #E3EAE8;
+  color: #A2ACA8;
+  background: #F7FAF9;
+  border: 1rpx solid #EEF2F0;
   border-radius: 10rpx;
-  transition: background .15s, color .15s;
+  transition: background .15s, color .15s, border-color .15s;
 }
-.sl-i.on { color: #fff; background: #12A594; border-color: #12A594; font-weight: 600; }
-.sl-i.m.on { color: #fff; background: #8E7CC3; border-color: #8E7CC3; }
+.sl-i.on { color: #fff; background: #0F8C7E; border-color: #0F8C7E; font-weight: 700; font-size: 23rpx; box-shadow: 0 4rpx 10rpx rgba(15, 140, 126, .28); }
+.sl-i.m.on { color: #fff; background: #6D5FA8; border-color: #6D5FA8; box-shadow: 0 4rpx 10rpx rgba(109, 95, 168, .28); }
 .dots { flex: 1; display: flex; gap: 14rpx; }
 .dot { width: 56rpx; height: 56rpx; line-height: 56rpx; text-align: center; border-radius: 50%; background: #F0F4F3; color: #8A9490; font-size: 22rpx; }
 .dot.on { background: #12A594; color: #fff; }

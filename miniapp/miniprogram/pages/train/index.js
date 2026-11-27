@@ -225,8 +225,7 @@ Page({
       streak, weekDone, favStrip,
       kpis: [
         { v: weekDone, l: '本周组数' },
-        { v: streak, l: '连续天数' },
-        { v: v.list.length, l: '当天动作' }
+        { v: streak, l: '连续天数' }
       ]
     });
     if (this.data.grid) this.fillGrid(v.list); else this.warmGrid(v.list);
@@ -509,6 +508,8 @@ Page({
   dragEnd() {
     const dg = this.drag;
     this.dragTs = Date.now();
+    // 必须在出口复位：否则拖过一次排序后 dragMoved 永久为 true，之后所有行点击都被 toggleRow 静默吞掉
+    this.dragMoved = false;
     if (!dg) return;
     this.drag = null;
     const clean = this.data.list.map(x => (x.dy ? Object.assign({}, x, { dy: 0 }) : x));

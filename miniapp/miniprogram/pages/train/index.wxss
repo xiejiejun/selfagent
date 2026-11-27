@@ -97,7 +97,7 @@
 .dot.on { background: #3DDCBF; }
 .cdmark { font-size: 22rpx; color: #12A594; }
 
-.more { font-size: 30rpx; color: #B6BEBB; padding: 6rpx 12rpx; }
+.more { font-size: 30rpx; color: #7E8A87; padding: 6rpx 12rpx; border-left: 1rpx solid #E7ECEA; margin-left: 6rpx; }
 .ar { font-size: 22rpx; color: #C9D0CD; }
 .ex.open .ar { transform: rotate(90deg); color: #12A594; }
 
