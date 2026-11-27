@@ -261,6 +261,8 @@ function removeCardio(train, uidVal) {
 }
 
 // 墓碑：删除后推给云，防止同步时被拉回来
+const TOMB_MAX = 200;
+
 function addTomb(tomb, kind, uidVal) {
   const arr = Array.isArray(tomb) ? tomb : [];
   const rest = arr.filter(t => !(t && t.u === uidVal && t.k === kind));
@@ -271,7 +273,9 @@ function addTomb(tomb, kind, uidVal) {
 function pruneTomb(tomb, maxAgeMs) {
   const now = Date.now();
   const max = maxAgeMs || 90 * 24 * 3600 * 1000;
-  return (Array.isArray(tomb) ? tomb : []).filter(t => t && now - (t.t || 0) < max);
+  const list = (Array.isArray(tomb) ? tomb : []).filter(t => t && now - (t.t || 0) < max);
+  // 只留最近 200 条：墓碑发完就摘掉，正常不会攒到这个数；攒到说明推送一直在失败
+  return list.length > TOMB_MAX ? list.slice(-TOMB_MAX) : list;
 }
 
 /* ---------------- 日志 ---------------- */

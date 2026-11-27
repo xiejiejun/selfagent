@@ -158,16 +158,18 @@ function statesOfBatch(b) {
 async function push(full) {
   if (!cloudOk()) return { ok: false, error: '云开发未初始化' };
   if (store.pruneDirty) store.pruneDirty();
+  // 墓碑单独分批发：云端逐条 remove 是几十次 IO，混进数据包会把整包顶到函数 3s 超时
+  const tr = await pushTomb();
+  if (!tr.ok) return { ok: false, error: tr.error, stage: 'tomb', remaining: dirtyCount() };
   const { out } = plan(!!full);
   if (!out.length) return { ok: true, skipped: true, remaining: dirtyCount() };
 
-  const tomb = store.getTomb();
   let serverTs = 0;
   for (let i = 0; i < out.length; i++) {
     const b = out[i];
     const res = await call('syncPush', {
       states: statesOfBatch(b),
-      tomb: i === 0 ? tomb : [], // 墓碑只随第一包发一次
+      tomb: [], // 墓碑由 pushTomb 单独发，数据包保持轻
       metaTs: metaTs(),
       since: watermark()
     });
@@ -175,14 +177,57 @@ async function push(full) {
       return { ok: false, error: (res && res.error) || 'push failed', batch: i, total: out.length, serverTs };
     }
     serverTs = Math.max(serverTs, Number(res.serverTs) || 0);
+    // 服务端回 written（真落库的键）时按它清脏，超时被截断的部分留着重推
     const one = { train: [], logs: [], snap: [] };
-    if (b.kind === 'records' || b.kind === 'cardio') one.train = b.keys;
+    const w = res.written;
+    if (w && (Array.isArray(w.logs) || Array.isArray(w.train) || Array.isArray(w.snap))) {
+      one.logs = w.logs || [];
+      one.train = w.train || [];
+      one.snap = w.snap || [];
+    } else if (b.kind === 'records' || b.kind === 'cardio') one.train = b.keys;
     else if (b.kind === 'logs') one.logs = b.keys;
     else if (b.kind === 'snap') one.snap = [b.snap];
     store.clearDirty(one);
   }
   ALL.forEach(k => bump(k, serverTs || Date.now()));
   return { ok: true, serverTs, batches: out.length, remaining: dirtyCount() };
+}
+
+/* ---------- 墓碑（删掉的实体）单独上行 ---------- */
+const TOMB_PACK = 20;
+
+function tombKey(t) { return (t && t.k) + ':' + (t && t.u); }
+
+function dropTomb(chunk) {
+  const keys = chunk.map(tombKey);
+  const rest = (store.getTomb() || []).filter(t => keys.indexOf(tombKey(t)) < 0);
+  store.setTomb(rest);
+}
+
+async function sendTomb(chunk) {
+  try {
+    return await call('syncPush', { states: {}, tomb: chunk, metaTs: metaTs(), since: watermark() });
+  } catch (e) {
+    return { ok: false, error: String((e && e.errMsg) || (e && e.message) || e) };
+  }
+}
+
+async function pushTomb() {
+  let guard = 0;
+  while (guard++ < 60) {
+    const cur = (store.getTomb() || []).filter(t => t && t.u);
+    if (!cur.length) return { ok: true, left: 0 };
+    let chunk = cur.slice(0, TOMB_PACK);
+    let res = await sendTomb(chunk);
+    if (!res || !res.ok) {
+      // 超时/失败：缩到 5 条再试一次，仍然失败就把墓碑留给下次
+      chunk = cur.slice(0, 5);
+      res = await sendTomb(chunk);
+      if (!res || !res.ok) return { ok: false, error: (res && res.error) || 'tomb failed' };
+    }
+    dropTomb(chunk);
+  }
+  return { ok: true, left: 1 };
 }
 
 // 待推行数：设置页「待推 N」与推送结果共用同一个口径
