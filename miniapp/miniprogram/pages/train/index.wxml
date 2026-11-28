@@ -143,34 +143,102 @@
     </view>
 </view>
 
-<!-- 计划：日期栏 📅 = 本周排期卡（只回答「哪天练什么、哪天还空着」） -->
+<!-- 计划：日期栏 📅 =「今天练什么」对话（可切到本周排期） -->
 <view class="psmask" wx:if="{{planOpen}}" bindtap="closePlan"></view>
 <view class="psheet" wx:if="{{planOpen}}">
   <view class="ps-bar"></view>
   <view class="ps-head">
-    <text class="ps-t">本周排期</text>
-    <text class="ps-x" catchtap="closePlan">✕</text>
-  </view>
-  <view class="pw-strip">
-    <view class="pw-d {{item.today ? 'today' : ''}} {{item.total ? 'on' : ''}}" wx:for="{{planWeek}}" wx:key="date">
-      <text class="pw-w">{{item.w}}</text>
-      <text class="pw-md">{{item.md}}</text>
-      <view class="pw-dot {{item.total ? 'on' : (item.today ? 'today' : '')}}"></view>
+    <text class="ps-t">{{planMode === 'chat' ? '✦ 今天练什么？' : '本周排期'}}</text>
+    <view class="ps-h-r">
+      <text class="ps-switch" catchtap="switchPlanMode" data-m="{{planMode === 'chat' ? 'week' : 'chat'}}">{{planMode === 'chat' ? '本周排期 ›' : '‹ 今天练什么'}}</text>
+      <text class="ps-x" catchtap="closePlan">✕</text>
     </view>
   </view>
-  <scroll-view class="pw-body" scroll-y="true" enhanced="true" show-scrollbar="false">
-    <view class="pw-row {{item.today ? 'today' : ''}}" wx:for="{{planWeek}}" wx:key="date">
-      <view class="pw-l">
-        <text class="pw-day">周{{item.w}} · {{item.md}}{{item.today ? ' 今天' : ''}}</text>
-        <text class="pw-sum" wx:if="{{item.planned || item.total}}">
-          {{item.planned ? '排了 ' + item.planned + ' 个动作' : '没排，随手练的'}}{{item.total ? ' · 已完成 ' + item.done + '/' + item.total + ' 组' : ''}}
-        </text>
-        <text class="pw-sum dim" wx:else>空着</text>
+
+  <block wx:if="{{planMode === 'chat'}}">
+    <view class="ch-parts">
+      <text class="ch-parts-t">部位</text>
+      <text class="ch-chip {{item.on ? 'on' : ''}} {{item.warn ? 'warn' : ''}}" wx:for="{{chatParts}}" wx:key="key" data-k="{{item.key}}" catchtap="chatPart">{{item.view}}</text>
+    </view>
+
+    <scroll-view class="ch-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+      <view class="ch-msgs">
+        <view class="ch-m {{item.role}}" wx:for="{{chatMsgs}}" wx:key="index" wx:if="{{index >= chatMsgs.length - 2}}">
+          <text class="ch-m-t">{{item.t}}</text>
+          <text class="ch-m-s" wx:if="{{item.s}}">{{item.s}}</text>
+        </view>
       </view>
-      <text class="pw-add" wx:if="{{!item.planned}}" data-date="{{item.date}}" catchtap="planAddDay">＋ 排</text>
+
+      <view class="ch-list" wx:if="{{chatRec && chatRec.items.length}}">
+        <block wx:for="{{chatRec.items}}" wx:key="exId">
+          <view class="ch-row">
+            <view class="ch-l">
+              <text class="ch-n">{{item.name}}<text class="ch-cd" wx:if="{{item.cd}}">有氧</text></text>
+              <text class="ch-note">{{item.note || item.why}}</text>
+            </view>
+            <text class="ch-line">{{item.line}}</text>
+            <text class="ch-btn" data-i="{{index}}" catchtap="chatEditOpen">改</text>
+            <text class="ch-del" data-i="{{index}}" catchtap="chatDel">✕</text>
+          </view>
+          <!-- 行内 stepper -->
+          <view class="ch-edit" wx:if="{{chatEdit === index}}">
+            <view class="ch-stp">
+              <text class="ch-sk">组</text>
+              <text class="ch-sv" data-k="sets" data-d="-1" catchtap="chatStep">−</text>
+              <text class="ch-sn">{{chatDraft.sets}}</text>
+              <text class="ch-sv" data-k="sets" data-d="1" catchtap="chatStep">＋</text>
+            </view>
+            <view class="ch-stp">
+              <text class="ch-sk">次</text>
+              <text class="ch-sv" data-k="reps" data-d="-1" catchtap="chatStep">−</text>
+              <text class="ch-sn">{{chatDraft.reps}}</text>
+              <text class="ch-sv" data-k="reps" data-d="1" catchtap="chatStep">＋</text>
+            </view>
+            <view class="ch-stp" wx:if="{{!item.cd}}">
+              <text class="ch-sk">kg</text>
+              <text class="ch-sv" data-k="weight" data-d="-2.5" catchtap="chatStep">−</text>
+              <text class="ch-sn">{{chatDraft.weight}}</text>
+              <text class="ch-sv" data-k="weight" data-d="2.5" catchtap="chatStep">＋</text>
+            </view>
+            <text class="ch-ok" catchtap="chatEditSave">完成</text>
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+
+    <view class="ch-acts">
+      <text class="ch-again" catchtap="chatReroll">换一批</text>
+      <text class="ch-go" catchtap="chatStart">就这样，开练</text>
     </view>
-  </scroll-view>
-  <view class="ls-tip">排期只是待办，回＋「从计划加入」才会落成今天的训练</view>
+    <view class="ch-in">
+      <input class="ch-q" value="{{chatInput}}" bindinput="onChatInput" bindconfirm="chatSend" confirm-type="send"
+        placeholder="随便改：改成肩 / 只练两个 / 卧推换上斜" placeholder-class="ch-ph" cursor-spacing="16" disabled="{{chatBusy}}" />
+      <text class="ch-send {{chatInput ? 'on' : ''}}" catchtap="chatSend">发送</text>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="pw-strip">
+      <view class="pw-d {{item.today ? 'today' : ''}} {{item.total ? 'on' : ''}}" wx:for="{{planWeek}}" wx:key="date">
+        <text class="pw-w">{{item.w}}</text>
+        <text class="pw-md">{{item.md}}</text>
+        <view class="pw-dot {{item.total ? 'on' : (item.today ? 'today' : '')}}"></view>
+      </view>
+    </view>
+    <scroll-view class="pw-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+      <view class="pw-row {{item.today ? 'today' : ''}}" wx:for="{{planWeek}}" wx:key="date">
+        <view class="pw-l">
+          <text class="pw-day">周{{item.w}} · {{item.md}}{{item.today ? ' 今天' : ''}}</text>
+          <text class="pw-sum" wx:if="{{item.planned || item.total}}">
+            {{item.planned ? '排了 ' + item.planned + ' 个动作' : '没排，随手练的'}}{{item.total ? ' · 已完成 ' + item.done + '/' + item.total + ' 组' : ''}}
+          </text>
+          <text class="pw-sum dim" wx:else>空着</text>
+        </view>
+        <text class="pw-add" wx:if="{{!item.planned}}" data-date="{{item.date}}" catchtap="planAddDay">＋ 排</text>
+      </view>
+    </scroll-view>
+    <view class="ls-tip">排期只是待办，回＋「从计划加入」才会落成今天的训练</view>
+  </block>
 </view>
 
 <!-- ＋ 添加 sheet：搜索框（关键词 / 自然语言 / 拍照同一框）+ 三条快速通道 -->

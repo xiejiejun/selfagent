@@ -8,6 +8,7 @@ const thumb = require('../../libs/thumbcache');
 const data = require('../../libs/data/index');
 const cardioLib = require('../../libs/cardio');
 const plan = require('../../libs/plan/index');
+const ai = require('../../libs/ai');
 const CLIP_INDEX = require('../../libs/clip-index.js');
 
 let openMap = {};
@@ -138,6 +139,11 @@ Page({
     date: '', dateLabel: '', dateText: '', isToday: true,
     today: '',
     barDate: '', planOpen: false, planWeek: [], planWeekTip: '',
+    // 📅 弹层：默认是「今天练什么」对话，切一下能看本周排期
+    planMode: 'chat',
+    chatRec: null, chatMsgs: [], chatInput: '', chatBusy: false,
+    chatParts: [], chatEdit: -1, chatDraft: { sets: 3, reps: 12, weight: 0 },
+    chatTip: '',
     addOpen: false, addQuery: '', addPlanDate: '', addPlanLabel: '添加到今天',
     scrollDim: false,
     list: [], summary: '—', empty: true, fbDone: false, prToday: 0, prTxt: 'PR 榜',
@@ -253,11 +259,282 @@ Page({
 
   openPlan() {
     this.refreshPlanWeek();
-    this.setData({ planOpen: true });
+    if (!this.data.chatRec) this.buildChat();
+    this.setData({ planOpen: true, planMode: 'chat' });
   },
 
   closePlan() {
-    this.setData({ planOpen: false });
+    this.setData({ planOpen: false, chatEdit: -1 });
+  },
+
+  switchPlanMode(e) {
+    const m = e.currentTarget.dataset.m || 'chat';
+    this.setData({ planMode: m, chatEdit: -1 });
+  },
+
+  /* ---------------- 📅「今天练什么」对话 ---------------- */
+  // 打开即推荐：本地算，秒出，不问问题
+  buildChat() {
+    const train = engine.ensureTrain(store.getTrain());
+    const custom = actions.customList();
+    const rec = recommend.recommend(train, custom);
+    const items = recommend.validateItems(rec.part, rec.items).map(i => this.chatItem(i));
+    const parts = recommend.partStates(train, rec.part).map(p => ({
+      key: p.key, view: p.view, text: p.text, warn: !!p.warn, star: !!p.star, on: p.key === rec.part
+    }));
+    this.setData({
+      chatRec: { part: rec.part, view: rec.view, reason: rec.recovery.text, h: rec.recovery.h, items },
+      chatParts: parts,
+      chatEdit: -1,
+      chatMsgs: [
+        { role: 'agent', t: '推荐：' + rec.view + '日', s: rec.recovery.text },
+        { role: 'agent', t: items.length + ' 个动作，组次已排好。要改直接说，比如「改成肩」「只练两个」「卧推换上斜」' }
+      ]
+    });
+  },
+
+  chatItem(i) {
+    const isCd = !!i.dur || i.mode === 'sets' || i.mode === 'timer';
+    return {
+      exId: i.exId, name: i.name, part: i.part, cd: isCd,
+      sets: i.sets || 3, reps: i.reps || 12, weight: i.weight || 0, dur: i.dur || 0,
+      note: i.note || '', why: i.why || '',
+      line: isCd ? ('有氧 ' + (i.dur || 20) + '′') : ((i.weight > 0 ? i.weight + 'kg ' : '自重 ') + (i.sets || 3) + '×' + (i.reps || 12))
+    };
+  },
+
+  chatSync(items, msgs) {
+    const patch = { ['chatRec.items']: items };
+    if (msgs) patch.chatMsgs = (this.data.chatMsgs || []).concat(msgs);
+    this.setData(patch);
+  },
+
+  chatPart(e) {
+    const k = e.currentTarget.dataset.k;
+    if (!k) return;
+    this.applyChatPart(k, '已换成' + k + '日');
+  },
+
+  applyChatPart(part, msg) {
+    this._chatSeq = (this._chatSeq || 0) + 1;
+    const train = engine.ensureTrain(store.getTrain());
+    const rec = recommend.recommendFor(train, actions.customList(), part);
+    const items = recommend.validateItems(rec.part, rec.items).map(i => this.chatItem(i));
+    const parts = recommend.partStates(train, part).map(p => ({ key: p.key, view: p.view, text: p.text, warn: !!p.warn, star: !!p.star, on: p.key === part }));
+    this.setData({
+      chatRec: { part: rec.part, view: rec.view, reason: rec.recovery.text, h: rec.recovery.h, items },
+      chatParts: parts,
+      chatEdit: -1,
+      chatMsgs: (this.data.chatMsgs || []).concat([{ role: 'me', t: msg }, { role: 'agent', t: rec.view + '日 · ' + items.length + ' 个动作', s: rec.recovery.text }])
+    });
+  },
+
+  // 换一批：同部位重抽（排除当前列表里的动作）
+  chatReroll() {
+    this._chatSeq = (this._chatSeq || 0) + 1;
+    const rec = this.data.chatRec;
+    if (!rec) return;
+    const train = engine.ensureTrain(store.getTrain());
+    const custom = actions.customList();
+    const ids = (rec.items || []).map(i => i.exId);
+    const items = (rec.items || []).map(i => {
+      const nx = recommend.nextItem(rec.part, ids, train, custom);
+      if (!nx) return i;
+      ids.push(nx.exId || nx.id);
+      return this.chatItem(nx);
+    });
+    this.setData({
+      ['chatRec.items']: items, chatEdit: -1,
+      chatMsgs: (this.data.chatMsgs || []).concat([{ role: 'agent', t: '换了一批 · 还是' + rec.view + '日，' + items.map(i => i.name).join('、') }])
+    });
+  },
+
+  onChatInput(e) { this.setData({ chatInput: e.detail.value || '' }); },
+
+  // 输入条：先本地解析（离线可用），本地接不住再走 AI
+  chatSend() {
+    const raw = String(this.data.chatInput || '').trim();
+    if (!raw) return;
+    this.setData({ chatInput: '', chatEdit: -1 });
+    const rec = this.data.chatRec;
+    if (!rec) return;
+    const msgs = [{ role: 'me', t: raw }];
+
+    // 1) 部位词
+    const part = recommend.normalizePart(raw);
+    if (part && /练|改|换|今天|日/.test(raw)) {
+      this.applyChatPart(part, raw);
+      return;
+    }
+    // 2) 换一批 / 重新来
+    if (/换一批|再来|重来|重新排|换组/.test(raw)) { this.chatReroll(); return; }
+    // 3) 只练 N 个 / 少一个
+    const mN = raw.match(/(?:只练|就练|练|留)\s*([1-4一二两三四])\s*个/);
+    if (mN) {
+      const map = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4 };
+      const n = map[mN[1]] || Number(mN[1]) || 3;
+      const items = (rec.items || []).slice(0, Math.max(1, n));
+      this.setData({ ['chatRec.items']: items, chatMsgs: (this.data.chatMsgs || []).concat(msgs, [{ role: 'agent', t: '收到，只留 ' + items.length + ' 个 · ' + items.map(i => i.name).join('、') }]) });
+      return;
+    }
+    // 4) 删掉某个
+    if (/删|去掉|不要|拿掉/.test(raw)) {
+      const hit = (rec.items || []).find(i => raw.indexOf(i.name) >= 0 || (i.name.length >= 2 && raw.indexOf(i.name.slice(0, 2)) >= 0));
+      if (hit) {
+        const items = (rec.items || []).filter(i => i !== hit);
+        this.setData({ ['chatRec.items']: items, chatMsgs: (this.data.chatMsgs || []).concat(msgs, [{ role: 'agent', t: '删掉 ' + hit.name + '，剩 ' + items.length + ' 个' }]) });
+        return;
+      }
+    }
+    // 5) 换成某个动作（「卧推换上斜」「换成哑铃飞鸟」）
+    const hit2 = (rec.items || []).find(i => raw.indexOf(i.name) >= 0 || (i.name.length >= 2 && raw.indexOf(i.name.slice(0, 2)) >= 0));
+    const cand = this.chatFindByName(raw, rec.part);
+    if (cand && (hit2 || /换|改|上|用/.test(raw))) {
+      const idx = hit2 ? (rec.items || []).indexOf(hit2) : 0;
+      const items = (rec.items || []).slice();
+      items[idx] = this.chatItem(cand);
+      this.setData({ ['chatRec.items']: items, chatMsgs: (this.data.chatMsgs || []).concat(msgs, [{ role: 'agent', t: '已把第 ' + (idx + 1) + ' 个换成 ' + cand.name + ' ' + (cand.sets || 3) + '×' + (cand.reps || 12) }]) });
+      return;
+    }
+    // 6) 本地接不住 → AI（没有 AI 就明确说没听懂 + 给可用说法）
+    this.chatAskAi(raw, msgs);
+  },
+
+  // 在当前部位动作库里按用户提到的最长词找候选
+  chatFindByName(raw, part) {
+    const pool = data.search('', part, '全部', 500).concat(actions.customList().filter(x => x && x.p === part));
+    let best = null;
+    (pool || []).forEach(e => {
+      if (!e || !e.n) return;
+      if (raw.indexOf(e.n) >= 0 && (!best || e.n.length > best.n.length)) best = e;
+    });
+    if (best) {
+      const it = { exId: best.id, name: best.n, part: best.p, sets: 3, reps: 12, weight: 0, note: '按动作库补一个 · 3×12 起步' };
+      return it;
+    }
+    // 模糊：用户说「上斜」→ 库里名字含该词的
+    const keys = (raw.match(/[\u4e00-\u9fa5]{2,4}/g) || []).filter(k => !/换成|改成|换成|卧推|今天|动作|练|一个|两个|上午|下午/.test(k));
+    for (const k of keys) {
+      const e = (pool || []).find(x => x && x.n.indexOf(k) >= 0);
+      if (e) return { exId: e.id, name: e.n, part: e.p, sets: 3, reps: 12, weight: 0, note: '按「' + k + '」匹配的动作 · 3×12 起步' };
+    }
+    return null;
+  },
+
+  chatAskAi(raw, msgs) {
+    const rec = this.data.chatRec;
+    const app = getApp();
+    const ready = !!(app && app.globalData && app.globalData.cloudReady);
+    const cfg = ai.cfg();
+    if (!ready && !(cfg.baseUrl && cfg.apiKey)) {
+      this.setData({ chatMsgs: (this.data.chatMsgs || []).concat(msgs, [{ role: 'agent', t: '这句我还没接住。可以直接说「改成肩」「换一批」「只练两个」「删掉飞鸟」，或点上面的部位。' }]) });
+      return;
+    }
+    this.setData({ chatMsgs: (this.data.chatMsgs || []).concat(msgs, [{ role: 'agent', t: '想一下…', busy: true }]), chatBusy: true });
+    const basePart = rec.part;
+    const seq = (this._chatSeq = (this._chatSeq || 0) + 1);
+    ai.ask({
+      messages: [
+        { role: 'system', content: '你在改今天训练的动作清单。只输出 JSON：{"note":"一句话确认","items":["动作名","动作名"]}。items 必须是给的库里同部位动作名，保持 2-4 个，不要解释。' },
+        { role: 'user', content: '部位：' + rec.part + '\n当前：' + (rec.items || []).map(i => i.name).join('、') + '\n可选：' + data.search('', rec.part, '全部', 60).map(e => e.n).join('、') + '\n用户说：' + raw }
+      ],
+      max_tokens: 160,
+      temperature: 0.3
+    }).then(res => {
+      if (seq !== this._chatSeq) return;   // 期间用户又改了，这次结果作废
+      const msgsNow = (this.data.chatMsgs || []).slice();
+      msgsNow.pop(); // 去掉「想一下…」
+      if (!res.ok || !res.text) {
+        this.setData({ chatMsgs: msgsNow, chatBusy: false });
+        return;
+      }
+      const obj = recommend.parseAiPlan(res.text);
+      const names = (obj && (obj.items || (obj.days && obj.days[0] && obj.days[0].items))) || [];
+      if (!names.length) {
+        this.setData({ chatMsgs: msgsNow.concat([{ role: 'agent', t: '这次没改成功，再试一句？' }]), chatBusy: false });
+        return;
+      }
+      const items = names
+        .map(n => this.chatFindByName(String(n), basePart))
+        .filter(Boolean)
+        .map(i => this.chatItem(i))
+        .slice(0, 4);
+      if (!items.length) {
+        this.setData({ chatMsgs: msgsNow.concat([{ role: 'agent', t: 'AI 给的动作对不上当前部位，换句话再试' }]), chatBusy: false });
+        return;
+      }
+      this.setData({
+        ['chatRec.items']: items, chatBusy: false,
+        chatMsgs: msgsNow.concat([{ role: 'agent', t: (obj.note || '改好了') + ' · ' + items.map(i => i.name).join('、') }])
+      });
+    }).catch(() => {
+      if (seq !== this._chatSeq) return;
+      const msgsNow = (this.data.chatMsgs || []).slice();
+      msgsNow.pop();
+      this.setData({ chatMsgs: msgsNow.concat([{ role: 'agent', t: 'AI 没回话，先用本地说法改吧' }]), chatBusy: false });
+    });
+  },
+
+  // [改]：行内 stepper
+  chatEditOpen(e) {
+    const i = Number(e.currentTarget.dataset.i);
+    const it = (this.data.chatRec.items || [])[i];
+    if (!it) return;
+    this.setData({ chatEdit: i, chatDraft: { sets: it.sets, reps: it.reps, weight: it.weight, dur: it.dur } });
+  },
+
+  chatStep(e) {
+    const k = e.currentTarget.dataset.k;
+    const d = Number(e.currentTarget.dataset.d) || 1;
+    const dr = Object.assign({}, this.data.chatDraft);
+    dr[k] = Math.max(k === 'weight' ? 0 : 1, Math.round((dr[k] + d) * 10) / 10);
+    this.setData({ chatDraft: dr });
+  },
+
+  chatEditSave() {
+    const i = this.data.chatEdit;
+    const it = (this.data.chatRec.items || [])[i];
+    if (!it) return;
+    const dr = this.data.chatDraft;
+    const items = this.data.chatRec.items.slice();
+    items[i] = Object.assign({}, it, { sets: dr.sets, reps: dr.reps, weight: dr.weight, line: it.cd ? ('有氧 ' + it.dur + '′') : ((dr.weight > 0 ? dr.weight + 'kg ' : '自重 ') + dr.sets + '×' + dr.reps) });
+    this.setData({ ['chatRec.items']: items, chatEdit: -1 });
+  },
+
+  chatEditCancel() { this.setData({ chatEdit: -1 }); },
+
+  chatDel(e) {
+    const i = Number(e.currentTarget.dataset.i);
+    const items = (this.data.chatRec.items || []).filter((x, k) => k !== i);
+    if (!items.length) { wx.showToast({ title: '至少留一个动作', icon: 'none' }); return; }
+    this.setData({ ['chatRec.items']: items, chatEdit: -1 });
+  },
+
+  // 就这样，开练：写今天的训练记录 → 收弹层 → 进专注
+  chatStart() {
+    const rec = this.data.chatRec;
+    const items = (rec && rec.items) || [];
+    if (!items.length) { wx.showToast({ title: '先有动作再开练', icon: 'none' }); return; }
+    const date = this.data.today || engine.dayKey();
+    let added = 0;
+    const train = store.getTrain();
+    items.forEach(i => {
+      const exists = (train.records || []).some(r => r && r.date === date && (i.cd ? r.name === i.name : r.exId === i.exId));
+      if (exists) return;
+      if (i.cd) {
+        actions.saveCardio({ date, modal: i.name, name: i.name, exId: i.exId, part: '有氧', mode: 'timer', min: i.dur || 20, dur: i.dur || 20, done: false });
+        added++;
+        return;
+      }
+      const groups = [];
+      for (let g = 0; g < i.sets; g++) groups.push({ no: g + 1, reps: i.reps, weight: i.weight || 0, done: false, warmup: false, rpe: 0, sec: 0 });
+      actions.saveStrength({ date, exId: i.exId, name: i.name, part: i.part, sets: i.sets, reps: i.reps, weight: i.weight || 0, groups });
+      added++;
+    });
+    this.setData({ planOpen: false, chatEdit: -1 });
+    this.refresh();
+    if (!added) wx.showToast({ title: '今天已经有这些动作了', icon: 'none' });
+    setTimeout(() => wx.navigateTo({ url: '/pages/focus/index?date=' + date }), 220);
   },
 
   // 本周排期卡：只回答「这周哪天练什么、哪天还空着」
@@ -266,7 +543,7 @@ Page({
     const n = plan.count(engine.dayKey());
     this.setData({
       planWeek: rows,
-      planWeekTip: n ? '今天排了 ' + n + ' 个动作，一键落成训练' : '今天还没排，先去 📅 排一个'
+      planWeekTip: n ? '今天排了 ' + n + ' 个动作，一键落成训练' : '今天没排期 · 让 📅 现场排一份'
     });
   },
 
@@ -314,7 +591,7 @@ Page({
       return;
     }
     this.setData({ addOpen: false });
-    wx.showToast({ title: '这天还没排动作，先排一个', icon: 'none' });
+    wx.showToast({ title: '这天没排期，让 📅 现场排一份', icon: 'none' });
     setTimeout(() => this.openPlan(), 200);
   },
 

@@ -301,7 +301,7 @@
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 97;
   background: #fff; border-radius: 28rpx 28rpx 0 0;
   padding: 12rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; max-height: 84vh;
+  display: block; max-height: 84vh;
 }
 .ps-bar { width: 64rpx; height: 8rpx; border-radius: 4rpx; background: #DDE4E2; margin: 4rpx auto 12rpx; flex: none; }
 .ps-head { display: flex; align-items: center; justify-content: space-between; flex: none; }
@@ -340,3 +340,43 @@
 .as-w-t { display: block; font-size: 25rpx; color: #14181A; }
 .as-w-s { display: block; margin-top: 2rpx; font-size: 20rpx; color: #A9B3AF; }
 .as-w-go { color: #A9B3AF; font-size: 24rpx; }
+
+/* 「今天练什么」对话 sheet */
+.ps-h-r { display: flex; align-items: center; gap: 14rpx; }
+.ps-switch { font-size: 21rpx; color: #12A594; padding: 4rpx 6rpx; }
+.ch-body { max-height: 38vh; margin-top: 12rpx; }
+.ch-msgs { display: flex; flex-direction: column; gap: 10rpx; padding: 4rpx 0 12rpx; }
+.ch-m { max-width: 82%; padding: 14rpx 18rpx; border-radius: 16rpx; }
+.ch-m.agent { align-self: flex-start; background: #F4F8F7; border: 1rpx solid #E7F0EE; }
+.ch-m.me { align-self: flex-end; background: #EAF6F3; }
+.ch-m-t { display: block; font-size: 24rpx; line-height: 1.55; color: #14181A; }
+.ch-m-s { display: block; margin-top: 4rpx; font-size: 20rpx; line-height: 1.5; color: #7C8783; }
+.ch-list { border-top: 1rpx solid #F2F5F4; }
+.ch-row { display: flex; align-items: center; gap: 12rpx; padding: 14rpx 0; border-bottom: 1rpx solid #F2F5F4; }
+.ch-l { flex: 1; min-width: 0; }
+.ch-n { display: block; font-size: 25rpx; font-weight: 500; color: #14181A; }
+.ch-cd { margin-left: 8rpx; padding: 2rpx 8rpx; font-size: 18rpx; color: #12A594; background: #EAF6F3; border-radius: 6rpx; font-weight: 400; }
+.ch-note { display: block; margin-top: 3rpx; font-size: 19rpx; line-height: 1.4; color: #8A9490; }
+.ch-line { flex: none; font-size: 22rpx; color: #12A594; font-variant-numeric: tabular-nums; }
+.ch-btn { flex: none; font-size: 20rpx; color: #5B6461; padding: 6rpx 14rpx; background: #F4F7F6; border-radius: 16rpx; }
+.ch-del { flex: none; font-size: 22rpx; color: #B6BEBB; padding: 0 4rpx; }
+.ch-edit { display: flex; align-items: center; gap: 14rpx; padding: 10rpx 0 14rpx; border-bottom: 1rpx solid #F2F5F4; flex-wrap: wrap; }
+.ch-stp { display: flex; align-items: center; gap: 4rpx; }
+.ch-sk { font-size: 19rpx; color: #8A9490; margin-right: 2rpx; }
+.ch-sv { width: 44rpx; height: 44rpx; line-height: 44rpx; text-align: center; font-size: 22rpx; color: #12A594; background: #F4F7F6; border-radius: 8rpx; }
+.ch-sn { min-width: 52rpx; text-align: center; font-size: 23rpx; color: #14181A; font-variant-numeric: tabular-nums; }
+.ch-ok { font-size: 21rpx; color: #fff; background: #12A594; padding: 8rpx 18rpx; border-radius: 16rpx; }
+.ch-parts { display: flex; align-items: center; padding: 14rpx 0 2rpx; }
+.ch-parts-t { flex: none; margin-right: 20rpx; font-size: 21rpx; line-height: 40rpx; color: #8A9490; }
+
+.ch-chip { flex: none; margin-right: 24rpx; font-size: 26rpx; line-height: 40rpx; color: #5B6461; }
+.ch-chip.on { color: #12A594; font-weight: 600; text-decoration: underline; }
+.ch-chip.warn { color: #B07A18; }
+.ch-acts { display: flex; align-items: center; gap: 14rpx; flex: none; padding-top: 6rpx; }
+.ch-again { flex: none; font-size: 23rpx; color: #5B6461; padding: 20rpx 22rpx; background: #F4F7F6; border-radius: 14rpx; }
+.ch-go { flex: 1; text-align: center; height: 84rpx; line-height: 84rpx; font-size: 27rpx; font-weight: 600; color: #fff; background: #12A594; border-radius: 14rpx; }
+.ch-in { display: flex; align-items: center; gap: 12rpx; flex: none; margin-top: 14rpx; }
+.ch-q { flex: 1; height: 76rpx; background: #F4F7F6; border-radius: 38rpx; padding: 0 26rpx; font-size: 24rpx; color: #14181A; }
+.ch-ph { color: #A9B3AF; }
+.ch-send { flex: none; font-size: 24rpx; color: #B6BEBB; padding: 0 10rpx; }
+.ch-send.on { color: #12A594; font-weight: 600; }
