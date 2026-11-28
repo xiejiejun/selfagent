@@ -7,6 +7,7 @@ const cloudurl = require('../../libs/cloudurl');
 const thumb = require('../../libs/thumbcache');
 const data = require('../../libs/data/index');
 const cardioLib = require('../../libs/cardio');
+const plan = require('../../libs/plan/index');
 const CLIP_INDEX = require('../../libs/clip-index.js');
 
 let openMap = {};
@@ -136,7 +137,8 @@ Page({
   data: {
     date: '', dateLabel: '', dateText: '', isToday: true,
     today: '',
-    barDate: '', planOpen: false,
+    barDate: '', planOpen: false, planWeek: [], planWeekTip: '',
+    addOpen: false, addQuery: '', addPlanDate: '', addPlanLabel: '添加到今天',
     scrollDim: false,
     list: [], summary: '—', empty: true, fbDone: false, prToday: 0, prTxt: 'PR 榜',
     editorVisible: false, payload: null,
@@ -240,6 +242,7 @@ Page({
       barDate: engine.shortDate(engine.dayKey())
     });
     if (this.data.grid) this.fillGrid(v.list); else this.warmGrid(v.list);
+    this.refreshPlanWeek();
   },
 
   // 点日期栏回到今天
@@ -249,11 +252,118 @@ Page({
   },
 
   openPlan() {
+    this.refreshPlanWeek();
     this.setData({ planOpen: true });
   },
 
   closePlan() {
     this.setData({ planOpen: false });
+  },
+
+  // 本周排期卡：只回答「这周哪天练什么、哪天还空着」
+  refreshPlanWeek() {
+    const rows = plan.weekRows(engine.ensureTrain(store.getTrain()));
+    const n = plan.count(engine.dayKey());
+    this.setData({
+      planWeek: rows,
+      planWeekTip: n ? '今天排了 ' + n + ' 个动作，一键落成训练' : '今天还没排，先去 📅 排一个'
+    });
+  },
+
+  /* ---------------- 添加 sheet（＋ 的唯一入口） ---------------- */
+  openAddSheet() {
+    this._planDate = '';
+    this.setData({ addOpen: true, addQuery: '', addPlanDate: '', addPlanLabel: '添加到今天' });
+  },
+
+  closeAdd() { this.setData({ addOpen: false }); },
+
+  onAddInput(e) { this.setData({ addQuery: e.detail.value || '' }); },
+
+  // 搜索框回车：走动作库的「AI 三合一」搜索（关键词 / 自然语言都在同一框里）
+  addSearch() {
+    const q = String(this.data.addQuery || '').trim();
+    const date = this.data.addPlanDate;
+    this.setData({ addOpen: false });
+    this._planDate = date || '';
+    this.openLibrary(q, date);
+  },
+
+  // sheet 里三条快速通道
+  addPickLib() {
+    const date = this.data.addPlanDate;
+    this.setData({ addOpen: false });
+    this._planDate = date || '';
+    this.openLibrary('', date);
+  },
+
+  addCustom() {
+    this.setData({ addOpen: false });
+    this._planDate = '';
+    wx.navigateTo({ url: '/pages/mylib/index' });
+  },
+
+  // 从计划加入：今天有排期就一次性落成训练记录；没有就转到排期卡去排
+  addFromPlan() {
+    const d = this.data.addPlanDate || this.data.today;
+    if (plan.count(d)) {
+      const n = plan.importToDate(d);
+      this.setData({ addOpen: false, planOpen: false });
+      this.refresh();
+      wx.showToast({ title: n ? '已加入 ' + n + ' 个动作' : '今天的训练里已有这些动作', icon: 'none' });
+      return;
+    }
+    this.setData({ addOpen: false });
+    wx.showToast({ title: '这天还没排动作，先排一个', icon: 'none' });
+    setTimeout(() => this.openPlan(), 200);
+  },
+
+  // 排期卡上「＋排」：复用同一个添加 sheet，只是落点换成该日计划
+  planAddDay(e) {
+    const date = e.currentTarget.dataset.date;
+    if (!date) return;
+    this._planDate = date;
+    this.setData({
+      planOpen: false, addOpen: true, addQuery: '',
+      addPlanDate: date, addPlanLabel: '排到 ' + engine.shortDate(date)
+    });
+  },
+
+  // sheet 里的 ✦ / 📷：AI 找动作、拍照识别，都走同一个 pick 回传
+  addAiFind() {
+    const date = this.data.addPlanDate;
+    this.setData({ addOpen: false });
+    this._planDate = date || '';
+    wx.navigateTo({
+      url: '/pages/aifind/index',
+      events: { pick: (ex) => this.onPickArrive(ex) }
+    });
+  },
+
+  addScan() {
+    const date = this.data.addPlanDate;
+    this.setData({ addOpen: false });
+    this._planDate = date || '';
+    wx.navigateTo({
+      url: '/pages/scan/index',
+      events: { pick: (ex) => this.onPickArrive(ex) }
+    });
+  },
+
+  // 挑完一个动作：排期模式落进 plan.dates，否则照旧进「添加动作」编辑器
+  onPickArrive(ex) {
+    if (!ex) return;
+    const date = this._planDate;
+    if (date) {
+      const hit = plan.add(date, { exId: ex.id || ex.exId, n: ex.n, p: ex.p || ex.part, cd: ex.p === '有氧' || ex.isCardio });
+      this._planDate = '';
+      this.refreshPlanWeek();
+      // 排完把排期卡弹回来，能立刻看到这天多了一条
+      this.setData({ planOpen: true });
+      wx.showToast({ title: hit ? '已排到 ' + engine.shortDate(date) : '这天已经排过这个动作', icon: 'none' });
+      return;
+    }
+    this.addPick(ex);
   },
 
   // 图卡缩略图：本机缓存 → 内存 → 自定义动作自带图 → 空（空则显示部位占位文字）
@@ -880,21 +990,24 @@ Page({
   },
 
   // ＋ 直达动作库：主路径一步进入（搜索框自动聚焦），低频方式收进库内顶部
-  openAddSheet() { this.openLibrary(); },
-
-  openLibrary(e) {
+  // 动作库：唯一添加入口；带上 q 直接落到搜索结果，带上 date 则落点是那天的排期
+  openLibrary(q, date) {
     let part = '';
-    if (typeof e === 'string') part = e;
-    else if (e && e.currentTarget && e.currentTarget.dataset) part = e.currentTarget.dataset.part || '';
+    // 兼容旧的模板直接 bindtap="openLibrary" / data-part：参数是一个事件对象
+    if (q && typeof q === 'object') {
+      const ds = (q.currentTarget && q.currentTarget.dataset) || {};
+      part = ds.part || '';
+      q = '';
+    }
+    const qs = [];
+    if (q) qs.push('q=' + encodeURIComponent(String(q)));
+    if (part) qs.push('part=' + encodeURIComponent(part));
+    if (date) qs.push('plan=' + encodeURIComponent(String(date)));
+    this._planDate = date || '';
     wx.navigateTo({
-      url: '/pages/library/index' + (part ? '?part=' + encodeURIComponent(part) : ''),
-      events: { pick: (ex) => this.addPick(ex) }
+      url: '/pages/library/index' + (qs.length ? '?' + qs.join('&') : ''),
+      events: { pick: (ex) => this.onPickArrive(ex) }
     });
-  },
-
-  // 只逛不加：学习态打开动作库，不挂 pick 回调
-  browseLibrary() {
-    wx.navigateTo({ url: '/pages/library/index?from=learn' });
   },
 
   // PR 榜 / 梯度：成绩榜与逐日增长，入口从设置挪到训练页顶栏

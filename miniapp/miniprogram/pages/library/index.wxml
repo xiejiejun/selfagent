@@ -129,11 +129,11 @@
       <view class="d-btn ghost" wx:if="{{detail.mine}}" bindtap="editCustom">编辑</view>
       <block wx:if="{{learn}}">
         <view class="d-btn primary favbtn" data-id="{{detail.id}}" bindtap="star">{{detail.fav ? '★ 已收藏' : '☆ 收藏'}}</view>
-        <view class="d-btn ghost" bindtap="pickNow">＋ 加入今天</view>
+        <view class="d-btn ghost" bindtap="pickNow">{{planDate ? '＋ 排到 ' + planLabel : '＋ 加入今天'}}</view>
       </block>
       <block wx:else>
         <view class="d-btn ghost {{detail.fav ? 'on' : ''}}" data-id="{{detail.id}}" bindtap="star">{{detail.fav ? '★ 已收藏' : '☆ 收藏'}}</view>
-        <view class="d-btn primary" bindtap="pickNow">加入今天训练</view>
+        <view class="d-btn primary" bindtap="pickNow">{{planDate ? '排到 ' + planLabel : '加入今天训练'}}</view>
       </block>
     </view>
   </view>

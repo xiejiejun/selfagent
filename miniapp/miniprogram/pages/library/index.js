@@ -42,6 +42,8 @@ Page({
     nameDraft: '',
     learn: false,      // 学习态：只逛不加
     coach: false,      // 一次性场景提示
+    planDate: '',      // 从排期卡进来：选中动作落到该日计划
+    planLabel: '',
     searching: false,
     // 统一检索
     src: 'kw',         // kw | ai | vision
@@ -76,6 +78,12 @@ Page({
     // 从训练页空态「先记一条有氧」进来：预选部位
     const part = (opts && opts.part) ? decodeURIComponent(opts.part) : '';
     if (part && data.PARTS.indexOf(part) >= 0) this.setData({ part });
+    // 从训练页 ＋ 的搜索框进来：直接落到搜索结果
+    const kw = (opts && opts.q) ? decodeURIComponent(opts.q) : '';
+    if (kw) this.setData({ q: kw, searching: true, autoFocus: false });
+    // 从排期卡的「＋排」进来：这页选中的动作落在该日计划，而不是今天训练
+    const pd = (opts && opts.plan) ? decodeURIComponent(opts.plan) : '';
+    if (pd) this.setData({ planDate: pd, planLabel: pd.slice(5) });
     this.refresh();
     // 从训练页「详情」进来：带 id 就直接展开该动作的详情
     const want = (opts && opts.id) ? decodeURIComponent(opts.id) : '';

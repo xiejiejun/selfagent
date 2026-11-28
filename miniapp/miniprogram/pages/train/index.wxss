@@ -294,3 +294,49 @@
 .datebar .dlabel { max-width: 46vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .db-r { margin-left: auto; display: flex; align-items: center; gap: 10rpx; }
 .db-r .libbtn { margin-left: 0; font-size: 30rpx; padding: 0 6rpx; }
+
+/* ============ 计划 / 添加：共用半屏 sheet ============ */
+.psmask, .asmask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(20,24,26,.42); z-index: 96; }
+.psheet, .asheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 97;
+  background: #fff; border-radius: 28rpx 28rpx 0 0;
+  padding: 12rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; max-height: 84vh;
+}
+.ps-bar { width: 64rpx; height: 8rpx; border-radius: 4rpx; background: #DDE4E2; margin: 4rpx auto 12rpx; flex: none; }
+.ps-head { display: flex; align-items: center; justify-content: space-between; flex: none; }
+.ps-t { font-size: 27rpx; font-weight: 600; color: #14181A; }
+.ps-x { font-size: 28rpx; color: #8A9490; padding: 0 8rpx; }
+
+/* 本周排期：周条 + 每日一行 */
+.pw-strip { display: flex; justify-content: space-between; padding: 16rpx 2rpx 10rpx; flex: none; }
+.pw-d { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5rpx; }
+.pw-w { font-size: 19rpx; color: #8A9490; }
+.pw-md { font-size: 19rpx; color: #5B6461; font-variant-numeric: tabular-nums; }
+.pw-d.today .pw-w, .pw-d.today .pw-md { color: #0F8C7E; font-weight: 600; }
+.pw-dot { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: #E6ECEA; box-sizing: border-box; }
+.pw-dot.on { background: #12A594; }
+.pw-dot.today { background: #fff; border: 2rpx solid #12A594; }
+.pw-body { max-height: 52vh; }
+.pw-row { display: flex; align-items: center; gap: 12rpx; padding: 15rpx 8rpx; border-bottom: 1rpx solid #F2F5F4; }
+.pw-row.today { background: #F4F8F7; border-radius: 12rpx; }
+.pw-l { flex: 1; min-width: 0; }
+.pw-day { display: block; font-size: 23rpx; color: #14181A; }
+.pw-sum { display: block; margin-top: 4rpx; font-size: 20rpx; color: #5B6461; }
+.pw-sum.dim { color: #A9B3AF; }
+.pw-add { flex: none; font-size: 21rpx; color: #12A594; padding: 8rpx 18rpx; border: 1rpx dashed #A9DCD3; border-radius: 20rpx; }
+.ls-tip { margin-top: 14rpx; text-align: center; font-size: 20rpx; color: #A9B3AF; line-height: 1.5; flex: none; }
+
+/* ＋ 添加 sheet */
+.as-search { display: flex; align-items: center; gap: 10rpx; margin: 10rpx 0 6rpx; padding: 0 18rpx; height: 76rpx; background: #F4F8F7; border-radius: 16rpx; flex: none; }
+.as-ic { font-size: 24rpx; color: #8A9490; }
+.as-q { flex: 1; font-size: 24rpx; color: #14181A; height: 76rpx; }
+.as-ph { color: #A9B3AF; font-size: 23rpx; }
+.as-act { font-size: 26rpx; padding: 0 8rpx; color: #3F4B47; }
+.as-way { display: flex; align-items: center; gap: 14rpx; padding: 18rpx 6rpx; border-bottom: 1rpx solid #F2F5F4; }
+.as-way:last-child { border-bottom: none; }
+.as-w-ic { width: 54rpx; height: 54rpx; line-height: 54rpx; text-align: center; background: #F4F8F7; border-radius: 14rpx; font-size: 24rpx; flex: none; }
+.as-w-l { flex: 1; min-width: 0; }
+.as-w-t { display: block; font-size: 25rpx; color: #14181A; }
+.as-w-s { display: block; margin-top: 2rpx; font-size: 20rpx; color: #A9B3AF; }
+.as-w-go { color: #A9B3AF; font-size: 24rpx; }

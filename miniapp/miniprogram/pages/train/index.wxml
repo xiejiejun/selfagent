@@ -4,7 +4,6 @@
       <text class="dlabel" bindtap="scrollTop">{{barDate}}</text>
       <text class="prmini {{prToday ? 'has' : ''}}" bindtap="goPr">{{prTxt}}</text>
       <view class="db-r">
-        <text class="libbtn" bindtap="browseLibrary">📚</text>
         <text class="libbtn" bindtap="openPlan">📅</text>
         <text class="seg-add" bindtap="openAddSheet">＋</text>
       </view>
@@ -127,8 +126,7 @@
     <view class="empty" wx:if="{{empty}}">
       <text class="et">这个日期还没有训练</text>
       <text class="es">挑一个动作就能开始，不用先排计划</text>
-      <view class="cta" bindtap="openLibrary">从动作库挑一个开始</view>
-      <text class="cta-sub" bindtap="browseLibrary">先去逛逛动作库 →</text>
+      <view class="cta" bindtap="openAddSheet">＋ 添加动作</view>
       <text class="cta-sub" bindtap="openLibrary" data-part="有氧">或者，先记一条有氧</text>
     </view>
 
@@ -145,17 +143,75 @@
     </view>
 </view>
 
-<!-- 计划：从常驻 tab 降为日期栏 📅 半屏弹层 -->
+<!-- 计划：日期栏 📅 = 本周排期卡（只回答「哪天练什么、哪天还空着」） -->
 <view class="psmask" wx:if="{{planOpen}}" bindtap="closePlan"></view>
 <view class="psheet" wx:if="{{planOpen}}">
   <view class="ps-bar"></view>
   <view class="ps-head">
-    <text class="ps-t">计划</text>
+    <text class="ps-t">本周排期</text>
     <text class="ps-x" catchtap="closePlan">✕</text>
   </view>
-  <scroll-view class="ps-body" scroll-y="true" enhanced="true" show-scrollbar="false">
-    <train-plan id="planCard" date="{{today}}" date-label="今天" bind:changed="onPlanChanged" />
+  <view class="pw-strip">
+    <view class="pw-d {{item.today ? 'today' : ''}} {{item.total ? 'on' : ''}}" wx:for="{{planWeek}}" wx:key="date">
+      <text class="pw-w">{{item.w}}</text>
+      <text class="pw-md">{{item.md}}</text>
+      <view class="pw-dot {{item.total ? 'on' : (item.today ? 'today' : '')}}"></view>
+    </view>
+  </view>
+  <scroll-view class="pw-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+    <view class="pw-row {{item.today ? 'today' : ''}}" wx:for="{{planWeek}}" wx:key="date">
+      <view class="pw-l">
+        <text class="pw-day">周{{item.w}} · {{item.md}}{{item.today ? ' 今天' : ''}}</text>
+        <text class="pw-sum" wx:if="{{item.planned || item.total}}">
+          {{item.planned ? '排了 ' + item.planned + ' 个动作' : '没排，随手练的'}}{{item.total ? ' · 已完成 ' + item.done + '/' + item.total + ' 组' : ''}}
+        </text>
+        <text class="pw-sum dim" wx:else>空着</text>
+      </view>
+      <text class="pw-add" wx:if="{{!item.planned}}" data-date="{{item.date}}" catchtap="planAddDay">＋ 排</text>
+    </view>
   </scroll-view>
+  <view class="ls-tip">排期只是待办，回＋「从计划加入」才会落成今天的训练</view>
+</view>
+
+<!-- ＋ 添加 sheet：搜索框（关键词 / 自然语言 / 拍照同一框）+ 三条快速通道 -->
+<view class="asmask" wx:if="{{addOpen}}" bindtap="closeAdd"></view>
+<view class="asheet" wx:if="{{addOpen}}">
+  <view class="ps-bar"></view>
+  <view class="ps-head">
+    <text class="ps-t">{{addPlanLabel}}</text>
+    <text class="ps-x" catchtap="closeAdd">✕</text>
+  </view>
+  <view class="as-search">
+    <text class="as-ic">🔍</text>
+    <input class="as-q" value="{{addQuery}}" bindinput="onAddInput" bindconfirm="addSearch" confirm-type="search"
+      placeholder="搜动作，或说「只有哑铃练胸」" placeholder-class="as-ph" cursor-spacing="18" />
+    <text class="as-act" catchtap="addAiFind">✦</text>
+    <text class="as-act" catchtap="addScan">📷</text>
+  </view>
+  <view class="as-way" catchtap="addPickLib">
+    <text class="as-w-ic">🏋</text>
+    <view class="as-w-l">
+      <text class="as-w-t">从动作库添加</text>
+      <text class="as-w-s">5000+ 动作，搜索 / 部位 / 器械筛选</text>
+    </view>
+    <text class="as-w-go">›</text>
+  </view>
+  <view class="as-way" catchtap="addCustom">
+    <text class="as-w-ic">✎</text>
+    <view class="as-w-l">
+      <text class="as-w-t">自建动作</text>
+      <text class="as-w-s">库里没有的动作，自己建一个</text>
+    </view>
+    <text class="as-w-go">›</text>
+  </view>
+  <view class="as-way" wx:if="{{!addPlanDate}}" catchtap="addFromPlan">
+    <text class="as-w-ic">📅</text>
+    <view class="as-w-l">
+      <text class="as-w-t">从计划加入</text>
+      <text class="as-w-s">{{planWeekTip}}</text>
+    </view>
+    <text class="as-w-go">›</text>
+  </view>
 </view>
 
 <!-- 动作详情浮层：只展示当前这一个动作，不跳动作库 -->
