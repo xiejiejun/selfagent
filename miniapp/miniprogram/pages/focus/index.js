@@ -366,13 +366,23 @@ Page({
 
   /* ---------- 队列 ---------- */
   refreshQueue() {
-    const q = this.items.map((it, i) => ({
-      i: i + 1,
-      name: it.name,
-      cd: it.type === 'cardio' || !!it.isCardio,
-      done: it.type === 'cardio' ? !!it.done : it.groups.every(g => g.done),
-      cur: i === this.idx
-    }));
+    const q = this.items.map((it, i) => {
+      const cd = it.type === 'cardio' || !!it.isCardio;
+      const gs = it.groups || [];
+      const doneAll = cd ? !!it.done : gs.every(g => g.done);
+      const last = gs.length ? gs[gs.length - 1] : null;
+      return {
+        i: i + 1,
+        name: it.name,
+        cd,
+        done: doneAll,
+        cur: i === this.idx,
+        // 抽屉里要显示「3/3 组 · 60kg」，已完成动作还能挂 +1 组
+        sn: cd ? '' : (gs.filter(g => g.done).length + '/' + gs.length + ' 组'),
+        w: (cd || !doneAll || !last) ? '' : engine.wText(last.weight, it.uni),
+        ghost: !cd && doneAll
+      };
+    });
     const doneN = this.items.filter(it => it.type === 'cardio' ? it.done : it.groups.every(g => g.done)).length;
     let sDone = 0, sTotal = 0;
     this.items.forEach(it => {
@@ -556,13 +566,68 @@ Page({
     wx.showToast({ title: '第 ' + (gi + 1) + ' 组已重置，重做吧', icon: 'none' });
   },
 
+  // 克隆最后一组：重量 / 次数 / 单侧左右重量 / 组类型原样，标成未完成的一组
+  cloneLastGroup(it) {
+    if (!it || it.type === 'cardio' || it.isCardio) return null;
+    const gs = it.groups || [];
+    if (!gs.length) return null;
+    const last = gs[gs.length - 1] || {};
+    const g = {
+      no: gs.length + 1,
+      reps: last.reps || 0,
+      weight: last.weight || 0,
+      warmup: false,
+      done: false,
+      sec: 0,
+      rpe: 0
+    };
+    if (last.lw != null || last.rw != null) { g.lw = last.lw || 0; g.rw = last.rw || 0; }
+    if (last.uni) g.uni = true;
+    gs.push(g);
+    it.groups = gs;
+    it.done = false;
+    this.saveStrength(it);
+    this.refreshQueue();
+    this.persistFocus();
+    return g;
+  },
+
+  // ☰ 抽屉：已完成动作「＋1 组」= 复制上一组 → 跳过去进 ready 续做
+  addSetAndJump(e) {
+    const i = Number(e.currentTarget.dataset.i) - 1;
+    const it = this.items[i];
+    if (!it || it.type === 'cardio' || it.isCardio) return;
+    const g = this.cloneLastGroup(it);
+    if (!g) return;
+    this.setData({ listVisible: false });
+    this._restEnd = 0;
+    this._gi = null;
+    this.idx = i;
+    this.prepare();
+    wx.vibrateShort({ type: 'light' });
+    wx.showToast({ title: '已加 1 组（跟第 ' + (g.no - 1) + ' 组一样），调重量后点环', icon: 'none' });
+  },
+
   jumpTo(e) {
     const i = Number(e.currentTarget.dataset.i) - 1;
     if (!(i >= 0 && i < this.items.length)) return;
+    const tgt = this.items[i];
+    const cd = tgt && (tgt.type === 'cardio' || tgt.isCardio);
+    // 目标动作已完成（每一组都打过勾）：直接跳过去只会被 prepare() 弹到下一个动作，
+    // 所以先补一组，落到 ready 态续做，和「＋1 组」收敛到同一个状态
+    const doneAll = !!tgt && !cd && (tgt.groups || []).length > 0 && tgt.groups.every(g => g.done);
+    const self = i === this.idx;
     if (this.data.listVisible) this.setData({ listVisible: false });
-    if (i === this.idx && this.data.stage !== 'finish') return;
+    if (self && !doneAll && this.data.stage !== 'finish') return;
     this._restEnd = 0;
+    this._gi = null;
     this.idx = i;
+    if (doneAll) {
+      const g = this.cloneLastGroup(tgt);
+      this.prepare();
+      if (g) wx.showToast({ title: '已补 1 组 · 第 ' + g.no + ' 组待做', icon: 'none' });
+      return;
+    }
     this.prepare();
   },
 

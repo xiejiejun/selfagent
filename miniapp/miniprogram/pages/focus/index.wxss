@@ -30,12 +30,19 @@
 .ls-i { width: 44rpx; color: #7F8C88; font-size: 22rpx; }
 .ls-n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ls-cd { font-size: 18rpx; color: #E8A93D; }
+.ls-sn { font-size: 20rpx; color: #7F8C88; }
+.ls-w { font-size: 20rpx; color: #9FB0AB; }
 .ls-st { font-size: 21rpx; color: #8FA09B; }
 .ls-ops { width: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 10rpx; margin-top: 10rpx; }
 .ls-op {
   font-size: 20rpx; color: #9FB0AB; padding: 8rpx 18rpx; border: 1rpx solid #2A3835; border-radius: 10rpx;
 }
 .ls-op.del { color: #E06E78; border-color: #4A3036; }
+/* 已完成动作的补救入口：ghost 小按钮，不加颜色重量，不当主流程 */
+.ls-plus {
+  font-size: 20rpx; color: #3DDCBF; padding: 8rpx 16rpx;
+  border: 1rpx solid #2C403B; border-radius: 10rpx; background: transparent; margin-right: auto;
+}
 .ls-add { margin-top: 16rpx; text-align: center; font-size: 22rpx; color: #3DDCBF; border: 1rpx dashed #2C403B; border-radius: 12rpx; padding: 16rpx 0; }
 .ls-tip { margin-top: 16rpx; text-align: center; font-size: 21rpx; color: #7F8C88; line-height: 1.5; }
 .qitem { display: inline-flex; align-items: center; gap: 10rpx; padding: 10rpx 18rpx; margin-right: 12rpx; border-radius: 26rpx; background: #1A2422; font-size: 22rpx; color: #8FA09B; }

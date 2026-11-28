@@ -31,8 +31,11 @@
         <text class="ls-i">{{item.i}}</text>
         <text class="ls-n">{{item.name}}</text>
         <text class="ls-cd" wx:if="{{item.cd}}">有氧</text>
-        <text class="ls-st">{{item.done ? '✓ 已完成' : (item.cur ? '进行中' : '未开始')}}</text>
+        <text class="ls-sn" wx:if="{{item.sn}}">{{item.sn}}</text>
+        <text class="ls-w" wx:if="{{item.w}}">{{item.w}}</text>
+        <text class="ls-st">{{item.done ? '✓' : (item.cur ? '进行中' : '未开始')}}</text>
         <view class="ls-ops">
+          <text class="ls-plus" wx:if="{{item.ghost}}" data-i="{{item.i}}" catchtap="addSetAndJump">＋1 组</text>
           <text class="ls-op" data-i="{{item.i}}" catchtap="openItemDetail">详情</text>
           <text class="ls-op" data-i="{{item.i}}" catchtap="openItemEdit">改</text>
           <text class="ls-op del" data-i="{{item.i}}" catchtap="openItemDelete">删</text>
