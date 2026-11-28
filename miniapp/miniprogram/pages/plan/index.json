@@ -1,6 +1,6 @@
 {
   "navigationBarTitleText": "训练计划",
   "usingComponents": {
-    "decision-card": "/components/decision/index"
+    "train-plan": "/components/train-plan/index"
   }
 }

@@ -7,6 +7,7 @@ const progress = require('../../libs/progress');
 const polish = require('../../libs/aipolish');
 const sanity = require('../../libs/sanity');
 const food = require('../../libs/food');
+const decision = require('../../libs/decision');
 
 const MOOD_WORD = ['很糟', '低落', '一般', '不错', '很好'];
 function moodLabel(v) { return MOOD_WORD[Math.max(0, Math.min(4, Math.round(v) - 1))]; }
@@ -120,7 +121,9 @@ Page({
     aiTomorrow: '',
     // 多轮问 AI
     chat: [],
-    thinking: false
+    thinking: false,
+    // 平台期处置（从计划页挪过来：这里有 e1RM 曲线做依据）
+    plateau: []
   },
 
   onShow() {
@@ -388,15 +391,39 @@ Page({
   buildProgress(train) {
     const p = progress.build(train, this.data.range);
     const curve = p.curves[this.data.curveSel] || p.curves[0] || null;
+    const plan = (store.getSettings() || {}).plan || {};
+    const plateau = decision.plateau(train).map(x => Object.assign({}, x, { pick: (plan.strategy && plan.strategy[x.name]) || '' }));
     this.setData({
       prog: p,
       curve,
       curveSel: p.curves.indexOf(curve) >= 0 ? p.curves.indexOf(curve) : 0,
-      aiPure: !polish.enabled()
+      aiPure: !polish.enabled(),
+      plateau
     }, () => {
       setTimeout(() => this.drawProgress(), 120);
     });
     this.aiProgress(p);
+  },
+
+  // 平台期：加量 / 换动作 / 减量三选一，写进下周计划（策略按动作名记）
+  fixPlateau(e) {
+    const i = Number(e.currentTarget.dataset.i);
+    const k = e.currentTarget.dataset.k;
+    const it = (this.data.plateau || [])[i];
+    if (!it) return;
+    const map = {
+      load: { t: '下周 +2.5kg', d: '先加 2.5kg，做不满 8 次就退回原重量' },
+      swap: { t: '换同部位动作', d: '换成同类另一动作，换刺激面' },
+      deload: { t: '减量 20%', d: '下周降到 80% 重量，做满 3×12 再爬回来' }
+    }[k];
+    if (!map) return;
+    const s = store.getSettings() || {};
+    const prevStrategy = (s.plan && s.plan.strategy) || {};
+    s.plan = Object.assign({}, s.plan, { strategy: Object.assign({}, prevStrategy, { [it.name]: k }) });
+    store.setSettings(s);
+    decision.addOp({ key: 'plateau', title: it.name + ' · ' + map.t, desc: map.d, undo: { kind: 'plan', prev: { strategy: prevStrategy } } });
+    this.setData({ ['plateau[' + i + '].pick']: k });
+    wx.showToast({ title: map.t + ' 已记下', icon: 'none' });
   },
 
   drawProgress() {

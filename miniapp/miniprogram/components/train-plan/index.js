@@ -3,11 +3,9 @@ const store = require('../../libs/store/index');
 const engine = require('../../libs/engine/index');
 const actions = require('../../libs/actions');
 const recommend = require('../../libs/recommend');
+const decision = require('../../libs/decision');
 const ai = require('../../libs/ai');
-const sanity = require('../../libs/sanity');
 const cardioLib = require('../../libs/cardio');
-
-const TMPL = 'whCghbXJjZbMzZACF7k5lhLSPynVFAUPzFvf7gXrWqM';
 
 // 计划条目右侧参数列：有氧 20′ / 3×30（可带 km），力量 自重 3×12
 function lineOf(i) {
@@ -23,40 +21,40 @@ Component({
   properties: {
     // 顶部日期导航选中的日期：计划预览与「加入训练」都跟着这一天走
     date: { type: String, value: '' },
-    dateLabel: { type: String, value: '' }
+    dateLabel: { type: String, value: '' },
+    part: { type: String, value: '' }   // 从首页/简报带着部位进来时，直接生成该部位计划
   },
 
   data: {
     days: 3,
     setsPerDay: 12,
-    remind: '20:00',
     week: [],
     weekDone: 0,
     planText: '',
     rec: null,
     recAuto: true,          // ★AI 推荐（false = 用户自选部位）
-    recReason: '',
-    askingWhy: false,
     partOpen: false,        // 部位选择 Sheet
     parts: [],
     pending: null,          // Sheet 里选中的部位
     regenerating: false,
     recEdited: false,       // 手改过条目（换部位前要确认替换）
     todayMark: '',
-    sub: false,
-    subTs: '',
     asking: false,
     cloudReady: false,
-    importLabel: '加入今日训练'
+    importLabel: '加入今日训练',
+    // 下周排布（决策点 weekly）：周日或周目标达成时提示套用
+    weekly: null,
+    weeklyOpen: false
   },
 
   observers: {
-    date() { this.load(); }
+    date() { this.load(); },
+    part(v) { this.partPick = v || ''; this.load(); }
   },
 
   lifetimes: {
     attached() {
-      this.partPick = '';
+      this.partPick = this.data.part || '';
       this.aiPart = '';
       this.load();
     }
@@ -111,7 +109,7 @@ Component({
     doApplyPart(part) {
       const date = this.targetDate();
       this.partPick = part;
-      this.setData({ partOpen: false, pending: null, regenerating: true, recReason: '', askingWhy: false });
+      this.setData({ partOpen: false, pending: null, regenerating: true });
       const train = engine.ensureTrain(store.getTrain());
       const custom = actions.customList();
       setTimeout(() => {
@@ -161,7 +159,6 @@ Component({
       const app = getApp();
       const s = store.getSettings() || {};
       const plan = s.plan || {};
-      const sub = s.sub || {};
       const train = engine.ensureTrain(store.getTrain());
       const custom = actions.customList();
       const week = engine.lastNDays(train, 7).reverse();
@@ -171,11 +168,12 @@ Component({
       const rec = this.buildRec(train, custom, date);
       if (!this.aiPart) this.aiPart = recommend.pickPart(train).part;
       const isToday = date === engine.dayKey();
+      const wd = decision.weekly(train);
+      const weekOpen = !!wd && plan.weeklyDone !== engine.dayKey();
       this.setData({
         cloudReady: !!(app && app.globalData && app.globalData.cloudReady),
         days: plan.days || this.data.days,
         setsPerDay: target,
-        remind: plan.remind || this.data.remind,
         planText: plan.text || '',
         rec,
         recAuto: !this.partPick,
@@ -183,8 +181,6 @@ Component({
         parts: recommend.partStates(train, rec.part),
         pending: null,
         todayMark: isToday ? rec.view : '',
-        sub: !!sub.enabled,
-        subTs: sub.tmplId ? '模板已绑定' : '',
         importLabel: isToday ? '加入今日训练' : '加入 ' + engine.shortDate(date) + ' 的训练',
         week: week.map(d => ({
           label: engine.shortDate(d.date),
@@ -193,8 +189,54 @@ Component({
           ok: d.done >= target,
           today: d.date === engine.dayKey()
         })),
-        weekDone: week.reduce((a, d) => a + d.done, 0)
+        weekDone: week.reduce((a, d) => a + d.done, 0),
+        weekly: wd,
+        weeklyOpen: weekOpen
+      }, () => { if (weekOpen) this.autoWeekly(wd); });
+    },
+
+    // L3：周日或周目标达成时自动套用下周排布（每天一次，可撤销）
+    autoWeekly(wd) {
+      if (!decision.autoOn() || !wd) return;
+      if (decision.autoDone() === 'weekly') return;
+      const isSunday = new Date().getDay() === 0;
+      const goalDays = this.data.days || 3;
+      const weekTrain = (this.data.week || []).filter(d => d.ok).length;
+      if (!isSunday && weekTrain < goalDays) return;
+      decision.setAutoDone('weekly');
+      this.applyWeekly(true);
+    },
+
+    // 一键套用下周排布（写进计划文本 + 周天数）
+    applyWeekly(auto) {
+      const wd = this.data.weekly;
+      if (!wd) return;
+      const s = store.getSettings() || {};
+      const prev = { text: (s.plan && s.plan.text) || '', days: (s.plan && s.plan.days) || 3, weeklyDone: (s.plan && s.plan.weeklyDone) || '' };
+      const trainDays = (wd.days || []).filter(d => d.part).length;
+      s.plan = Object.assign({}, s.plan, { text: wd.planText, days: Math.max(2, trainDays), weeklyDone: engine.dayKey(), seq: wd.text });
+      store.setSettings(s);
+      decision.addOp({
+        key: 'weekly', auto: !!auto,
+        title: '套用下周排布',
+        desc: wd.text + (auto ? '（AI 自动执行）' : ''),
+        undo: { kind: 'plan', prev }
       });
+      this.setData({ weeklyOpen: false, planText: wd.planText, days: Math.max(2, trainDays) });
+      wx.showToast({ title: auto ? '已自动套用下周排布' : '已套用下周排布', icon: 'none' });
+    },
+
+    dismissWeekly() {
+      const s = store.getSettings() || {};
+      s.plan = Object.assign({}, s.plan, { weeklyDone: engine.dayKey() });
+      store.setSettings(s);
+      this.setData({ weeklyOpen: false });
+    },
+
+    onWeeklyPick(e) {
+      const k = (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.k) || '';
+      if (k === 'apply') this.applyWeekly(false);
+      else this.dismissWeekly();
     },
 
     // 组装推荐卡：AI 结论或用户自选部位；条目一律过部位校验
@@ -216,13 +258,11 @@ Component({
       if (n >= 1 && n <= 7) this.setData({ days: n });
     },
     onSets(e) { this.setData({ setsPerDay: Math.max(1, parseInt(e.detail.value, 10) || 12) }); },
-    onRemind(e) { this.setData({ remind: e.detail.value }); },
 
     save() {
       const s = store.getSettings() || {};
       s.plan = Object.assign({}, s.plan, {
-        days: this.data.days, setsPerDay: this.data.setsPerDay,
-        remind: this.data.remind, text: this.data.planText
+        days: this.data.days, setsPerDay: this.data.setsPerDay, text: this.data.planText
       });
       store.setSettings(s);
       this.load();
@@ -314,58 +354,6 @@ Component({
           if (r.confirm) wx.navigateTo({ url: '/pages/focus/index?date=' + date });
         }
       });
-    },
-
-    aiWhy() {
-      const custom = ai.cfg();
-      if (!this.data.cloudReady && !(custom.baseUrl && custom.apiKey)) {
-        wx.showModal({ title: 'AI 未配置', content: '配置自定义 Agent API 或部署 aiProxy 后再用。', showCancel: false });
-        return;
-      }
-      const rec = this.data.rec;
-      if (!rec) return;
-      this.setData({ askingWhy: true });
-      ai.ask({
-        messages: [
-          { role: 'system', content: '健身教练。结合部位恢复与历史记录，用 60 字内说明今天推荐练这个部位的理由。' },
-          { role: 'user', content: '推荐部位：' + rec.part + '；恢复：' + rec.recovery.text + '；动作：' + rec.items.map(i => i.name).join('、') }
-        ],
-        max_tokens: 160,
-        temperature: 0.3
-      }).then(r => {
-        const t = r.ok ? sanity.check(r.text, rec.recovery.text, { max: 80, minCjk: 0.3 }) : 'AI 暂不可用';
-        this.setData({ askingWhy: false, recReason: t });
-      })
-        .catch(() => this.setData({ askingWhy: false, recReason: 'AI 暂不可用' }));
-    },
-
-    subscribe() {
-      wx.requestSubscribeMessage({
-        tmplIds: [TMPL],
-        success: (r) => {
-          if (r[TMPL] !== 'accept') {
-            wx.showToast({ title: '未授权提醒', icon: 'none' });
-            return;
-          }
-          const s = store.getSettings() || {};
-          s.sub = { enabled: true, tmplId: TMPL, remind: this.data.remind, ts: Date.now() };
-          store.setSettings(s);
-          this.setData({ sub: true, subTs: '模板已绑定' });
-          wx.cloud.callFunction({ name: 'notify', data: { action: 'bind', tmplId: TMPL, time: this.data.remind } })
-            .then(() => wx.showToast({ title: '提醒已开启', icon: 'none' }))
-            .catch(() => wx.showToast({ title: '已本地开启（云端登记失败）', icon: 'none' }));
-        },
-        fail: (e) => wx.showToast({ title: '订阅失败：' + (e && e.errMsg ? e.errMsg : ''), icon: 'none' })
-      });
-    },
-
-    unsubscribe() {
-      const s = store.getSettings() || {};
-      s.sub = { enabled: false, tmplId: TMPL };
-      store.setSettings(s);
-      this.setData({ sub: false });
-      if (this.data.cloudReady) wx.cloud.callFunction({ name: 'notify', data: { action: 'unbind' } }).catch(() => {});
-      wx.showToast({ title: '已关闭提醒', icon: 'none' });
     }
   }
 });

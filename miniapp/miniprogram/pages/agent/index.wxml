@@ -95,6 +95,22 @@
     </view>
   </view>
 
+  <!-- 卡 C2：平台期（e1RM 停滞的动作，三选一处置） -->
+  <view class="card" wx:if="{{plateau.length}}">
+    <view class="ch"><text class="ct">平台期</text><text class="cm">近 4 周 e1RM 变化 &lt;2%</text></view>
+    <view class="pl" wx:for="{{plateau}}" wx:key="name">
+      <view class="pl-h">
+        <text class="pl-n">{{item.name}}</text>
+        <text class="pl-v">{{item.from}} → {{item.to}}kg · {{item.chg > 0 ? '+' : ''}}{{item.chg}}%</text>
+      </view>
+      <view class="pl-opts">
+        <text class="pl-o {{item.pick === 'load' ? 'on' : ''}}" data-i="{{index}}" data-k="load" bindtap="fixPlateau">下周 +2.5kg</text>
+        <text class="pl-o {{item.pick === 'swap' ? 'on' : ''}}" data-i="{{index}}" data-k="swap" bindtap="fixPlateau">换动作</text>
+        <text class="pl-o {{item.pick === 'deload' ? 'on' : ''}}" data-i="{{index}}" data-k="deload" bindtap="fixPlateau">减量 20%</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 卡 D：有氧构成 -->
   <view class="card" wx:if="{{cdComp.length}}">
     <view class="ch"><text class="ct">有氧构成</text><text class="cm">{{cdTotal}}′ · 按项目</text></view>

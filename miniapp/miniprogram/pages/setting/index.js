@@ -8,6 +8,7 @@ const decision = require('../../libs/decision');
 const LIB = require('../../libs/data/lib');
 
 const PANEL_TITLE = { profile: '个人档案', prefs: '记录偏好', train: '训练设置', ai: '动作与 AI', data: '数据', about: '关于' };
+const TMPL = 'whCghbXJjZbMzZACF7k5lhLSPynVFAUPzFvf7gXrWqM';
 
 Page({
   data: {
@@ -18,6 +19,7 @@ Page({
     typesView: [],
     newTag: '', newType: '',
     restSec: 90, autoNext: false, wStep: 2.5, pureData: false, agentAuto: false, mealKeep: false,    memList: [],
+    remind: '20:00', sub: false, subTs: '',
     opList: [],
     activeType: '',
     stepOpts: [0.5, 1, 2.5, 5],
@@ -91,6 +93,8 @@ Page({
       ? '最近同步 ' + engine.fmtTime(new Date(ts).toISOString()) + (pendN ? ' · 待推 ' + pendN + ' 条' : ' · 已是最新')
       : '本机数据 · 还没有云端记录';
     const cfg = settings.trainCfg();
+    const st = store.getSettings() || {};
+    const sub = st.sub || {};
     const typesView = settings.types().map(t => ({ key: t.key, label: t.label, color: settings.colorFor(t.key), tags: t.tags || [] }));
     const tagCount = typesView.reduce((n, t) => n + t.tags.length, 0);
     const logsCount = (store.getLogs() || []).length;
@@ -127,6 +131,9 @@ Page({
       restSec: cfg.rest || 90,
       autoNext: cfg.autoNext,
       wStep: cfg.step,
+      remind: (st.plan && st.plan.remind) || this.data.remind,
+      sub: !!sub.enabled,
+      subTs: sub.enabled ? '已开启 · 断签当天提醒' : (sub.tmplId ? '已关闭' : ''),
       pureData: !polish.enabled(),
       mealKeep: !!((store.getSettings() || {}).mealKeep),
       agentAuto: decision.autoOn(),
@@ -251,9 +258,55 @@ Page({
     settings.setTrainCfg({ autoNext: v });
   },
 
+  /* ---------- 训练提醒（订阅消息，从计划页挪到偏好设置） ---------- */
+  onRemind(e) {
+    const v = e.detail.value;
+    const st = store.getSettings() || {};
+    st.plan = Object.assign({}, st.plan, { remind: v });
+    store.setSettings(st);
+    this.setData({ remind: v });
+  },
+
+  subscribe() {
+    wx.requestSubscribeMessage({
+      tmplIds: [TMPL],
+      success: (r) => {
+        if (r[TMPL] !== 'accept') { wx.showToast({ title: '未授权提醒', icon: 'none' }); return; }
+        const st = store.getSettings() || {};
+        st.sub = { enabled: true, tmplId: TMPL, remind: this.data.remind, ts: Date.now() };
+        store.setSettings(st);
+        this.setData({ sub: true, subTs: '已开启 · 断签当天提醒' });
+        // 上报最近训练日与连续天数：云端据此决定「今天该不该提醒」
+        let streak = 0, lastDay = '';
+        try {
+          const train = engine.ensureTrain(store.getTrain());
+          streak = engine.streakDays(train);
+          const days = engine.lastNDays(train, 30) || [];
+          const hit = days.filter(d => d && d.done > 0)[0];
+          lastDay = hit ? hit.date : '';
+        } catch (e) {}
+        wx.cloud.callFunction({
+          name: 'notify',
+          data: { action: 'bind', tmplId: TMPL, time: this.data.remind, streak, lastDay }
+        })
+          .then(() => wx.showToast({ title: '提醒已开启', icon: 'none' }))
+          .catch(() => wx.showToast({ title: '已本地开启（云端登记失败）', icon: 'none' }));
+      },
+      fail: (e) => wx.showToast({ title: '订阅失败：' + (e && e.errMsg ? e.errMsg : ''), icon: 'none' })
+    });
+  },
+
+  unsubscribe() {
+    const st = store.getSettings() || {};
+    st.sub = { enabled: false, tmplId: TMPL };
+    store.setSettings(st);
+    this.setData({ sub: false, subTs: '已关闭' });
+    if (this.data.cloudReady) wx.cloud.callFunction({ name: 'notify', data: { action: 'unbind' } }).catch(() => {});
+    wx.showToast({ title: '已关闭提醒', icon: 'none' });
+  },
+
   // 饮食照片默认即焚；打开后留本机
-  toggleMealKeep(e) {
-    const v = !!e.detail.value;
+  toggleMealKeep(e) {    const v = !!e.detail.value;
     const st = store.getSettings() || {};
     store.setSettings(Object.assign({}, st, { mealKeep: v }));
     this.setData({ mealKeep: v });

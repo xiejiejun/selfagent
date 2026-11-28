@@ -137,6 +137,21 @@
       </view>
       <text class="tip">下一组建议与计划加减重量按这个幅度；大重量用 5，小肌群用 0.5。</text>
       <text class="tip">休息秒数为 0 时按动作类型自动给（大重量 150″，小肌群 60″，其余 90″）。</text>
+
+      <view class="srow">
+        <text class="sl">训练提醒</text>
+        <picker mode="time" value="{{remind}}" bindchange="onRemind">
+          <text class="fi right">{{remind}} ›</text>
+        </picker>
+      </view>
+      <text class="tip">只在「该练而没练」的那天 {{remind}} 提醒一次，连着几天没练会喊你回来；一次性订阅，每次推送后需要再点一次授权。</text>
+      <text class="tip" wx:if="{{sub}}">{{subTs || '已开启'}} · 今天练过就不会推</text>
+      <view class="grid one" wx:if="{{!sub}}">
+        <view class="gbtn" bindtap="subscribe">开启提醒</view>
+      </view>
+      <view class="grid one" wx:else>
+        <view class="gbtn" bindtap="unsubscribe">关闭提醒</view>
+      </view>
     </block>
 
     <!-- 动作与 AI -->

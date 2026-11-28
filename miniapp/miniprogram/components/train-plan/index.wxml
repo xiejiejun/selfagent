@@ -15,6 +15,17 @@
     </view>
   </view>
 
+  <!-- 下周怎么排：一条结论 + 两个出口（周日或周目标达成时出现） -->
+  <view class="card" wx:if="{{weeklyOpen && weekly}}">
+    <view class="ch"><text class="ct">下周怎么排</text><text class="cm">✦ 按你的记录</text></view>
+    <text class="ptext">{{weekly.text}}</text>
+    <text class="tip">{{weekly.basis}}</text>
+    <view class="acts">
+      <view class="btn ghost" data-k="me" catchtap="onWeeklyPick">我自己排</view>
+      <view class="btn primary" data-k="apply" catchtap="onWeeklyPick">按此生成 7 天计划</view>
+    </view>
+  </view>
+
   <view class="card" wx:if="{{rec && rec.items.length}}">
     <view class="ch">
       <view class="chl">
@@ -46,9 +57,7 @@
         <text class="ri-line">{{item.line}}</text>
         <text class="ri-more">⋯</text>
       </view>
-      <text class="ptext" wx:if="{{recReason}}">{{recReason}}</text>
       <view class="acts">
-        <view class="btn ghost" bindtap="aiWhy">{{askingWhy ? '解读中…' : '✦ AI 解读理由'}}</view>
         <view class="btn primary" bindtap="importToday">{{importLabel}}</view>
       </view>
     </block>
@@ -66,12 +75,6 @@
       <text class="fl">每天组数</text>
       <input class="fi" type="number" value="{{setsPerDay}}" bindinput="onSets" />
     </view>
-    <view class="frow">
-      <text class="fl">提醒时间</text>
-      <picker mode="time" value="{{remind}}" bindchange="onRemind">
-        <text class="fi right">{{remind}} ›</text>
-      </picker>
-    </view>
     <view class="btn" bindtap="save">保存计划</view>
   </view>
 
@@ -80,13 +83,6 @@
     <text class="ptext" wx:if="{{planText}}">{{planText}}</text>
     <text class="empty" wx:else>还没有计划，点下面按最近 30 天记录生成</text>
     <view class="btn ghost" bindtap="askPlan">生成本周计划</view>
-  </view>
-
-  <view class="card">
-    <view class="ch"><text class="ct">训练提醒</text><text class="cm">{{sub ? '已开启 · ' + remind : '未开启'}}</text></view>
-    <text class="tip">每天 {{remind}} 通过订阅消息提醒你训练；一次性订阅，每次推送后需要再点一次授权。</text>
-    <view class="btn" wx:if="{{!sub}}" bindtap="subscribe">开启提醒</view>
-    <view class="btn ghost" wx:else bindtap="unsubscribe">关闭提醒</view>
   </view>
 </view>
 
